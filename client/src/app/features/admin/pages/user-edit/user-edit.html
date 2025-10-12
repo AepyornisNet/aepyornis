@@ -1,0 +1,120 @@
+<div class="container my-5" style="max-width: 600px;">
+  <h2 class="display-6 mb-4 d-flex align-items-center gap-2">
+    <app-icon name="settings" size="32"></app-icon>
+    @if (user()) {
+      Manage user: {{ user()!.name }}
+    } @else {
+      Edit User
+    }
+  </h2>
+
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  } @else if (user()) {
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <form [formGroup]="userForm" (ngSubmit)="saveUser()">
+          <!-- Username -->
+          <div class="mb-3">
+            <label for="username" class="form-label">
+              Username
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="username"
+              formControlName="username"
+              required
+            />
+          </div>
+
+          <!-- Name -->
+          <div class="mb-3">
+            <label for="name" class="form-label">
+              Name
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              formControlName="name"
+              required
+            />
+          </div>
+
+          <!-- Password -->
+          <div class="mb-3">
+            <label for="password" class="form-label">
+              Password
+            </label>
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              formControlName="password"
+              placeholder="Leave blank to keep current password"
+            />
+          </div>
+
+          <!-- Active -->
+          <div class="mb-3 form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="active"
+              formControlName="active"
+            />
+            <label class="form-check-label" for="active">
+              Active
+            </label>
+          </div>
+
+          <!-- Admin -->
+          <div class="mb-3 form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="admin"
+              formControlName="admin"
+            />
+            <label class="form-check-label" for="admin">
+              Admin
+            </label>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex gap-2 pt-3">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="saving() || userForm.invalid"
+            >
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Saving...
+              } @else {
+                Update user
+              }
+            </button>
+            <a
+              routerLink="/admin"
+              class="btn btn-secondary"
+            >
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

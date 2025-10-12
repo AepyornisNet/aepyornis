@@ -1,0 +1,40 @@
+<aside
+  class="d-sm-flex flex-column flex-shrink-0 bg-body-tertiary sticky-top"
+  [class.d-none]="!isOpen()"
+  [style.width]="isOpen() ? '250px' : '4.5rem'"
+>
+  <div class="d-flex flex-row align-items-center justify-content-center py-3 bg-white text-dark">
+    <img src="dumbbell.png" alt="Logo" height="24" />
+    <span class="ps-3" [class.visually-hidden]="!isOpen()" i18n>
+      Workout Tracker
+    </span>
+  </div>
+
+  <div class="overflow-y-auto" [class.p-3]="isOpen()">
+    <ul
+      class="nav nav-pills flex-column mb-auto"
+      [class.nav-flush]="!isOpen()"
+      [class.text-center]="!isOpen()"
+    >
+      @for (item of menuItems(); track item.route) {
+        <li class="nav-item">
+          <a
+            class="nav-link link-body-emphasis"
+            [class.py-3]="!isOpen()"
+            [class.border-bottom]="!isOpen()"
+            [class.rounded-0]="!isOpen()"
+            [routerLink]="item.route"
+            [ngbTooltip]="item.label"
+            [disableTooltip]="isOpen()"
+            triggers="hover"
+            placement="right"
+            routerLinkActive="active"
+          >
+            <app-icon [name]="item.iconKey" size="1.125rem" [class.me-2]="isOpen()"></app-icon>
+            <span [class.visually-hidden]="!isOpen()">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </div>
+</aside>

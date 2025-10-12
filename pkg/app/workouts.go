@@ -48,6 +48,7 @@ type ManualWorkout struct {
 	Notes           *string               `form:"notes" json:"notes"`
 	Type            *database.WorkoutType `form:"type" json:"type"`
 	CustomType      *string               `form:"custom_type" json:"custom_type"`
+	EquipmentIDs    []uint64              `form:"equipment_ids" json:"equipment_ids"`
 
 	units *database.UserPreferredUnits
 }

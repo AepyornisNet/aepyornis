@@ -1,0 +1,18 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* Importing Bootstrap SCSS file. */
+@use 'bootstrap/scss/bootstrap' with (
+  $color-mode-type: media-query
+);
+
+@media (prefers-color-scheme: dark) {
+  .map-tiles,
+  .leaflet-tooltip,
+  .leaflet-control {
+    --brightness: brightness(0.85);
+    --contrast: contrast(0.80);
+    --invert: invert(100%);
+    --saturate: saturate(0);
+    filter: var(--brightness) var(--contrast) var(--invert) var(--saturate);
+  }
+}

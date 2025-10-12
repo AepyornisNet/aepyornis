@@ -26,27 +26,6 @@ func (a *App) redirectWithError(c echo.Context, target string, err error) error 
 	return c.Redirect(http.StatusFound, target)
 }
 
-func (a *App) statisticsHandler(c echo.Context) error {
-	u := a.getCurrentUser(c)
-	if u.IsAnonymous() {
-		return a.redirectWithError(c, a.echo.Reverse("user-signout"), ErrUserNotFound)
-	}
-
-	statisticsParams := struct {
-		Since string `query:"since"`
-		Per   string `query:"per"`
-	}{
-		Since: "1 year",
-		Per:   "month",
-	}
-
-	if err := c.Bind(&statisticsParams); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("dashboard"), err)
-	}
-
-	return Render(c, http.StatusOK, user.Statistics(u, statisticsParams.Since, statisticsParams.Per))
-}
-
 func (a *App) dailyDeleteHandler(c echo.Context) error {
 	u := a.getCurrentUser(c)
 	d := c.Param("date")
@@ -145,20 +124,6 @@ func (a *App) lookupAddressHandler(c echo.Context) error {
 	}
 
 	return Render(c, http.StatusOK, partials.AddressResults(results))
-}
-
-func (a *App) heatmapHandler(c echo.Context) error {
-	u := a.getCurrentUser(c)
-	if u.IsAnonymous() {
-		return a.redirectWithError(c, a.echo.Reverse("user-signout"), ErrUserNotFound)
-	}
-
-	w, err := u.GetWorkouts(a.db)
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("user-signout"), err)
-	}
-
-	return Render(c, http.StatusOK, user.Heatmap(w))
 }
 
 func Render(ctx echo.Context, statusCode int, t templ.Component) error {

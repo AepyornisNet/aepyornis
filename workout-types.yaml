@@ -1,0 +1,99 @@
+# Workout Types Configuration
+# This file defines all available workout types and their field requirements
+
+workout_types:
+  - name: running
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: cycling
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: e-cycling
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: horse-riding
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: inline-skating
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: walking
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: skiing
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: snowboarding
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: swimming
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: kayaking
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: rowing
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: golfing
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: hiking
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    
+  - name: push-ups
+    location: false
+    distance: false
+    repetition: true
+    weight: false
+    
+  - name: weight-lifting
+    location: false
+    distance: false
+    repetition: true
+    weight: true
+    
+  - name: other
+    location: true
+    distance: true
+    repetition: true
+    weight: true

@@ -51,10 +51,10 @@ func (a *App) userSignoutHandler(c echo.Context) error {
 	a.clearTokenCookie(c)
 
 	if err := a.sessionManager.Destroy(c.Request().Context()); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("user-login"), err)
+		return a.redirectWithError(c, "/login", err)
 	}
 
-	return c.Redirect(http.StatusFound, a.echo.Reverse("user-login"))
+	return c.Redirect(http.StatusFound, "/login")
 }
 
 // userRegisterHandler will be executed after registration submission.

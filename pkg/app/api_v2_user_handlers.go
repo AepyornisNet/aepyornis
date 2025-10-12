@@ -1,0 +1,57 @@
+package app
+
+import (
+	"net/http"
+
+	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/labstack/echo/v4"
+)
+
+func (a *App) registerAPIV2UserRoutes(e *echo.Group) {
+	e.GET("/whoami", a.apiV2WhoamiHandler).Name = "api-v2-whoami"
+	e.GET("/totals", a.apiV2TotalsHandler).Name = "api-v2-totals"
+	e.GET("/records", a.apiV2RecordsHandler).Name = "api-v2-records"
+}
+
+// apiV2WhoamiHandler returns current user information
+func (a *App) apiV2WhoamiHandler(c echo.Context) error {
+	user := a.getCurrentUser(c)
+
+	resp := api.Response[api.UserProfileResponse]{
+		Results: api.NewUserProfileResponse(user),
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2TotalsHandler returns user's workout totals
+func (a *App) apiV2TotalsHandler(c echo.Context) error {
+	user := a.getCurrentUser(c)
+
+	totals, err := user.GetDefaultTotals()
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
+	resp := api.Response[api.TotalsResponse]{
+		Results: api.NewTotalsResponse(totals),
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2RecordsHandler returns user's workout records
+func (a *App) apiV2RecordsHandler(c echo.Context) error {
+	user := a.getCurrentUser(c)
+
+	records, err := user.GetAllRecords()
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
+	resp := api.Response[[]api.WorkoutRecordResponse]{
+		Results: api.NewWorkoutRecordsResponse(records),
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}

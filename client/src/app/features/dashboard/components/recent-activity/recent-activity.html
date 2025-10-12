@@ -1,0 +1,105 @@
+<div class="recent-activity-container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0" i18n>Recent Activity</h5>
+  </div>
+
+  @if (initialLoading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden" i18n>Loading...</span>
+      </div>
+    </div>
+  } @else if (displayedWorkouts().length === 0) {
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <p class="text-muted text-center py-5 mb-0" i18n>
+          No recent activity to display. Start tracking your workouts!
+        </p>
+      </div>
+    </div>
+  } @else {
+    <div class="activity-feed">
+      @for (workout of displayedWorkouts(); track workout.id) {
+        <div class="card shadow-sm mb-3 activity-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="d-flex align-items-center gap-2 flex-grow-1">
+                <app-icon [name]="workout.type" size="28" class="text-primary"></app-icon>
+                <div class="flex-grow-1">
+                  <a [routerLink]="['/workouts', workout.id]" class="activity-title text-decoration-none">
+                    {{ workout.name }}
+                  </a>
+                  @if (workout.user) {
+                    <div class="text-muted small">{{ workout.user.name }}</div>
+                  }
+                </div>
+              </div>
+              <small class="text-muted text-nowrap">{{ formatDate(workout.date) }}</small>
+            </div>
+
+            <div class="activity-stats">
+              @if (workout.address_string) {
+                <span class="stat location-stat">
+                  <app-icon name="location" size="16"></app-icon>
+                  <span class="text-truncate">{{ workout.address_string }}</span>
+                </span>
+              }
+              @if (workout.total_distance) {
+                <span class="stat">
+                  <app-icon name="distance" size="16"></app-icon>
+                  <span>{{ formatDistance(workout.total_distance) }} km</span>
+                </span>
+              }
+              @if (workout.total_duration) {
+                <span class="stat">
+                  <app-icon name="duration" size="16"></app-icon>
+                  <span>{{ formatDuration(workout.total_duration) }}</span>
+                </span>
+              }
+              @if (workout.total_up) {
+                <span class="stat">
+                  <app-icon name="elevation" size="16"></app-icon>
+                  <span>{{ workout.total_up.toFixed(0) }} m</span>
+                </span>
+              }
+              @if (workout.total_weight) {
+                <span class="stat">
+                  <app-icon name="weight" size="16"></app-icon>
+                  <span>{{ formatWeight(workout.total_weight) }} kg</span>
+                </span>
+              }
+              @if (workout.total_repetitions) {
+                <span class="stat">
+                  <app-icon name="repetitions" size="16"></app-icon>
+                  <span>{{ workout.total_repetitions }}</span>
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden" i18n>Loading more...</span>
+          </div>
+        </div>
+      }
+
+      @if (hasMore() && !loading()) {
+        <div class="text-center py-3">
+          <button class="btn btn-outline-primary" (click)="loadMore()" i18n>
+            Load More
+          </button>
+        </div>
+      }
+
+      @if (!hasMore() && displayedWorkouts().length > 0) {
+        <div class="text-center text-muted py-3">
+          <small i18n>No more activities to load</small>
+        </div>
+      }
+    </div>
+  }
+</div>

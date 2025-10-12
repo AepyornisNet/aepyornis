@@ -1,0 +1,149 @@
+<div class="container my-5">
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden" i18n>Loading...</span>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && routeSegment()) {
+    <div class="mb-4">
+      <h1 class="display-4">
+        <app-icon name="edit" size="48"></app-icon>
+        <span i18n>Edit Route Segment</span>
+      </h1>
+      <p class="text-muted">{{ routeSegment()!.name }}</p>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <form [formGroup]="routeSegmentForm" (ngSubmit)="save()">
+              <div class="mb-3">
+                <label for="name" class="form-label" i18n>Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  formControlName="name"
+                  required
+                  [disabled]="saving()">
+              </div>
+
+              <div class="mb-3">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="bidirectional"
+                    formControlName="bidirectional"
+                    [disabled]="saving()">
+                  <label class="form-check-label" for="bidirectional">
+                    <app-icon name="bidirectional" size="16"></app-icon>
+                    <span i18n>Bidirectional</span>
+                  </label>
+                  <div class="form-text" i18n>
+                    Check this if the route can be traversed in both directions
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="circular"
+                    formControlName="circular"
+                    [disabled]="saving()">
+                  <label class="form-check-label" for="circular">
+                    <app-icon name="circular" size="16"></app-icon>
+                    <span i18n>Circular</span>
+                  </label>
+                  <div class="form-text" i18n>
+                    Check this if the route is a loop/circuit
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="notes" class="form-label" i18n>Notes</label>
+                <textarea
+                  class="form-control"
+                  id="notes"
+                  rows="10"
+                  formControlName="notes"
+                  [disabled]="saving()"></textarea>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" [disabled]="saving() || routeSegmentForm.invalid">
+                  @if (saving()) {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  }
+                  <span i18n>Save Changes</span>
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="reset()" [disabled]="saving()" i18n>
+                  Reset
+                </button>
+                <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving()" i18n>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3" i18n>Route Segment Details</h5>
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <th style="width: 50%;">
+                    <app-icon name="distance" size="16"></app-icon>
+                    <span i18n>Distance</span>
+                  </th>
+                  <td>{{ (routeSegment()!.total_distance / 1000).toFixed(2) }} km</td>
+                </tr>
+                <tr>
+                  <th>
+                    <app-icon name="up" size="16"></app-icon>
+                    <span i18n>Elevation Gain</span>
+                  </th>
+                  <td>{{ routeSegment()!.total_up.toFixed(0) }} m</td>
+                </tr>
+                <tr>
+                  <th>
+                    <app-icon name="route-segment" size="16"></app-icon>
+                    <span i18n>Matches</span>
+                  </th>
+                  <td>{{ routeSegment()!.matches.length || 0 }}</td>
+                </tr>
+                @if (routeSegment()!.filename) {
+                  <tr>
+                    <th>
+                      <app-icon name="file" size="16"></app-icon>
+                      <span i18n>File</span>
+                    </th>
+                    <td>{{ routeSegment()!.filename }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

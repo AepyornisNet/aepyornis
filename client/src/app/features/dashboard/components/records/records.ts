@@ -1,0 +1,45 @@
+import { Component, input, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { WorkoutRecord } from '../../../../core/types/workout';
+
+@Component({
+  selector: 'app-records',
+  imports: [CommonModule, RouterLink],
+  templateUrl: './records.html',
+  styleUrl: './records.scss'
+})
+export class Records {
+  records = input<WorkoutRecord[]>([]);
+
+  activeRecords = computed(() =>
+    this.records().filter(r => r.active && r.distance)
+  );
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString();
+  }
+
+  formatSpeed(speed: number): string {
+    // Convert m/s to km/h
+    return (speed * 3.6).toFixed(2);
+  }
+
+  formatDistance(distance: number): string {
+    // Convert meters to kilometers
+    return (distance / 1000).toFixed(2);
+  }
+
+  formatElevation(elevation: number): string {
+    return elevation.toFixed(0);
+  }
+
+  formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
+}

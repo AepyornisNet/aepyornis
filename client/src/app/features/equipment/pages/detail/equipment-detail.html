@@ -1,0 +1,186 @@
+<div class="container my-5">
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden" i18n>Loading...</span>
+        </div>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert alert-danger" role="alert">
+        {{ error() }}
+      </div>
+    }
+
+    @if (!loading() && equipment()) {
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <button class="btn btn-link p-0 mb-2" (click)="goBack()">
+            <app-icon name="back" size="20"></app-icon>
+            <span i18n>Back to Equipment</span>
+          </button>
+          <h1 class="display-4 mb-0">{{ equipment()!.name }}</h1>
+          @if (equipment()!.active) {
+            <span class="badge bg-success" i18n>Active</span>
+          } @else {
+            <span class="badge bg-secondary" i18n>Inactive</span>
+          }
+        </div>
+        <div class="btn-group" role="group">
+          <button class="btn btn-outline-secondary" (click)="openEditModal()" i18n>Edit</button>
+          <button class="btn btn-outline-danger" (click)="openDeleteModal()" i18n>Delete</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-6">
+          <!-- Equipment Details Card -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-body">
+              <h5 class="card-title mb-3" i18n>Details</h5>
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <th style="width: 40%;" i18n>Name</th>
+                    <td>{{ equipment()!.name }}</td>
+                  </tr>
+                  <tr>
+                    <th i18n>Created</th>
+                    <td>{{ formatDate(equipment()!.created_at) }}</td>
+                  </tr>
+                  <tr>
+                    <th i18n>Last Updated</th>
+                    <td>{{ formatDate(equipment()!.updated_at) }}</td>
+                  </tr>
+                  <tr>
+                    <th i18n>Active</th>
+                    <td>
+                      @if (equipment()!.active) {
+                        <span class="text-success" i18n>Yes</span>
+                      } @else {
+                        <span class="text-secondary" i18n>No</span>
+                      }
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Description Card -->
+          @if (equipment()!.description) {
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h5 class="card-title mb-3" i18n>Description</h5>
+                <p class="card-text">{{ equipment()!.description }}</p>
+              </div>
+            </div>
+          }
+
+          <!-- Notes Card -->
+          @if (equipment()!.notes) {
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h5 class="card-title mb-3" i18n>Notes</h5>
+                <div class="card-text" style="white-space: pre-wrap;">{{ equipment()!.notes }}</div>
+              </div>
+            </div>
+          }
+
+          <!-- Default Workout Types -->
+          @if (equipment()!.default_for && equipment()!.default_for!.length > 0) {
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h5 class="card-title mb-3" i18n>Default for Workout Types</h5>
+                <div class="d-flex flex-wrap gap-2">
+                  @for (type of equipment()!.default_for!; track type) {
+                    <span class="badge bg-primary">{{ type }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="col-lg-6">
+          <!-- Placeholder for workouts or stats -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-body">
+              <h5 class="card-title mb-3" i18n>Usage Statistics</h5>
+              <p class="text-muted" i18n>Workout history and statistics will be displayed here in a future update.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Edit Modal -->
+  @if (showEditModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" i18n>Edit Equipment</h5>
+            <button type="button" class="btn-close" (click)="closeEditModal()" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="edit-name" class="form-label" i18n>Name</label>
+              <input type="text" class="form-control" id="edit-name"
+                     [value]="equipmentForm().name"
+                     (input)="updateFormName($any($event.target).value)">
+            </div>
+            <div class="mb-3">
+              <label for="edit-description" class="form-label" i18n>Description</label>
+              <textarea class="form-control" id="edit-description" rows="3"
+                        [value]="equipmentForm().description"
+                        (input)="updateFormDescription($any($event.target).value)"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="edit-notes" class="form-label" i18n>Notes</label>
+              <textarea class="form-control" id="edit-notes" rows="5"
+                        [value]="equipmentForm().notes"
+                        (input)="updateFormNotes($any($event.target).value)"></textarea>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="edit-active"
+                     [checked]="equipmentForm().active"
+                     (change)="updateFormActive($any($event.target).checked)">
+              <label class="form-check-label" for="edit-active" i18n>
+                Active
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()" i18n>Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="updateEquipment()" i18n>Update</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Modal -->
+  @if (showDeleteModal() && equipment()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" i18n>Delete Equipment</h5>
+            <button type="button" class="btn-close" (click)="closeDeleteModal()" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p i18n>Are you sure you want to delete this equipment?</p>
+            <p><strong>{{ equipment()!.name }}</strong></p>
+            <p class="text-danger" i18n>This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()" i18n>Cancel</button>
+            <button type="button" class="btn btn-danger" (click)="deleteEquipment()" i18n>Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }

@@ -1,0 +1,97 @@
+@if (activeRecords().length > 0) {
+  <div class="row">
+    @for (record of activeRecords(); track record.workout_type) {
+      <div class="col-lg-6 mb-3">
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <h5 class="mb-0">{{ record.workout_type }} Records</h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm">
+              <tbody>
+                @if (record.average_speed) {
+                  <tr>
+                    <td i18n>Average Speed</td>
+                    <td class="text-end">
+                      <strong>{{ formatSpeed(record.average_speed.value) }} km/h</strong>
+                    </td>
+                    <td class="text-end text-muted">
+                      <a [routerLink]="['/workouts', record.average_speed.workout_id]">
+                        {{ formatDate(record.average_speed.date) }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+                @if (record.average_speed_no_pause) {
+                  <tr>
+                    <td i18n>Average Speed (No Pause)</td>
+                    <td class="text-end">
+                      <strong>{{ formatSpeed(record.average_speed_no_pause.value) }} km/h</strong>
+                    </td>
+                    <td class="text-end text-muted">
+                      <a [routerLink]="['/workouts', record.average_speed_no_pause.workout_id]">
+                        {{ formatDate(record.average_speed_no_pause.date) }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+                @if (record.max_speed) {
+                  <tr>
+                    <td i18n>Max Speed</td>
+                    <td class="text-end">
+                      <strong>{{ formatSpeed(record.max_speed.value) }} km/h</strong>
+                    </td>
+                    <td class="text-end text-muted">
+                      <a [routerLink]="['/workouts', record.max_speed.workout_id]">
+                        {{ formatDate(record.max_speed.date) }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+                @if (record.distance) {
+                  <tr>
+                    <td i18n>Distance</td>
+                    <td class="text-end">
+                      <strong>{{ formatDistance(record.distance.value) }} km</strong>
+                    </td>
+                    <td class="text-end text-muted">
+                      <a [routerLink]="['/workouts', record.distance.workout_id]">
+                        {{ formatDate(record.distance.date) }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+                @if (record.total_up) {
+                  <tr>
+                    <td i18n>Total Elevation</td>
+                    <td class="text-end">
+                      <strong>{{ formatElevation(record.total_up.value) }} m</strong>
+                    </td>
+                    <td class="text-end text-muted">
+                      <a [routerLink]="['/workouts', record.total_up.workout_id]">
+                        {{ formatDate(record.total_up.date) }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+                @if (record.duration) {
+                  <tr>
+                    <td i18n>Duration</td>
+                    <td class="text-end">
+                      <strong>{{ formatDuration(record.duration.value) }}</strong>
+                    </td>
+                    <td class="text-end text-muted">
+                      <a [routerLink]="['/workouts', record.duration.workout_id]">
+                        {{ formatDate(record.duration.date) }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}

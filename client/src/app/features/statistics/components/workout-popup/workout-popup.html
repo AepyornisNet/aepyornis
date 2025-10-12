@@ -1,0 +1,110 @@
+<div class="workout-popup">
+  <!-- Name with link -->
+  <div class="mb-2">
+    <a [routerLink]="['/workouts', data().id]" class="fw-semibold text-decoration-none">
+      {{ data().name || '(no name)' }}
+    </a>
+  </div>
+
+  <table class="table table-sm mb-0 small">
+    <tbody>
+      <!-- Date -->
+      <tr>
+        <td class="pe-2">
+          <app-icon name="date" />
+        </td>
+        <td>{{ data().date }}</td>
+      </tr>
+
+      <!-- Type -->
+      <tr>
+        <td class="pe-2">
+          <app-icon name="workout" />
+        </td>
+        <td>
+          @if (data().custom_type) {
+            <i>{{ data().custom_type }}</i>
+          } @else {
+            {{ formatWorkoutType() }}
+          }
+        </td>
+      </tr>
+
+      <!-- Repetitions (for repetition workouts) -->
+      @if (data().total_repetitions !== undefined && data().total_repetitions !== null) {
+        <tr>
+          <td class="pe-2">
+            <app-icon name="repetitions" />
+          </td>
+          <td class="font-monospace">
+            {{ data().total_repetitions }}
+          </td>
+        </tr>
+        @if (data().repetition_frequency_per_min !== undefined && data().repetition_frequency_per_min !== null) {
+          <tr>
+            <td class="pe-2">
+              <app-icon name="tempo" />
+            </td>
+            <td class="font-monospace">
+              {{ data().repetition_frequency_per_min!.toFixed(1) }}
+            </td>
+          </tr>
+        }
+      }
+
+      <!-- Weight (for weight workouts) -->
+      @if (data().total_weight !== undefined && data().total_weight !== null) {
+        <tr>
+          <td class="pe-2">
+            <app-icon name="weight" />
+          </td>
+          <td class="font-monospace">
+            {{ formatWeight() }} {{ weightUnit() }}
+          </td>
+        </tr>
+      }
+
+      <!-- Duration (for duration workouts) -->
+      @if (data().total_duration !== undefined && data().total_duration !== null) {
+        <tr>
+          <td class="pe-2">
+            <app-icon name="duration" />
+          </td>
+          <td class="font-monospace">
+            @if (data().locked) {
+              <app-icon name="locked" />
+            }
+            {{ formatDuration() }}
+          </td>
+        </tr>
+      }
+
+      <!-- Distance (for distance workouts) -->
+      @if (data().total_distance !== undefined && data().total_distance !== null) {
+        <tr>
+          <td class="pe-2">
+            <app-icon name="distance" />
+          </td>
+          <td class="font-monospace">
+            @if (data().locked) {
+              <app-icon name="locked" />
+            }
+            {{ formatDistance() }} {{ distanceUnit() }}
+          </td>
+        </tr>
+      }
+
+      <!-- Average Speed (for distance + duration workouts) -->
+      @if (data().average_speed !== undefined && data().average_speed !== null) {
+        <tr>
+          <td class="pe-2">
+            <app-icon name="speed" />
+          </td>
+          <td class="font-monospace">
+            {{ formatSpeed() }} {{ speedUnit() }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

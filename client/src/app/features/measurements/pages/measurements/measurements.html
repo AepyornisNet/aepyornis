@@ -1,0 +1,245 @@
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="display-4 mb-0" i18n>Measurements</h1>
+      <div class="d-flex align-items-center gap-3">
+        @if (totalCount() > 0) {
+          <span class="text-muted">{{ totalCount() }} total measurements</span>
+        }
+        <button class="btn btn-primary" (click)="openCreateModal()" i18n>Add Measurement</button>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden" i18n>Loading...</span>
+        </div>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert alert-danger" role="alert">
+        {{ error() }}
+      </div>
+    }
+
+    @if (!loading() && !error()) {
+      @if (!hasMeasurements()) {
+        <div class="card shadow-sm">
+          <div class="card-body text-center py-5">
+            <h5 class="card-title" i18n>No Measurements Yet</h5>
+            <p class="card-text text-muted" i18n>
+              Start tracking your body measurements to monitor your progress.
+            </p>
+            <button class="btn btn-primary" (click)="openCreateModal()" i18n>Add Measurement</button>
+          </div>
+        </div>
+      } @else {
+        <!-- Measurements Table -->
+        <div class="card shadow-sm">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th i18n>Date</th>
+                  <th class="text-end" i18n>Weight (kg)</th>
+                  <th class="text-end d-none d-md-table-cell" i18n>Height (cm)</th>
+                  <th class="text-end d-none d-lg-table-cell" i18n>Steps</th>
+                  <th class="text-center" i18n>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (measurement of measurements(); track measurement.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ formatDate(measurement.date) }}</strong>
+                    </td>
+                    <td class="text-end">
+                      @if (measurement.weight) {
+                        {{ measurement.weight.toFixed(1) }}
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td class="text-end d-none d-md-table-cell">
+                      @if (measurement.height) {
+                        {{ measurement.height.toFixed(1) }}
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td class="text-end d-none d-lg-table-cell">
+                      @if (measurement.steps) {
+                        {{ measurement.steps.toLocaleString() }}
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-secondary" (click)="openEditModal(measurement)" title="Edit" i18n-title>
+                          <app-icon name="edit" size="16"></app-icon>
+                        </button>
+                        <button class="btn btn-outline-danger" (click)="openDeleteModal(measurement)" title="Delete" i18n-title>
+                          <app-icon name="delete" size="16"></app-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <nav aria-label="Measurement pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" [class.disabled]="!hasPreviousPage()">
+                <button class="page-link" (click)="previousPage()" [disabled]="!hasPreviousPage()" i18n>
+                  Previous
+                </button>
+              </li>
+              
+              @for (page of visiblePages(); track $index) {
+                @if (page === -1) {
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                } @else {
+                  <li class="page-item" [class.active]="currentPage() === page">
+                    <button class="page-link" (click)="goToPage(page)">
+                      {{ page }}
+                    </button>
+                  </li>
+                }
+              }
+              
+              <li class="page-item" [class.disabled]="!hasNextPage()">
+                <button class="page-link" (click)="nextPage()" [disabled]="!hasNextPage()" i18n>
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="text-center text-muted">
+            <small i18n>
+              Page {{ currentPage() }} of {{ totalPages() }} • {{ totalCount() }} measurements
+            </small>
+          </div>
+        }
+      }
+    }
+  </div>
+
+  <!-- Create Modal -->
+  @if (showCreateModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" i18n>Add Measurement</h5>
+            <button type="button" class="btn-close" (click)="closeCreateModal()" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="create-date" class="form-label" i18n>Date</label>
+              <input type="date" class="form-control" id="create-date" 
+                     [value]="measurementForm().date"
+                     (input)="updateFormDate($any($event.target).value)">
+            </div>
+            <div class="mb-3">
+              <label for="create-weight" class="form-label" i18n>Weight (kg)</label>
+              <input type="number" class="form-control" id="create-weight" step="0.1"
+                     [value]="measurementForm().weight || ''"
+                     (input)="updateFormWeight($any($event.target).value)">
+            </div>
+            <div class="mb-3">
+              <label for="create-height" class="form-label" i18n>Height (cm)</label>
+              <input type="number" class="form-control" id="create-height" step="0.1"
+                     [value]="measurementForm().height || ''"
+                     (input)="updateFormHeight($any($event.target).value)">
+            </div>
+            <div class="mb-3">
+              <label for="create-steps" class="form-label" i18n>Steps</label>
+              <input type="number" class="form-control" id="create-steps"
+                     [value]="measurementForm().steps || ''"
+                     (input)="updateFormSteps($any($event.target).value)">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeCreateModal()" i18n>Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="createMeasurement()" i18n>Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Edit Modal -->
+  @if (showEditModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" i18n>Edit Measurement</h5>
+            <button type="button" class="btn-close" (click)="closeEditModal()" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="edit-date" class="form-label" i18n>Date</label>
+              <input type="date" class="form-control" id="edit-date"
+                     [value]="measurementForm().date"
+                     (input)="updateFormDate($any($event.target).value)">
+            </div>
+            <div class="mb-3">
+              <label for="edit-weight" class="form-label" i18n>Weight (kg)</label>
+              <input type="number" class="form-control" id="edit-weight" step="0.1"
+                     [value]="measurementForm().weight || ''"
+                     (input)="updateFormWeight($any($event.target).value)">
+            </div>
+            <div class="mb-3">
+              <label for="edit-height" class="form-label" i18n>Height (cm)</label>
+              <input type="number" class="form-control" id="edit-height" step="0.1"
+                     [value]="measurementForm().height || ''"
+                     (input)="updateFormHeight($any($event.target).value)">
+            </div>
+            <div class="mb-3">
+              <label for="edit-steps" class="form-label" i18n>Steps</label>
+              <input type="number" class="form-control" id="edit-steps"
+                     [value]="measurementForm().steps || ''"
+                     (input)="updateFormSteps($any($event.target).value)">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()" i18n>Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="updateMeasurement()" i18n>Update</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Modal -->
+  @if (showDeleteModal() && selectedMeasurement()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" i18n>Delete Measurement</h5>
+            <button type="button" class="btn-close" (click)="closeDeleteModal()" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p i18n>Are you sure you want to delete this measurement?</p>
+            <p><strong>{{ formatDate(selectedMeasurement()!.date) }}</strong></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()" i18n>Cancel</button>
+            <button type="button" class="btn btn-danger" (click)="deleteMeasurement()" i18n>Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }

@@ -1,0 +1,114 @@
+<div class="workout-breakdown">
+  @if (availableIntervals.length > 0 && intervals.length > 0) {
+    <div class="breakdown-header mb-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0" i18n>Breakdown</h5>
+        <div class="btn-group btn-group-sm" role="group">
+          @for (interval of availableIntervals; track interval) {
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="intervalDistance === interval"
+              [class.btn-outline-secondary]="intervalDistance !== interval"
+              (click)="setIntervalDistance(interval)"
+            >
+              {{ interval }} km
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover breakdown-table">
+        <thead>
+          <tr>
+            <th i18n>#</th>
+            <th class="text-end" i18n>Distance</th>
+            <th class="text-end" i18n>Time</th>
+            <th class="text-end" i18n>Speed</th>
+            <th class="text-end" i18n>Pace</th>
+            <th class="text-end d-none d-lg-table-cell" i18n>Elev ↑</th>
+            <th class="text-end d-none d-lg-table-cell" i18n>Elev ↓</th>
+            @if (hasExtraMetric('heart-rate')) {
+              <th class="text-end d-none d-xl-table-cell" i18n>HR</th>
+            }
+            @if (hasExtraMetric('cadence')) {
+              <th class="text-end d-none d-xl-table-cell" i18n>Cadence</th>
+            }
+            @if (hasExtraMetric('temperature')) {
+              <th class="text-end d-none d-xl-table-cell" i18n>Temp</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (interval of intervals; track interval.intervalNumber; let idx = $index) {
+            <tr
+              class="interval-row"
+              [class.table-active]="selectedIntervalIndex === idx"
+              [class.fastest]="interval.isFastest"
+              [class.slowest]="interval.isSlowest"
+              (click)="selectInterval(idx)"
+              style="cursor: pointer;"
+            >
+              <td>
+                @if (interval.isFastest) {
+                  <span class="text-success me-1">↑</span>
+                }
+                @if (interval.isSlowest) {
+                  <span class="text-warning me-1">↓</span>
+                }
+                {{ interval.intervalNumber }}
+              </td>
+              <td class="text-end font-monospace">
+                {{ interval.endDistance.toFixed(2) }} km
+              </td>
+              <td class="text-end font-monospace">
+                {{ formatDuration(interval.duration) }}
+              </td>
+              <td class="text-end font-monospace">
+                {{ formatSpeed(interval.avgSpeed) }} km/h
+              </td>
+              <td class="text-end font-monospace">
+                {{ interval.pace }} /km
+              </td>
+              <td class="text-end font-monospace d-none d-lg-table-cell">
+                {{ interval.elevationGain.toFixed(1) }} m
+              </td>
+              <td class="text-end font-monospace d-none d-lg-table-cell">
+                {{ interval.elevationLoss.toFixed(1) }} m
+              </td>
+              @if (hasExtraMetric('heart-rate')) {
+                <td class="text-end font-monospace d-none d-xl-table-cell">
+                  @if (interval.avgHeartRate) {
+                    {{ interval.avgHeartRate.toFixed(0) }} bpm
+                  } @else {
+                    -
+                  }
+                </td>
+              }
+              @if (hasExtraMetric('cadence')) {
+                <td class="text-end font-monospace d-none d-xl-table-cell">
+                  @if (interval.avgCadence) {
+                    {{ interval.avgCadence.toFixed(0) }}
+                  } @else {
+                    -
+                  }
+                </td>
+              }
+              @if (hasExtraMetric('temperature')) {
+                <td class="text-end font-monospace d-none d-xl-table-cell">
+                  @if (interval.avgTemperature !== undefined) {
+                    {{ interval.avgTemperature.toFixed(1) }} °C
+                  } @else {
+                    -
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

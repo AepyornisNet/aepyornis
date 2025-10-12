@@ -1,0 +1,326 @@
+<div class="container my-5" style="max-width: 800px;">
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="alert alert-success" role="alert">
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  } @else if (profile()) {
+    <!-- User Settings Section -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
+          <app-icon name="person" size="24"></app-icon>
+          Your settings
+        </h3>
+
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+          <!-- API Access -->
+          <div class="mb-3 pb-3 border-bottom">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="api_active"
+                formControlName="api_active"
+              />
+              <label class="form-check-label" for="api_active">
+                Enable API access
+                <a href="https://github.com/jovandeginste/workout-tracker?tab=readme-ov-file#api-usage" target="_blank" class="link-primary ms-1">
+                  <app-icon name="info" size="16"></app-icon>
+                </a>
+              </label>
+            </div>
+            @if (profileForm.value.api_active && profile() && profile()!.profile.api_key) {
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <input
+                  [type]="apiKeyVisible() ? 'text' : 'password'"
+                  [value]="profile()!.profile.api_key!"
+                  readonly
+                  class="form-control form-control-sm"
+                />
+                <button
+                  type="button"
+                  (click)="toggleAPIKeyVisibility()"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Show/Hide"
+                >
+                  <app-icon [name]="apiKeyVisible() ? 'visibility-off' : 'visibility'" size="20"></app-icon>
+                </button>
+                <button
+                  type="button"
+                  (click)="copyToClipboard(profile()!.profile.api_key!)"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Copy to clipboard"
+                >
+                  <app-icon name="content-copy" size="20"></app-icon>
+                </button>
+                <button
+                  type="button"
+                  (click)="resetAPIKey()"
+                  class="btn btn-sm btn-outline-danger"
+                  title="Generate a new API key"
+                >
+                  <app-icon name="refresh" size="20"></app-icon>
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Totals Show -->
+          <div class="mb-3">
+            <label for="totals_show" class="form-label">
+              Totals to show on dashboard
+            </label>
+            <select
+              id="totals_show"
+              formControlName="totals_show"
+              class="form-select"
+            >
+              <option value="all">All</option>
+              <option value="running">Running</option>
+              <option value="cycling">Cycling</option>
+              <option value="walking">Walking</option>
+            </select>
+          </div>
+
+          <!-- Timezone -->
+          <div class="mb-3">
+            <label for="timezone" class="form-label">
+              Time zone
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="timezone"
+              formControlName="timezone"
+              placeholder="UTC"
+            />
+          </div>
+
+          <!-- Language -->
+          <div class="mb-3">
+            <label for="language" class="form-label">
+              Language
+              <a href="https://hosted.weblate.org/projects/workout-tracker/" target="_blank" class="link-primary ms-1" title="Please help translate via Weblate">
+                <app-icon name="translate" size="16"></app-icon>
+              </a>
+            </label>
+            <select
+              id="language"
+              formControlName="language"
+              class="form-select"
+            >
+              <option value="browser">Browser / System</option>
+              <option value="en">English</option>
+              <option value="de">German</option>
+              <option value="fr">French</option>
+            </select>
+          </div>
+
+          <!-- Theme -->
+          <div class="mb-3">
+            <label for="theme" class="form-label">
+              Theme
+            </label>
+            <select
+              id="theme"
+              formControlName="theme"
+              class="form-select"
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="browser">Browser / System</option>
+            </select>
+          </div>
+
+          <!-- Auto Import Directory -->
+          <div class="mb-3">
+            <label for="auto_import_directory" class="form-label">
+              Auto-import directory
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="auto_import_directory"
+              formControlName="auto_import_directory"
+              [placeholder]="'/imports/' + profile()!.username + '/'"
+            />
+          </div>
+
+          <!-- Prefer Full Date -->
+          <div class="mb-3 form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="prefer_full_date"
+              formControlName="prefer_full_date"
+            />
+            <label class="form-check-label" for="prefer_full_date">
+              Show full date by default
+            </label>
+          </div>
+
+          <!-- Disable Social Sharing Buttons -->
+          <div class="mb-3 form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="socials_disabled"
+              formControlName="socials_disabled"
+            />
+            <label class="form-check-label" for="socials_disabled">
+              Disable social sharing buttons
+            </label>
+          </div>
+
+          <!-- Save Button -->
+          <div class="pt-3">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="saving() || profileForm.invalid"
+            >
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Saving...
+              } @else {
+                Update profile
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Preferred Units Section -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
+          <app-icon name="straighten" size="24"></app-icon>
+          Preferred units
+        </h3>
+
+        <div [formGroup]="profileForm">
+          <div formGroupName="preferred_units" class="row g-3">
+            <!-- Speed -->
+            <div class="col-md-6">
+              <label for="speed" class="form-label">
+                Speed
+              </label>
+              <select
+                id="speed"
+                formControlName="speed"
+                class="form-select"
+              >
+                <option value="km/h">km/h</option>
+                <option value="mph">mph</option>
+              </select>
+            </div>
+
+            <!-- Distance -->
+            <div class="col-md-6">
+              <label for="distance" class="form-label">
+                Distance
+              </label>
+              <select
+                id="distance"
+                formControlName="distance"
+                class="form-select"
+              >
+                <option value="km">km</option>
+                <option value="mi">mi</option>
+              </select>
+            </div>
+
+            <!-- Elevation -->
+            <div class="col-md-6">
+              <label for="elevation" class="form-label">
+                Elevation
+              </label>
+              <select
+                id="elevation"
+                formControlName="elevation"
+                class="form-select"
+              >
+                <option value="m">m</option>
+                <option value="ft">ft</option>
+              </select>
+            </div>
+
+            <!-- Weight -->
+            <div class="col-md-6">
+              <label for="weight" class="form-label">
+                Weight
+              </label>
+              <select
+                id="weight"
+                formControlName="weight"
+                class="form-select"
+              >
+                <option value="kg">kg</option>
+                <option value="lbs">lbs</option>
+              </select>
+            </div>
+
+            <!-- Height -->
+            <div class="col-md-6">
+              <label for="height" class="form-label">
+                Height
+              </label>
+              <select
+                id="height"
+                formControlName="height"
+                class="form-select"
+              >
+                <option value="cm">cm</option>
+                <option value="in">in</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Section -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
+          <app-icon name="bolt" size="24"></app-icon>
+          Actions
+        </h3>
+
+        <div class="d-flex align-items-center justify-content-between p-3 bg-body-secondary rounded">
+          <div>
+            <div class="fw-medium">
+              Refresh all your workouts
+            </div>
+            <p class="small text-muted mb-0">
+              This will recalculate statistics for all your workouts
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="refreshWorkouts()"
+            class="btn btn-primary d-flex align-items-center gap-2"
+          >
+            <app-icon name="refresh" size="20"></app-icon>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -17,8 +17,8 @@ type Config struct {
 // If they are set through the environment to a non-default value, that will
 // take precedence
 type UserConfig struct {
-	RegistrationDisabled bool `mapstructure:"registration_disabled" form:"registration_disabled"`
-	SocialsDisabled      bool `mapstructure:"socials_disabled" form:"socials_disabled"`
+	RegistrationDisabled bool `mapstructure:"registration_disabled" json:"registration_disabled"`
+	SocialsDisabled      bool `mapstructure:"socials_disabled" json:"socials_disabled"`
 }
 
 // EnvConfig are options that are read from the config file or environment only

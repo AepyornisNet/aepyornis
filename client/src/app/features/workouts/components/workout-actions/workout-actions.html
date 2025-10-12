@@ -1,0 +1,141 @@
+<div class="workout-actions" [class.compact]="compact()">
+  <!-- Messages -->
+  @if (successMessage) {
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      {{ successMessage }}
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="btn-group" role="group">
+    <!-- Lock/Unlock -->
+    <button
+      class="btn btn-sm"
+      [class.btn-warning]="workout().locked"
+      [class.btn-outline-secondary]="!workout().locked"
+      [disabled]="isProcessing"
+      (click)="toggleLock()"
+      [title]="workout().locked ? 'Unlock workout' : 'Lock workout'">
+      <app-icon [name]="workout().locked ? 'locked' : 'unlocked'" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1">{{ workout().locked ? 'Unlock' : 'Lock' }}</span>
+      }
+    </button>
+
+    <!-- Download -->
+    @if (workout().has_file) {
+      <button
+        class="btn btn-sm btn-outline-secondary"
+        [disabled]="isProcessing"
+        (click)="download()"
+        title="Download original file">
+        <app-icon name="download" size="16"></app-icon>
+        @if (!compact()) {
+          <span class="ms-1">Download</span>
+        }
+      </button>
+    }
+
+    <!-- Edit -->
+    <button
+      class="btn btn-sm btn-outline-secondary"
+      [disabled]="isProcessing"
+      (click)="edit()"
+      title="Edit workout">
+      <app-icon name="edit" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1">Edit</span>
+      }
+    </button>
+
+    <!-- Refresh -->
+    @if (workout().has_file) {
+      <button
+        class="btn btn-sm btn-outline-secondary"
+        [disabled]="isProcessing"
+        (click)="refresh()"
+        title="Refresh workout data">
+        <app-icon name="refresh" size="16"></app-icon>
+        @if (!compact()) {
+          <span class="ms-1">Refresh</span>
+        }
+      </button>
+    }
+
+    <!-- Share -->
+    <div class="btn-group" role="group">
+      <button
+        class="btn btn-sm btn-outline-secondary dropdown-toggle"
+        [disabled]="isProcessing"
+        (click)="toggleShareMenu()"
+        title="Share workout">
+        <app-icon name="share" size="16"></app-icon>
+        @if (!compact()) {
+          <span class="ms-1">Share</span>
+        }
+      </button>
+      @if (showShareMenu) {
+        <div class="dropdown-menu show position-absolute" style="z-index: 1000;">
+          @if (workout().public_uuid) {
+            <button class="dropdown-item" (click)="copyShareLink(); showShareMenu = false;">
+              <app-icon name="copy" size="16"></app-icon>
+              <span class="ms-1">Copy Share Link</span>
+            </button>
+            <button class="dropdown-item text-danger" (click)="deleteShareLink(); showShareMenu = false;">
+              <app-icon name="delete" size="16"></app-icon>
+              <span class="ms-1">Delete Share Link</span>
+            </button>
+          } @else {
+            <button class="dropdown-item" (click)="generateShareLink(); showShareMenu = false;">
+              <app-icon name="generate-share" size="16"></app-icon>
+              <span class="ms-1">Generate Share Link</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Delete -->
+    <button
+      class="btn btn-sm btn-outline-danger"
+      [disabled]="isProcessing"
+      (click)="confirmDelete()"
+      title="Delete workout">
+      <app-icon name="delete" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1">Delete</span>
+      }
+    </button>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  @if (showDeleteConfirm) {
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Confirm Delete</h5>
+            <button type="button" class="btn-close" (click)="cancelDelete()">
+              <span class="visually-hidden" i18n>Close</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete this workout?</p>
+            <p><strong>{{ workout().name }}</strong></p>
+            <p class="text-muted">This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
+            <button type="button" class="btn btn-danger" (click)="delete()">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

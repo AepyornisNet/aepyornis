@@ -17,7 +17,6 @@ import (
 
 func (a *App) addRoutesWorkouts(e *echo.Group) {
 	workoutsGroup := e.Group("/workouts")
-	workoutsGroup.GET("", a.workoutsHandler).Name = "workouts"
 	workoutsGroup.POST("", a.addWorkout).Name = "workouts-create"
 	workoutsGroup.GET("/:id", a.workoutsShowHandler).Name = "workout-show"
 	workoutsGroup.POST("/:id", a.workoutsUpdateHandler).Name = "workout-update"
@@ -33,25 +32,6 @@ func (a *App) addRoutesWorkouts(e *echo.Group) {
 	workoutsGroup.POST("/:id/toggle-lock", a.workoutsToggleLockHandler).Name = "workout-toggle-lock"
 	workoutsGroup.GET("/add", a.workoutsAddHandler).Name = "workout-add"
 	workoutsGroup.GET("/form", a.workoutsFormHandler).Name = "workout-form"
-}
-
-func (a *App) workoutsHandler(c echo.Context) error {
-	u := a.getCurrentUser(c)
-	if u.IsAnonymous() {
-		return a.redirectWithError(c, a.echo.Reverse("user-signout"), ErrUserNotFound)
-	}
-
-	filters, err := database.GetWorkoutsFilters(c)
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("dashboard"), err)
-	}
-
-	w, err := u.GetWorkouts(filters.ToQuery(a.db))
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("dashboard"), err)
-	}
-
-	return Render(c, http.StatusOK, workouts.List(w, filters))
 }
 
 func (a *App) workoutsShowHandler(c echo.Context) error {

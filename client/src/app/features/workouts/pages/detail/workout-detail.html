@@ -1,0 +1,309 @@
+<div class="container my-5">
+  @if (dataService.loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden" i18n>Loading...</span>
+      </div>
+    </div>
+  }
+
+  @if (dataService.error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ dataService.error() }}
+    </div>
+    <button class="btn btn-primary" (click)="goBack()" i18n>Back to Workouts</button>
+  }
+
+  @if (!dataService.loading() && !dataService.error() && dataService.workout()) {
+    <div class="workout-header">
+      <div class="d-flex align-items-center gap-3">
+        <h1 class="display-4 mb-0">
+          <app-icon [name]="dataService.workout()!.type" size="32"></app-icon>
+          {{ dataService.workout()!.name }}
+        </h1>
+        @if (dataService.workout()!.locked) {
+          <span class="badge bg-warning">
+            <app-icon name="locked" size="16"></app-icon>
+            Locked
+          </span>
+        }
+      </div>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <app-workout-actions
+          [workout]="dataService.workout()!"
+          (workoutUpdated)="onWorkoutUpdated($event)"
+          (workoutDeleted)="onWorkoutDeleted()">
+        </app-workout-actions>
+        @if (dataService.hasMapData()) {
+          <button
+            class="btn btn-outline-primary"
+            [routerLink]="['/workouts', dataService.workout()!.id, 'create-route-segment']">
+            <app-icon name="route-segment-add" size="20"></app-icon>
+            <span i18n>Create Route Segment</span>
+          </button>
+        }
+        @if (!socialsDisabled()) {
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" title="Share on Strava" i18n-title>
+              <app-icon name="share" size="20"></app-icon>
+              <span class="visually-hidden">Strava</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Share on Facebook" i18n-title>
+              <app-icon name="share" size="20"></app-icon>
+              <span class="visually-hidden">Facebook</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" title="Share on Twitter" i18n-title>
+              <app-icon name="share" size="20"></app-icon>
+              <span class="visually-hidden">Twitter</span>
+            </button>
+          </div>
+        }
+        <button class="btn btn-outline-secondary" (click)="goBack()" i18n>
+          Back
+        </button>
+      </div>
+    </div>
+
+    <!-- Workout Stats -->
+    <div class="workout-stats">
+      <div class="stat-card">
+        <div class="stat-label" i18n>Date</div>
+        <div class="stat-value">{{ dataService.formatDate(dataService.workout()!.date) }}</div>
+      </div>
+
+      @if (dataService.workout()!.total_distance) {
+        <div class="stat-card">
+          <div class="stat-label" i18n>Distance</div>
+          <div class="stat-value">{{ dataService.formatDistance(dataService.workout()!.total_distance!) }} km</div>
+        </div>
+      }
+
+      @if (dataService.workout()!.total_duration) {
+        <div class="stat-card">
+          <div class="stat-label" i18n>Duration</div>
+          <div class="stat-value">{{ dataService.formatDuration(dataService.workout()!.total_duration!) }}</div>
+        </div>
+      }
+
+      @if (dataService.workout()!.average_speed) {
+        <div class="stat-card">
+          <div class="stat-label" i18n>Average Speed</div>
+          <div class="stat-value">{{ dataService.formatSpeed(dataService.workout()!.average_speed!) }} km/h</div>
+        </div>
+      }
+
+      @if (dataService.workout()!.max_speed) {
+        <div class="stat-card">
+          <div class="stat-label" i18n>Max Speed</div>
+          <div class="stat-value">{{ dataService.formatSpeed(dataService.workout()!.max_speed!) }} km/h</div>
+        </div>
+      }
+
+      @if (dataService.workout()!.total_up) {
+        <div class="stat-card">
+          <div class="stat-label" i18n>Elevation Gain</div>
+          <div class="stat-value">{{ dataService.formatElevation(dataService.workout()!.total_up!) }} m</div>
+        </div>
+      }
+
+      @if (dataService.workout()!.total_down) {
+        <div class="stat-card">
+          <div class="stat-label" i18n>Elevation Loss</div>
+          <div class="stat-value">{{ dataService.formatElevation(dataService.workout()!.total_down!) }} m</div>
+        </div>
+      }
+
+      @if (dataService.workout()!.min_elevation || dataService.workout()!.max_elevation) {
+        <div class="stat-card">
+          <div class="stat-label" i18n>Elevation Range</div>
+          <div class="stat-value">
+            {{ dataService.formatElevation(dataService.workout()!.min_elevation || 0) }} -
+            {{ dataService.formatElevation(dataService.workout()!.max_elevation || 0) }} m
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Map -->
+    @if (dataService.hasMapData()) {
+      <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+          <div class="map-container">
+            <app-workout-map
+              [mapData]="dataService.workout()!.map_data!.details"
+              [center]="dataService.workout()!.map_data!.center"
+            ></app-workout-map>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Chart -->
+    @if (dataService.hasMapData()) {
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0" i18n>Statistics</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <app-workout-chart
+              [mapData]="dataService.workout()!.map_data!.details"
+              [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+            ></app-workout-chart>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Breakdown -->
+    @if (dataService.hasMapData() && dataService.workout()!.total_distance && dataService.workout()!.total_distance! > 1000) {
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <app-workout-breakdown
+            [mapData]="dataService.workout()!.map_data!.details"
+            [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+          ></app-workout-breakdown>
+        </div>
+      </div>
+    }
+
+    <!-- Route Segment Matches -->
+    @if (dataService.hasRouteSegmentMatches()) {
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0" i18n>Matching Route Segments</h5>
+        </div>
+        <div class="card-body">
+          <div class="list-group">
+            @for (match of dataService.workout()!.route_segment_matches; track match.route_segment_id) {
+              <div class="list-group-item">
+                <h6 class="mb-1">{{ match.route_segment.name }}</h6>
+                <p class="mb-1 text-muted">
+                  {{ dataService.formatDistance(match.route_segment.total_distance) }} km
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Climbs -->
+    @if (dataService.hasClimbs()) {
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0" i18n>Climbs and Descents</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th i18n>Type</th>
+                  <th i18n>Start</th>
+                  <th i18n>Distance</th>
+                  <th i18n>Elevation</th>
+                  <th i18n>Avg Slope</th>
+                  <th i18n>Category</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (climb of dataService.workout()!.climbs; track climb.index) {
+                  <tr>
+                    <td>
+                      @if (climb.type === 'climb') {
+                        <span class="text-success">↑ Climb {{ climb.index }}</span>
+                      } @else {
+                        <span class="text-warning">↓ Descent {{ climb.index }}</span>
+                      }
+                    </td>
+                    <td>{{ dataService.formatDistance(climb.start_distance) }} km</td>
+                    <td>{{ dataService.formatDistance(climb.length) }} km</td>
+                    <td>{{ dataService.formatElevation(climb.elevation) }} m</td>
+                    <td>{{ climb.avg_slope.toFixed(1) }}%</td>
+                    <td>{{ climb.category }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Notes -->
+    @if (dataService.workout()!.notes) {
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0" i18n>Notes</h5>
+        </div>
+        <div class="card-body">
+          <p class="mb-0" style="white-space: pre-wrap;">{{ dataService.workout()!.notes }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Equipment -->
+    @if (dataService.workout()!.equipment && dataService.workout()!.equipment!.length > 0) {
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0" i18n>Equipment</h5>
+        </div>
+        <div class="card-body">
+          <div class="list-group">
+            @for (equip of dataService.workout()!.equipment; track equip.id) {
+              <div class="list-group-item">
+                <h6 class="mb-1">{{ equip.name }}</h6>
+                @if (equip.description) {
+                  <p class="mb-0 text-muted">{{ equip.description }}</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Additional Details -->
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0" i18n>Details</h5>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-3" i18n>Type</dt>
+          <dd class="col-sm-9">
+            <app-icon [name]="dataService.workout()!.type" size="20"></app-icon>
+            {{ dataService.workout()!.type }}
+            @if (dataService.workout()!.custom_type) {
+              <em>({{ dataService.workout()!.custom_type }})</em>
+            }
+          </dd>
+
+          @if (dataService.workout()!.address_string) {
+            <dt class="col-sm-3" i18n>Location</dt>
+            <dd class="col-sm-9">{{ dataService.workout()!.address_string }}</dd>
+          }
+
+          @if (dataService.workout()!.map_data?.creator) {
+            <dt class="col-sm-3" i18n>Source</dt>
+            <dd class="col-sm-9">{{ dataService.workout()!.map_data!.creator }}</dd>
+          }
+
+          <dt class="col-sm-3" i18n>Created</dt>
+          <dd class="col-sm-9">{{ dataService.formatDate(dataService.workout()!.created_at) }}</dd>
+
+          <dt class="col-sm-3" i18n>Updated</dt>
+          <dd class="col-sm-9">{{ dataService.formatDate(dataService.workout()!.updated_at) }}</dd>
+
+          @if (dataService.workout()!.locked) {
+            <dt class="col-sm-3" i18n>Status</dt>
+            <dd class="col-sm-9">
+              <span class="badge bg-warning" i18n>Locked</span>
+            </dd>
+          }
+        </dl>
+      </div>
+    </div>
+  }
+</div>

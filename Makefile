@@ -134,6 +134,10 @@ build-frontend: install-deps
 build-templates:
 	$(TEMPL_COMMAND) generate
 
+generate-workout-types:
+	go generate ./...
+	node scripts/generate-workout-types.js
+
 test-packages:
 	$(GO_TEST) ./pkg/...
 

@@ -1,0 +1,20 @@
+<div class="card shadow-sm">
+  <div class="card-header">
+    <h5 class="mb-0" i18n>Calendar</h5>
+  </div>
+  <div class="card-body">
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden" i18n>Loading...</span>
+        </div>
+      </div>
+    }
+    @if (error()) {
+      <div class="alert alert-danger" role="alert">
+        {{ error() }}
+      </div>
+    }
+    <div #calendarContainer></div>
+  </div>
+</div>

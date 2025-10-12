@@ -1,0 +1,57 @@
+.workout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.workout-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  padding: 1rem;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.375rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.map-container {
+  margin-bottom: 2rem;
+  height: 500px;
+}
+
+.chart-container {
+  margin-bottom: 2rem;
+  height: 400px;
+}
+
+.notes-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.375rem;
+}
+
+.route-segments {
+  margin-top: 2rem;
+}
+
+.climbs-section {
+  margin-top: 2rem;
+}

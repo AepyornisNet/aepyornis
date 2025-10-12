@@ -469,9 +469,13 @@ func autoDetectWorkoutType(data *MapData, gpxContent *gpx.GPX, dataName string) 
 }
 
 func GetRecentWorkouts(db *gorm.DB, count int) ([]*Workout, error) {
+	return GetRecentWorkoutsWithOffset(db, count, 0)
+}
+
+func GetRecentWorkoutsWithOffset(db *gorm.DB, count int, offset int) ([]*Workout, error) {
 	var w []*Workout
 
-	if err := db.Preload("Data").Preload("User").Order("date DESC").Limit(count).Find(&w).Error; err != nil {
+	if err := db.Preload("Data").Preload("User").Order("date DESC").Limit(count).Offset(offset).Find(&w).Error; err != nil {
 		return nil, err
 	}
 

@@ -1,0 +1,95 @@
+<div class="container my-5">
+  @if (loading()) {
+    <div class="text-center">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden" i18n>Loading...</span>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && !error() && workout()) {
+    <div class="workout-header mb-4">
+      <h1 class="display-4 mb-0">
+        <app-icon [name]="workout()!.type" size="32"></app-icon>
+        {{ workout()!.name }}
+      </h1>
+      @if (workout()!.locked) {
+        <span class="badge bg-warning">
+          <app-icon name="locked" size="16"></app-icon>
+          Locked
+        </span>
+      }
+    </div>
+
+    <div class="workout-info mb-4">
+      <div class="row">
+        <div class="col-md-3">
+          <strong i18n>Date</strong>
+          <p>{{ workout()!.date | date:'medium' }}</p>
+        </div>
+        @if (workout()!.total_distance) {
+          <div class="col-md-3">
+            <strong i18n>Distance</strong>
+            <p>{{ (workout()!.total_distance! / 1000).toFixed(2) }} km</p>
+          </div>
+        }
+        @if (workout()!.total_duration) {
+          <div class="col-md-3">
+            <strong i18n>Duration</strong>
+            <p>{{ formatDuration(workout()!.total_duration!) }}</p>
+          </div>
+        }
+        @if (workout()!.average_speed) {
+          <div class="col-md-3">
+            <strong i18n>Avg Speed</strong>
+            <p>{{ (workout()!.average_speed! * 3.6).toFixed(2) }} km/h</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (hasMapData()) {
+      <div class="mb-4">
+        <app-workout-map 
+          [mapData]="workout()!.map_data!.details"
+          [center]="workout()!.map_data!.center">
+        </app-workout-map>
+      </div>
+
+      <div class="mb-4">
+        <app-workout-chart 
+          [mapData]="workout()!.map_data!.details"
+          [extraMetrics]="workout()!.map_data!.extra_metrics || []">
+        </app-workout-chart>
+      </div>
+    }
+
+    <div class="mb-4">
+      <app-workout-breakdown 
+        [mapData]="workout()!.map_data?.details"
+        [extraMetrics]="workout()!.map_data?.extra_metrics || []">
+      </app-workout-breakdown>
+    </div>
+
+    @if (workout()!.notes) {
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0" i18n>Notes</h5>
+        </div>
+        <div class="card-body">
+          <p class="mb-0">{{ workout()!.notes }}</p>
+        </div>
+      </div>
+    }
+
+    <div class="alert alert-info mt-4" i18n>
+      This is a publicly shared workout. To track your own workouts, <a routerLink="/login">sign in</a> or <a routerLink="/login">register</a>.
+    </div>
+  }
+</div>

@@ -316,8 +316,29 @@ password in a production environment.
 
 ## API usage
 
+### API v2 (Recommended)
+
+The new API v2 provides improved pagination, consistent snake_case JSON fields, and better error handling. 
+
+**Base URL:** `/api/v2`
+
+Key features:
+- Pagination support for all list endpoints
+- Consistent snake_case JSON field naming
+- Well-defined response structures
+- Type-safe response models
+
+See [API v2 documentation](pkg/api/README.md) for detailed endpoint documentation and examples.
+
+### API v1 (Legacy)
+
+The original API v1 is still available and fully functional at `/api/v1`.
+
 The API is documented using
 [swagger](https://editor.swagger.io/?url=https://raw.githubusercontent.com/jovandeginste/workout-tracker/master/docs/swagger.yaml).
+
+### Authentication
+
 You must enable API access for your user, and copy the API key. You can use the
 API key as a query parameter (`?api-key=${API_KEY}`) or as a header
 (`Authorization: Bearer ${API_KEY}`).

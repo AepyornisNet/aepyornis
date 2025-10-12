@@ -1,0 +1,105 @@
+<div class="route-segment-actions" [class.compact]="compact()">
+  <!-- Messages -->
+  @if (successMessage) {
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      {{ successMessage }}
+    </div>
+  }
+  
+  @if (errorMessage) {
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="btn-group" role="group">
+    <!-- Download -->
+    <button 
+      class="btn btn-sm btn-outline-secondary"
+      [disabled]="isProcessing"
+      (click)="download()"
+      title="Download route segment file"
+      i18n-title>
+      <app-icon name="download" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1" i18n>Download</span>
+      }
+    </button>
+
+    <!-- Edit -->
+    <button 
+      class="btn btn-sm btn-outline-secondary"
+      [disabled]="isProcessing"
+      (click)="edit()"
+      title="Edit route segment"
+      i18n-title>
+      <app-icon name="edit" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1" i18n>Edit</span>
+      }
+    </button>
+
+    <!-- Refresh -->
+    <button 
+      class="btn btn-sm btn-outline-secondary"
+      [disabled]="isProcessing"
+      (click)="refresh()"
+      title="Refresh route segment data"
+      i18n-title>
+      <app-icon name="refresh" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1" i18n>Refresh</span>
+      }
+    </button>
+
+    <!-- Find Matches -->
+    <button 
+      class="btn btn-sm btn-outline-secondary"
+      [disabled]="isProcessing"
+      (click)="findMatches()"
+      title="Find matching workouts"
+      i18n-title>
+      <app-icon name="route-segment" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1" i18n>Find Matches</span>
+      }
+    </button>
+
+    <!-- Delete -->
+    <button 
+      class="btn btn-sm btn-outline-danger"
+      [disabled]="isProcessing"
+      (click)="confirmDelete()"
+      title="Delete route segment"
+      i18n-title>
+      <app-icon name="delete" size="16"></app-icon>
+      @if (!compact()) {
+        <span class="ms-1" i18n>Delete</span>
+      }
+    </button>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  @if (showDeleteConfirm) {
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" i18n>Confirm Delete</h5>
+            <button type="button" class="btn-close" (click)="cancelDelete()" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p i18n>Are you sure you want to delete this route segment?</p>
+            <p><strong>{{ routeSegment().name }}</strong></p>
+            <p class="text-muted" i18n>This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="cancelDelete()" i18n>Cancel</button>
+            <button type="button" class="btn btn-danger" (click)="delete()" i18n>Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

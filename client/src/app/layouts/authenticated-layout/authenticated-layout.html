@@ -1,0 +1,19 @@
+<div class="d-flex flex-row min-vh-100">
+  <app-sidebar [isOpen]="sidebarOpen()" (sidebarToggle)="toggleSidebar()"></app-sidebar>
+
+  <div class="d-flex flex-column flex-grow-1 position-relative">
+    <app-header
+      class="sticky-top"
+      [userName]="userName()"
+      [onLogout]="handleLogout"
+      [showSidebar]="sidebarOpen()"
+      (toggleSidebar)="toggleSidebar()"
+    ></app-header>
+
+    <main class="flex-grow-1 main-content">
+      <router-outlet></router-outlet>
+    </main>
+
+    <app-footer></app-footer>
+  </div>
+</div>

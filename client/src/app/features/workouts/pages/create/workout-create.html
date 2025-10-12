@@ -1,0 +1,344 @@
+<div class="container my-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-4 mb-0" i18n>{{ editMode() ? 'Edit Workout' : 'Add a Workout' }}</h1>
+  </div>
+
+  <!-- Success/Error Messages -->
+  @if (success()) {
+    <div class="alert alert-success" role="alert">
+      {{ success() }}
+    </div>
+  }
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  <div class="row g-4">
+    <!-- File Upload Form (only in create mode) -->
+    @if (!editMode()) {
+      <div class="col-12 col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <h5 class="mb-0" i18n>Use a File</h5>
+          </div>
+          <div class="card-body">
+          <form [formGroup]="fileUploadForm" (ngSubmit)="submitFileUpload()" #fileForm="ngForm">
+            <div class="mb-3">
+              <label for="file" class="form-label" i18n>File</label>
+              <input
+                type="file"
+                class="form-control"
+                id="file"
+                accept=".fit,.ftb,.gpx,.tcx,.zip"
+                multiple
+                (change)="onFilesSelected($event)"
+                [disabled]="loading()"
+              />
+              @if (selectedFiles().length > 0) {
+                <div class="mt-2">
+                  @for (file of selectedFiles(); track file.name; let i = $index) {
+                    <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded mb-2">
+                      <span class="text-truncate">{{ file.name }}</span>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-link text-danger p-0"
+                        (click)="removeFile(i)"
+                        [disabled]="loading()"
+                      >
+                        <app-icon name="close" size="16" />
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="mb-3">
+              <label for="type" class="form-label" i18n>Type</label>
+              <select
+                class="form-select"
+                id="type"
+                formControlName="type"
+                [disabled]="loading()"
+              >
+                <option value="auto" i18n>Autodetect</option>
+                @for (wt of workoutTypes; track wt.value) {
+                  <option [value]="wt.value">{{ wt.value }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="file-notes" class="form-label" i18n>Notes</label>
+              <textarea
+                class="form-control"
+                id="file-notes"
+                formControlName="notes"
+                rows="4"
+                [disabled]="loading()"
+              ></textarea>
+            </div>
+
+            <div class="mb-3">
+              <p class="fw-bold mb-2" i18n>Resources</p>
+              <p class="text-muted small" i18n>You can edit your GPX files before uploading them here:</p>
+              <ul class="small text-muted">
+                <li i18n>Split files with multiple tracks</li>
+                <li i18n>Convert from not yet supported file format</li>
+                <li i18n>Remove the beginning or the ending of a workout</li>
+              </ul>
+              <p class="text-muted small" i18n>Try one of these sites:</p>
+              <ul class="small">
+                <li><a target="_blank" href="https://gpx.studio/">gpx.studio — the online GPX file editor</a></li>
+                <li><a target="_blank" href="https://kml2gpx.com/">Kml2gpx.com: convert kml to gpx online</a></li>
+                <li><a target="_blank" href="https://www.fitfileviewer.com/">FIT File Viewer</a></li>
+              </ul>
+            </div>
+
+            <div class="d-grid">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="loading() || selectedFiles().length === 0"
+              >
+                @if (loading()) {
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                }
+                <span i18n>Add Workouts</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Manual Workout Form -->
+    <div [class.col-12]="editMode()" [class.col-lg-6]="!editMode()">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0" i18n>{{ editMode() ? 'Workout Details' : 'Manual' }}</h5>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="manualWorkoutForm" (ngSubmit)="submitManualWorkout()" #manualFormRef="ngForm">
+            <div class="mb-3">
+              <label for="workout-type" class="form-label" i18n>Workout Type</label>
+              <select
+                class="form-select"
+                id="workout-type"
+                [value]="manualWorkoutType()"
+                (change)="updateManualWorkoutType($any($event.target).value)"
+                name="workout-type"
+                [disabled]="loading()"
+                required
+              >
+                <option value="" i18n>Select...</option>
+                @for (wt of workoutTypes; track wt.value) {
+                  <option [value]="wt.value">{{ wt.value }}</option>
+                }
+              </select>
+            </div>
+
+            @if (manualFormVisible()) {
+              @if (showCustomType()) {
+                <div class="mb-3">
+                  <label for="custom-type" class="form-label" i18n>Type</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="custom-type"
+                    formControlName="custom_type"
+                    [disabled]="loading()"
+                    required
+                  />
+                </div>
+              }
+
+              <div class="mb-3">
+                <label for="name" class="form-label" i18n>Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  formControlName="name"
+                  [disabled]="loading()"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="date" class="form-label" i18n>Date</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  id="date"
+                  formControlName="date"
+                  [disabled]="loading()"
+                  required
+                />
+              </div>
+
+              @if (showLocation()) {
+                <div class="mb-3">
+                  <label for="location" class="form-label" i18n>Location</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="location"
+                    formControlName="location"
+                    [disabled]="loading()"
+                  />
+                </div>
+              }
+
+              @if (showDuration()) {
+                <div class="mb-3">
+                  <label for="duration-hours" class="form-label" i18n>Duration</label>
+                  <div class="d-flex align-items-center gap-2">
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="duration-hours"
+                      style="width: 5rem;"
+                      formControlName="duration_hours"
+                      min="0"
+                      max="999"
+                      [disabled]="loading()"
+                      required
+                      placeholder="HH"
+                    />
+                    <span>:</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      style="width: 5rem;"
+                      formControlName="duration_minutes"
+                      min="0"
+                      max="59"
+                      [disabled]="loading()"
+                      required
+                      placeholder="MM"
+                    />
+                    <span>:</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      style="width: 5rem;"
+                      formControlName="duration_seconds"
+                      min="0"
+                      max="59"
+                      [disabled]="loading()"
+                      required
+                      placeholder="SS"
+                    />
+                    <span class="text-muted small">(hhh:mm:ss)</span>
+                  </div>
+                </div>
+              }
+
+              @if (showDistance()) {
+                <div class="mb-3">
+                  <label for="distance" class="form-label" i18n>Distance</label>
+                  <div class="input-group">
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="distance"
+                      formControlName="distance"
+                      step="0.01"
+                      [disabled]="loading()"
+                      required
+                    />
+                    <span class="input-group-text">km</span>
+                  </div>
+                </div>
+              }
+
+              @if (showRepetitions()) {
+                <div class="mb-3">
+                  <label for="repetitions" class="form-label" i18n>Repetitions</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="repetitions"
+                    formControlName="repetitions"
+                    min="0"
+                    [disabled]="loading()"
+                    required
+                  />
+                </div>
+              }
+
+              @if (showWeight()) {
+                <div class="mb-3">
+                  <label for="weight" class="form-label" i18n>Weight</label>
+                  <div class="input-group">
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="weight"
+                      formControlName="weight"
+                      step="0.1"
+                      [disabled]="loading()"
+                      required
+                    />
+                    <span class="input-group-text">kg</span>
+                  </div>
+                </div>
+              }
+
+              <div class="mb-3">
+                <label for="manual-notes" class="form-label" i18n>Notes</label>
+                <textarea
+                  class="form-control"
+                  id="manual-notes"
+                  formControlName="notes"
+                  rows="10"
+                  [disabled]="loading()"
+                ></textarea>
+              </div>
+
+              @if (equipment().length > 0) {
+                <div class="mb-3">
+                  <p class="fw-bold mb-2" i18n>Equipment</p>
+                  <div class="d-flex flex-wrap gap-2">
+                    @for (eq of equipment(); track eq.id) {
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          [id]="'equipment-' + eq.id"
+                          [checked]="isEquipmentSelected(eq.id)"
+                          (change)="toggleEquipment(eq.id)"
+                          [disabled]="loading()"
+                        />
+                        <label class="form-check-label" [for]="'equipment-' + eq.id">
+                          {{ eq.name }}
+                        </label>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="d-grid">
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="loading() || !manualWorkoutType() || manualWorkoutForm.invalid"
+                >
+                  @if (loading()) {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  }
+                  <span i18n>{{ editMode() ? 'Update Workout' : 'Add Workout' }}</span>
+                </button>
+              </div>
+            }
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

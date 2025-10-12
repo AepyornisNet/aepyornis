@@ -1,0 +1,31 @@
+.workout-breakdown {
+  .breakdown-table {
+    font-size: 0.875rem;
+
+    .interval-row {
+      &.fastest {
+        background-color: rgba(25, 135, 84, 0.1);
+      }
+
+      &.slowest {
+        background-color: rgba(255, 193, 7, 0.1);
+      }
+
+      &:hover {
+        background-color: var(--bs-table-hover-bg);
+      }
+
+      &.table-active {
+        background-color: var(--bs-table-active-bg);
+        font-weight: 600;
+      }
+    }
+  }
+
+  .btn-group {
+    .btn {
+      font-size: 0.875rem;
+      padding: 0.25rem 0.75rem;
+    }
+  }
+}

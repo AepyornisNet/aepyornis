@@ -1,0 +1,156 @@
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="display-4 mb-0" i18n>Workouts</h1>
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-primary" [routerLink]="['/workouts/add']">
+          <app-icon name="fa6-solid-plus"></app-icon>
+          <span i18n>Add Workout</span>
+        </button>
+        @if (totalCount() > 0) {
+          <div class="text-muted">
+            <span i18n>{{ totalCount() }} total workouts</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden" i18n>Loading...</span>
+        </div>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert alert-danger" role="alert">
+        {{ error() }}
+      </div>
+    }
+
+    @if (!loading() && !error()) {
+      @if (!hasWorkouts()) {
+        <div class="card shadow-sm">
+          <div class="card-body text-center py-5">
+            <h5 class="card-title" i18n>No Workouts Yet</h5>
+            <p class="card-text text-muted" i18n>
+              Your workout history will appear here. Start tracking your workouts!
+            </p>
+          </div>
+        </div>
+      } @else {
+        <!-- Workouts Table -->
+        <div class="card shadow-sm">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th i18n>Type</th>
+                  <th i18n>Name</th>
+                  <th i18n>Date</th>
+                  <th class="text-end" i18n>Distance</th>
+                  <th class="text-end" i18n>Duration</th>
+                  <th class="text-end d-none d-md-table-cell" i18n>Avg Speed</th>
+                  <th class="text-end d-none d-lg-table-cell" i18n>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (workout of workouts(); track workout.id) {
+                  <tr>
+                    <td style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
+                      <app-icon [name]="workout.type" size="24"></app-icon>
+                    </td>
+                    <td style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
+                      <strong>{{ workout.name }}</strong>
+                      @if (workout.notes) {
+                        <br>
+                        <small class="text-muted">{{ workout.notes.substring(0, 50) }}@if (workout.notes.length > 50) {<span>...</span>}</small>
+                      }
+                      @if (workout.locked) {
+                        <br>
+                        <span class="badge bg-warning text-dark">
+                          <app-icon name="locked" size="12"></app-icon>
+                          Locked
+                        </span>
+                      }
+                    </td>
+                    <td style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
+                      {{ formatDate(workout.date) }}
+                    </td>
+                    <td class="text-end" style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
+                      @if (workout.total_distance) {
+                        <strong>{{ formatDistance(workout.total_distance) }}</strong> km
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td class="text-end" style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
+                      @if (workout.total_duration) {
+                        {{ formatDuration(workout.total_duration) }}
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td class="text-end d-none d-md-table-cell" style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
+                      @if (workout.average_speed) {
+                        {{ (workout.average_speed * 3.6).toFixed(2) }} km/h
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td class="text-end d-none d-lg-table-cell" (click)="$event.stopPropagation()">
+                      <app-workout-actions 
+                        [workout]="workout"
+                        [compact]="true"
+                        (workoutUpdated)="onWorkoutUpdated($event)"
+                        (workoutDeleted)="onWorkoutDeleted(workout.id)">
+                      </app-workout-actions>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <nav aria-label="Workout pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" [class.disabled]="!hasPreviousPage()">
+                <button class="page-link" (click)="previousPage()" [disabled]="!hasPreviousPage()" i18n>
+                  Previous
+                </button>
+              </li>
+              
+              @for (page of visiblePages(); track $index) {
+                @if (page === -1) {
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                } @else {
+                  <li class="page-item" [class.active]="currentPage() === page">
+                    <button class="page-link" (click)="goToPage(page)">
+                      {{ page }}
+                    </button>
+                  </li>
+                }
+              }
+              
+              <li class="page-item" [class.disabled]="!hasNextPage()">
+                <button class="page-link" (click)="nextPage()" [disabled]="!hasNextPage()" i18n>
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="text-center text-muted">
+            <small i18n>
+              Page {{ currentPage() }} of {{ totalPages() }} • {{ totalCount() }} workouts
+            </small>
+          </div>
+        }
+      }
+    }
+  </div>

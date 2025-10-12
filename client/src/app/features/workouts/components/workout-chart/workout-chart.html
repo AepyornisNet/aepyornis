@@ -1,0 +1,12 @@
+<div class="chart-controls mb-3">
+  <button class="btn btn-sm btn-outline-primary" (click)="toggleViewMode()">
+    @if (viewMode === 'time') {
+      <span i18n>View by Distance</span>
+    } @else {
+      <span i18n>View by Time</span>
+    }
+  </button>
+</div>
+<div class="chart-wrapper">
+  <canvas #chartCanvas></canvas>
+</div>

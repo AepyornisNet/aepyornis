@@ -1,0 +1,166 @@
+<div class="container my-5">
+  <h1 class="display-4 mb-4">
+    <app-icon name="statistics" size="32" />
+    Statistics
+  </h1>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form [formGroup]="filterForm" class="row g-3" (ngSubmit)="onFilterChange()">
+        <div class="col-md-4">
+          <label for="since" class="form-label">Since</label>
+          <select
+            id="since"
+            class="form-select"
+            formControlName="since"
+            (change)="onFilterChange()"
+          >
+            @for (option of sinceOptions; track option.key) {
+              <option [value]="option.key">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="per" class="form-label">Per</label>
+          <select
+            id="per"
+            class="form-select"
+            formControlName="per"
+            (change)="onFilterChange()"
+          >
+            @for (option of perOptions; track option.key) {
+              <option [value]="option.key">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary" [disabled]="filterForm.invalid">Refresh</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="text-center my-5">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && statistics()) {
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title">
+              <app-icon name="workout" />
+              Workouts
+            </h3>
+            <app-statistic-chart
+              [stats]="statistics()"
+              [preferredUnits]="preferredUnits() || undefined"
+              [type]="'workouts'"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title">
+              <app-icon name="duration" />
+              Duration
+            </h3>
+            <app-statistic-chart
+              [stats]="statistics()"
+              [preferredUnits]="preferredUnits() || undefined"
+              [filterNoDuration]="true"
+              [type]="'duration_seconds'"
+              [unit]="'duration'"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title">
+              <app-icon name="distance" />
+              Distance
+            </h3>
+            <app-statistic-chart
+              [stats]="statistics()"
+              [preferredUnits]="preferredUnits() || undefined"
+              [filterNoDuration]="true"
+              [type]="'distance'"
+              [unit]="'distance'"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title">
+              <app-icon name="speed" />
+              Average Speed
+            </h3>
+            <app-statistic-chart
+              [stats]="statistics()"
+              [preferredUnits]="preferredUnits() || undefined"
+              [filterNoDuration]="true"
+              [type]="'average_speed'"
+              [unit]="'speed'"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title">
+              <app-icon name="speed" />
+              Average Speed (No Pause)
+            </h3>
+            <app-statistic-chart
+              [stats]="statistics()"
+              [preferredUnits]="preferredUnits() || undefined"
+              [filterNoDuration]="true"
+              [type]="'average_speed_no_pause'"
+              [unit]="'speed'"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title">
+              <app-icon name="max-speed" />
+              Max Speed
+            </h3>
+            <app-statistic-chart
+              [stats]="statistics()"
+              [preferredUnits]="preferredUnits() || undefined"
+              [filterNoDuration]="true"
+              [type]="'max_speed'"
+              [unit]="'speed'"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
