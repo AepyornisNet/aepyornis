@@ -7,7 +7,6 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
-	"gorm.io/datatypes"
 )
 
 func (a *App) registerAPIV2MeasurementRoutes(apiGroup *echo.Group) {
@@ -62,39 +61,18 @@ func (a *App) apiV2MeasurementsHandler(c echo.Context) error {
 func (a *App) apiV2MeasurementCreateHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
-	var req struct {
-		Date   string   `json:"date"`
-		Weight *float64 `json:"weight,omitempty"`
-		Height *float64 `json:"height,omitempty"`
-		Steps  *int     `json:"steps,omitempty"`
-	}
-
-	if err := c.Bind(&req); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	// Parse date
-	t, err := time.Parse("2006-01-02", req.Date)
-	if err != nil {
+	d := &Measurement{units: a.getCurrentUser(c).PreferredUnits()}
+	if err := c.Bind(d); err != nil {
 		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
 	}
 
 	// Get or create measurement for this date
-	m, err := user.GetMeasurementForDate(t)
+	m, err := user.GetMeasurementForDate(d.Time())
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
 
-	// Update fields
-	if req.Weight != nil {
-		m.Weight = *req.Weight
-	}
-	if req.Height != nil {
-		m.Height = *req.Height
-	}
-	if req.Steps != nil {
-		m.Steps = float64(*req.Steps)
-	}
+	d.Update(m)
 
 	if err := m.Save(a.db); err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
@@ -109,7 +87,7 @@ func (a *App) apiV2MeasurementCreateHandler(c echo.Context) error {
 
 // apiV2MeasurementDeleteHandler deletes a measurement for a specific date
 func (a *App) apiV2MeasurementDeleteHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+	u := a.getCurrentUser(c)
 
 	dateStr := c.Param("date")
 	t, err := time.Parse("2006-01-02", dateStr)
@@ -118,8 +96,8 @@ func (a *App) apiV2MeasurementDeleteHandler(c echo.Context) error {
 	}
 
 	// Find measurement for this date
-	var m database.Measurement
-	if err := a.db.Where("user_id = ? AND date = ?", user.ID, datatypes.Date(t)).First(&m).Error; err != nil {
+	m, err := u.GetMeasurementForDate(t)
+	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
 
