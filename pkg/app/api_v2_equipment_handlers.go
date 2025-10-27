@@ -30,14 +30,14 @@ func (a *App) apiV2EquipmentHandler(c echo.Context) error {
 
 	// Get total count
 	var totalCount int64
-	if err := a.db.Model(&database.Equipment{}).Where("user_id = ?", user.ID).Count(&totalCount).Error; err != nil {
+	if err := a.db.Model(&database.Equipment{}).Where(&database.Equipment{UserID: user.ID}).Count(&totalCount).Error; err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
 
 	// Get paginated equipment
 	var equipment []*database.Equipment
-	db := a.db.Where("user_id = ?", user.ID).
-		Order("name ASC").
+	db := a.db.Where(&database.Equipment{UserID: user.ID}).
+		Order("name DESC").
 		Limit(pagination.PerPage).
 		Offset(pagination.GetOffset())
 
