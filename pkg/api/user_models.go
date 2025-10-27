@@ -26,7 +26,8 @@ type UserProfileResponse struct {
 }
 
 // TODO: Remove duplicate fields between UserProfileResponse and ProfileSettings
-// ProfileSettings contains all user profile settings
+
+// ProfileSettings contains the user's profile
 type ProfileSettings struct {
 	PreferredUnits      database.UserPreferredUnits `json:"preferred_units"`
 	Language            string                      `json:"language"`

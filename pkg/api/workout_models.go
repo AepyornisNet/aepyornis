@@ -66,14 +66,14 @@ type MapCenterResponse struct {
 
 // MapDataDetailsResponse represents detailed map points in compact format
 type MapDataDetailsResponse struct {
-	Position     [][]float64              `json:"position"` // [[lat, lng], ...]
-	Time         []time.Time              `json:"time"`
-	Distance     []float64                `json:"distance"` // in km
-	Duration     []float64                `json:"duration"` // in seconds
-	Speed        []float64                `json:"speed"`    // in m/s
-	Slope        []float64                `json:"slope"`
-	Elevation    []float64                `json:"elevation"`
-	ExtraMetrics map[string][]interface{} `json:"extra_metrics,omitempty"` // Additional metrics like heart-rate, cadence, temperature
+	Position     [][]float64      `json:"position"` // [[lat, lng], ...]
+	Time         []time.Time      `json:"time"`
+	Distance     []float64        `json:"distance"` // in km
+	Duration     []float64        `json:"duration"` // in seconds
+	Speed        []float64        `json:"speed"`    // in m/s
+	Slope        []float64        `json:"slope"`
+	Elevation    []float64        `json:"elevation"`
+	ExtraMetrics map[string][]any `json:"extra_metrics,omitempty"` // Additional metrics like heart-rate, cadence, temperature
 }
 
 // ClimbSegmentResponse represents a climb or descent segment
@@ -234,16 +234,6 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 
 	// Add map data with details
 	if w.Data != nil {
-		mapData := &MapDataResponse{
-			Creator: w.Data.Creator,
-			Center: MapCenterResponse{
-				TZ:  w.Data.Center.TZ,
-				Lat: w.Data.Center.Lat,
-				Lng: w.Data.Center.Lng,
-			},
-			ExtraMetrics: w.Data.ExtraMetrics,
-		}
-
 		// Add climbs
 		if len(w.Data.Climbs) > 0 {
 			wr.Climbs = make([]ClimbSegmentResponse, len(w.Data.Climbs))
@@ -260,61 +250,7 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 			}
 		}
 
-		// Add detailed points in compact format
-		if w.Data.Details != nil && len(w.Data.Details.Points) > 0 {
-			points := w.Data.Details.Points
-			mapData.Details = &MapDataDetailsResponse{
-				Position:     make([][]float64, len(points)),
-				Time:         make([]time.Time, len(points)),
-				Distance:     make([]float64, len(points)),
-				Duration:     make([]float64, len(points)),
-				Speed:        make([]float64, len(points)),
-				Slope:        make([]float64, len(points)),
-				Elevation:    make([]float64, len(points)),
-				ExtraMetrics: make(map[string][]any),
-			}
-
-			// Initialize extra metrics arrays
-			for _, metric := range w.Data.ExtraMetrics {
-				if metric == "speed" || metric == "elevation" {
-					continue
-				}
-
-				mapData.Details.ExtraMetrics[metric] = make([]any, len(points))
-			}
-
-			for i, point := range points {
-				mapData.Details.Position[i] = []float64{point.Lat, point.Lng}
-				mapData.Details.Time[i] = point.Time
-				mapData.Details.Distance[i] = point.TotalDistance / 1000 // Convert to km
-				mapData.Details.Duration[i] = point.TotalDuration.Seconds()
-				mapData.Details.Slope[i] = point.SlopeGrade
-				mapData.Details.Elevation[i] = point.Elevation
-
-				// Calculate speed from extra metrics or derive it
-				speed := 0.0
-				if ems, ok := point.ExtraMetrics["speed"]; ok && ems > 0 {
-					speed = ems
-				} else {
-					speed = point.AverageSpeed()
-				}
-				mapData.Details.Speed[i] = speed
-
-				// Add extra metrics
-				for _, metric := range w.Data.ExtraMetrics {
-					if metric == "speed" || metric == "elevation" {
-						continue // Already handled
-					}
-					if val, ok := point.ExtraMetrics[metric]; ok {
-						mapData.Details.ExtraMetrics[metric][i] = val
-					} else {
-						mapData.Details.ExtraMetrics[metric][i] = nil
-					}
-				}
-			}
-		}
-
-		wr.MapData = mapData
+		wr.MapData = workoutResponseMapData(w)
 	}
 
 	// Add route segment matches
@@ -330,4 +266,70 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 	}
 
 	return wr
+}
+
+func workoutResponseMapData(w *database.Workout) *MapDataResponse {
+	mapData := &MapDataResponse{
+		Creator: w.Data.Creator,
+		Center: MapCenterResponse{
+			TZ:  w.Data.Center.TZ,
+			Lat: w.Data.Center.Lat,
+			Lng: w.Data.Center.Lng,
+		},
+		ExtraMetrics: w.Data.ExtraMetrics,
+	}
+
+	// Add detailed points in compact format
+	if w.Data.Details != nil && len(w.Data.Details.Points) > 0 {
+		points := w.Data.Details.Points
+		mapData.Details = &MapDataDetailsResponse{
+			Position:     make([][]float64, len(points)),
+			Time:         make([]time.Time, len(points)),
+			Distance:     make([]float64, len(points)),
+			Duration:     make([]float64, len(points)),
+			Speed:        make([]float64, len(points)),
+			Slope:        make([]float64, len(points)),
+			Elevation:    make([]float64, len(points)),
+			ExtraMetrics: make(map[string][]any),
+		}
+
+		// Initialize extra metrics arrays
+		for _, metric := range w.Data.ExtraMetrics {
+			if metric == "speed" || metric == "elevation" {
+				continue
+			}
+
+			mapData.Details.ExtraMetrics[metric] = make([]any, len(points))
+		}
+
+		for i, point := range points {
+			mapData.Details.Position[i] = []float64{point.Lat, point.Lng}
+			mapData.Details.Time[i] = point.Time
+			mapData.Details.Distance[i] = point.TotalDistance / 1000 // Convert to km
+			mapData.Details.Duration[i] = point.TotalDuration.Seconds()
+			mapData.Details.Slope[i] = point.SlopeGrade
+			mapData.Details.Elevation[i] = point.Elevation
+
+			// Calculate speed from extra metrics or derive it
+			speed := point.AverageSpeed()
+			if ems, ok := point.ExtraMetrics["speed"]; ok && ems > 0 {
+				speed = ems
+			}
+			mapData.Details.Speed[i] = speed
+
+			// Add extra metrics
+			for _, metric := range w.Data.ExtraMetrics {
+				if metric == "speed" || metric == "elevation" {
+					continue // Already handled
+				}
+				if val, ok := point.ExtraMetrics[metric]; ok {
+					mapData.Details.ExtraMetrics[metric][i] = val
+				} else {
+					mapData.Details.ExtraMetrics[metric][i] = nil
+				}
+			}
+		}
+	}
+
+	return mapData
 }

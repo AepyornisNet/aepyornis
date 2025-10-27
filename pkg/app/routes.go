@@ -199,7 +199,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 		ErrorHandler: func(c echo.Context, err error) error {
 			log.Warn(err.Error())
 
-			r := api.Response[interface{}]{}
+			r := api.Response[any]{}
 			r.AddError(err)
 			r.AddError(api.ErrNotAuthorized)
 

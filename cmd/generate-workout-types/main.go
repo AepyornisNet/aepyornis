@@ -252,11 +252,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error creating output file: %v\n", err)
 		os.Exit(1)
 	}
-	defer f.Close()
 
 	if err := tmpl.Execute(f, templateData); err != nil {
+		f.Close()
 		fmt.Fprintf(os.Stderr, "Error executing template: %v\n", err)
 		os.Exit(1)
+	} else {
+		f.Close()
 	}
 
 	fmt.Println("Generated workout_type.go successfully")

@@ -11,10 +11,6 @@ WT_DEBUG_OUTPUT_FILE ?= tmp/wt-debug
 
 THEME_SCREENSHOT_WIDTH ?= 1200
 THEME_SCREENSHOT_HEIGHT ?= 900
-TEMPL_PROXY_PORT=8090
-TEMPL_APP_PORT=8080
-TEMPL_VERSION ?= $(shell grep "github.com/a-h/templ" go.mod | awk '{print $$2}')
-TEMPL_COMMAND ?= go run github.com/a-h/templ/cmd/templ@$(TEMPL_VERSION)
 
 GO_TEST=go test -short -count 1 -mod vendor -covermode=atomic
 
@@ -34,48 +30,35 @@ release:
 	@echo "- gh release create --generate-notes $(VERSION)"
 
 install-deps:
-	cd frontend && npm install
+	cd client && npm install
 
 clean:
 	rm -fv ./assets/output.css ./workout-tracker
 	rm -rf ./tmp/ ./node_modules/ ./assets/dist/
 
 
-watch/templ:
-	$(TEMPL_COMMAND) generate --watch \
-			--open-browser=false \
-			--proxy="http://localhost:$(TEMPL_APP_PORT)" \
-			--proxyport="$(TEMPL_PROXY_PORT)" \
-			--proxybind="0.0.0.0"
-
 watch/server:
 	go run github.com/air-verse/air@latest \
 			--build.full_bin           "APP_ENV=development $(WT_OUTPUT_FILE)" \
-			--build.cmd                "make build-server notify-proxy" \
+			--build.cmd                "make build-server" \
 			--build.delay              1000 \
-			--build.exclude_dir        "assets,docs,testdata,tmp,vendor" \
+			--build.exclude_dir        "assets,client,docs,testdata,tmp,vendor" \
 			--build.exclude_regex      "_test.go" \
 			--build.exclude_unchanged  false \
 			--build.include_ext        "go,html,json,yaml" \
 			--build.stop_on_error      true \
 			--screen.clear_on_rebuild  false 
 
-watch/tailwind:
-	cd frontend && npm run watch:tw
-
-notify-proxy:
-	$(TEMPL_COMMAND) generate \
-			--notify-proxy --proxyport=$(TEMPL_PROXY_PORT)
+watch/client: install-deps
+	cd client && npm run start
 
 dev-backend:
-	$(MAKE) watch/templ &
 	$(MAKE) watch/server
 
 dev: 
 	echo "DEPRECATED: Use 'make dev-docker' instead"
-	$(MAKE) watch/templ &
 	$(MAKE) watch/server &
-	$(MAKE) watch/tailwind &
+	$(MAKE) watch/client &
 	sleep infinity
 
 dev-docker: dev-docker-postgres
@@ -111,6 +94,9 @@ build-server:
 			-ldflags "-X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.gitRef=$(GIT_REF)' -X 'main.gitRefName=$(GIT_REF_NAME)' -X 'main.gitRefType=$(GIT_REF_TYPE)'" \
 			-o $(WT_OUTPUT_FILE) ./cmd/workout-tracker/
 
+build-client: install-deps
+	cd client && npm run build
+
 build-docker:
 	docker build \
 			-t workout-tracker --pull \
@@ -128,12 +114,6 @@ swagger:
 			--generalInfo api_handlers.go
 	git commit docs/ -m "Update swagger" -m "changelog: ignore" || echo "No changes to commit"
 
-build-frontend: install-deps
-	cd frontend && npm run build
-
-build-templates:
-	$(TEMPL_COMMAND) generate
-
 generate-workout-types:
 	go generate ./...
 	node scripts/generate-workout-types.js
@@ -141,14 +121,8 @@ generate-workout-types:
 test-packages:
 	$(GO_TEST) ./pkg/...
 
-test-templates:
-	$(GO_TEST) ./views/...
-
 test-commands:
 	$(GO_TEST) ./cmd/...
-
-format-templates:
-	find . -type f -name '*.templ' -exec templ fmt -v {} \;
 
 serve:
 	$(WT_OUTPUT_FILE)
@@ -158,8 +132,7 @@ test: test-go test-assets
 test-assets:
 	prettier --check .
 
-
-test-go: test-commands test-templates test-packages
+test-go: test-commands test-packages
 	golangci-lint run --allow-parallel-runners
 
 screenshots: generate-screenshots screenshots-theme screenshots-responsive screenshots-i18n
@@ -211,7 +184,7 @@ update-deps:
 	@if git show-ref --verify --quiet refs/heads/$(BRANCH_NAME_DEPS); then echo "Branch $(BRANCH_NAME_DEPS) already exists locally. Aborting."; exit 1; fi
 	@if git ls-remote --exit-code --heads origin $(BRANCH_NAME_DEPS); then echo "Branch $(BRANCH_NAME_DEPS) already exists remotely. Aborting."; exit 1; fi
 	git switch --create $(BRANCH_NAME_DEPS)
-	cd frontend && npm update
+	cd client && npm update
 	go get -u -t ./...
 	go mod tidy
 	go mod vendor
