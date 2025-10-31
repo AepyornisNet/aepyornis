@@ -85,7 +85,6 @@ func (a *App) ConfigureWebserver() error {
 	}).Name = "assets"
 
 	authGroup := publicGroup.Group("/auth")
-	authGroup.GET("/signin", a.userLoginHandler).Name = "user-login"
 	authGroup.POST("/signin", a.userSigninHandler).Name = "user-signin"
 	authGroup.POST("/register", a.userRegisterHandler).Name = "user-register"
 	authGroup.GET("/signout", a.userSignoutHandler).Name = "user-signout"

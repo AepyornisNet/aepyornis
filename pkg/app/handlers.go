@@ -8,7 +8,6 @@ import (
 	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/views/partials"
-	"github.com/jovandeginste/workout-tracker/v2/views/user"
 	"github.com/labstack/echo/v4"
 )
 
@@ -20,10 +19,6 @@ func (a *App) redirectWithError(c echo.Context, target string, err error) error 
 	}
 
 	return c.Redirect(http.StatusFound, target)
-}
-
-func (a *App) userLoginHandler(c echo.Context) error {
-	return Render(c, http.StatusOK, user.Login())
 }
 
 func (a *App) lookupAddressHandler(c echo.Context) error {
