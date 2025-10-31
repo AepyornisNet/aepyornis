@@ -12,6 +12,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/invopop/ctxi18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -89,9 +90,6 @@ func (a *App) ConfigureWebserver() error {
 	authGroup.POST("/register", a.userRegisterHandler).Name = "user-register"
 	authGroup.GET("/signout", a.userSignoutHandler).Name = "user-signout"
 
-	sec := a.addRoutesSecure(publicGroup)
-	a.adminRoutes(sec)
-
 	a.echo = e
 
 	return nil
@@ -128,23 +126,6 @@ func (a *App) ValidateUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		return next(ctx)
 	}
-}
-
-func (a *App) addRoutesSecure(e *echo.Group) *echo.Group {
-	secureGroup := e.Group("")
-
-	secureGroup.Use(echojwt.WithConfig(echojwt.Config{
-		SigningKey:  a.jwtSecret(),
-		TokenLookup: "cookie:token",
-		ErrorHandler: func(c echo.Context, err error) error {
-			log.Warn(err.Error())
-			return c.Redirect(http.StatusFound, a.echo.Reverse("user-signout"))
-		},
-	}))
-	secureGroup.Use(a.ValidateUserMiddleware)
-	secureGroup.POST("/lookup-address", a.lookupAddressHandler).Name = "lookup-address"
-
-	return secureGroup
 }
 
 // extend echo.Context
@@ -239,6 +220,21 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	a.registerAPIV2StatisticsRoutes(apiGroup)
 	a.registerAPIV2ProfileRoutes(apiGroup)
 	a.registerAPIV2AdminRoutes(apiGroup)
+
+	apiGroup.POST("/lookup-address", a.apiV2LookupAddressHandler).Name = "lookup-address"
+}
+
+func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
+	q := c.Param("location")
+
+	results, err := geocoder.Search(q)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	return c.JSON(http.StatusOK, api.Response[[]string]{
+		Results: results,
+	})
 }
 
 // apiV2AppInfoHandler returns application information
