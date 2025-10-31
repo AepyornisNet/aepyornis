@@ -1,5 +1,7 @@
 .git
 /assets/dist/
-/frontend/node_modules/
+/client/.angular/
+/client/dist/
+/client/node_modules/
 /data/
 /docker/

@@ -1,20 +1,14 @@
 FROM node:24-alpine AS builder-frontend
 
-RUN apk --no-cache add make
-
 WORKDIR /app
 
-COPY frontend ./frontend
-RUN cd frontend && \
+COPY client ./client
+RUN cd client && \
   npm ci
 
-COPY Makefile ./
-COPY assets ./assets
-COPY views ./views
-COPY translations ./translations
-
-WORKDIR /app/frontend
-ENTRYPOINT ["npm", "run", "dev"]
+WORKDIR /app/client
+EXPOSE 4200
+ENTRYPOINT ["npm", "run", "start"]
 
 FROM golang:1.25.1-alpine AS builder-backend
 ARG BUILD_TIME
@@ -35,7 +29,6 @@ COPY assets ./assets
 COPY cmd ./cmd
 COPY pkg ./pkg
 COPY vendor ./vendor
-COPY views ./views
 COPY translations ./translations
 
 ENV CGO_ENABLED=0
