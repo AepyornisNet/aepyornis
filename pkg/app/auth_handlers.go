@@ -2,20 +2,13 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
-	"github.com/jovandeginste/workout-tracker/v2/views/user"
 	"github.com/labstack/echo/v4"
 )
 
 var ErrLoginFailed = errors.New("username or password incorrect")
-
-func (a *App) addRoutesUsers(e *echo.Group) {
-	usersGroup := e.Group("/users")
-	usersGroup.GET("/:id", a.userShowHandler).Name = "user-show"
-}
 
 // userSigninHandler will be executed after SignInForm submission.
 func (a *App) userSigninHandler(c echo.Context) error {
@@ -89,26 +82,4 @@ func (a *App) userRegisterHandler(c echo.Context) error {
 	a.addNoticeT(c, "translation.Your_account_has_been_created_but_needs_to_be_activated")
 
 	return c.Redirect(http.StatusFound, a.echo.Reverse("user-login"))
-}
-
-func (a *App) userShowHandler(c echo.Context) error {
-	u, err := a.getUser(c)
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("dashboard"), err)
-	}
-
-	if u.IsAnonymous() {
-		return a.redirectWithError(
-			c,
-			a.echo.Reverse("dashboard"),
-			fmt.Errorf("user id '%s' not found", c.Param("id")),
-		)
-	}
-
-	w, err := u.GetWorkouts(a.db)
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("user-signout"), err)
-	}
-
-	return Render(c, http.StatusOK, user.Show(u, nil, w, nil))
 }

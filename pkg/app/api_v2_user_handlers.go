@@ -11,6 +11,7 @@ func (a *App) registerAPIV2UserRoutes(e *echo.Group) {
 	e.GET("/whoami", a.apiV2WhoamiHandler).Name = "api-v2-whoami"
 	e.GET("/totals", a.apiV2TotalsHandler).Name = "api-v2-totals"
 	e.GET("/records", a.apiV2RecordsHandler).Name = "api-v2-records"
+	e.GET("/:id", a.apiV2UserShowHandler).Name = "api-v2-user-show"
 }
 
 // apiV2WhoamiHandler returns current user information
@@ -45,6 +46,30 @@ func (a *App) apiV2RecordsHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
 	records, err := user.GetAllRecords()
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
+	resp := api.Response[[]api.WorkoutRecordResponse]{
+		Results: api.NewWorkoutRecordsResponse(records),
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2UserShowHandler returns a specific user's workout records
+// TODO: Add more data. This will be used for public profiles.
+func (a *App) apiV2UserShowHandler(c echo.Context) error {
+	u, err := a.getUser(c)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
+	if u.IsAnonymous() {
+		return a.renderAPIV2Error(c, http.StatusForbidden, api.ErrNotAuthorized)
+	}
+
+	records, err := u.GetAllRecords()
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}

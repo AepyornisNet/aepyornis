@@ -364,16 +364,8 @@ func (a *App) apiV2RecentWorkoutsHandler(c echo.Context) error {
 
 // apiV2WorkoutDeleteHandler deletes a workout
 func (a *App) apiV2WorkoutDeleteHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
-
-	// Parse workout ID
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
 	// Get workout
-	workout, err := user.GetWorkout(a.db, id)
+	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -448,14 +440,8 @@ func (a *App) apiV2WorkoutUpdateHandler(c echo.Context) error {
 func (a *App) apiV2WorkoutToggleLockHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
-	// Parse workout ID
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
 	// Get workout with details (including GPX for HasFile check)
-	workout, err := database.GetWorkoutDetails(a.db, id)
+	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -483,16 +469,8 @@ func (a *App) apiV2WorkoutToggleLockHandler(c echo.Context) error {
 
 // apiV2WorkoutRefreshHandler marks a workout for refresh
 func (a *App) apiV2WorkoutRefreshHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
-
-	// Parse workout ID
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
 	// Get workout
-	workout, err := user.GetWorkout(a.db, id)
+	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -514,16 +492,8 @@ func (a *App) apiV2WorkoutRefreshHandler(c echo.Context) error {
 
 // apiV2WorkoutShareHandler generates or regenerates a public share link for a workout
 func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
-
-	// Parse workout ID
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
 	// Get workout
-	workout, err := user.GetWorkout(a.db, id)
+	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -551,16 +521,8 @@ func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
 
 // apiV2WorkoutShareDeleteHandler deletes the public share link for a workout
 func (a *App) apiV2WorkoutShareDeleteHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
-
-	// Parse workout ID
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
 	// Get workout
-	workout, err := user.GetWorkout(a.db, id)
+	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -582,16 +544,8 @@ func (a *App) apiV2WorkoutShareDeleteHandler(c echo.Context) error {
 
 // apiV2WorkoutDownloadHandler downloads the original workout file
 func (a *App) apiV2WorkoutDownloadHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
-
-	// Parse workout ID
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
 	// Get workout with GPX preloaded
-	workout, err := user.GetWorkout(a.db, id)
+	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -609,9 +563,8 @@ func (a *App) apiV2WorkoutDownloadHandler(c echo.Context) error {
 
 	// Set headers for download
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
-	c.Response().Header().Set(echo.HeaderContentType, "application/gpx+xml")
 
-	return c.Blob(http.StatusOK, "application/gpx+xml", workout.GPX.Content)
+	return c.Blob(http.StatusOK, "application/binary", workout.GPX.Content)
 }
 
 // apiV2WorkoutPublicHandler returns a public workout by UUID

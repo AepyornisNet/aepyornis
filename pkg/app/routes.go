@@ -83,7 +83,6 @@ func (a *App) ConfigureWebserver() error {
 	publicGroup.GET("/assets", func(c echo.Context) error {
 		return c.Redirect(http.StatusFound, a.echo.Reverse("dashboard"))
 	}).Name = "assets"
-	publicGroup.GET("/share/:uuid", a.workoutShowShared).Name = "share"
 
 	authGroup := publicGroup.Group("/auth")
 	authGroup.GET("/signin", a.userLoginHandler).Name = "user-login"
@@ -147,8 +146,6 @@ func (a *App) addRoutesSecure(e *echo.Group) *echo.Group {
 	secureGroup.POST("/lookup-address", a.lookupAddressHandler).Name = "lookup-address"
 
 	a.addRoutesSelf(secureGroup)
-	a.addRoutesUsers(secureGroup)
-	a.addRoutesEquipment(secureGroup)
 	a.addRoutesWorkouts(secureGroup)
 	a.addRoutesSegments(secureGroup)
 

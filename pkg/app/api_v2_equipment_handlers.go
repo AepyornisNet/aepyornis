@@ -120,6 +120,8 @@ func (a *App) apiV2EquipmentUpdateHandler(c echo.Context) error {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
 
+	e.DefaultFor = nil
+
 	if e.UserID != user.ID {
 		return a.renderAPIV2Error(c, http.StatusForbidden, api.ErrNotAuthorized)
 	}
