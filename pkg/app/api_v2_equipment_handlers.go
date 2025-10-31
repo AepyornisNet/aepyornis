@@ -6,7 +6,6 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
-	"github.com/spf13/cast"
 )
 
 func (a *App) registerAPIV2EquipmentRoutes(apiGroup *echo.Group) {
@@ -61,20 +60,9 @@ func (a *App) apiV2EquipmentHandler(c echo.Context) error {
 
 // apiV2EquipmentGetHandler returns a single equipment by ID
 func (a *App) apiV2EquipmentGetHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
-
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	e, err := database.GetEquipment(a.db, id)
+	e, err := a.getEquipment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
-	}
-
-	if e.UserID != user.ID {
-		return a.renderAPIV2Error(c, http.StatusForbidden, api.ErrNotAuthorized)
 	}
 
 	resp := api.Response[api.EquipmentResponse]{
@@ -110,12 +98,7 @@ func (a *App) apiV2EquipmentCreateHandler(c echo.Context) error {
 func (a *App) apiV2EquipmentUpdateHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	e, err := database.GetEquipment(a.db, id)
+	e, err := a.getEquipment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -148,12 +131,7 @@ func (a *App) apiV2EquipmentUpdateHandler(c echo.Context) error {
 func (a *App) apiV2EquipmentDeleteHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	e, err := database.GetEquipment(a.db, id)
+	e, err := a.getEquipment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
