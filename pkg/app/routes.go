@@ -146,7 +146,6 @@ func (a *App) addRoutesSecure(e *echo.Group) *echo.Group {
 
 	a.addRoutesSelf(secureGroup)
 	a.addRoutesWorkouts(secureGroup)
-	a.addRoutesSegments(secureGroup)
 
 	return secureGroup
 }

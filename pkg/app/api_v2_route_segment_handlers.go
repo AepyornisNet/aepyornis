@@ -12,13 +12,15 @@ import (
 )
 
 func (a *App) registerAPIV2RouteSegmentRoutes(apiGroup *echo.Group) {
-	apiGroup.GET("/route-segments", a.apiV2RouteSegmentsHandler).Name = "api-v2-route-segments"
-	apiGroup.GET("/route-segments/:id", a.apiV2RouteSegmentGetHandler).Name = "api-v2-route-segment"
-	apiGroup.PUT("/route-segments/:id", a.apiV2RouteSegmentUpdateHandler).Name = "api-v2-route-segment-update"
-	apiGroup.DELETE("/route-segments/:id", a.apiV2RouteSegmentDeleteHandler).Name = "api-v2-route-segment-delete"
-	apiGroup.POST("/route-segments/:id/refresh", a.apiV2RouteSegmentRefreshHandler).Name = "api-v2-route-segment-refresh"
-	apiGroup.POST("/route-segments/:id/matches", a.apiV2RouteSegmentFindMatchesHandler).Name = "api-v2-route-segment-matches"
-	apiGroup.GET("/route-segments/:id/download", a.apiV2RouteSegmentDownloadHandler).Name = "api-v2-route-segment-download"
+	routeSegmentsGroup := apiGroup.Group("/route-segments")
+	routeSegmentsGroup.GET("", a.apiV2RouteSegmentsHandler).Name = "api-v2-route-segments"
+	routeSegmentsGroup.POST("", a.apiV2RouteSegmentCreateHandler).Name = "api-v2-route-segment-create"
+	routeSegmentsGroup.GET("/:id", a.apiV2RouteSegmentGetHandler).Name = "api-v2-route-segment"
+	routeSegmentsGroup.PUT("/:id", a.apiV2RouteSegmentUpdateHandler).Name = "api-v2-route-segment-update"
+	routeSegmentsGroup.DELETE("/:id", a.apiV2RouteSegmentDeleteHandler).Name = "api-v2-route-segment-delete"
+	routeSegmentsGroup.POST("/:id/refresh", a.apiV2RouteSegmentRefreshHandler).Name = "api-v2-route-segment-refresh"
+	routeSegmentsGroup.POST("/:id/matches", a.apiV2RouteSegmentFindMatchesHandler).Name = "api-v2-route-segment-matches"
+	routeSegmentsGroup.GET("/:id/download", a.apiV2RouteSegmentDownloadHandler).Name = "api-v2-route-segment-download"
 	apiGroup.POST("/workouts/:id/route-segment", a.apiV2RouteSegmentCreateFromWorkoutHandler).Name = "api-v2-workout-route-segment-create"
 }
 
@@ -64,12 +66,7 @@ func (a *App) apiV2RouteSegmentsHandler(c echo.Context) error {
 
 // apiV2RouteSegmentGetHandler returns a single route segment by ID with full details
 func (a *App) apiV2RouteSegmentGetHandler(c echo.Context) error {
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	rs, err := database.GetRouteSegment(a.db, id)
+	rs, err := a.getRouteSegment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -79,6 +76,44 @@ func (a *App) apiV2RouteSegmentGetHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (a *App) apiV2RouteSegmentCreateHandler(c echo.Context) error {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	files := form.File["file"]
+
+	errMsg := []string{}
+
+	segments := []*api.RouteSegmentResponse{}
+	for _, file := range files {
+		content, parseErr := uploadedFile(file)
+		if parseErr != nil {
+			errMsg = append(errMsg, parseErr.Error())
+			continue
+		}
+
+		notes := c.FormValue("notes")
+
+		w, addErr := database.AddRouteSegment(a.db, notes, file.Filename, content)
+		if addErr != nil {
+			errMsg = append(errMsg, addErr.Error())
+			continue
+		}
+
+		resp := api.NewRouteSegmentResponse(w)
+		segments = append(segments, &resp)
+	}
+
+	resp := api.Response[api.RouteSegmentsDetailResponse]{
+		Results: segments,
+		Errors:  errMsg,
+	}
+
+	return c.JSON(http.StatusCreated, resp)
 }
 
 // apiV2RouteSegmentCreateFromWorkoutHandler creates a route segment from a workout
@@ -117,12 +152,7 @@ func (a *App) apiV2RouteSegmentCreateFromWorkoutHandler(c echo.Context) error {
 
 // apiV2RouteSegmentDeleteHandler deletes a route segment
 func (a *App) apiV2RouteSegmentDeleteHandler(c echo.Context) error {
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	rs, err := database.GetRouteSegment(a.db, id)
+	rs, err := a.getRouteSegment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -140,12 +170,7 @@ func (a *App) apiV2RouteSegmentDeleteHandler(c echo.Context) error {
 
 // apiV2RouteSegmentRefreshHandler marks a route segment for refresh
 func (a *App) apiV2RouteSegmentRefreshHandler(c echo.Context) error {
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	rs, err := database.GetRouteSegment(a.db, id)
+	rs, err := a.getRouteSegment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -167,12 +192,7 @@ func (a *App) apiV2RouteSegmentRefreshHandler(c echo.Context) error {
 
 // apiV2RouteSegmentUpdateHandler updates a route segment
 func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	rs, err := database.GetRouteSegment(a.db, id)
+	rs, err := a.getRouteSegment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -208,12 +228,7 @@ func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
 
 // apiV2RouteSegmentDownloadHandler downloads the original route segment file
 func (a *App) apiV2RouteSegmentDownloadHandler(c echo.Context) error {
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	rs, err := database.GetRouteSegment(a.db, id)
+	rs, err := a.getRouteSegment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
@@ -227,12 +242,7 @@ func (a *App) apiV2RouteSegmentDownloadHandler(c echo.Context) error {
 
 // apiV2RouteSegmentFindMatchesHandler finds matching workouts for a route segment
 func (a *App) apiV2RouteSegmentFindMatchesHandler(c echo.Context) error {
-	id, err := cast.ToUint64E(c.Param("id"))
-	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	rs, err := database.GetRouteSegment(a.db, id)
+	rs, err := a.getRouteSegment(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}

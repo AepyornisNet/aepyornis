@@ -14,18 +14,19 @@ import (
 )
 
 func (a *App) registerAPIV2WorkoutRoutes(apiGroup *echo.Group, apiGroupPublic *echo.Group) {
-	apiGroup.GET("/workouts", a.apiV2WorkoutsHandler).Name = "api-v2-workouts"
-	apiGroup.GET("/workouts/recent", a.apiV2RecentWorkoutsHandler).Name = "api-v2-workouts-recent"
-	apiGroup.GET("/workouts/calendar", a.apiV2WorkoutsCalendarHandler).Name = "api-v2-workouts-calendar"
-	apiGroup.POST("/workouts", a.apiV2WorkoutCreateHandler).Name = "api-v2-workouts-create"
-	apiGroup.GET("/workouts/:id", a.apiV2WorkoutHandler).Name = "api-v2-workout"
-	apiGroup.PUT("/workouts/:id", a.apiV2WorkoutUpdateHandler).Name = "api-v2-workout-update"
-	apiGroup.DELETE("/workouts/:id", a.apiV2WorkoutDeleteHandler).Name = "api-v2-workout-delete"
-	apiGroup.POST("/workouts/:id/toggle-lock", a.apiV2WorkoutToggleLockHandler).Name = "api-v2-workout-toggle-lock"
-	apiGroup.POST("/workouts/:id/refresh", a.apiV2WorkoutRefreshHandler).Name = "api-v2-workout-refresh"
-	apiGroup.POST("/workouts/:id/share", a.apiV2WorkoutShareHandler).Name = "api-v2-workout-share"
-	apiGroup.DELETE("/workouts/:id/share", a.apiV2WorkoutShareDeleteHandler).Name = "api-v2-workout-share-delete"
-	apiGroup.GET("/workouts/:id/download", a.apiV2WorkoutDownloadHandler).Name = "api-v2-workout-download"
+	workoutGroup := apiGroup.Group("/workouts")
+	workoutGroup.GET("", a.apiV2WorkoutsHandler).Name = "api-v2-workouts"
+	workoutGroup.POST("", a.apiV2WorkoutCreateHandler).Name = "api-v2-workouts-create"
+	workoutGroup.GET("/recent", a.apiV2RecentWorkoutsHandler).Name = "api-v2-workouts-recent"
+	workoutGroup.GET("/calendar", a.apiV2WorkoutsCalendarHandler).Name = "api-v2-workouts-calendar"
+	workoutGroup.GET("/:id", a.apiV2WorkoutHandler).Name = "api-v2-workout"
+	workoutGroup.GET("/:id/download", a.apiV2WorkoutDownloadHandler).Name = "api-v2-workout-download"
+	workoutGroup.PUT("/:id", a.apiV2WorkoutUpdateHandler).Name = "api-v2-workout-update"
+	workoutGroup.POST("/:id/toggle-lock", a.apiV2WorkoutToggleLockHandler).Name = "api-v2-workout-toggle-lock"
+	workoutGroup.POST("/:id/refresh", a.apiV2WorkoutRefreshHandler).Name = "api-v2-workout-refresh"
+	workoutGroup.POST("/:id/share", a.apiV2WorkoutShareHandler).Name = "api-v2-workout-share"
+	workoutGroup.DELETE("/:id", a.apiV2WorkoutDeleteHandler).Name = "api-v2-workout-delete"
+	workoutGroup.DELETE("/:id/share", a.apiV2WorkoutShareDeleteHandler).Name = "api-v2-workout-share-delete"
 	apiGroupPublic.GET("/workouts/public/:uuid", a.apiV2WorkoutPublicHandler).Name = "api-v2-workout-public"
 }
 

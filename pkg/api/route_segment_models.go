@@ -86,6 +86,8 @@ type RouteSegmentDetailResponse struct {
 	AddressString string `json:"address_string"`
 }
 
+type RouteSegmentsDetailResponse []*RouteSegmentResponse
+
 // NewRouteSegmentDetailResponse converts a database route segment to detailed API response
 func NewRouteSegmentDetailResponse(rs *database.RouteSegment) RouteSegmentDetailResponse {
 	response := RouteSegmentDetailResponse{
