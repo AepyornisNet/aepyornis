@@ -3,15 +3,11 @@ package app
 import (
 	"io"
 	"mime/multipart"
-	"net/http"
-	"strings"
 	"time"
 
-	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
-	"github.com/labstack/echo/v4"
 )
 
 const (
@@ -165,131 +161,4 @@ func (m *ManualWorkout) Update(w *database.Workout) {
 	}
 
 	w.Data.UpdateExtraMetrics()
-}
-
-func (a *App) addWorkout(c echo.Context) error {
-	if strings.HasPrefix(c.Request().Header.Get(echo.HeaderContentType), echo.MIMEMultipartForm) {
-		return a.addWorkoutFromFile(c)
-	}
-
-	d := &ManualWorkout{units: a.getCurrentUser(c).PreferredUnits()}
-	if err := c.Bind(d); err != nil {
-		return a.redirectWithError(c, "/workouts", err)
-	}
-
-	workout := &database.Workout{}
-	d.Update(workout)
-
-	workout.User = a.getCurrentUser(c)
-	workout.UserID = a.getCurrentUser(c).ID
-	workout.Data.Creator = "web-interface"
-
-	var equipmentIDS struct {
-		EquipmentIDs []uint64 `form:"equipment"`
-	}
-
-	if err := c.Bind(&equipmentIDS); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-add"), err)
-	}
-
-	equipment, err := database.GetEquipmentByIDs(a.db, a.getCurrentUser(c).ID, equipmentIDS.EquipmentIDs)
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-add"), err)
-	}
-
-	if err := workout.Save(a.db); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-add"), err)
-	}
-
-	if err := a.db.Model(&workout).Association("Equipment").Replace(equipment); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-show", workout.ID), err)
-	}
-
-	a.addNoticeT(c, "translation.The_workout_s_has_been_created", workout.Name)
-
-	return c.Redirect(http.StatusFound, a.echo.Reverse("workouts"))
-}
-
-func (a *App) workoutsUpdateHandler(c echo.Context) error {
-	workout, err := a.getWorkout(c)
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-show", c.Param("id")), err)
-	}
-
-	d := &ManualWorkout{units: a.getCurrentUser(c).PreferredUnits()}
-	if err := c.Bind(d); err != nil {
-		return a.redirectWithError(c, "/workouts", err)
-	}
-
-	d.Update(workout)
-
-	var equipmentIDS struct {
-		EquipmentIDs []uint64 `form:"equipment"`
-	}
-
-	if err := c.Bind(&equipmentIDS); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-edit", c.Param("id")), err)
-	}
-
-	equipment, err := database.GetEquipmentByIDs(a.db, a.getCurrentUser(c).ID, equipmentIDS.EquipmentIDs)
-	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-edit", c.Param("id")), err)
-	}
-
-	if err := workout.Save(a.db); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-edit", c.Param("id")), err)
-	}
-
-	if err := a.db.Model(&workout).Association("Equipment").Replace(equipment); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("workout-show", c.Param("id")), err)
-	}
-
-	a.addNoticeT(c, "translation.The_workout_s_has_been_updated", workout.Name)
-
-	return c.Redirect(http.StatusFound, a.echo.Reverse("workout-show", c.Param("id")))
-}
-
-func (a *App) addWorkoutFromFile(c echo.Context) error {
-	form, err := c.MultipartForm()
-	if err != nil {
-		return err
-	}
-
-	files := form.File["file"]
-
-	msg := []string{}
-	errMsg := []string{}
-
-	for _, file := range files {
-		content, parseErr := uploadedFile(file)
-		if parseErr != nil {
-			errMsg = append(errMsg, parseErr.Error())
-			continue
-		}
-
-		notes := c.FormValue("notes")
-		workoutType := database.WorkoutType(c.FormValue("type"))
-
-		ws, addErr := a.getCurrentUser(c).AddWorkout(a.db, workoutType, notes, file.Filename, content)
-		if len(addErr) > 0 {
-			for _, e := range addErr {
-				errMsg = append(errMsg, e.Error())
-			}
-			continue
-		}
-
-		for _, w := range ws {
-			msg = append(msg, w.Name)
-		}
-	}
-
-	if len(errMsg) > 0 {
-		a.addErrorN(c, "alerts.workouts_added", len(errMsg), i18n.M{"count": len(errMsg), "list": strings.Join(errMsg, "; ")})
-	}
-
-	if len(msg) > 0 {
-		a.addNoticeN(c, "notices.workouts_added", len(msg), i18n.M{"count": len(msg), "list": strings.Join(msg, "; ")})
-	}
-
-	return c.Redirect(http.StatusFound, a.echo.Reverse("workouts"))
 }

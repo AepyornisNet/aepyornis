@@ -9,10 +9,12 @@ import (
 )
 
 func (a *App) registerAPIV2ProfileRoutes(apiGroup *echo.Group) {
-	apiGroup.GET("/profile", a.apiV2ProfileHandler).Name = "api-v2-profile"
-	apiGroup.PUT("/profile", a.apiV2ProfileUpdateHandler).Name = "api-v2-profile-update"
-	apiGroup.POST("/profile/reset-api-key", a.apiV2ProfileResetAPIKeyHandler).Name = "api-v2-profile-reset-api-key"
-	apiGroup.POST("/profile/refresh-workouts", a.apiV2ProfileRefreshWorkoutsHandler).Name = "api-v2-profile-refresh-workouts"
+	selfGroup := apiGroup.Group("/profile")
+	selfGroup.GET("", a.apiV2ProfileHandler).Name = "api-v2-profile"
+	selfGroup.PUT("", a.apiV2ProfileUpdateHandler).Name = "api-v2-profile-update"
+	selfGroup.POST("/reset-api-key", a.apiV2ProfileResetAPIKeyHandler).Name = "api-v2-profile-reset-api-key"
+	selfGroup.POST("/refresh-workouts", a.apiV2ProfileRefreshWorkoutsHandler).Name = "api-v2-profile-refresh-workouts"
+	selfGroup.POST("/update-version", a.apiV2UserUpdateVersion).Name = "api-v2-user-update-version"
 }
 
 // apiV2ProfileHandler returns current user's full profile with settings
@@ -114,4 +116,16 @@ func (a *App) apiV2ProfileRefreshWorkoutsHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2UserUpdateVersion updates the user's last known app version
+func (a *App) apiV2UserUpdateVersion(c echo.Context) error {
+	u := a.getCurrentUser(c)
+
+	u.LastVersion = a.Version.Sha
+	if err := u.Save(a.db); err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, u.LastVersion)
 }

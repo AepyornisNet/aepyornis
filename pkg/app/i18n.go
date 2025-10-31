@@ -49,15 +49,6 @@ func langFromContext(ctx echo.Context) []any {
 	}
 }
 
-func (a *App) i18nN(ctx echo.Context, message string, count int, vars ...any) string {
-	t := a.translatorFromContext(ctx)
-	if t.Has(message) {
-		return t.N(message, count, vars...)
-	}
-
-	return fmt.Sprintf("%s[%d]: %v", message, count, vars)
-}
-
 func (a *App) i18nT(ctx echo.Context, message string, vars ...any) string {
 	t := a.translatorFromContext(ctx)
 	if t.Has(message) {

@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"regexp"
 
-	"github.com/a-h/templ"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/importers"
-	"github.com/jovandeginste/workout-tracker/v2/views/workouts"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -21,7 +18,6 @@ import (
 var (
 	ErrNotAuthorized = errors.New("not authorized")
 	ErrInvalidAPIKey = errors.New("invalid API key")
-	htmlConcatenizer = regexp.MustCompile(`\s*\n\s*`)
 )
 
 type APIResponse struct {
@@ -195,7 +191,7 @@ func (a *App) apiCenters(c echo.Context) error {
 		}
 
 		f := geojson.NewFeature(p.ToOrbPoint())
-		a.fillGeoJSONProperties(c, w, f)
+		// a.fillGeoJSONProperties(c, w, f)
 
 		coords.Append(f)
 	}
@@ -478,22 +474,6 @@ func (a *App) renderAPIError(c echo.Context, resp APIResponse, err ...error) err
 	resp.AddError(err...)
 
 	return c.JSON(http.StatusBadRequest, resp)
-}
-
-func (a *App) fillGeoJSONProperties(c echo.Context, w *database.Workout, f *geojson.Feature) {
-	buf := templ.GetBuffer()
-	defer templ.ReleaseBuffer(buf)
-
-	t := workouts.Details(w)
-	if err := t.Render(c.Request().Context(), buf); err != nil {
-		return
-	}
-
-	d := buf.String()
-	// Remove all newlines and surrounding whitespace
-	d = htmlConcatenizer.ReplaceAllString(d, "")
-
-	f.Properties["details"] = d
 }
 
 // apiDailyHandler returns the daily measurements for the user

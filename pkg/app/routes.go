@@ -144,9 +144,6 @@ func (a *App) addRoutesSecure(e *echo.Group) *echo.Group {
 	secureGroup.Use(a.ValidateUserMiddleware)
 	secureGroup.POST("/lookup-address", a.lookupAddressHandler).Name = "lookup-address"
 
-	a.addRoutesSelf(secureGroup)
-	a.addRoutesWorkouts(secureGroup)
-
 	return secureGroup
 }
 

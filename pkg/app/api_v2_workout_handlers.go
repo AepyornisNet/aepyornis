@@ -387,28 +387,18 @@ func (a *App) apiV2WorkoutDeleteHandler(c echo.Context) error {
 func (a *App) apiV2WorkoutUpdateHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
-	// Parse workout ID
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	workout, err := a.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
-	}
-
-	// Get workout
-	var workout database.Workout
-	if err := a.db.Preload("Data").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
 
-	// Bind update data
 	d := &ManualWorkout{units: user.PreferredUnits()}
 	if err := c.Bind(d); err != nil {
 		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
 	}
 
-	// Update workout
-	d.Update(&workout)
+	d.Update(workout)
 
-	// Handle equipment IDs
 	if d.EquipmentIDs != nil {
 		equipment, err := database.GetEquipmentByIDs(a.db, user.ID, d.EquipmentIDs)
 		if err != nil {
@@ -419,17 +409,15 @@ func (a *App) apiV2WorkoutUpdateHandler(c echo.Context) error {
 		}
 	}
 
-	// Save workout
 	if err := workout.Save(a.db); err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
 
-	// Reload workout with associations
 	if err := a.db.Preload("Data").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
 
-	result := api.NewWorkoutResponse(&workout)
+	result := api.NewWorkoutResponse(workout)
 	resp := api.Response[api.WorkoutResponse]{
 		Results: result,
 	}
@@ -470,16 +458,13 @@ func (a *App) apiV2WorkoutToggleLockHandler(c echo.Context) error {
 
 // apiV2WorkoutRefreshHandler marks a workout for refresh
 func (a *App) apiV2WorkoutRefreshHandler(c echo.Context) error {
-	// Get workout
 	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
 
-	// Mark as dirty for refresh
 	workout.Dirty = true
 
-	// Save workout
 	if err := workout.Save(a.db); err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
@@ -493,7 +478,6 @@ func (a *App) apiV2WorkoutRefreshHandler(c echo.Context) error {
 
 // apiV2WorkoutShareHandler generates or regenerates a public share link for a workout
 func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
-	// Get workout
 	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
@@ -503,12 +487,10 @@ func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
 	u := uuid.New()
 	workout.PublicUUID = &u
 
-	// Save workout
 	if err := workout.Save(a.db); err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
 
-	// Return share link
 	resp := api.Response[map[string]string]{
 		Results: map[string]string{
 			"message":     "Public share link generated successfully",
@@ -522,7 +504,6 @@ func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
 
 // apiV2WorkoutShareDeleteHandler deletes the public share link for a workout
 func (a *App) apiV2WorkoutShareDeleteHandler(c echo.Context) error {
-	// Get workout
 	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
@@ -545,7 +526,6 @@ func (a *App) apiV2WorkoutShareDeleteHandler(c echo.Context) error {
 
 // apiV2WorkoutDownloadHandler downloads the original workout file
 func (a *App) apiV2WorkoutDownloadHandler(c echo.Context) error {
-	// Get workout with GPX preloaded
 	workout, err := a.getWorkout(c)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)

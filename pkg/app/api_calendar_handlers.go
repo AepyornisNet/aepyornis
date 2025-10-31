@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/a-h/templ"
-	"github.com/jovandeginste/workout-tracker/v2/views/workouts"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
@@ -98,20 +96,8 @@ func (a *App) apiCalendar(c echo.Context) error {
 	}
 
 	for _, w := range wos {
-		buf := templ.GetBuffer()
-		defer templ.ReleaseBuffer(buf)
-
-		t := workouts.EventTitle(w, u.PreferredUnits())
-		if err := t.Render(c.Request().Context(), buf); err != nil {
-			return a.renderAPIError(c, resp, err)
-		}
-
-		d := buf.String()
-		// Remove all newlines and surrounding whitespace
-		d = htmlConcatenizer.ReplaceAllString(d, "")
-
 		events = append(events, Event{
-			Title: d,
+			Title: w.Name,
 			Start: w.GetDate().In(queryParams.tz),
 			End:   w.GetEnd().In(queryParams.tz),
 			URL:   a.echo.Reverse("workout-show", w.ID),
