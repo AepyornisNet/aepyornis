@@ -1,16 +1,16 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Api } from './api';
 import { AppInfo } from '../../core/types/user';
 import { catchError, of } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AppConfig {
   private api = inject(Api);
 
-  private appInfo = signal<AppInfo | null>(null);
-  private loading = signal<boolean>(false);
+  private readonly appInfo = signal<AppInfo | null>(null);
+  private readonly loading = signal<boolean>(false);
 
   constructor() {
     this.loadAppInfo();
@@ -26,14 +26,15 @@ export class AppConfig {
 
   loadAppInfo() {
     this.loading.set(true);
-    this.api.getAppInfo()
+    this.api
+      .getAppInfo()
       .pipe(
         catchError(() => {
           console.error('Failed to load app info');
           return of(null);
-        })
+        }),
       )
-      .subscribe(response => {
+      .subscribe((response) => {
         this.loading.set(false);
         if (response && response.results) {
           this.appInfo.set(response.results);

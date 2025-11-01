@@ -3,9 +3,13 @@
     <div class="row">
       <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
         <p class="mb-0 text-muted">
-          <small i18n>Workout Tracker</small>
+          <small>Workout Tracker</small>
           @if (version() && versionSha()) {
-            <a [href]="'https://github.com/jovandeginste/workout-tracker/tree/' + versionSha()" target="_blank" class="text-decoration-none me-3">
+            <a
+              class="text-decoration-none me-3"
+              target="_blank"
+              [href]="'https://github.com/jovandeginste/workout-tracker/tree/' + versionSha()"
+            >
               <small> - {{ version() }}</small>
             </a>
           }
@@ -14,11 +18,29 @@
       <div class="col-md-6 text-center text-md-end">
         <p class="mb-0 text-muted">
           <small>
-            <a href="https://hosted.weblate.org/projects/workout-tracker/web-interface/" target="_blank" class="text-decoration-none me-3" i18n>Help us translate</a>
+            <a
+              class="text-decoration-none me-3"
+              href="https://hosted.weblate.org/projects/workout-tracker/web-interface/"
+              target="_blank"
+              >{{ 'translation.help_translate' | translate }}</a
+            >
             @if (versionSha()) {
-              <a [href]="'https://github.com/jovandeginste/workout-tracker/tree/' + versionSha() + '/CHANGELOG.md'" target="_blank" class="text-decoration-none me-3" i18n>Changelog</a>
+              <a
+                class="text-decoration-none me-3"
+                target="_blank"
+                [href]="
+                  'https://github.com/jovandeginste/workout-tracker/tree/' +
+                  versionSha() +
+                  '/CHANGELOG.md'
+                "
+                >Changelog</a
+              >
             }
-            <a href="https://github.com/jovandeginste/workout-tracker" target="_blank" class="text-decoration-none" i18n>
+            <a
+              class="text-decoration-none"
+              href="https://github.com/jovandeginste/workout-tracker"
+              target="_blank"
+            >
               GitHub
             </a>
           </small>

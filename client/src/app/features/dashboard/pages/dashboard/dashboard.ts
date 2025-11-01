@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -7,20 +7,21 @@ import { WorkoutCalendar } from '../../../workouts/components/workout-calendar/w
 import { KeyMetrics } from '../../components/key-metrics/key-metrics';
 import { Records } from '../../components/records/records';
 import { RecentActivity } from '../../components/recent-activity/recent-activity';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, WorkoutCalendar, KeyMetrics, Records, RecentActivity],
+  imports: [CommonModule, WorkoutCalendar, KeyMetrics, Records, RecentActivity, TranslatePipe],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss'
+  styleUrl: './dashboard.scss',
 })
 export class Dashboard implements OnInit {
   private api = inject(Api);
 
-  totals = signal<Totals | null>(null);
-  records = signal<WorkoutRecord[]>([]);
-  loading = signal(true);
-  error = signal<string | null>(null);
+  readonly totals = signal<Totals | null>(null);
+  readonly records = signal<WorkoutRecord[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   ngOnInit() {
     this.loadDashboardData();
@@ -34,7 +35,7 @@ export class Dashboard implements OnInit {
       // Load totals and records in parallel
       const [totalsResponse, recordsResponse] = await Promise.all([
         firstValueFrom(this.api.getTotals()),
-        firstValueFrom(this.api.getRecords())
+        firstValueFrom(this.api.getRecords()),
       ]);
 
       if (totalsResponse) {

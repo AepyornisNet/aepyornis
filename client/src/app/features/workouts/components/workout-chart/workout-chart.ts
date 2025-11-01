@@ -1,37 +1,38 @@
 import {
+  AfterViewInit,
   Component,
+  effect,
+  ElementRef,
+  inject,
   Input,
   OnChanges,
-  SimpleChanges,
-  ElementRef,
-  ViewChild,
-  AfterViewInit,
   OnDestroy,
-  inject,
-  effect
+  SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
+  CategoryScale,
   Chart,
   ChartConfiguration,
-  ChartOptions,
   ChartDataset,
-  CategoryScale,
-  LinearScale,
-  TimeScale,
-  PointElement,
-  LineController,
-  LineElement,
+  ChartOptions,
+  Colors,
+  Decimation,
   Filler,
   Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  TimeScale,
   Tooltip,
-  Decimation,
-  Colors
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
+import { TranslatePipe } from '@ngx-translate/core';
 
 Chart.register(
   TimeScale,
@@ -45,7 +46,7 @@ Chart.register(
   Colors,
   Tooltip,
   Legend,
-  zoomPlugin
+  zoomPlugin,
 );
 
 interface MetricConfig {
@@ -58,9 +59,9 @@ interface MetricConfig {
 
 @Component({
   selector: 'app-workout-chart',
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './workout-chart.html',
-  styleUrl: './workout-chart.scss'
+  styleUrl: './workout-chart.scss',
 })
 export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -169,12 +170,14 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
     const visibleMax = xScale.max;
 
     // Check if we're at full zoom (original bounds)
-    const originalMin = this.viewMode === 'time'
-      ? new Date(this.mapData.time[0]).valueOf()
-      : this.mapData.distance[0];
-    const originalMax = this.viewMode === 'time'
-      ? new Date(this.mapData.time[this.mapData.time.length - 1]).valueOf()
-      : this.mapData.distance[this.mapData.distance.length - 1];
+    const originalMin =
+      this.viewMode === 'time'
+        ? new Date(this.mapData.time[0]).valueOf()
+        : this.mapData.distance[0];
+    const originalMax =
+      this.viewMode === 'time'
+        ? new Date(this.mapData.time[this.mapData.time.length - 1]).valueOf()
+        : this.mapData.distance[this.mapData.distance.length - 1];
 
     // If we're at full zoom, clear the selection
     if (Math.abs(visibleMin - originalMin) < 1 && Math.abs(visibleMax - originalMax) < 1) {
@@ -240,9 +243,9 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
       type: 'line',
       data: {
         labels: this.getLabels(),
-        datasets: this.getDatasets()
+        datasets: this.getDatasets(),
       },
-      options: this.getChartOptions()
+      options: this.getChartOptions(),
     };
 
     this.chart = new Chart(ctx, config);
@@ -265,7 +268,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
       return [];
     }
 
-    this.timeLabels = this.mapData.time.map(t => new Date(t).valueOf());
+    this.timeLabels = this.mapData.time.map((t) => new Date(t).valueOf());
 
     if (this.viewMode === 'time') {
       return this.timeLabels;
@@ -290,7 +293,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         data: this.mapData.speed,
         yAxisID: 'speed',
         spanGaps: true,
-        hidden: false
+        hidden: false,
       });
     }
 
@@ -303,14 +306,16 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         yAxisID: 'elevation',
         fill: 'start',
         spanGaps: true,
-        hidden: false
+        hidden: false,
       });
     }
 
     // Add extra metrics
     if (this.mapData.extra_metrics) {
       for (const metric of this.extraMetrics) {
-        if (metric === 'speed') continue; // Already handled
+        if (metric === 'speed') {
+          continue;
+        } // Already handled
 
         if (this.mapData.extra_metrics[metric]) {
           const settings = metricSettings[metric];
@@ -320,7 +325,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
             data: this.mapData.extra_metrics[metric] as number[],
             yAxisID: metric,
             spanGaps: true,
-            hidden: settings?.hiddenByDefault || false
+            hidden: settings?.hiddenByDefault || false,
           });
         }
       }
@@ -331,11 +336,11 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
 
   private getMetricLabel(metric: string): string {
     const labels: Record<string, string> = {
-      'speed': 'Speed',
-      'elevation': 'Elevation',
+      speed: 'Speed',
+      elevation: 'Elevation',
       'heart-rate': 'Heart Rate',
-      'cadence': 'Cadence',
-      'temperature': 'Temperature'
+      cadence: 'Cadence',
+      temperature: 'Temperature',
     };
     return labels[metric] || metric;
   }
@@ -354,12 +359,14 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         x: {
           type: this.viewMode === 'time' ? 'time' : 'linear',
           time: this.viewMode === 'time' ? { unit: 'minute' } : undefined,
-          min: this.viewMode === 'time'
-            ? new Date(this.mapData.time[0]).valueOf()
-            : this.mapData.distance[0],
-          max: this.viewMode === 'time'
-            ? new Date(this.mapData.time[this.mapData.time.length - 1]).valueOf()
-            : this.mapData.distance[this.mapData.distance.length - 1],
+          min:
+            this.viewMode === 'time'
+              ? new Date(this.mapData.time[0]).valueOf()
+              : this.mapData.distance[0],
+          max:
+            this.viewMode === 'time'
+              ? new Date(this.mapData.time[this.mapData.time.length - 1]).valueOf()
+              : this.mapData.distance[this.mapData.distance.length - 1],
           ticks: {
             callback: (val: string | number) => {
               if (this.viewMode === 'distance') {
@@ -367,24 +374,24 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
                 return `${numVal % 1 ? numVal.toFixed(1) : numVal} km`;
               }
               return new Date(val as number).toTimeString().substr(0, 5);
-            }
-          }
+            },
+          },
         },
-        ...this.buildYAxes(metricSettings)
+        ...this.buildYAxes(metricSettings),
       },
       elements: {
         point: {
-          radius: 0
-        }
+          radius: 0,
+        },
       },
       interaction: {
         mode: 'index',
-        intersect: false
+        intersect: false,
       },
       plugins: {
         decimation: {
           enabled: true,
-          algorithm: 'lttb'
+          algorithm: 'lttb',
         },
         legend: {
           display: true,
@@ -399,7 +406,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
               (chart.options.scales![yAxisID] as { display?: boolean }).display = !meta.hidden;
             }
             chart.update();
-          }
+          },
         },
         tooltip: {
           callbacks: {
@@ -420,28 +427,28 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
                 value = settings.formatter(tooltipItem.raw as number);
               }
               return `${tooltipItem.dataset.label}: ${value}`;
-            }
-          }
+            },
+          },
         },
         zoom: {
           limits: {
             x: { min: 'original', max: 'original' },
-            y: { min: 'original', max: 'original' }
+            y: { min: 'original', max: 'original' },
           },
           zoom: {
             drag: {
-              enabled: true
+              enabled: true,
             },
             wheel: {
-              enabled: true
+              enabled: true,
             },
             mode: 'x',
             onZoomComplete: ({ chart }) => {
               this.onChartZoom(chart);
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
     };
   }
 
@@ -467,8 +474,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
               return settings.labelFormatter(val);
             }
             return val;
-          }
-        }
+          },
+        },
       };
     }
 
@@ -481,35 +488,35 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         formatter: (val: number) => `${val?.toFixed(2) ?? '-'} m/s`,
         labelFormatter: (val: number) => `${val} m/s`,
         formatterYaxis: true,
-        yaxis: { min: 0 }
+        yaxis: { min: 0 },
       },
       elevation: {
         formatter: (val: number) => `${val !== null ? val.toFixed(2) : '-'} m`,
         labelFormatter: (val: number) => `${val} m`,
         formatterYaxis: true,
-        yaxis: { position: 'right' }
+        yaxis: { position: 'right' },
       },
       'heart-rate': {
         formatter: (val: number) => `${val ?? '-'} bpm`,
         labelFormatter: (val: number) => `${val} bpm`,
         formatterYaxis: true,
         hiddenByDefault: true,
-        yaxis: {}
+        yaxis: {},
       },
       cadence: {
         formatter: (val: number) => `${val ?? '-'}`,
         labelFormatter: (val: number) => `${val}`,
         formatterYaxis: true,
         hiddenByDefault: true,
-        yaxis: { min: 0 }
+        yaxis: { min: 0 },
       },
       temperature: {
         formatter: (val: number) => `${val ?? '-'} °C`,
         labelFormatter: (val: number) => `${val} °C`,
         formatterYaxis: true,
         hiddenByDefault: true,
-        yaxis: {}
-      }
+        yaxis: {},
+      },
     };
   }
 }

@@ -36,12 +36,12 @@ export interface Workout {
   pause_duration?: number;
 }
 
-export interface WorkoutDetail extends Workout {
+export type WorkoutDetail = {
   equipment?: Equipment[];
   map_data?: MapData;
   climbs?: ClimbSegment[];
   route_segment_matches?: RouteSegmentMatch[];
-}
+} & Workout;
 
 export interface MapData {
   creator: string;
@@ -64,8 +64,8 @@ export interface MapDataDetails {
   speed: number[]; // in m/s
   slope: number[];
   elevation: number[];
-  // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
-  extra_metrics?: { [key: string]: (number | null)[] };
+
+  extra_metrics?: Record<string, (number | null)[]>;
 }
 
 export interface ClimbSegment {
@@ -121,7 +121,7 @@ export interface Totals {
   down: number;
 }
 
-export interface Record {
+export interface RecordEntry {
   value: number;
   workout_id: number;
   date: string;
@@ -130,12 +130,12 @@ export interface Record {
 export interface WorkoutRecord {
   workout_type: string;
   active: boolean;
-  distance?: Record;
-  average_speed?: Record;
-  average_speed_no_pause?: Record;
-  max_speed?: Record;
-  duration?: Record;
-  total_up?: Record;
+  distance?: RecordEntry;
+  average_speed?: RecordEntry;
+  average_speed_no_pause?: RecordEntry;
+  max_speed?: RecordEntry;
+  duration?: RecordEntry;
+  total_up?: RecordEntry;
 }
 
 export interface CalendarEvent {

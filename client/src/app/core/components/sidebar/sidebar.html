@@ -4,10 +4,8 @@
   [style.width]="isOpen() ? '250px' : '4.5rem'"
 >
   <div class="d-flex flex-row align-items-center justify-content-center py-3 bg-white text-dark">
-    <img src="dumbbell.png" alt="Logo" height="24" />
-    <span class="ps-3" [class.visually-hidden]="!isOpen()" i18n>
-      Workout Tracker
-    </span>
+    <img alt="Logo" height="24" src="dumbbell.png" />
+    <span class="ps-3" [class.visually-hidden]="!isOpen()"> Workout Tracker </span>
   </div>
 
   <div class="overflow-y-auto" [class.p-3]="isOpen()">
@@ -20,17 +18,17 @@
         <li class="nav-item">
           <a
             class="nav-link link-body-emphasis"
-            [class.py-3]="!isOpen()"
-            [class.border-bottom]="!isOpen()"
-            [class.rounded-0]="!isOpen()"
-            [routerLink]="item.route"
-            [ngbTooltip]="item.label"
-            [disableTooltip]="isOpen()"
-            triggers="hover"
             placement="right"
             routerLinkActive="active"
+            triggers="hover"
+            [class.border-bottom]="!isOpen()"
+            [class.py-3]="!isOpen()"
+            [class.rounded-0]="!isOpen()"
+            [disableTooltip]="isOpen()"
+            [ngbTooltip]="item.label"
+            [routerLink]="item.route"
           >
-            <app-icon [name]="item.iconKey" size="1.125rem" [class.me-2]="isOpen()"></app-icon>
+            <app-icon size="1.125rem" [class.me-2]="isOpen()" [name]="item.iconKey" />
             <span [class.visually-hidden]="!isOpen()">{{ item.label }}</span>
           </a>
         </li>

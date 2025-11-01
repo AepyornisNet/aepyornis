@@ -6,8 +6,6 @@ import { Footer } from '../../core/components/footer/footer';
   selector: 'app-public-layout',
   imports: [Header, Footer],
   templateUrl: './public-layout.html',
-  styleUrl: './public-layout.scss'
+  styleUrl: './public-layout.scss',
 })
-export class PublicLayout {
-
-}
+export class PublicLayout {}

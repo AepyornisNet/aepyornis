@@ -1,5 +1,7 @@
 /assets/dist/
 /assets/output.css
+/client/dist
+/client/node_modules
 /vendor/
 /pkg/
 /docs/swagger.*

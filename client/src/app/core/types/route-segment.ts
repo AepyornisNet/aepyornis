@@ -36,7 +36,7 @@ export interface RouteSegmentMatch {
   average_speed: number;
 }
 
-export interface RouteSegmentDetail extends RouteSegment {
+export type RouteSegmentDetail = {
   points: MapPoint[];
   matches: RouteSegmentMatch[];
   center: {
@@ -44,4 +44,4 @@ export interface RouteSegmentDetail extends RouteSegment {
     lng: number;
   };
   address_string: string;
-}
+} & RouteSegment;

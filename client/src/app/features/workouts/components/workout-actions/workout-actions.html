@@ -17,14 +17,21 @@
     <!-- Lock/Unlock -->
     <button
       class="btn btn-sm"
-      [class.btn-warning]="workout().locked"
       [class.btn-outline-secondary]="!workout().locked"
+      [class.btn-warning]="workout().locked"
       [disabled]="isProcessing"
+      [title]="
+        workout().locked
+          ? ('translation.Unlock_workout' | translate)
+          : ('translation.Lock_workout' | translate)
+      "
       (click)="toggleLock()"
-      [title]="workout().locked ? 'Unlock workout' : 'Lock workout'">
-      <app-icon [name]="workout().locked ? 'locked' : 'unlocked'" size="16"></app-icon>
+    >
+      <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
       @if (!compact()) {
-        <span class="ms-1">{{ workout().locked ? 'Unlock' : 'Lock' }}</span>
+        <span class="ms-1">{{
+          workout().locked ? ('translation.unlock' | translate) : ('translation.lock' | translate)
+        }}</span>
       }
     </button>
 
@@ -33,11 +40,12 @@
       <button
         class="btn btn-sm btn-outline-secondary"
         [disabled]="isProcessing"
+        [title]="'translation.Download_original_file' | translate"
         (click)="download()"
-        title="Download original file">
-        <app-icon name="download" size="16"></app-icon>
+      >
+        <app-icon name="download" size="16" />
         @if (!compact()) {
-          <span class="ms-1">Download</span>
+          <span class="ms-1">{{ 'translation.download' | translate }}</span>
         }
       </button>
     }
@@ -46,11 +54,12 @@
     <button
       class="btn btn-sm btn-outline-secondary"
       [disabled]="isProcessing"
+      [title]="'translation.Edit_workout' | translate"
       (click)="edit()"
-      title="Edit workout">
-      <app-icon name="edit" size="16"></app-icon>
+    >
+      <app-icon name="edit" size="16" />
       @if (!compact()) {
-        <span class="ms-1">Edit</span>
+        <span class="ms-1">{{ 'translation.edit' | translate }}</span>
       }
     </button>
 
@@ -59,11 +68,12 @@
       <button
         class="btn btn-sm btn-outline-secondary"
         [disabled]="isProcessing"
+        [title]="'translation.Refresh_workout_data' | translate"
         (click)="refresh()"
-        title="Refresh workout data">
-        <app-icon name="refresh" size="16"></app-icon>
+      >
+        <app-icon name="refresh" size="16" />
         @if (!compact()) {
-          <span class="ms-1">Refresh</span>
+          <span class="ms-1">{{ 'translation.refresh' | translate }}</span>
         }
       </button>
     }
@@ -73,28 +83,32 @@
       <button
         class="btn btn-sm btn-outline-secondary dropdown-toggle"
         [disabled]="isProcessing"
+        [title]="'translation.Share_workout' | translate"
         (click)="toggleShareMenu()"
-        title="Share workout">
-        <app-icon name="share" size="16"></app-icon>
+      >
+        <app-icon name="share" size="16" />
         @if (!compact()) {
-          <span class="ms-1">Share</span>
+          <span class="ms-1">{{ 'translation.share' | translate }}</span>
         }
       </button>
       @if (showShareMenu) {
-        <div class="dropdown-menu show position-absolute" style="z-index: 1000;">
+        <div class="dropdown-menu show position-absolute" style="z-index: 1000">
           @if (workout().public_uuid) {
-            <button class="dropdown-item" (click)="copyShareLink(); showShareMenu = false;">
-              <app-icon name="copy" size="16"></app-icon>
-              <span class="ms-1">Copy Share Link</span>
+            <button class="dropdown-item" (click)="copyShareLink(); showShareMenu = false">
+              <app-icon name="copy" size="16" />
+              <span class="ms-1">{{ 'translation.copy_share_link' | translate }}</span>
             </button>
-            <button class="dropdown-item text-danger" (click)="deleteShareLink(); showShareMenu = false;">
-              <app-icon name="delete" size="16"></app-icon>
-              <span class="ms-1">Delete Share Link</span>
+            <button
+              class="dropdown-item text-danger"
+              (click)="deleteShareLink(); showShareMenu = false"
+            >
+              <app-icon name="delete" size="16" />
+              <span class="ms-1">{{ 'translation.delete_share_link' | translate }}</span>
             </button>
           } @else {
-            <button class="dropdown-item" (click)="generateShareLink(); showShareMenu = false;">
-              <app-icon name="generate-share" size="16"></app-icon>
-              <span class="ms-1">Generate Share Link</span>
+            <button class="dropdown-item" (click)="generateShareLink(); showShareMenu = false">
+              <app-icon name="generate-share" size="16" />
+              <span class="ms-1">{{ 'translation.generate_share_link' | translate }}</span>
             </button>
           }
         </div>
@@ -105,34 +119,41 @@
     <button
       class="btn btn-sm btn-outline-danger"
       [disabled]="isProcessing"
+      [title]="'translation.Delete_workout' | translate"
       (click)="confirmDelete()"
-      title="Delete workout">
-      <app-icon name="delete" size="16"></app-icon>
+    >
+      <app-icon name="delete" size="16" />
       @if (!compact()) {
-        <span class="ms-1">Delete</span>
+        <span class="ms-1">{{ 'translation.delete' | translate }}</span>
       }
     </button>
   </div>
 
   <!-- Delete Confirmation Modal -->
   @if (showDeleteConfirm) {
-    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Confirm Delete</h5>
-            <button type="button" class="btn-close" (click)="cancelDelete()">
-              <span class="visually-hidden" i18n>Close</span>
+            <h5 class="modal-title">{{ 'translation.confirm_delete' | translate }}</h5>
+            <button class="btn-close" type="button" (click)="cancelDelete()">
+              <span class="visually-hidden">{{ 'translation.close' | translate }}</span>
             </button>
           </div>
           <div class="modal-body">
-            <p>Are you sure you want to delete this workout?</p>
-            <p><strong>{{ workout().name }}</strong></p>
+            <p>{{ 'translation.are_you_sure_you_want_to_delete_this_workout' | translate }}</p>
+            <p>
+              <strong>{{ workout().name }}</strong>
+            </p>
             <p class="text-muted">This action cannot be undone.</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
-            <button type="button" class="btn btn-danger" (click)="delete()">Delete</button>
+            <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
+              {{ 'translation.cancel' | translate }}
+            </button>
+            <button class="btn btn-danger" type="button" (click)="delete()">
+              {{ 'translation.delete' | translate }}
+            </button>
           </div>
         </div>
       </div>

@@ -1,26 +1,27 @@
-import { Component, input, output, inject } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { Workout, WorkoutDetail } from '../../../../core/types/workout';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-actions',
-  imports: [CommonModule, AppIcon],
+  imports: [CommonModule, AppIcon, TranslatePipe],
   templateUrl: './workout-actions.html',
-  styleUrl: './workout-actions.scss'
+  styleUrl: './workout-actions.scss',
 })
 export class WorkoutActionsComponent {
-  workout = input.required<Workout | WorkoutDetail>();
-  compact = input<boolean>(false);
-  
+  readonly workout = input.required<Workout | WorkoutDetail>();
+  readonly compact = input<boolean>(false);
+
   workoutUpdated = output<Workout>();
   workoutDeleted = output<void>();
-  
+
   private api = inject(Api);
   private router = inject(Router);
-  
+
   showDeleteConfirm = false;
   showShareMenu = false;
   isProcessing = false;
@@ -28,36 +29,40 @@ export class WorkoutActionsComponent {
   successMessage: string | null = null;
 
   toggleLock() {
-    if (this.isProcessing) return;
-    
+    if (this.isProcessing) {
+      return;
+    }
+
     this.isProcessing = true;
     this.errorMessage = null;
-    
+
     this.api.toggleWorkoutLock(this.workout().id).subscribe({
       next: (response) => {
         this.isProcessing = false;
         this.workoutUpdated.emit(response.results);
         this.successMessage = this.workout().locked ? 'Workout unlocked' : 'Workout locked';
-        setTimeout(() => this.successMessage = null, 3000);
+        setTimeout(() => (this.successMessage = null), 3000);
       },
       error: (err) => {
         this.isProcessing = false;
         this.errorMessage = 'Failed to toggle lock: ' + (err.error?.errors?.[0] || err.message);
-        setTimeout(() => this.errorMessage = null, 5000);
-      }
+        setTimeout(() => (this.errorMessage = null), 5000);
+      },
     });
   }
 
   download() {
-    if (this.isProcessing || !this.workout().has_file) return;
-    
+    if (this.isProcessing || !this.workout().has_file) {
+      return;
+    }
+
     this.isProcessing = true;
     this.errorMessage = null;
-    
+
     this.api.downloadWorkout(this.workout().id).subscribe({
       next: (blob) => {
         this.isProcessing = false;
-        
+
         // Create download link
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -67,15 +72,15 @@ export class WorkoutActionsComponent {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         this.successMessage = 'Download started';
-        setTimeout(() => this.successMessage = null, 3000);
+        setTimeout(() => (this.successMessage = null), 3000);
       },
       error: (err) => {
         this.isProcessing = false;
         this.errorMessage = 'Failed to download: ' + (err.error?.errors?.[0] || err.message);
-        setTimeout(() => this.errorMessage = null, 5000);
-      }
+        setTimeout(() => (this.errorMessage = null), 5000);
+      },
     });
   }
 
@@ -84,22 +89,24 @@ export class WorkoutActionsComponent {
   }
 
   refresh() {
-    if (this.isProcessing || !this.workout().has_file) return;
-    
+    if (this.isProcessing || !this.workout().has_file) {
+      return;
+    }
+
     this.isProcessing = true;
     this.errorMessage = null;
-    
+
     this.api.refreshWorkout(this.workout().id).subscribe({
       next: (response) => {
         this.isProcessing = false;
         this.successMessage = response.results.message;
-        setTimeout(() => this.successMessage = null, 3000);
+        setTimeout(() => (this.successMessage = null), 3000);
       },
       error: (err) => {
         this.isProcessing = false;
         this.errorMessage = 'Failed to refresh: ' + (err.error?.errors?.[0] || err.message);
-        setTimeout(() => this.errorMessage = null, 5000);
-      }
+        setTimeout(() => (this.errorMessage = null), 5000);
+      },
     });
   }
 
@@ -112,11 +119,13 @@ export class WorkoutActionsComponent {
   }
 
   delete() {
-    if (this.isProcessing) return;
-    
+    if (this.isProcessing) {
+      return;
+    }
+
     this.isProcessing = true;
     this.errorMessage = null;
-    
+
     this.api.deleteWorkout(this.workout().id).subscribe({
       next: () => {
         this.isProcessing = false;
@@ -127,8 +136,8 @@ export class WorkoutActionsComponent {
       error: (err) => {
         this.isProcessing = false;
         this.errorMessage = 'Failed to delete: ' + (err.error?.errors?.[0] || err.message);
-        setTimeout(() => this.errorMessage = null, 5000);
-      }
+        setTimeout(() => (this.errorMessage = null), 5000);
+      },
     });
   }
 
@@ -137,65 +146,76 @@ export class WorkoutActionsComponent {
   }
 
   generateShareLink() {
-    if (this.isProcessing) return;
-    
+    if (this.isProcessing) {
+      return;
+    }
+
     this.isProcessing = true;
     this.errorMessage = null;
-    
+
     this.api.shareWorkout(this.workout().id).subscribe({
       next: (response) => {
         this.isProcessing = false;
         this.successMessage = response.results.message;
-        
+
         // Update workout with new public_uuid
         const updatedWorkout = { ...this.workout(), public_uuid: response.results.public_uuid };
         this.workoutUpdated.emit(updatedWorkout as Workout);
-        
-        setTimeout(() => this.successMessage = null, 3000);
+
+        setTimeout(() => (this.successMessage = null), 3000);
       },
       error: (err) => {
         this.isProcessing = false;
-        this.errorMessage = 'Failed to generate share link: ' + (err.error?.errors?.[0] || err.message);
-        setTimeout(() => this.errorMessage = null, 5000);
-      }
+        this.errorMessage =
+          'Failed to generate share link: ' + (err.error?.errors?.[0] || err.message);
+        setTimeout(() => (this.errorMessage = null), 5000);
+      },
     });
   }
 
   copyShareLink() {
-    if (!this.workout().public_uuid) return;
-    
+    if (!this.workout().public_uuid) {
+      return;
+    }
+
     const shareUrl = `${window.location.origin}/share/${this.workout().public_uuid}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      this.successMessage = 'Share link copied to clipboard';
-      setTimeout(() => this.successMessage = null, 3000);
-    }).catch((err) => {
-      this.errorMessage = 'Failed to copy to clipboard: ' + err.message;
-      setTimeout(() => this.errorMessage = null, 5000);
-    });
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        this.successMessage = 'Share link copied to clipboard';
+        setTimeout(() => (this.successMessage = null), 3000);
+      })
+      .catch((err) => {
+        this.errorMessage = 'Failed to copy to clipboard: ' + err.message;
+        setTimeout(() => (this.errorMessage = null), 5000);
+      });
   }
 
   deleteShareLink() {
-    if (this.isProcessing) return;
-    
+    if (this.isProcessing) {
+      return;
+    }
+
     this.isProcessing = true;
     this.errorMessage = null;
-    
+
     this.api.deleteWorkoutShare(this.workout().id).subscribe({
       next: (response) => {
         this.isProcessing = false;
         this.successMessage = response.results.message;
-        
+
         // Update workout with removed public_uuid
         const updatedWorkout = { ...this.workout(), public_uuid: undefined };
         this.workoutUpdated.emit(updatedWorkout as Workout);
-        
-        setTimeout(() => this.successMessage = null, 3000);
+
+        setTimeout(() => (this.successMessage = null), 3000);
       },
       error: (err) => {
         this.isProcessing = false;
-        this.errorMessage = 'Failed to delete share link: ' + (err.error?.errors?.[0] || err.message);
-        setTimeout(() => this.errorMessage = null, 5000);
-      }
+        this.errorMessage =
+          'Failed to delete share link: ' + (err.error?.errors?.[0] || err.message);
+        setTimeout(() => (this.errorMessage = null), 5000);
+      },
     });
   }
 }

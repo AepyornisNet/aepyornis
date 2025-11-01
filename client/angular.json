@@ -44,9 +44,7 @@
               "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css"
             ],
-            "polyfills": [
-              "@angular/localize/init"
-            ]
+            "polyfills": ["@angular/localize/init"]
           },
           "configurations": {
             "production": {
@@ -101,19 +99,14 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": [
-              "src/**/*.ts",
-              "src/**/*.html"
-            ]
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
           }
         }
       }
     }
   },
   "cli": {
-    "schematicCollections": [
-      "angular-eslint"
-    ],
+    "schematicCollections": ["angular-eslint"],
     "analytics": false
   }
 }

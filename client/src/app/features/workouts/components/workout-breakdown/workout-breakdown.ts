@@ -1,19 +1,23 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, inject, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
-import { WorkoutDetailIntervalService, IntervalData } from '../../services/workout-detail-interval.service';
+import {
+  IntervalData,
+  WorkoutDetailIntervalService,
+} from '../../services/workout-detail-interval.service';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-breakdown',
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './workout-breakdown.html',
-  styleUrl: './workout-breakdown.scss'
+  styleUrl: './workout-breakdown.scss',
 })
 export class WorkoutBreakdownComponent implements OnInit {
   @Input() mapData?: MapDataDetails;
   @Input() extraMetrics: string[] = [];
-  
+
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private intervalService = inject(WorkoutDetailIntervalService);
 
@@ -28,7 +32,7 @@ export class WorkoutBreakdownComponent implements OnInit {
       this.intervals = this.intervalService.calculateIntervals(
         this.mapData,
         this.intervalDistance,
-        this.extraMetrics
+        this.extraMetrics,
       );
     }
   }
@@ -36,15 +40,15 @@ export class WorkoutBreakdownComponent implements OnInit {
   setIntervalDistance(distance: number) {
     this.intervalDistance = distance;
     this.selectedIntervalIndex = null;
-    
+
     if (this.mapData) {
       this.intervals = this.intervalService.calculateIntervals(
         this.mapData,
         this.intervalDistance,
-        this.extraMetrics
+        this.extraMetrics,
       );
     }
-    
+
     this.coordinatorService.clearSelection();
   }
 

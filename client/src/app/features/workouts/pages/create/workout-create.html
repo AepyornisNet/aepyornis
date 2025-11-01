@@ -1,6 +1,12 @@
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="display-4 mb-0" i18n>{{ editMode() ? 'Edit Workout' : 'Add a Workout' }}</h1>
+    <h1 class="display-4 mb-0">
+      {{
+        editMode()
+          ? ('translation.Edit_Workout' | translate)
+          : ('translation.Add_a_Workout' | translate)
+      }}
+    </h1>
   </div>
 
   <!-- Success/Error Messages -->
@@ -21,120 +27,153 @@
       <div class="col-12 col-lg-6">
         <div class="card shadow-sm">
           <div class="card-header">
-            <h5 class="mb-0" i18n>Use a File</h5>
+            <h5 class="mb-0">{{ 'translation.use_a_file' | translate }}</h5>
           </div>
           <div class="card-body">
-          <form [formGroup]="fileUploadForm" (ngSubmit)="submitFileUpload()" #fileForm="ngForm">
-            <div class="mb-3">
-              <label for="file" class="form-label" i18n>File</label>
-              <input
-                type="file"
-                class="form-control"
-                id="file"
-                accept=".fit,.ftb,.gpx,.tcx,.zip"
-                multiple
-                (change)="onFilesSelected($event)"
-                [disabled]="loading()"
-              />
-              @if (selectedFiles().length > 0) {
-                <div class="mt-2">
-                  @for (file of selectedFiles(); track file.name; let i = $index) {
-                    <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded mb-2">
-                      <span class="text-truncate">{{ file.name }}</span>
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-link text-danger p-0"
-                        (click)="removeFile(i)"
-                        [disabled]="loading()"
+            <form #fileForm="ngForm" [formGroup]="fileUploadForm" (ngSubmit)="submitFileUpload()">
+              <div class="mb-3">
+                <label class="form-label" for="file">{{ 'translation.file' | translate }}</label>
+                <input
+                  accept=".fit,.ftb,.gpx,.tcx,.zip"
+                  class="form-control"
+                  id="file"
+                  multiple
+                  type="file"
+                  [disabled]="loading()"
+                  (change)="onFilesSelected($event)"
+                />
+                @if (selectedFiles().length > 0) {
+                  <div class="mt-2">
+                    @for (file of selectedFiles(); track file.name; let i = $index) {
+                      <div
+                        class="d-flex align-items-center justify-content-between p-2 bg-light rounded mb-2"
                       >
-                        <app-icon name="close" size="16" />
-                      </button>
-                    </div>
+                        <span class="text-truncate">{{ file.name }}</span>
+                        <button
+                          class="btn btn-sm btn-link text-danger p-0"
+                          type="button"
+                          [disabled]="loading()"
+                          (click)="removeFile(i)"
+                        >
+                          <app-icon name="close" size="16" />
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="type">{{ 'translation.type' | translate }}</label>
+                <select class="form-select" formControlName="type" id="type" [disabled]="loading()">
+                  <option value="auto">{{ 'translation.autodetect' | translate }}</option>
+                  @for (wt of workoutTypes; track wt.value) {
+                    <option [value]="wt.value">{{ wt.value }}</option>
                   }
-                </div>
-              }
-            </div>
+                </select>
+              </div>
 
-            <div class="mb-3">
-              <label for="type" class="form-label" i18n>Type</label>
-              <select
-                class="form-select"
-                id="type"
-                formControlName="type"
-                [disabled]="loading()"
-              >
-                <option value="auto" i18n>Autodetect</option>
-                @for (wt of workoutTypes; track wt.value) {
-                  <option [value]="wt.value">{{ wt.value }}</option>
-                }
-              </select>
-            </div>
+              <div class="mb-3">
+                <label class="form-label" for="file-notes">{{
+                  'translation.notes' | translate
+                }}</label>
+                <textarea
+                  class="form-control"
+                  formControlName="notes"
+                  id="file-notes"
+                  rows="4"
+                  [disabled]="loading()"
+                ></textarea>
+              </div>
 
-            <div class="mb-3">
-              <label for="file-notes" class="form-label" i18n>Notes</label>
-              <textarea
-                class="form-control"
-                id="file-notes"
-                formControlName="notes"
-                rows="4"
-                [disabled]="loading()"
-              ></textarea>
-            </div>
+              <div class="mb-3">
+                <p class="fw-bold mb-2">{{ 'translation.resources' | translate }}</p>
+                <p class="text-muted small">
+                  {{
+                    'translation.You_can_edit_your_GPX_files_before_uploading_them_here' | translate
+                  }}
+                </p>
+                <ul class="small text-muted">
+                  <li>{{ 'translation.split_files_with_multiple_tracks' | translate }}</li>
+                  <li>
+                    {{ 'translation.convert_from_not_yet_supported_file_format' | translate }}
+                  </li>
+                  <li>
+                    {{ 'translation.remove_the_beginning_or_the_ending_of_a_workout' | translate }}
+                  </li>
+                </ul>
+                <p class="text-muted small">
+                  {{ 'translation.try_one_of_these_sites' | translate }}
+                </p>
+                <ul class="small">
+                  <li>
+                    <a href="https://gpx.studio/" target="_blank"
+                      >gpx.studio — the online GPX file editor</a
+                    >
+                  </li>
+                  <li>
+                    <a href="https://kml2gpx.com/" target="_blank"
+                      >Kml2gpx.com: convert kml to gpx online</a
+                    >
+                  </li>
+                  <li>
+                    <a href="https://www.fitfileviewer.com/" target="_blank">FIT File Viewer</a>
+                  </li>
+                </ul>
+              </div>
 
-            <div class="mb-3">
-              <p class="fw-bold mb-2" i18n>Resources</p>
-              <p class="text-muted small" i18n>You can edit your GPX files before uploading them here:</p>
-              <ul class="small text-muted">
-                <li i18n>Split files with multiple tracks</li>
-                <li i18n>Convert from not yet supported file format</li>
-                <li i18n>Remove the beginning or the ending of a workout</li>
-              </ul>
-              <p class="text-muted small" i18n>Try one of these sites:</p>
-              <ul class="small">
-                <li><a target="_blank" href="https://gpx.studio/">gpx.studio — the online GPX file editor</a></li>
-                <li><a target="_blank" href="https://kml2gpx.com/">Kml2gpx.com: convert kml to gpx online</a></li>
-                <li><a target="_blank" href="https://www.fitfileviewer.com/">FIT File Viewer</a></li>
-              </ul>
-            </div>
-
-            <div class="d-grid">
-              <button
-                type="submit"
-                class="btn btn-primary"
-                [disabled]="loading() || selectedFiles().length === 0"
-              >
-                @if (loading()) {
-                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                }
-                <span i18n>Add Workouts</span>
-              </button>
-            </div>
-          </form>
+              <div class="d-grid">
+                <button
+                  class="btn btn-primary"
+                  type="submit"
+                  [disabled]="loading() || selectedFiles().length === 0"
+                >
+                  @if (loading()) {
+                    <span
+                      aria-hidden="true"
+                      class="spinner-border spinner-border-sm me-2"
+                      role="status"
+                    ></span>
+                  }
+                  <span>{{ 'translation.add_workouts' | translate }}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
     }
 
     <!-- Manual Workout Form -->
     <div [class.col-12]="editMode()" [class.col-lg-6]="!editMode()">
       <div class="card shadow-sm">
         <div class="card-header">
-          <h5 class="mb-0" i18n>{{ editMode() ? 'Workout Details' : 'Manual' }}</h5>
+          <h5 class="mb-0">
+            {{
+              editMode() ? ('translation.details' | translate) : ('translation.manual' | translate)
+            }}
+          </h5>
         </div>
         <div class="card-body">
-          <form [formGroup]="manualWorkoutForm" (ngSubmit)="submitManualWorkout()" #manualFormRef="ngForm">
+          <form
+            #manualFormRef="ngForm"
+            [formGroup]="manualWorkoutForm"
+            (ngSubmit)="submitManualWorkout()"
+          >
             <div class="mb-3">
-              <label for="workout-type" class="form-label" i18n>Workout Type</label>
+              <label class="form-label" for="workout-type">{{
+                'translation.Workout_type' | translate
+              }}</label>
               <select
                 class="form-select"
                 id="workout-type"
+                name="workout-type"
+                required
+                [disabled]="loading()"
                 [value]="manualWorkoutType()"
                 (change)="updateManualWorkoutType($any($event.target).value)"
-                name="workout-type"
-                [disabled]="loading()"
-                required
               >
-                <option value="" i18n>Select...</option>
+                <option value="">{{ 'translation.select...' | translate }}</option>
                 @for (wt of workoutTypes; track wt.value) {
                   <option [value]="wt.value">{{ wt.value }}</option>
                 }
@@ -144,50 +183,54 @@
             @if (manualFormVisible()) {
               @if (showCustomType()) {
                 <div class="mb-3">
-                  <label for="custom-type" class="form-label" i18n>Type</label>
+                  <label class="form-label" for="custom-type">{{
+                    'translation.type' | translate
+                  }}</label>
                   <input
-                    type="text"
                     class="form-control"
-                    id="custom-type"
                     formControlName="custom_type"
-                    [disabled]="loading()"
+                    id="custom-type"
                     required
+                    type="text"
+                    [disabled]="loading()"
                   />
                 </div>
               }
 
               <div class="mb-3">
-                <label for="name" class="form-label" i18n>Name</label>
+                <label class="form-label" for="name">{{ 'translation.name' | translate }}</label>
                 <input
-                  type="text"
                   class="form-control"
-                  id="name"
                   formControlName="name"
-                  [disabled]="loading()"
+                  id="name"
                   required
+                  type="text"
+                  [disabled]="loading()"
                 />
               </div>
 
               <div class="mb-3">
-                <label for="date" class="form-label" i18n>Date</label>
+                <label class="form-label" for="date">{{ 'translation.date' | translate }}</label>
                 <input
-                  type="datetime-local"
                   class="form-control"
-                  id="date"
                   formControlName="date"
-                  [disabled]="loading()"
+                  id="date"
                   required
+                  type="datetime-local"
+                  [disabled]="loading()"
                 />
               </div>
 
               @if (showLocation()) {
                 <div class="mb-3">
-                  <label for="location" class="form-label" i18n>Location</label>
+                  <label class="form-label" for="location">{{
+                    'translation.location' | translate
+                  }}</label>
                   <input
-                    type="text"
                     class="form-control"
-                    id="location"
                     formControlName="location"
+                    id="location"
+                    type="text"
                     [disabled]="loading()"
                   />
                 </div>
@@ -195,43 +238,45 @@
 
               @if (showDuration()) {
                 <div class="mb-3">
-                  <label for="duration-hours" class="form-label" i18n>Duration</label>
+                  <label class="form-label" for="duration-hours">{{
+                    'translation.duration' | translate
+                  }}</label>
                   <div class="d-flex align-items-center gap-2">
                     <input
-                      type="number"
                       class="form-control"
-                      id="duration-hours"
-                      style="width: 5rem;"
                       formControlName="duration_hours"
-                      min="0"
+                      id="duration-hours"
                       max="999"
-                      [disabled]="loading()"
-                      required
+                      min="0"
                       placeholder="HH"
+                      required
+                      style="width: 5rem"
+                      type="number"
+                      [disabled]="loading()"
                     />
                     <span>:</span>
                     <input
-                      type="number"
                       class="form-control"
-                      style="width: 5rem;"
                       formControlName="duration_minutes"
-                      min="0"
                       max="59"
-                      [disabled]="loading()"
-                      required
+                      min="0"
                       placeholder="MM"
+                      required
+                      style="width: 5rem"
+                      type="number"
+                      [disabled]="loading()"
                     />
                     <span>:</span>
                     <input
-                      type="number"
                       class="form-control"
-                      style="width: 5rem;"
                       formControlName="duration_seconds"
-                      min="0"
                       max="59"
-                      [disabled]="loading()"
-                      required
+                      min="0"
                       placeholder="SS"
+                      required
+                      style="width: 5rem"
+                      type="number"
+                      [disabled]="loading()"
                     />
                     <span class="text-muted small">(hhh:mm:ss)</span>
                   </div>
@@ -240,16 +285,18 @@
 
               @if (showDistance()) {
                 <div class="mb-3">
-                  <label for="distance" class="form-label" i18n>Distance</label>
+                  <label class="form-label" for="distance">{{
+                    'translation.distance' | translate
+                  }}</label>
                   <div class="input-group">
                     <input
-                      type="number"
                       class="form-control"
-                      id="distance"
                       formControlName="distance"
-                      step="0.01"
-                      [disabled]="loading()"
+                      id="distance"
                       required
+                      step="0.01"
+                      type="number"
+                      [disabled]="loading()"
                     />
                     <span class="input-group-text">km</span>
                   </div>
@@ -258,31 +305,35 @@
 
               @if (showRepetitions()) {
                 <div class="mb-3">
-                  <label for="repetitions" class="form-label" i18n>Repetitions</label>
+                  <label class="form-label" for="repetitions">{{
+                    'translation.repetitions' | translate
+                  }}</label>
                   <input
-                    type="number"
                     class="form-control"
-                    id="repetitions"
                     formControlName="repetitions"
+                    id="repetitions"
                     min="0"
-                    [disabled]="loading()"
                     required
+                    type="number"
+                    [disabled]="loading()"
                   />
                 </div>
               }
 
               @if (showWeight()) {
                 <div class="mb-3">
-                  <label for="weight" class="form-label" i18n>Weight</label>
+                  <label class="form-label" for="weight">{{
+                    'translation.weight' | translate
+                  }}</label>
                   <div class="input-group">
                     <input
-                      type="number"
                       class="form-control"
-                      id="weight"
                       formControlName="weight"
-                      step="0.1"
-                      [disabled]="loading()"
+                      id="weight"
                       required
+                      step="0.1"
+                      type="number"
+                      [disabled]="loading()"
                     />
                     <span class="input-group-text">kg</span>
                   </div>
@@ -290,11 +341,13 @@
               }
 
               <div class="mb-3">
-                <label for="manual-notes" class="form-label" i18n>Notes</label>
+                <label class="form-label" for="manual-notes">{{
+                  'translation.notes' | translate
+                }}</label>
                 <textarea
                   class="form-control"
-                  id="manual-notes"
                   formControlName="notes"
+                  id="manual-notes"
                   rows="10"
                   [disabled]="loading()"
                 ></textarea>
@@ -302,17 +355,17 @@
 
               @if (equipment().length > 0) {
                 <div class="mb-3">
-                  <p class="fw-bold mb-2" i18n>Equipment</p>
+                  <p class="fw-bold mb-2">{{ 'translation.equipment' | translate }}</p>
                   <div class="d-flex flex-wrap gap-2">
                     @for (eq of equipment(); track eq.id) {
                       <div class="form-check">
                         <input
                           class="form-check-input"
                           type="checkbox"
-                          [id]="'equipment-' + eq.id"
                           [checked]="isEquipmentSelected(eq.id)"
-                          (change)="toggleEquipment(eq.id)"
                           [disabled]="loading()"
+                          [id]="'equipment-' + eq.id"
+                          (change)="toggleEquipment(eq.id)"
                         />
                         <label class="form-check-label" [for]="'equipment-' + eq.id">
                           {{ eq.name }}
@@ -325,14 +378,22 @@
 
               <div class="d-grid">
                 <button
-                  type="submit"
                   class="btn btn-primary"
+                  type="submit"
                   [disabled]="loading() || !manualWorkoutType() || manualWorkoutForm.invalid"
                 >
                   @if (loading()) {
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span
+                      aria-hidden="true"
+                      class="spinner-border spinner-border-sm me-2"
+                      role="status"
+                    ></span>
                   }
-                  <span i18n>{{ editMode() ? 'Update Workout' : 'Add Workout' }}</span>
+                  <span>{{
+                    editMode()
+                      ? ('translation.The_workout_s_has_been_updated' | translate)
+                      : ('translation.Add_Workout' | translate)
+                  }}</span>
                 </button>
               </div>
             }

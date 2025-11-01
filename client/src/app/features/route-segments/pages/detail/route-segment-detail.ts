@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -6,23 +6,24 @@ import { Api } from '../../../../core/services/api';
 import { RouteSegmentDetail } from '../../../../core/types/route-segment';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-route-segment-detail',
-  imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent],
-  templateUrl: './route-segment-detail.html'
+  imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe],
+  templateUrl: './route-segment-detail.html',
 })
 export class RouteSegmentDetailPage implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  routeSegment = signal<RouteSegmentDetail | null>(null);
-  loading = signal(true);
-  error = signal<string | null>(null);
+  readonly routeSegment = signal<RouteSegmentDetail | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
       if (id) {
         this.loadRouteSegment(id);
@@ -72,7 +73,7 @@ export class RouteSegmentDetailPage implements OnInit {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -84,7 +85,9 @@ export class RouteSegmentDetailPage implements OnInit {
   }
 
   formatTempo(speedMs: number): string {
-    if (speedMs === 0) return '-';
+    if (speedMs === 0) {
+      return '-';
+    }
     const tempoSecondsPerKm = 1000 / speedMs;
     const minutes = Math.floor(tempoSecondsPerKm / 60);
     const seconds = Math.floor(tempoSecondsPerKm % 60);

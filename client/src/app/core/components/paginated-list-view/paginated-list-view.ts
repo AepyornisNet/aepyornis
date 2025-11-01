@@ -1,15 +1,15 @@
-import { Directive, OnInit, signal, computed } from '@angular/core';
+import { computed, Directive, OnInit, signal } from '@angular/core';
 
 /**
  * Abstract base class for paginated list views
- * 
+ *
  * This class provides common functionality for components that display paginated lists:
  * - Pagination state management (current page, total pages, etc.)
  * - Loading and error states
  * - Navigation methods (next page, previous page, go to page)
  * - Computed values for pagination logic
  * - Visible page numbers calculation
- * 
+ *
  * Usage:
  * 1. Extend this class in your component
  * 2. Implement the abstract loadData() method
@@ -19,26 +19,26 @@ import { Directive, OnInit, signal, computed } from '@angular/core';
 @Directive()
 export abstract class PaginatedListView<T> implements OnInit {
   // Data state
-  items = signal<T[]>([]);
-  loading = signal(true);
-  error = signal<string | null>(null);
+  readonly items = signal<T[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   // Pagination state
-  currentPage = signal(1);
-  perPage = signal(20);
-  totalPages = signal(0);
-  totalCount = signal(0);
+  readonly currentPage = signal(1);
+  readonly perPage = signal(20);
+  readonly totalPages = signal(0);
+  readonly totalCount = signal(0);
 
   // Computed values
-  hasItems = computed(() => this.items().length > 0);
-  hasPreviousPage = computed(() => this.currentPage() > 1);
-  hasNextPage = computed(() => this.currentPage() < this.totalPages());
+  readonly hasItems = computed(() => this.items().length > 0);
+  readonly hasPreviousPage = computed(() => this.currentPage() > 1);
+  readonly hasNextPage = computed(() => this.currentPage() < this.totalPages());
 
   /**
    * Calculate visible page numbers for pagination UI
    * Shows max 7 page buttons with ellipsis when needed
    */
-  visiblePages = computed(() => {
+  readonly visiblePages = computed(() => {
     const current = this.currentPage();
     const total = this.totalPages();
     const maxVisible = 7;

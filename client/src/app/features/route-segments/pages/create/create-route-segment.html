@@ -1,139 +1,163 @@
 <div class="container my-5">
-    @if (loading()) {
-      <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden" i18n>Loading...</span>
-        </div>
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
       </div>
-    }
+    </div>
+  }
 
-    @if (error()) {
-      <div class="alert alert-danger" role="alert">
-        {{ error() }}
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && workout()) {
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <button class="btn btn-link p-0 mb-2" (click)="goBack()">
+          <app-icon name="back" size="20" />
+          <span>{{ 'translation.back_to_workout' | translate }}</span>
+        </button>
+        <h1 class="display-4 mb-0">
+          <app-icon name="route-segment-add" size="48" />
+          <span>{{ 'translation.create_route_segment' | translate }}</span>
+        </h1>
+        <p class="text-muted">
+          {{ 'translation.Create_a_route_segment_from' | translate: { name: workout()!.name } }}
+        </p>
       </div>
-    }
+    </div>
 
-    @if (!loading() && workout()) {
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <button class="btn btn-link p-0 mb-2" (click)="goBack()">
-            <app-icon name="back" size="20"></app-icon>
-            <span i18n>Back to Workout</span>
-          </button>
-          <h1 class="display-4 mb-0">
-            <app-icon name="route-segment-add" size="48"></app-icon>
-            <span i18n>Create Route Segment</span>
-          </h1>
-          <p class="text-muted" i18n>
-            Create a route segment from: {{ workout()!.name }}
-          </p>
-        </div>
-      </div>
-
-      <div class="row">
-        <!-- Map Section -->
-        <div class="col-lg-6 mb-4">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title mb-3" i18n>Route Preview</h5>
-              <!-- Map placeholder - will be implemented in a separate component -->
-              <div class="bg-light d-flex align-items-center justify-content-center" style="height: 400px; border-radius: 8px;">
-                <div class="text-center text-muted">
-                  <app-icon name="route-segment" size="48"></app-icon>
-                  <p class="mt-2" i18n>Interactive map coming soon</p>
-                  <small i18n>{{ totalPoints() }} GPS points available</small>
-                </div>
+    <div class="row">
+      <!-- Map Section -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">{{ 'translation.route_preview' | translate }}</h5>
+            <!-- Map placeholder - will be implemented in a separate component -->
+            <div
+              class="bg-light d-flex align-items-center justify-content-center"
+              style="height: 400px; border-radius: 8px"
+            >
+              <div class="text-center text-muted">
+                <app-icon name="route-segment" size="48" />
+                <p class="mt-2">{{ 'translation.interactive_map_coming_soon' | translate }}</p>
+                <small
+                  >{{ totalPoints() }} {{ 'translation.gps_points_available' | translate }}</small
+                >
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Form Section -->
-        <div class="col-lg-6 mb-4">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title mb-3" i18n>Segment Details</h5>
-              
-              <form (ngSubmit)="createRouteSegment()">
-                <div class="mb-3">
-                  <label for="name" class="form-label" i18n>Name</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    id="name"
-                    [value]="name()"
-                    (input)="name.set($any($event.target).value)"
-                    required>
+      <!-- Form Section -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">{{ 'translation.segment_details' | translate }}</h5>
+
+            <form (ngSubmit)="createRouteSegment()">
+              <div class="mb-3">
+                <label class="form-label" for="name">{{ 'translation.name' | translate }}</label>
+                <input
+                  class="form-control"
+                  id="name"
+                  required
+                  type="text"
+                  [value]="name()"
+                  (input)="name.set($any($event.target).value)"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="start">{{
+                  'translation.Start_Point' | translate
+                }}</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input
+                    class="form-range flex-grow-1"
+                    id="start"
+                    min="1"
+                    type="range"
+                    [max]="totalPoints()"
+                    [value]="start()"
+                    (input)="updateStart(+$any($event.target).value)"
+                  />
+                  <span class="badge bg-primary">{{ start() }}</span>
                 </div>
+                <small class="text-muted">{{
+                  'translation.Select_the_starting_point_of_your_route_segment' | translate
+                }}</small>
+              </div>
 
-                <div class="mb-3">
-                  <label for="start" class="form-label" i18n>Start Point</label>
-                  <div class="d-flex align-items-center gap-2">
-                    <input 
-                      type="range" 
-                      class="form-range flex-grow-1" 
-                      id="start"
-                      min="1"
-                      [max]="totalPoints()"
-                      [value]="start()"
-                      (input)="updateStart(+$any($event.target).value)">
-                    <span class="badge bg-primary">{{ start() }}</span>
-                  </div>
-                  <small class="text-muted" i18n>Select the starting point of your route segment</small>
+              <div class="mb-3">
+                <label class="form-label" for="end">{{
+                  'translation.End_Point' | translate
+                }}</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input
+                    class="form-range flex-grow-1"
+                    id="end"
+                    min="1"
+                    type="range"
+                    [max]="totalPoints()"
+                    [value]="end()"
+                    (input)="updateEnd(+$any($event.target).value)"
+                  />
+                  <span class="badge bg-primary">{{ end() }}</span>
                 </div>
+                <small class="text-muted">{{
+                  'translation.Select_the_ending_point_of_your_route_segment' | translate
+                }}</small>
+              </div>
 
-                <div class="mb-3">
-                  <label for="end" class="form-label" i18n>End Point</label>
-                  <div class="d-flex align-items-center gap-2">
-                    <input 
-                      type="range" 
-                      class="form-range flex-grow-1" 
-                      id="end"
-                      min="1"
-                      [max]="totalPoints()"
-                      [value]="end()"
-                      (input)="updateEnd(+$any($event.target).value)">
-                    <span class="badge bg-primary">{{ end() }}</span>
-                  </div>
-                  <small class="text-muted" i18n>Select the ending point of your route segment</small>
-                </div>
-
-                <div class="mb-4">
-                  <div class="card bg-light">
-                    <div class="card-body">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-muted" i18n>Selected Distance:</span>
-                        <span class="h5 mb-0">{{ selectedDistance().toFixed(2) }} km</span>
-                      </div>
+              <div class="mb-4">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="text-muted">{{
+                        'translation.Selected_Distance' | translate
+                      }}</span>
+                      <span class="h5 mb-0">{{ selectedDistance().toFixed(2) }} km</span>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div class="d-grid gap-2">
-                  <button 
-                    type="submit" 
-                    class="btn btn-primary btn-lg"
-                    [disabled]="creating() || !name() || selectedDistance() === 0">
-                    @if (creating()) {
-                      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      <span i18n>Creating...</span>
-                    } @else {
-                      <app-icon name="route-segment-add" size="20"></app-icon>
-                      <span i18n>Create Route Segment</span>
-                    }
-                  </button>
-                  <button 
-                    type="button" 
-                    class="btn btn-outline-secondary"
-                    (click)="goBack()"
-                    [disabled]="creating()">
-                    <span i18n>Cancel</span>
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div class="d-grid gap-2">
+                <button
+                  class="btn btn-primary btn-lg"
+                  type="submit"
+                  [disabled]="creating() || !name() || selectedDistance() === 0"
+                >
+                  @if (creating()) {
+                    <span
+                      aria-hidden="true"
+                      class="spinner-border spinner-border-sm me-2"
+                      role="status"
+                    ></span>
+                    <span>{{ 'translation.creating' | translate }}</span>
+                  } @else {
+                    <app-icon name="route-segment-add" size="20" />
+                    <span>{{ 'translation.create_route_segment' | translate }}</span>
+                  }
+                </button>
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  [disabled]="creating()"
+                  (click)="goBack()"
+                >
+                  <span>{{ 'translation.cancel' | translate }}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
-    }
-  </div>
+    </div>
+  }
+</div>

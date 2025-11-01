@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
@@ -10,18 +10,18 @@ import { FullUserProfile } from '../../../../core/types/user';
   selector: 'app-profile',
   imports: [CommonModule, AppIcon, ReactiveFormsModule],
   templateUrl: './profile.html',
-  styleUrl: './profile.scss'
+  styleUrl: './profile.scss',
 })
 export class Profile implements OnInit {
   private api = inject(Api);
   private fb = inject(FormBuilder);
 
-  profile = signal<FullUserProfile | null>(null);
-  loading = signal(true);
-  saving = signal(false);
-  error = signal<string | null>(null);
-  successMessage = signal<string | null>(null);
-  apiKeyVisible = signal(false);
+  readonly profile = signal<FullUserProfile | null>(null);
+  readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly successMessage = signal<string | null>(null);
+  readonly apiKeyVisible = signal(false);
 
   // Reactive form
   profileForm!: FormGroup;
@@ -42,8 +42,8 @@ export class Profile implements OnInit {
         distance: ['km'],
         elevation: ['m'],
         weight: ['kg'],
-        height: ['cm']
-      })
+        height: ['cm'],
+      }),
     });
 
     this.loadProfile();
@@ -67,18 +67,22 @@ export class Profile implements OnInit {
           auto_import_directory: response.results.profile.auto_import_directory,
           prefer_full_date: response.results.profile.prefer_full_date,
           socials_disabled: response.results.profile.socials_disabled,
-          preferred_units: response.results.profile.preferred_units
+          preferred_units: response.results.profile.preferred_units,
         });
       }
     } catch (err) {
-      this.error.set('Failed to load profile: ' + (err instanceof Error ? err.message : String(err)));
+      this.error.set(
+        'Failed to load profile: ' + (err instanceof Error ? err.message : String(err)),
+      );
     } finally {
       this.loading.set(false);
     }
   }
 
   async saveProfile() {
-    if (this.profileForm.invalid) return;
+    if (this.profileForm.invalid) {
+      return;
+    }
 
     this.saving.set(true);
     this.error.set(null);
@@ -93,14 +97,18 @@ export class Profile implements OnInit {
         setTimeout(() => this.successMessage.set(null), 3000);
       }
     } catch (err) {
-      this.error.set('Failed to save profile: ' + (err instanceof Error ? err.message : String(err)));
+      this.error.set(
+        'Failed to save profile: ' + (err instanceof Error ? err.message : String(err)),
+      );
     } finally {
       this.saving.set(false);
     }
   }
 
   async resetAPIKey() {
-    if (!confirm('Are you sure you want to generate a new API key? The old key will no longer work.')) {
+    if (
+      !confirm('Are you sure you want to generate a new API key? The old key will no longer work.')
+    ) {
       return;
     }
 
@@ -115,12 +123,16 @@ export class Profile implements OnInit {
         await this.loadProfile();
       }
     } catch (err) {
-      this.error.set('Failed to reset API key: ' + (err instanceof Error ? err.message : String(err)));
+      this.error.set(
+        'Failed to reset API key: ' + (err instanceof Error ? err.message : String(err)),
+      );
     }
   }
 
   async refreshWorkouts() {
-    if (!confirm('Are you sure you want to refresh all your workouts? This may take several minutes.')) {
+    if (
+      !confirm('Are you sure you want to refresh all your workouts? This may take several minutes.')
+    ) {
       return;
     }
 
@@ -133,7 +145,9 @@ export class Profile implements OnInit {
         this.successMessage.set(response.results.message);
       }
     } catch (err) {
-      this.error.set('Failed to refresh workouts: ' + (err instanceof Error ? err.message : String(err)));
+      this.error.set(
+        'Failed to refresh workouts: ' + (err instanceof Error ? err.message : String(err)),
+      );
     }
   }
 
@@ -142,11 +156,14 @@ export class Profile implements OnInit {
   }
 
   copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      this.successMessage.set('Copied to clipboard');
-      setTimeout(() => this.successMessage.set(null), 2000);
-    }).catch(() => {
-      this.error.set('Failed to copy to clipboard');
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        this.successMessage.set('Copied to clipboard');
+        setTimeout(() => this.successMessage.set(null), 2000);
+      })
+      .catch(() => {
+        this.error.set('Failed to copy to clipboard');
+      });
   }
 }

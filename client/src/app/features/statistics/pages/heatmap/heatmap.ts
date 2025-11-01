@@ -1,18 +1,19 @@
 import {
-  Component,
-  OnDestroy,
-  ViewChild,
-  ElementRef,
   AfterViewInit,
-  signal,
-  inject,
+  ApplicationRef,
   ChangeDetectionStrategy,
+  Component,
   createComponent,
+  ElementRef,
   EnvironmentInjector,
-  ApplicationRef
+  inject,
+  OnDestroy,
+  signal,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import * as L from 'leaflet';
 import 'leaflet.heat';
@@ -32,9 +33,10 @@ L.Icon.Default.mergeOptions({
 
 @Component({
   selector: 'app-heatmap',
-  imports: [CommonModule, FormsModule], templateUrl: './heatmap.html',
+  imports: [CommonModule, FormsModule, TranslatePipe],
+  templateUrl: './heatmap.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrls: ['./heatmap.scss']
+  styleUrls: ['./heatmap.scss'],
 })
 export class Heatmap implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef<HTMLDivElement>;
@@ -46,14 +48,14 @@ export class Heatmap implements AfterViewInit, OnDestroy {
   private heatLayer?: L.HeatLayer;
   private markersLayer?: L.MarkerClusterGroup;
 
-  loading = signal(true);
-  error = signal<string | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   // Control settings
-  radius = signal(10);
-  blur = signal(15);
-  showMarkers = signal(true);
-  onlyTrace = signal(false);
+  readonly radius = signal(10);
+  readonly blur = signal(15);
+  readonly showMarkers = signal(true);
+  readonly onlyTrace = signal(false);
 
   private heatMapData: L.HeatLatLngTuple[] = [];
 
@@ -69,28 +71,32 @@ export class Heatmap implements AfterViewInit, OnDestroy {
   }
 
   private initMap() {
-    if (!this.mapContainer) return;
+    if (!this.mapContainer) {
+      return;
+    }
 
     this.map = L.map(this.mapContainer.nativeElement, {
-      fadeAnimation: false
+      fadeAnimation: false,
     });
 
     const layerStreet = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      className: 'map-tiles'
+      className: 'map-tiles',
     });
 
     const layerAerial = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       {
-        attribution: 'Powered by Esri'
-      }
+        attribution: 'Powered by Esri',
+      },
     );
 
-    L.control.layers({
-      'Streets': layerStreet,
-      'Aerial': layerAerial
-    }).addTo(this.map);
+    L.control
+      .layers({
+        Streets: layerStreet,
+        Aerial: layerAerial,
+      })
+      .addTo(this.map);
 
     layerStreet.addTo(this.map);
 
@@ -99,7 +105,9 @@ export class Heatmap implements AfterViewInit, OnDestroy {
   }
 
   private addCustomControl() {
-    if (!this.map) return;
+    if (!this.map) {
+      return;
+    }
 
     const CustomControl = L.Control.extend({
       options: { position: 'topright' },
@@ -156,7 +164,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
         });
 
         return container;
-      }
+      },
     });
 
     new CustomControl().addTo(this.map);
@@ -169,7 +177,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
     try {
       const [coordinatesResponse, centersResponse] = await Promise.all([
         firstValueFrom(this.api.getWorkoutsCoordinates()),
-        firstValueFrom(this.api.getWorkoutsCenters())
+        firstValueFrom(this.api.getWorkoutsCenters()),
       ]);
 
       if (coordinatesResponse?.results) {
@@ -186,32 +194,32 @@ export class Heatmap implements AfterViewInit, OnDestroy {
             onEachFeature: (feature: any, layer) => {
               if (feature.properties && feature.properties['popup_data']) {
                 const popupData = feature.properties['popup_data'] as WorkoutPopupData;
-                
+
                 // Create Angular component for popup
                 const componentRef = createComponent(WorkoutPopup, {
-                  environmentInjector: this.environmentInjector
+                  environmentInjector: this.environmentInjector,
                 });
-                
+
                 // Set input data
                 componentRef.setInput('data', popupData);
-                
+
                 // Attach to application
                 this.applicationRef.attachView(componentRef.hostView);
-                
+
                 // Get the DOM element
                 const popupElement = componentRef.location.nativeElement as HTMLElement;
-                
+
                 // Bind popup with the component's DOM
                 layer.bindPopup(popupElement);
-                
+
                 // Clean up component when popup is closed
                 layer.on('popupclose', () => {
                   this.applicationRef.detachView(componentRef.hostView);
                   componentRef.destroy();
                 });
               }
-            }
-          }
+            },
+          },
         );
 
         this.markersLayer.addLayer(geoJsonLayer);
@@ -236,15 +244,16 @@ export class Heatmap implements AfterViewInit, OnDestroy {
   }
 
   private geoJson2heat(geojson: GeoJsonFeatureCollection): L.HeatLatLngTuple[] {
-    return geojson.features.map(feature => [
-      feature.geometry.coordinates[1],
-      feature.geometry.coordinates[0],
-      1
-    ] as L.HeatLatLngTuple);
+    return geojson.features.map(
+      (feature) =>
+        [feature.geometry.coordinates[1], feature.geometry.coordinates[0], 1] as L.HeatLatLngTuple,
+    );
   }
 
   private rerenderHeatMap() {
-    if (!this.map || this.heatMapData.length === 0) return;
+    if (!this.map || this.heatMapData.length === 0) {
+      return;
+    }
 
     // Remove existing heat layer
     if (this.heatLayer) {
@@ -254,7 +263,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
     // Configure heatmap based on settings
     const config: L.HeatMapOptions = {
       radius: this.onlyTrace() ? 1 : this.radius(),
-      blur: this.onlyTrace() ? 1 : this.blur()
+      blur: this.onlyTrace() ? 1 : this.blur(),
     };
 
     if (this.onlyTrace()) {

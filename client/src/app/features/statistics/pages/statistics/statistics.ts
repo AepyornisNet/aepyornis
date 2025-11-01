@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -18,16 +18,16 @@ interface StatisticOption {
   imports: [CommonModule, ReactiveFormsModule, AppIcon, StatisticChartComponent],
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Statistics implements OnInit {
   private api = inject(Api);
   private fb = inject(FormBuilder);
 
-  statistics = signal<StatisticsData | null>(null);
-  preferredUnits = signal<UserPreferredUnits | null>(null);
-  loading = signal(true);
-  error = signal<string | null>(null);
+  readonly statistics = signal<StatisticsData | null>(null);
+  readonly preferredUnits = signal<UserPreferredUnits | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   // Reactive form for filters
   filterForm!: FormGroup;
@@ -41,20 +41,20 @@ export class Statistics implements OnInit {
     { key: '2 years', label: '2 years' },
     { key: '5 years', label: '5 years' },
     { key: '10 years', label: '10 years' },
-    { key: 'forever', label: 'Forever' }
+    { key: 'forever', label: 'Forever' },
   ];
 
   perOptions: StatisticOption[] = [
     { key: 'day', label: 'Day' },
     { key: 'week', label: 'Week' },
-    { key: 'month', label: 'Month' }
+    { key: 'month', label: 'Month' },
   ];
 
   ngOnInit() {
     // Initialize filter form
     this.filterForm = this.fb.group({
       since: ['1 year'],
-      per: ['month']
+      per: ['month'],
     });
 
     this.loadPreferredUnits();
@@ -78,10 +78,12 @@ export class Statistics implements OnInit {
 
     try {
       const formValue = this.filterForm.value;
-      const response = await firstValueFrom(this.api.getStatistics({
-        since: formValue.since,
-        per: formValue.per
-      }));
+      const response = await firstValueFrom(
+        this.api.getStatistics({
+          since: formValue.since,
+          per: formValue.per,
+        }),
+      );
 
       if (response?.results) {
         this.statistics.set(response.results);

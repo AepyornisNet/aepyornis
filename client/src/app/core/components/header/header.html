@@ -2,42 +2,41 @@
   <div class="container-fluid">
     @if (userName()) {
       <button
-        class="btn btn-link sidebar-toggle d-inline-flex align-items-center"
-        (click)="onToggleSidebar()"
-        [attr.aria-expanded]="showSidebar()"
         aria-label="Toggle sidebar"
+        class="btn btn-link sidebar-toggle d-inline-flex align-items-center"
+        [attr.aria-expanded]="showSidebar()"
+        (click)="onToggleSidebar()"
       >
-        <app-icon name="menu" size="22px"></app-icon>
+        <app-icon name="menu" size="22px" />
       </button>
     } @else {
-      <a class="navbar-brand fw-bold" href="#" i18n>
-        Workout Tracker
-      </a>
+      <a class="navbar-brand fw-bold" href="#"> Workout Tracker </a>
     }
 
     <div class="ms-auto">
       <div class="d-flex align-items-center gap-3">
         @if (userName()) {
           <span class="navbar-text d-none d-md-inline">
-            <app-icon name="user" size="16px" class="me-2"></app-icon>
+            <app-icon class="me-2" name="user" size="16px" />
             <strong>{{ userName() }}</strong>
           </span>
-          <button class="btn btn-sm btn-link text-danger link-body-emphasis" (click)="onLogout()!()" i18n>
-            <app-icon name="logout" size="16px" class="me-2"></app-icon>
+          <button
+            class="btn btn-sm btn-link text-danger link-body-emphasis"
+            (click)="onLogout()!()"
+          >
+            <app-icon class="me-2" name="logout" size="16px" />
           </button>
         }
         @if (!userName()) {
           <div class="d-flex align-items-center">
             <select
-              id="languageSelect"
               class="form-select form-select-sm"
+              id="languageSelect"
               [(ngModel)]="selectedLanguage"
               (change)="onLanguageChange($event)"
             >
               @for (lang of languages; track lang.code) {
-                <option [value]="lang.code">
-                  {{ lang.flag }} {{ lang.name }}
-                </option>
+                <option [value]="lang.code">{{ lang.flag }} {{ lang.name }}</option>
               }
             </select>
           </div>

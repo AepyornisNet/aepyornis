@@ -2,7 +2,7 @@
   @if (dataService.loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden" i18n>Loading...</span>
+        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -11,19 +11,21 @@
     <div class="alert alert-danger" role="alert">
       {{ dataService.error() }}
     </div>
-    <button class="btn btn-primary" (click)="goBack()" i18n>Back to Workouts</button>
+    <button class="btn btn-primary" (click)="goBack()">
+      {{ 'translation.workouts' | translate }}
+    </button>
   }
 
   @if (!dataService.loading() && !dataService.error() && dataService.workout()) {
     <div class="workout-header">
       <div class="d-flex align-items-center gap-3">
         <h1 class="display-4 mb-0">
-          <app-icon [name]="dataService.workout()!.type" size="32"></app-icon>
+          <app-icon size="32" [name]="dataService.workout()!.type" />
           {{ dataService.workout()!.name }}
         </h1>
         @if (dataService.workout()!.locked) {
           <span class="badge bg-warning">
-            <app-icon name="locked" size="16"></app-icon>
+            <app-icon name="locked" size="16" />
             Locked
           </span>
         }
@@ -31,35 +33,54 @@
       <div class="d-flex gap-2 align-items-center flex-wrap">
         <app-workout-actions
           [workout]="dataService.workout()!"
+          (workoutDeleted)="onWorkoutDeleted()"
           (workoutUpdated)="onWorkoutUpdated($event)"
-          (workoutDeleted)="onWorkoutDeleted()">
-        </app-workout-actions>
+        />
         @if (dataService.hasMapData()) {
           <button
             class="btn btn-outline-primary"
-            [routerLink]="['/workouts', dataService.workout()!.id, 'create-route-segment']">
-            <app-icon name="route-segment-add" size="20"></app-icon>
-            <span i18n>Create Route Segment</span>
+            [routerLink]="['/workouts', dataService.workout()!.id, 'create-route-segment']"
+          >
+            <app-icon name="route-segment-add" size="20" />
+            <span>{{ 'translation.create_route_segment' | translate }}</span>
           </button>
         }
         @if (!socialsDisabled()) {
           <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-secondary" title="Share on Strava" i18n-title>
-              <app-icon name="share" size="20"></app-icon>
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              [attr.title]="
+                'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+              "
+            >
+              <app-icon name="share" size="20" />
               <span class="visually-hidden">Strava</span>
             </button>
-            <button type="button" class="btn btn-outline-secondary" title="Share on Facebook" i18n-title>
-              <app-icon name="share" size="20"></app-icon>
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              [attr.title]="
+                'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+              "
+            >
+              <app-icon name="share" size="20" />
               <span class="visually-hidden">Facebook</span>
             </button>
-            <button type="button" class="btn btn-outline-secondary" title="Share on Twitter" i18n-title>
-              <app-icon name="share" size="20"></app-icon>
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              [attr.title]="
+                'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+              "
+            >
+              <app-icon name="share" size="20" />
               <span class="visually-hidden">Twitter</span>
             </button>
           </div>
         }
-        <button class="btn btn-outline-secondary" (click)="goBack()" i18n>
-          Back
+        <button class="btn btn-outline-secondary" (click)="goBack()">
+          {{ 'translation.back' | translate }}
         </button>
       </div>
     </div>
@@ -67,55 +88,67 @@
     <!-- Workout Stats -->
     <div class="workout-stats">
       <div class="stat-card">
-        <div class="stat-label" i18n>Date</div>
+        <div class="stat-label">{{ 'translation.date' | translate }}</div>
         <div class="stat-value">{{ dataService.formatDate(dataService.workout()!.date) }}</div>
       </div>
 
       @if (dataService.workout()!.total_distance) {
         <div class="stat-card">
-          <div class="stat-label" i18n>Distance</div>
-          <div class="stat-value">{{ dataService.formatDistance(dataService.workout()!.total_distance!) }} km</div>
+          <div class="stat-label">{{ 'translation.distance' | translate }}</div>
+          <div class="stat-value">
+            {{ dataService.formatDistance(dataService.workout()!.total_distance!) }} km
+          </div>
         </div>
       }
 
       @if (dataService.workout()!.total_duration) {
         <div class="stat-card">
-          <div class="stat-label" i18n>Duration</div>
-          <div class="stat-value">{{ dataService.formatDuration(dataService.workout()!.total_duration!) }}</div>
+          <div class="stat-label">{{ 'translation.duration' | translate }}</div>
+          <div class="stat-value">
+            {{ dataService.formatDuration(dataService.workout()!.total_duration!) }}
+          </div>
         </div>
       }
 
       @if (dataService.workout()!.average_speed) {
         <div class="stat-card">
-          <div class="stat-label" i18n>Average Speed</div>
-          <div class="stat-value">{{ dataService.formatSpeed(dataService.workout()!.average_speed!) }} km/h</div>
+          <div class="stat-label">{{ 'translation.average_speed' | translate }}</div>
+          <div class="stat-value">
+            {{ dataService.formatSpeed(dataService.workout()!.average_speed!) }} km/h
+          </div>
         </div>
       }
 
       @if (dataService.workout()!.max_speed) {
         <div class="stat-card">
-          <div class="stat-label" i18n>Max Speed</div>
-          <div class="stat-value">{{ dataService.formatSpeed(dataService.workout()!.max_speed!) }} km/h</div>
+          <div class="stat-label">{{ 'translation.max_speed' | translate }}</div>
+          <div class="stat-value">
+            {{ dataService.formatSpeed(dataService.workout()!.max_speed!) }} km/h
+          </div>
         </div>
       }
 
       @if (dataService.workout()!.total_up) {
         <div class="stat-card">
-          <div class="stat-label" i18n>Elevation Gain</div>
-          <div class="stat-value">{{ dataService.formatElevation(dataService.workout()!.total_up!) }} m</div>
+          <div class="stat-label">{{ 'translation.elevation' | translate }}</div>
+          <div class="stat-value">
+            {{ dataService.formatElevation(dataService.workout()!.total_up!) }} m
+          </div>
         </div>
       }
 
       @if (dataService.workout()!.total_down) {
         <div class="stat-card">
-          <div class="stat-label" i18n>Elevation Loss</div>
-          <div class="stat-value">{{ dataService.formatElevation(dataService.workout()!.total_down!) }} m</div>
+          <div class="stat-label">{{ 'translation.total_down' | translate }}</div>
+          <div class="stat-value">
+            {{ dataService.formatElevation(dataService.workout()!.total_down!) }} m
+          </div>
         </div>
       }
 
       @if (dataService.workout()!.min_elevation || dataService.workout()!.max_elevation) {
         <div class="stat-card">
-          <div class="stat-label" i18n>Elevation Range</div>
+          <div class="stat-label">{{ 'translation.elevation range' | translate }}</div>
           <div class="stat-value">
             {{ dataService.formatElevation(dataService.workout()!.min_elevation || 0) }} -
             {{ dataService.formatElevation(dataService.workout()!.max_elevation || 0) }} m
@@ -130,9 +163,9 @@
         <div class="card-body p-0">
           <div class="map-container">
             <app-workout-map
-              [mapData]="dataService.workout()!.map_data!.details"
               [center]="dataService.workout()!.map_data!.center"
-            ></app-workout-map>
+              [mapData]="dataService.workout()!.map_data!.details"
+            />
           </div>
         </div>
       </div>
@@ -142,27 +175,31 @@
     @if (dataService.hasMapData()) {
       <div class="card shadow-sm mb-4">
         <div class="card-header">
-          <h5 class="mb-0" i18n>Statistics</h5>
+          <h5 class="mb-0">{{ 'translation.statistics' | translate }}</h5>
         </div>
         <div class="card-body">
           <div class="chart-container">
             <app-workout-chart
-              [mapData]="dataService.workout()!.map_data!.details"
               [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-            ></app-workout-chart>
+              [mapData]="dataService.workout()!.map_data!.details"
+            />
           </div>
         </div>
       </div>
     }
 
     <!-- Breakdown -->
-    @if (dataService.hasMapData() && dataService.workout()!.total_distance && dataService.workout()!.total_distance! > 1000) {
+    @if (
+      dataService.hasMapData() &&
+      dataService.workout()!.total_distance &&
+      dataService.workout()!.total_distance! > 1000
+    ) {
       <div class="card shadow-sm mb-4">
         <div class="card-body">
           <app-workout-breakdown
-            [mapData]="dataService.workout()!.map_data!.details"
             [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-          ></app-workout-breakdown>
+            [mapData]="dataService.workout()!.map_data!.details"
+          />
         </div>
       </div>
     }
@@ -171,11 +208,14 @@
     @if (dataService.hasRouteSegmentMatches()) {
       <div class="card shadow-sm mb-4">
         <div class="card-header">
-          <h5 class="mb-0" i18n>Matching Route Segments</h5>
+          <h5 class="mb-0">{{ 'translation.matching_route_segments' | translate }}</h5>
         </div>
         <div class="card-body">
           <div class="list-group">
-            @for (match of dataService.workout()!.route_segment_matches; track match.route_segment_id) {
+            @for (
+              match of dataService.workout()!.route_segment_matches;
+              track match.route_segment_id
+            ) {
               <div class="list-group-item">
                 <h6 class="mb-1">{{ match.route_segment.name }}</h6>
                 <p class="mb-1 text-muted">
@@ -192,19 +232,19 @@
     @if (dataService.hasClimbs()) {
       <div class="card shadow-sm mb-4">
         <div class="card-header">
-          <h5 class="mb-0" i18n>Climbs and Descents</h5>
+          <h5 class="mb-0">{{ 'translation.climbs_and_descents' | translate }}</h5>
         </div>
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-sm">
               <thead>
                 <tr>
-                  <th i18n>Type</th>
-                  <th i18n>Start</th>
-                  <th i18n>Distance</th>
-                  <th i18n>Elevation</th>
-                  <th i18n>Avg Slope</th>
-                  <th i18n>Category</th>
+                  <th>{{ 'translation.type' | translate }}</th>
+                  <th>{{ 'translation.start' | translate }}</th>
+                  <th>{{ 'translation.distance' | translate }}</th>
+                  <th>{{ 'translation.elevation' | translate }}</th>
+                  <th>{{ 'translation.average_slope' | translate }}</th>
+                  <th>{{ 'translation.category' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -235,10 +275,10 @@
     @if (dataService.workout()!.notes) {
       <div class="card shadow-sm mb-4">
         <div class="card-header">
-          <h5 class="mb-0" i18n>Notes</h5>
+          <h5 class="mb-0">{{ 'translation.notes' | translate }}</h5>
         </div>
         <div class="card-body">
-          <p class="mb-0" style="white-space: pre-wrap;">{{ dataService.workout()!.notes }}</p>
+          <p class="mb-0" style="white-space: pre-wrap">{{ dataService.workout()!.notes }}</p>
         </div>
       </div>
     }
@@ -247,7 +287,7 @@
     @if (dataService.workout()!.equipment && dataService.workout()!.equipment!.length > 0) {
       <div class="card shadow-sm mb-4">
         <div class="card-header">
-          <h5 class="mb-0" i18n>Equipment</h5>
+          <h5 class="mb-0">{{ 'translation.equipment' | translate }}</h5>
         </div>
         <div class="card-body">
           <div class="list-group">
@@ -267,13 +307,13 @@
     <!-- Additional Details -->
     <div class="card shadow-sm">
       <div class="card-header">
-        <h5 class="mb-0" i18n>Details</h5>
+        <h5 class="mb-0">{{ 'translation.details' | translate }}</h5>
       </div>
       <div class="card-body">
         <dl class="row mb-0">
-          <dt class="col-sm-3" i18n>Type</dt>
+          <dt class="col-sm-3">{{ 'translation.type' | translate }}</dt>
           <dd class="col-sm-9">
-            <app-icon [name]="dataService.workout()!.type" size="20"></app-icon>
+            <app-icon size="20" [name]="dataService.workout()!.type" />
             {{ dataService.workout()!.type }}
             @if (dataService.workout()!.custom_type) {
               <em>({{ dataService.workout()!.custom_type }})</em>
@@ -281,25 +321,25 @@
           </dd>
 
           @if (dataService.workout()!.address_string) {
-            <dt class="col-sm-3" i18n>Location</dt>
+            <dt class="col-sm-3">{{ 'translation.location' | translate }}</dt>
             <dd class="col-sm-9">{{ dataService.workout()!.address_string }}</dd>
           }
 
           @if (dataService.workout()!.map_data?.creator) {
-            <dt class="col-sm-3" i18n>Source</dt>
+            <dt class="col-sm-3">{{ 'translation.source' | translate }}</dt>
             <dd class="col-sm-9">{{ dataService.workout()!.map_data!.creator }}</dd>
           }
 
-          <dt class="col-sm-3" i18n>Created</dt>
+          <dt class="col-sm-3">{{ 'translation.created' | translate }}</dt>
           <dd class="col-sm-9">{{ dataService.formatDate(dataService.workout()!.created_at) }}</dd>
 
-          <dt class="col-sm-3" i18n>Updated</dt>
+          <dt class="col-sm-3">{{ 'translation.updated' | translate }}</dt>
           <dd class="col-sm-9">{{ dataService.formatDate(dataService.workout()!.updated_at) }}</dd>
 
           @if (dataService.workout()!.locked) {
-            <dt class="col-sm-3" i18n>Status</dt>
+            <dt class="col-sm-3">{{ 'translation.status' | translate }}</dt>
             <dd class="col-sm-9">
-              <span class="badge bg-warning" i18n>Locked</span>
+              <span class="badge bg-warning">{{ 'translation.locked' | translate }}</span>
             </dd>
           }
         </dl>

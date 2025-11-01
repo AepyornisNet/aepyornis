@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -8,18 +8,19 @@ import { PaginationParams } from '../../../../core/types/api-response';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-route-segments',
-  imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent],
-  templateUrl: './route-segments.html'
+  imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe],
+  templateUrl: './route-segments.html',
 })
 export class RouteSegments extends PaginatedListView<RouteSegment> {
   private api = inject(Api);
 
   // Alias for better template readability
   routeSegments = this.items;
-  hasRouteSegments = computed(() => this.hasItems());
+  readonly hasRouteSegments = computed(() => this.hasItems());
 
   async loadData(page?: number) {
     if (page) {
@@ -31,7 +32,7 @@ export class RouteSegments extends PaginatedListView<RouteSegment> {
 
     const params: PaginationParams = {
       page: this.currentPage(),
-      per_page: this.perPage()
+      per_page: this.perPage(),
     };
 
     try {

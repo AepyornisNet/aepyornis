@@ -1,4 +1,4 @@
-import { Component, input, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { NgIconComponent } from '@ng-icons/core';
 import { getIcon } from '../../types/icon-map';
 
@@ -19,24 +19,35 @@ import { getIcon } from '../../types/icon-map';
   template: `
     <ng-icon [name]="iconName()" [size]="sizeAsString()" [strokeWidth]="strokeWidthAsString()" />
   `,
-  styles: [`:host { display: inline-flex; align-items: center; justify-content: center; } ng-icon { display: inline-flex; }`],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styles: [
+    `
+      :host {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      ng-icon {
+        display: inline-flex;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppIcon {
   /**
    * Icon key from the icon map (e.g., 'workout', 'dashboard', 'edit')
    */
-  name = input.required<string>();
+  readonly name = input.required<string>();
 
   /**
    * Icon size (e.g., '24', '1.5rem', '48')
    */
-  size = input<string | number>();
+  readonly size = input<string | number>();
 
   /**
    * Stroke width for icons that support it
    */
-  strokeWidth = input<string | number>();
+  readonly strokeWidth = input<string | number>();
 
   /**
    * Resolved icon name from the icon map

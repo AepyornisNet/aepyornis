@@ -1,20 +1,19 @@
-import { Component, input, computed } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { WorkoutRecord } from '../../../../core/types/workout';
 
 @Component({
   selector: 'app-records',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, TranslatePipe],
   templateUrl: './records.html',
-  styleUrl: './records.scss'
+  styleUrl: './records.scss',
 })
 export class Records {
-  records = input<WorkoutRecord[]>([]);
+  readonly records = input<WorkoutRecord[]>([]);
 
-  activeRecords = computed(() =>
-    this.records().filter(r => r.active && r.distance)
-  );
+  readonly activeRecords = computed(() => this.records().filter((r) => r.active && r.distance));
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();

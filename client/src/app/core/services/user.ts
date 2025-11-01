@@ -1,4 +1,4 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AUTH_LOGOUT_URL } from '../../core/types/auth';
 import { Api } from './api';
@@ -14,15 +14,15 @@ export interface UserInfo {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class User {
   private router = inject(Router);
   private api = inject(Api);
   private translate = inject(TranslateService);
 
-  private userInfo = signal<UserInfo | null>(null);
-  private checkingAuth = signal<boolean>(false);
+  private readonly userInfo = signal<UserInfo | null>(null);
+  private readonly checkingAuth = signal<boolean>(false);
 
   constructor() {
     this.checkAuthStatus();
@@ -42,22 +42,23 @@ export class User {
 
   checkAuthStatus() {
     this.checkingAuth.set(true);
-    this.api.whoami()
+    this.api
+      .whoami()
       .pipe(
         catchError(() => {
           // User is not authenticated
           this.userInfo.set(null);
           return of(null);
-        })
+        }),
       )
-      .subscribe(response => {
+      .subscribe((response) => {
         this.checkingAuth.set(false);
         if (response && response.results) {
           const user: UserInfo = {
             username: response.results.username,
             name: response.results.name || response.results.username,
             isAuthenticated: true,
-            profile: response.results
+            profile: response.results,
           };
           this.userInfo.set(user);
           // If user profile contains a language, use it for translations

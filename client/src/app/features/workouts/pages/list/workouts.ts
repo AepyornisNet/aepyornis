@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -15,14 +15,14 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-workouts',
   imports: [CommonModule, RouterLink, AppIcon, WorkoutActionsComponent, Pagination, TranslatePipe],
-  templateUrl: './workouts.html'
+  templateUrl: './workouts.html',
 })
 export class Workouts extends PaginatedListView<Workout> {
   private api = inject(Api);
 
   // Alias for better template readability
   workouts = this.items;
-  hasWorkouts = computed(() => this.hasItems());
+  readonly hasWorkouts = computed(() => this.hasItems());
 
   async loadData(page?: number) {
     if (page) {
@@ -34,7 +34,7 @@ export class Workouts extends PaginatedListView<Workout> {
 
     const params: PaginationParams = {
       page: this.currentPage(),
-      per_page: this.perPage()
+      per_page: this.perPage(),
     };
 
     try {
@@ -70,7 +70,7 @@ export class Workouts extends PaginatedListView<Workout> {
 
   onWorkoutUpdated(workout: Workout) {
     // Update the workout in the list
-    const index = this.items().findIndex(w => w.id === workout.id);
+    const index = this.items().findIndex((w) => w.id === workout.id);
     if (index >= 0) {
       const updatedItems = [...this.items()];
       updatedItems[index] = { ...updatedItems[index], ...workout };
@@ -80,8 +80,8 @@ export class Workouts extends PaginatedListView<Workout> {
 
   onWorkoutDeleted(workoutId: number) {
     // Remove workout from the list
-    const updatedItems = this.items().filter(w => w.id !== workoutId);
+    const updatedItems = this.items().filter((w) => w.id !== workoutId);
     this.items.set(updatedItems);
-    this.totalCount.update(count => count - 1);
+    this.totalCount.update((count) => count - 1);
   }
 }

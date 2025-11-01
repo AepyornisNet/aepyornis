@@ -12,13 +12,8 @@ describe('Login', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Login],
-      providers: [
-        provideZonelessChangeDetection(),
-        provideRouter([]),
-        provideHttpClient()
-      ]
-    })
-    .compileComponents();
+      providers: [provideZonelessChangeDetection(), provideRouter([]), provideHttpClient()],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(Login);
     component = fixture.componentInstance;

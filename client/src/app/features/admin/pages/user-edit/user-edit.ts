@@ -1,6 +1,6 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -11,7 +11,7 @@ import { UserProfile } from '../../../../core/types/user';
   selector: 'app-user-edit',
   imports: [CommonModule, RouterLink, AppIcon, ReactiveFormsModule],
   templateUrl: './user-edit.html',
-  styleUrl: './user-edit.scss'
+  styleUrl: './user-edit.scss',
 })
 export class UserEdit implements OnInit {
   private api = inject(Api);
@@ -19,11 +19,11 @@ export class UserEdit implements OnInit {
   private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
 
-  userId = signal<number>(0);
-  user = signal<UserProfile | null>(null);
-  loading = signal(true);
-  saving = signal(false);
-  error = signal<string | null>(null);
+  readonly userId = signal<number>(0);
+  readonly user = signal<UserProfile | null>(null);
+  readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly error = signal<string | null>(null);
 
   // Reactive form
   userForm!: FormGroup;
@@ -35,7 +35,7 @@ export class UserEdit implements OnInit {
       name: ['', Validators.required],
       password: [''],
       active: [false],
-      admin: [false]
+      admin: [false],
     });
 
     const id = this.route.snapshot.paramMap.get('id');
@@ -62,7 +62,7 @@ export class UserEdit implements OnInit {
           name: response.results.name,
           password: '', // Don't populate password
           active: response.results.active,
-          admin: response.results.admin
+          admin: response.results.admin,
         });
       }
     } catch (err) {
@@ -73,7 +73,9 @@ export class UserEdit implements OnInit {
   }
 
   async saveUser() {
-    if (this.userForm.invalid) return;
+    if (this.userForm.invalid) {
+      return;
+    }
 
     this.saving.set(true);
     this.error.set(null);
@@ -85,7 +87,7 @@ export class UserEdit implements OnInit {
         name: formValue.name,
         active: formValue.active,
         admin: formValue.admin,
-        ...(formValue.password && { password: formValue.password })
+        ...(formValue.password && { password: formValue.password }),
       };
 
       const response = await firstValueFrom(this.api.updateUser(this.userId(), updateData));

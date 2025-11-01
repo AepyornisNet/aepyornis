@@ -1,27 +1,37 @@
-import { Component, OnDestroy, AfterViewInit, signal, inject, ChangeDetectionStrategy, ViewChild, ElementRef } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  OnDestroy,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Api } from '../../../../core/services/api';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-calendar',
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './workout-calendar.html',
   styleUrl: './workout-calendar.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkoutCalendar implements AfterViewInit, OnDestroy {
   @ViewChild('calendarContainer', { static: false }) calendarContainer!: ElementRef;
-  
+
   private api = inject(Api);
   private router = inject(Router);
-  
-  loading = signal(true);
-  error = signal<string | null>(null);
-  
+
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+
   private calendar: Calendar | null = null;
 
   ngAfterViewInit() {
@@ -40,7 +50,7 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
     }
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
+
     this.calendar = new Calendar(this.calendarContainer.nativeElement, {
       plugins: [dayGridPlugin, interactionPlugin],
       initialView: 'dayGridMonth',
@@ -51,7 +61,7 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
-        right: ''
+        right: '',
       },
       eventClick: (info) => {
         info.jsEvent.preventDefault();
@@ -66,13 +76,13 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
       events: (fetchInfo, successCallback, failureCallback) => {
         this.loading.set(true);
         this.error.set(null);
-        
+
         const params = {
           start: fetchInfo.startStr,
           end: fetchInfo.endStr,
-          timeZone: timeZone
+          timeZone: timeZone,
         };
-        
+
         this.api.getCalendarEvents(params).subscribe({
           next: (response) => {
             this.loading.set(false);
@@ -87,11 +97,11 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
             this.error.set('Failed to load calendar events');
             console.error('Failed to load calendar events:', err);
             failureCallback(err);
-          }
+          },
         });
-      }
+      },
     });
-    
+
     this.calendar.render();
   }
 }

@@ -1,4 +1,4 @@
-import { Component, input, output, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AppIcon } from '../app-icon/app-icon';
@@ -17,12 +17,12 @@ interface MenuItem {
   imports: [RouterLink, RouterLinkActive, CommonModule, AppIcon, NgbTooltipModule],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Sidebar {
   private userService = inject(User);
 
-  isOpen = input<boolean>(false);
+  readonly isOpen = input<boolean>(false);
   sidebarToggle = output<void>();
 
   allMenuItems: MenuItem[] = [
@@ -34,15 +34,15 @@ export class Sidebar {
     { label: $localize`Route segments`, iconKey: 'route-segment', route: '/route-segments' },
     { label: $localize`Equipment`, iconKey: 'equipment', route: '/equipment' },
     { label: $localize`Profile`, iconKey: 'user-profile', route: '/profile' },
-    { label: $localize`Admin`, iconKey: 'admin', route: '/admin', adminOnly: true }
+    { label: $localize`Admin`, iconKey: 'admin', route: '/admin', adminOnly: true },
   ];
 
   // Computed property to filter menu items based on user permissions
-  menuItems = computed(() => {
+  readonly menuItems = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     const isAdmin = userInfo?.profile?.admin ?? false;
 
-    return this.allMenuItems.filter(item => !item.adminOnly || isAdmin);
+    return this.allMenuItems.filter((item) => !item.adminOnly || isAdmin);
   });
 
   onToggle() {

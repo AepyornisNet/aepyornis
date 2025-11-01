@@ -7,98 +7,93 @@ import { provideIcons } from '@ng-icons/core';
 
 // Font Awesome Solid Icons
 import {
+  faSolidArrowDownLong,
+  faSolidArrowRightArrowLeft,
+  faSolidArrowsLeftRight,
+  faSolidArrowsRotate,
+  faSolidArrowUpLong,
+  faSolidBan,
   faSolidBars,
+  faSolidBicycle,
   faSolidBookmark,
-  faSolidRoad,
-  faSolidGauge,
-  faSolidGaugeHigh,
-  faSolidStopwatch,
-  faSolidMountain,
-  faSolidMapLocationDot,
   faSolidCalculator,
-  faSolidWeightHanging,
-  faSolidHeartPulse,
-  faSolidTemperatureHigh,
+  faSolidChartLine,
+  faSolidChartSimple,
+  faSolidChevronDown,
+  faSolidChevronRight,
+  faSolidChevronUp,
+  faSolidCircleExclamation,
+  faSolidCircleNotch,
+  faSolidCirclePlus,
+  faSolidCircleUser,
+  faSolidClipboard,
+  faSolidClipboardCheck,
   faSolidCompass,
   faSolidCrosshairs,
-  faSolidTag,
-  faSolidRulerVertical,
-  faSolidChevronRight,
-  faSolidCircleNotch,
-  faSolidArrowRightArrowLeft,
-  faSolidRuler,
+  faSolidDownload,
+  faSolidDumbbell,
+  faSolidEye,
+  faSolidEyeSlash,
   faSolidFile,
-  faSolidArrowUpLong,
-  faSolidArrowDownLong,
-  faSolidChevronUp,
-  faSolidChevronDown,
+  faSolidFire,
+  faSolidGauge,
+  faSolidGaugeHigh,
+  faSolidGear,
+  faSolidGlobe,
+  faSolidGolfBallTee,
+  faSolidHeartPulse,
+  faSolidHorse,
   faSolidLanguage,
-  faSolidArrowsLeftRight,
-  faSolidShareFromSquare,
-  faSolidRetweet,
+  faSolidLockOpen,
+  faSolidMapLocationDot,
+  faSolidMountain,
+  faSolidPenToSquare,
+  faSolidPersonHiking,
   faSolidPersonRunning,
-  faSolidPersonWalking,
-  faSolidPersonSwimming,
   faSolidPersonSkating,
   faSolidPersonSkiing,
   faSolidPersonSnowboarding,
-  faSolidGolfBallTee,
-  faSolidSailboat,
-  faSolidPersonHiking,
-  faSolidHorse,
-  faSolidDumbbell,
+  faSolidPersonSwimming,
+  faSolidPersonWalking,
   faSolidQuestion,
-  faSolidChartLine,
-  faSolidChartSimple,
-  faSolidGear,
-  faSolidCircleUser,
-  faSolidUserPlus,
-  faSolidBicycle,
-  faSolidRoute,
-  faSolidCirclePlus,
-  faSolidFire,
-  faSolidClipboardCheck,
-  faSolidXmark,
-  faSolidPenToSquare,
-  faSolidArrowsRotate,
-  faSolidTrash,
   faSolidQuoteLeft,
-  faSolidUsers,
-  faSolidRightToBracket,
+  faSolidRetweet,
   faSolidRightFromBracket,
-  faSolidUser,
-  faSolidEye,
-  faSolidEyeSlash,
-  faSolidClipboard,
-  faSolidDownload,
-  faSolidCircleExclamation,
+  faSolidRightToBracket,
+  faSolidRoad,
+  faSolidRoute,
+  faSolidRuler,
+  faSolidRulerVertical,
+  faSolidSailboat,
+  faSolidShareFromSquare,
   faSolidSquareCheck,
+  faSolidStopwatch,
+  faSolidTag,
+  faSolidTemperatureHigh,
+  faSolidTrash,
+  faSolidUser,
   faSolidUserLock,
-  faSolidLockOpen,
-  faSolidGlobe,
+  faSolidUserPlus,
+  faSolidUsers,
   faSolidWater,
-  faSolidBan
+  faSolidWeightHanging,
+  faSolidXmark,
 } from '@ng-icons/font-awesome/solid';
 
 // Font Awesome Regular Icons
 import {
-  faClock,
   faCalendar,
+  faCircleUser,
+  faClock,
   faHourglass,
   faRectangleList,
-  faCircleUser
 } from '@ng-icons/font-awesome/regular';
 
 // Ionicons
-import {
-  ionFootsteps,
-  ionScale
-} from '@ng-icons/ionicons';
+import { ionFootsteps, ionScale } from '@ng-icons/ionicons';
 
 // Octicons
-import {
-  octMarkGithub
-} from '@ng-icons/octicons';
+import { octMarkGithub } from '@ng-icons/octicons';
 
 /**
  * Provider configuration for all icons used in the application
@@ -177,18 +172,18 @@ export const iconProviders = provideIcons({
   faSolidGlobe,
   faSolidWater,
   faSolidBan,
-  
+
   // Font Awesome Regular
   faClock,
   faCalendar,
   faHourglass,
   faRectangleList,
   faCircleUser,
-  
+
   // Ionicons
   ionFootsteps,
   ionScale,
-  
+
   // Octicons
-  octMarkGithub
+  octMarkGithub,
 });

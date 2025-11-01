@@ -6,13 +6,13 @@
 
   <div class="card mb-4">
     <div class="card-body">
-      <form [formGroup]="filterForm" class="row g-3" (ngSubmit)="onFilterChange()">
+      <form class="row g-3" [formGroup]="filterForm" (ngSubmit)="onFilterChange()">
         <div class="col-md-4">
-          <label for="since" class="form-label">Since</label>
+          <label class="form-label" for="since">Since</label>
           <select
-            id="since"
             class="form-select"
             formControlName="since"
+            id="since"
             (change)="onFilterChange()"
           >
             @for (option of sinceOptions; track option.key) {
@@ -21,20 +21,17 @@
           </select>
         </div>
         <div class="col-md-4">
-          <label for="per" class="form-label">Per</label>
-          <select
-            id="per"
-            class="form-select"
-            formControlName="per"
-            (change)="onFilterChange()"
-          >
+          <label class="form-label" for="per">Per</label>
+          <select class="form-select" formControlName="per" id="per" (change)="onFilterChange()">
             @for (option of perOptions; track option.key) {
               <option [value]="option.key">{{ option.label }}</option>
             }
           </select>
         </div>
         <div class="col-md-4 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary" [disabled]="filterForm.invalid">Refresh</button>
+          <button class="btn btn-primary" type="submit" [disabled]="filterForm.invalid">
+            Refresh
+          </button>
         </div>
       </form>
     </div>
@@ -64,8 +61,8 @@
               Workouts
             </h3>
             <app-statistic-chart
-              [stats]="statistics()"
               [preferredUnits]="preferredUnits() || undefined"
+              [stats]="statistics()"
               [type]="'workouts'"
             />
           </div>
@@ -80,9 +77,9 @@
               Duration
             </h3>
             <app-statistic-chart
-              [stats]="statistics()"
-              [preferredUnits]="preferredUnits() || undefined"
               [filterNoDuration]="true"
+              [preferredUnits]="preferredUnits() || undefined"
+              [stats]="statistics()"
               [type]="'duration_seconds'"
               [unit]="'duration'"
             />
@@ -98,9 +95,9 @@
               Distance
             </h3>
             <app-statistic-chart
-              [stats]="statistics()"
-              [preferredUnits]="preferredUnits() || undefined"
               [filterNoDuration]="true"
+              [preferredUnits]="preferredUnits() || undefined"
+              [stats]="statistics()"
               [type]="'distance'"
               [unit]="'distance'"
             />
@@ -116,9 +113,9 @@
               Average Speed
             </h3>
             <app-statistic-chart
-              [stats]="statistics()"
-              [preferredUnits]="preferredUnits() || undefined"
               [filterNoDuration]="true"
+              [preferredUnits]="preferredUnits() || undefined"
+              [stats]="statistics()"
               [type]="'average_speed'"
               [unit]="'speed'"
             />
@@ -134,9 +131,9 @@
               Average Speed (No Pause)
             </h3>
             <app-statistic-chart
-              [stats]="statistics()"
-              [preferredUnits]="preferredUnits() || undefined"
               [filterNoDuration]="true"
+              [preferredUnits]="preferredUnits() || undefined"
+              [stats]="statistics()"
               [type]="'average_speed_no_pause'"
               [unit]="'speed'"
             />
@@ -152,9 +149,9 @@
               Max Speed
             </h3>
             <app-statistic-chart
-              [stats]="statistics()"
-              [preferredUnits]="preferredUnits() || undefined"
               [filterNoDuration]="true"
+              [preferredUnits]="preferredUnits() || undefined"
+              [stats]="statistics()"
               [type]="'max_speed'"
               [unit]="'speed'"
             />

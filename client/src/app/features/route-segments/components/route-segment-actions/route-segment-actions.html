@@ -5,7 +5,7 @@
       {{ successMessage }}
     </div>
   }
-  
+
   @if (errorMessage) {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
       {{ errorMessage }}
@@ -15,88 +15,101 @@
   <!-- Actions -->
   <div class="btn-group" role="group">
     <!-- Download -->
-    <button 
+    <button
       class="btn btn-sm btn-outline-secondary"
+      [attr.title]="'translation.download' | translate"
       [disabled]="isProcessing"
       (click)="download()"
-      title="Download route segment file"
-      i18n-title>
-      <app-icon name="download" size="16"></app-icon>
+    >
+      <app-icon name="download" size="16" />
       @if (!compact()) {
-        <span class="ms-1" i18n>Download</span>
+        <span class="ms-1">{{ 'translation.download' | translate }}</span>
       }
     </button>
 
     <!-- Edit -->
-    <button 
+    <button
       class="btn btn-sm btn-outline-secondary"
+      [attr.title]="'translation.edit' | translate"
       [disabled]="isProcessing"
       (click)="edit()"
-      title="Edit route segment"
-      i18n-title>
-      <app-icon name="edit" size="16"></app-icon>
+    >
+      <app-icon name="edit" size="16" />
       @if (!compact()) {
-        <span class="ms-1" i18n>Edit</span>
+        <span class="ms-1">{{ 'translation.edit' | translate }}</span>
       }
     </button>
 
     <!-- Refresh -->
-    <button 
+    <button
       class="btn btn-sm btn-outline-secondary"
+      [attr.title]="'translation.refresh' | translate"
       [disabled]="isProcessing"
       (click)="refresh()"
-      title="Refresh route segment data"
-      i18n-title>
-      <app-icon name="refresh" size="16"></app-icon>
+    >
+      <app-icon name="refresh" size="16" />
       @if (!compact()) {
-        <span class="ms-1" i18n>Refresh</span>
+        <span class="ms-1">{{ 'translation.refresh' | translate }}</span>
       }
     </button>
 
     <!-- Find Matches -->
-    <button 
+    <button
       class="btn btn-sm btn-outline-secondary"
+      [attr.title]="'translation.find_matches' | translate"
       [disabled]="isProcessing"
       (click)="findMatches()"
-      title="Find matching workouts"
-      i18n-title>
-      <app-icon name="route-segment" size="16"></app-icon>
+    >
+      <app-icon name="route-segment" size="16" />
       @if (!compact()) {
-        <span class="ms-1" i18n>Find Matches</span>
+        <span class="ms-1">{{ 'translation.find_matches' | translate }}</span>
       }
     </button>
 
     <!-- Delete -->
-    <button 
+    <button
       class="btn btn-sm btn-outline-danger"
+      [attr.title]="'translation.delete' | translate"
       [disabled]="isProcessing"
       (click)="confirmDelete()"
-      title="Delete route segment"
-      i18n-title>
-      <app-icon name="delete" size="16"></app-icon>
+    >
+      <app-icon name="delete" size="16" />
       @if (!compact()) {
-        <span class="ms-1" i18n>Delete</span>
+        <span class="ms-1">{{ 'translation.delete' | translate }}</span>
       }
     </button>
   </div>
 
   <!-- Delete Confirmation Modal -->
   @if (showDeleteConfirm) {
-    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" i18n>Confirm Delete</h5>
-            <button type="button" class="btn-close" (click)="cancelDelete()" aria-label="Close"></button>
+            <h5 class="modal-title">{{ 'translation.are_you_sure' | translate }}</h5>
+            <button
+              aria-label="Close"
+              class="btn-close"
+              type="button"
+              (click)="cancelDelete()"
+            ></button>
           </div>
           <div class="modal-body">
-            <p i18n>Are you sure you want to delete this route segment?</p>
-            <p><strong>{{ routeSegment().name }}</strong></p>
-            <p class="text-muted" i18n>This action cannot be undone.</p>
+            <p>{{ 'translation.are_you_sure' | translate }}</p>
+            <p>
+              <strong>{{ routeSegment().name }}</strong>
+            </p>
+            <p class="text-muted">
+              {{ 'translation.the_workout_s_will_be_refreshed_soon' | translate }}
+            </p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="cancelDelete()" i18n>Cancel</button>
-            <button type="button" class="btn btn-danger" (click)="delete()" i18n>Delete</button>
+            <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
+              {{ 'translation.cancel' | translate }}
+            </button>
+            <button class="btn btn-danger" type="button" (click)="delete()">
+              {{ 'translation.delete' | translate }}
+            </button>
           </div>
         </div>
       </div>

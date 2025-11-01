@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from '../../core/components/header/header';
 import { Footer } from '../../core/components/footer/footer';
@@ -10,19 +10,19 @@ import { User } from '../../core/services/user';
   imports: [RouterOutlet, Header, Footer, Sidebar],
   templateUrl: './authenticated-layout.html',
   styleUrl: './authenticated-layout.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthenticatedLayout {
   private userService = inject(User);
 
-  userName = computed(() => this.userService.getUserInfo()()?.name || '');
-  sidebarOpen = signal(false);
+  readonly userName = computed(() => this.userService.getUserInfo()()?.name || '');
+  readonly sidebarOpen = signal(false);
 
   handleLogout = () => {
     this.userService.logout();
   };
 
   toggleSidebar = () => {
-    this.sidebarOpen.update(open => !open);
+    this.sidebarOpen.update((open) => !open);
   };
 }

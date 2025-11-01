@@ -1,18 +1,30 @@
-import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Equipment } from '../../../../core/types/equipment';
-import { WORKOUT_TYPES, getWorkoutTypeConfig, WorkoutTypeConfig } from '../../../../core/types/workout-types';
+import {
+  getWorkoutTypeConfig,
+  WORKOUT_TYPES,
+  WorkoutTypeConfig,
+} from '../../../../core/types/workout-types';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-create',
-  imports: [CommonModule, ReactiveFormsModule, AppIcon],
+  imports: [CommonModule, ReactiveFormsModule, AppIcon, TranslatePipe],
   templateUrl: './workout-create.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkoutCreate implements OnInit {
   private api = inject(Api);
@@ -21,39 +33,39 @@ export class WorkoutCreate implements OnInit {
   private fb = inject(FormBuilder);
 
   // Edit mode
-  editMode = signal(false);
-  workoutId = signal<number | null>(null);
+  readonly editMode = signal(false);
+  readonly workoutId = signal<number | null>(null);
 
   // State
-  loading = signal(false);
-  error = signal<string | null>(null);
-  success = signal<string | null>(null);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly success = signal<string | null>(null);
 
   // Equipment list
-  equipment = signal<Equipment[]>([]);
+  readonly equipment = signal<Equipment[]>([]);
 
   // File upload form
-  selectedFiles = signal<File[]>([]);
+  readonly selectedFiles = signal<File[]>([]);
   fileUploadForm!: FormGroup;
 
   // Manual form
   manualWorkoutForm!: FormGroup;
-  private _manualWorkoutType = signal<string>('');
-  manualWorkoutType = computed(() => this._manualWorkoutType());
-  manualFormVisible = computed(() => this._manualWorkoutType() !== '');
+  private readonly _manualWorkoutType = signal<string>('');
+  readonly manualWorkoutType = computed(() => this._manualWorkoutType());
+  readonly manualFormVisible = computed(() => this._manualWorkoutType() !== '');
 
   // Computed properties for conditional field display
-  workoutTypeConfig = computed<WorkoutTypeConfig | undefined>(() => {
+  readonly workoutTypeConfig = computed<WorkoutTypeConfig | undefined>(() => {
     const type = this.manualWorkoutType();
     return type ? getWorkoutTypeConfig(type) : undefined;
   });
 
-  showLocation = computed(() => this.workoutTypeConfig()?.location ?? false);
-  showDistance = computed(() => this.workoutTypeConfig()?.distance ?? false);
-  showDuration = computed(() => this.workoutTypeConfig()?.duration ?? false);
-  showRepetitions = computed(() => this.workoutTypeConfig()?.repetition ?? false);
-  showWeight = computed(() => this.workoutTypeConfig()?.weight ?? false);
-  showCustomType = computed(() => this.manualWorkoutType() === 'other');
+  readonly showLocation = computed(() => this.workoutTypeConfig()?.location ?? false);
+  readonly showDistance = computed(() => this.workoutTypeConfig()?.distance ?? false);
+  readonly showDuration = computed(() => this.workoutTypeConfig()?.duration ?? false);
+  readonly showRepetitions = computed(() => this.workoutTypeConfig()?.repetition ?? false);
+  readonly showWeight = computed(() => this.workoutTypeConfig()?.weight ?? false);
+  readonly showCustomType = computed(() => this.manualWorkoutType() === 'other');
 
   // Available workout types
   workoutTypes = WORKOUT_TYPES;
@@ -62,7 +74,7 @@ export class WorkoutCreate implements OnInit {
     // Initialize file upload form
     this.fileUploadForm = this.fb.group({
       type: ['auto'],
-      notes: ['']
+      notes: [''],
     });
 
     // Initialize manual workout form
@@ -78,7 +90,7 @@ export class WorkoutCreate implements OnInit {
       weight: [0, [Validators.required, Validators.min(0)]],
       notes: [''],
       custom_type: [''],
-      equipment_ids: [[]]
+      equipment_ids: [[]],
     });
 
     // Check if we're in edit mode
@@ -97,13 +109,13 @@ export class WorkoutCreate implements OnInit {
 
     try {
       const response = await firstValueFrom(this.api.getWorkout(id));
-      
+
       if (response && response.results) {
         const workout = response.results;
-        
+
         // Set manual workout type
         this._manualWorkoutType.set(workout.type);
-        
+
         // Parse date to local datetime format
         const date = new Date(workout.date);
         const year = date.getFullYear();
@@ -112,13 +124,13 @@ export class WorkoutCreate implements OnInit {
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
-        
+
         // Calculate duration components from total_duration (in seconds)
         const totalSeconds = workout.total_duration || 0;
         const durationHours = Math.floor(totalSeconds / 3600);
         const durationMinutes = Math.floor((totalSeconds % 3600) / 60);
         const durationSeconds = totalSeconds % 60;
-        
+
         // Update form with workout data
         this.manualWorkoutForm.patchValue({
           name: workout.name,
@@ -132,7 +144,7 @@ export class WorkoutCreate implements OnInit {
           weight: workout.total_weight || 0,
           notes: workout.notes || '',
           custom_type: workout.custom_type || '',
-          equipment_ids: workout.equipment?.map(e => e.id) || []
+          equipment_ids: workout.equipment?.map((e) => e.id) || [],
         });
       }
     } catch (err) {
@@ -196,7 +208,7 @@ export class WorkoutCreate implements OnInit {
     try {
       const formValue = this.fileUploadForm.value;
       const formData = new FormData();
-      files.forEach(file => {
+      files.forEach((file) => {
         formData.append('file', file);
       });
       // Send empty string for autodetect, otherwise send the selected type
@@ -205,7 +217,7 @@ export class WorkoutCreate implements OnInit {
       formData.append('notes', formValue.notes);
 
       const response = await firstValueFrom(this.api.createWorkoutFromFile(formData));
-      
+
       if (response) {
         this.success.set(`Successfully created ${response.results.length} workout(s)`);
         // Reset form
@@ -292,7 +304,7 @@ export class WorkoutCreate implements OnInit {
         timezone: this.getTimezone(),
         type,
         notes: formValue.notes,
-        equipment_ids: formValue.equipment_ids
+        equipment_ids: formValue.equipment_ids,
       };
 
       if (this.showLocation()) {
@@ -329,9 +341,11 @@ export class WorkoutCreate implements OnInit {
         // Create new workout
         response = await firstValueFrom(this.api.createWorkoutManual(workoutData));
       }
-      
+
       if (response) {
-        this.success.set(this.editMode() ? 'Workout updated successfully' : 'Workout created successfully');
+        this.success.set(
+          this.editMode() ? 'Workout updated successfully' : 'Workout created successfully',
+        );
         // Navigate to workout detail after a short delay
         setTimeout(() => {
           this.router.navigate(['/workouts', response.results.id]);
@@ -339,7 +353,9 @@ export class WorkoutCreate implements OnInit {
       }
     } catch (err) {
       console.error(`Failed to ${this.editMode() ? 'update' : 'create'} workout:`, err);
-      this.error.set(`Failed to ${this.editMode() ? 'update' : 'create'} workout. Please try again.`);
+      this.error.set(
+        `Failed to ${this.editMode() ? 'update' : 'create'} workout. Please try again.`,
+      );
     } finally {
       this.loading.set(false);
     }

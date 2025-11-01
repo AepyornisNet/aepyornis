@@ -3,10 +3,8 @@
     <div class="row justify-content-center">
       <div class="col-lg-10 col-xl-8">
         <div class="text-center mb-5">
-          <h1 class="display-4 fw-bold mb-3" i18n>Welcome to Workout Tracker!</h1>
-          <p class="lead text-muted" i18n>
-            Track your workouts, monitor your progress, and achieve your fitness goals.
-          </p>
+          <h1 class="display-4 fw-bold mb-3">{{ 'translation.welcome' | translate }}</h1>
+          <p class="lead text-muted">{{ 'translation.welcome_lead' | translate }}</p>
         </div>
 
         <div class="row g-4">
@@ -14,7 +12,7 @@
           <div [class]="isRegistrationDisabled ? 'col-12 col-md-8 col-lg-6 mx-auto' : 'col-md-6'">
             <div class="card shadow-sm h-100">
               <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4" i18n>Sign In</h3>
+                <h3 class="card-title text-center mb-4">{{ 'translation.sign_in' | translate }}</h3>
 
                 @if (errorMessage()) {
                   <div class="alert alert-danger" role="alert">
@@ -26,38 +24,37 @@
                   <!-- Username input -->
                   <div class="form-floating mb-3">
                     <input
-                      type="text"
-                      id="username"
+                      autocomplete="username"
                       class="form-control"
                       formControlName="username"
-                      required
+                      id="username"
                       placeholder="Username"
-                      autocomplete="username"
+                      required
+                      type="text"
                     />
-                    <label for="username" i18n>Username (email)</label>
+                    <label for="username">{{ 'translation.username_email' | translate }}</label>
                   </div>
 
                   <!-- Password input -->
                   <div class="form-floating mb-4">
                     <input
-                      type="password"
-                      id="password"
+                      autocomplete="current-password"
                       class="form-control"
                       formControlName="password"
-                      required
+                      id="password"
                       placeholder="Password"
-                      autocomplete="current-password"
+                      required
+                      type="password"
                     />
-                    <label for="password" i18n>Password</label>
+                    <label for="password">{{ 'translation.password' | translate }}</label>
                   </div>
 
                   <button
-                    type="submit"
                     class="btn btn-primary w-100"
+                    type="submit"
                     [disabled]="loginForm.invalid"
-                    i18n
                   >
-                    Sign in
+                    {{ 'translation.sign_in' | translate }}
                   </button>
                 </form>
               </div>
@@ -68,83 +65,90 @@
           @if (!isRegistrationDisabled) {
             <div class="col-md-6">
               <div class="card shadow-sm h-100">
-              <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4" i18n>Register</h3>
+                <div class="card-body p-4">
+                  <h3 class="card-title text-center mb-4">
+                    {{ 'translation.register' | translate }}
+                  </h3>
 
-                @if (registerErrorMessage()) {
-                  <div class="alert alert-danger" role="alert">
-                    {{ registerErrorMessage() }}
-                  </div>
-                }
+                  @if (registerErrorMessage()) {
+                    <div class="alert alert-danger" role="alert">
+                      {{ registerErrorMessage() }}
+                    </div>
+                  }
 
-                @if (registerSuccessMessage()) {
-                  <div class="alert alert-success" role="alert">
-                    {{ registerSuccessMessage() }}
-                  </div>
-                }
+                  @if (registerSuccessMessage()) {
+                    <div class="alert alert-success" role="alert">
+                      {{ registerSuccessMessage() }}
+                    </div>
+                  }
 
-                <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
-                  <!-- Register Username input -->
-                  <div class="form-floating mb-3">
-                    <input
-                      type="text"
-                      id="registerUsername"
-                      class="form-control"
-                      formControlName="username"
-                      required
-                      placeholder="Username"
-                      autocomplete="username"
-                    />
-                    <label for="registerUsername" i18n>Username (email)</label>
-                  </div>
+                  <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
+                    <!-- Register Username input -->
+                    <div class="form-floating mb-3">
+                      <input
+                        autocomplete="username"
+                        class="form-control"
+                        formControlName="username"
+                        id="registerUsername"
+                        placeholder="Username"
+                        required
+                        type="text"
+                      />
+                      <label for="registerUsername">{{
+                        'translation.Username_email' | translate
+                      }}</label>
+                    </div>
 
-                  <!-- Register Password input -->
-                  <div class="form-floating mb-3">
-                    <input
-                      type="password"
-                      id="registerPassword"
-                      class="form-control"
-                      formControlName="password"
-                      required
-                      minlength="6"
-                      placeholder="Password"
-                      autocomplete="new-password"
-                    />
-                    <label for="registerPassword" i18n>Password</label>
-                  </div>
+                    <!-- Register Password input -->
+                    <div class="form-floating mb-3">
+                      <input
+                        autocomplete="new-password"
+                        class="form-control"
+                        formControlName="password"
+                        id="registerPassword"
+                        minlength="6"
+                        placeholder="Password"
+                        required
+                        type="password"
+                      />
+                      <label for="registerPassword">{{ 'translation.password' | translate }}</label>
+                    </div>
 
-                  <!-- Confirm Password input -->
-                  <div class="form-floating mb-3">
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      class="form-control"
-                      formControlName="confirmPassword"
-                      required
-                      [class.is-invalid]="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch')"
-                      placeholder="Confirm Password"
-                      autocomplete="new-password"
-                    />
-                    <label for="confirmPassword" i18n>Confirm Password</label>
-                    @if (registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch')) {
-                      <div class="invalid-feedback d-block" i18n>
-                        Passwords do not match
-                      </div>
-                    }
-                  </div>
+                    <!-- Confirm Password input -->
+                    <div class="form-floating mb-3">
+                      <input
+                        autocomplete="new-password"
+                        class="form-control"
+                        formControlName="confirmPassword"
+                        id="confirmPassword"
+                        placeholder="Confirm Password"
+                        required
+                        type="password"
+                        [class.is-invalid]="
+                          registerForm.get('confirmPassword')?.touched &&
+                          registerForm.hasError('passwordMismatch')
+                        "
+                      />
+                      <label for="confirmPassword">Confirm Password</label>
+                      @if (
+                        registerForm.get('confirmPassword')?.touched &&
+                        registerForm.hasError('passwordMismatch')
+                      ) {
+                        <div class="invalid-feedback d-block">Passwords do not match</div>
+                      }
+                    </div>
 
-                  <button
-                    type="submit"
-                    class="btn btn-success w-100 mb-3"
-                    [disabled]="registerForm.invalid"
-                    i18n
-                  >
-                    Register
-                  </button>
-                </form>
+                    <button
+                      class="btn btn-success w-100 mb-3"
+                      type="submit"
+                      [disabled]="registerForm.invalid"
+                    >
+                      {{ 'translation.register' | translate }}
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
-          </div>
           }
         </div>
       </div>

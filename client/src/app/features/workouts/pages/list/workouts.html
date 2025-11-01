@@ -1,119 +1,135 @@
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="display-4 mb-0" i18n>Workouts</h1>
-      <div class="d-flex align-items-center gap-3">
-        @if (totalCount() > 0) {
-          <div class="text-muted">
-            <span i18n>{{ totalCount() }} total workouts</span>
-          </div>
-        }
-        <button class="btn btn-success" [routerLink]="['/workouts/add']">
-          <span i18n>Add Workout</span>
-        </button>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-4 mb-0">{{ 'translation.workouts' | translate }}</h1>
+    <div class="d-flex align-items-center gap-3">
+      @if (totalCount() > 0) {
+        <div class="text-muted">
+          <span>{{ totalCount() }} {{ 'translation.total_workouts' | translate }}</span>
+        </div>
+      }
+      <button class="btn btn-success" [routerLink]="['/workouts/add']">
+        <span>{{ 'translation.add_workout' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
       </div>
     </div>
+  }
 
-    @if (loading()) {
-      <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden" i18n>Loading...</span>
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    @if (!hasWorkouts()) {
+      <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+          <h5 class="card-title">{{ 'translation.no_workouts_yet' | translate }}</h5>
+          <p class="card-text text-muted">
+            {{ 'translation.workouts_placeholder' | translate }}
+          </p>
         </div>
       </div>
-    }
-
-    @if (error()) {
-      <div class="alert alert-danger" role="alert">
-        {{ error() }}
-      </div>
-    }
-
-    @if (!loading() && !error()) {
-      @if (!hasWorkouts()) {
-        <div class="card shadow-sm">
-          <div class="card-body text-center py-5">
-            <h5 class="card-title" i18n>No Workouts Yet</h5>
-            <p class="card-text text-muted" i18n>
-              Your workout history will appear here. Start tracking your workouts!
-            </p>
-          </div>
-        </div>
-      } @else {
-        <!-- Workouts Table -->
-        <div class="card shadow-sm">
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead>
+    } @else {
+      <!-- Workouts Table -->
+      <div class="card shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>{{ 'translation.type' | translate }}</th>
+                <th>{{ 'translation.name' | translate }}</th>
+                <th>{{ 'translation.date' | translate }}</th>
+                <th class="text-end">{{ 'translation.distance' | translate }}</th>
+                <th class="text-end">{{ 'translation.duration' | translate }}</th>
+                <th class="text-end d-none d-md-table-cell">
+                  {{ 'translation.average_speed' | translate }}
+                </th>
+                <th class="text-end d-none d-lg-table-cell">
+                  {{ 'translation.actions' | translate }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (workout of workouts(); track workout.id) {
                 <tr>
-                  <th i18n>Type</th>
-                  <th i18n>Name</th>
-                  <th i18n>Date</th>
-                  <th class="text-end" i18n>Distance</th>
-                  <th class="text-end" i18n>Duration</th>
-                  <th class="text-end d-none d-md-table-cell" i18n>Avg Speed</th>
-                  <th class="text-end d-none d-lg-table-cell" i18n>Actions</th>
+                  <td style="cursor: pointer" [routerLink]="['/workouts', workout.id]">
+                    <app-icon size="24" [name]="workout.type" />
+                  </td>
+                  <td style="cursor: pointer" [routerLink]="['/workouts', workout.id]">
+                    <strong>{{ workout.name }}</strong>
+                    <br />
+                    <small class="text-muted">{{ 'sports.' + workout.type | translate }}</small>
+                    @if (workout.locked) {
+                      <br />
+                      <span class="badge bg-warning text-dark">
+                        <app-icon name="locked" size="12" />
+                        Locked
+                      </span>
+                    }
+                  </td>
+                  <td style="cursor: pointer" [routerLink]="['/workouts', workout.id]">
+                    {{ formatDate(workout.date) }}
+                  </td>
+                  <td
+                    class="text-end"
+                    style="cursor: pointer"
+                    [routerLink]="['/workouts', workout.id]"
+                  >
+                    @if (workout.total_distance) {
+                      <strong>{{ formatDistance(workout.total_distance) }}</strong> km
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+                  <td
+                    class="text-end"
+                    style="cursor: pointer"
+                    [routerLink]="['/workouts', workout.id]"
+                  >
+                    @if (workout.total_duration) {
+                      {{ formatDuration(workout.total_duration) }}
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+                  <td
+                    class="text-end d-none d-md-table-cell"
+                    style="cursor: pointer"
+                    [routerLink]="['/workouts', workout.id]"
+                  >
+                    @if (workout.average_speed) {
+                      {{ (workout.average_speed * 3.6).toFixed(2) }} km/h
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+                  <td class="text-end d-none d-lg-table-cell" (click)="$event.stopPropagation()">
+                    <app-workout-actions
+                      [compact]="true"
+                      [workout]="workout"
+                      (workoutDeleted)="onWorkoutDeleted(workout.id)"
+                      (workoutUpdated)="onWorkoutUpdated($event)"
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                @for (workout of workouts(); track workout.id) {
-                  <tr>
-                    <td style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
-                      <app-icon [name]="workout.type" size="24"></app-icon>
-                    </td>
-                    <td style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
-                      <strong>{{ workout.name }}</strong>
-                      <br>
-                      <small class="text-muted">{{ 'sports.' + workout.type | translate }}</small>
-                      @if (workout.locked) {
-                        <br>
-                        <span class="badge bg-warning text-dark">
-                          <app-icon name="locked" size="12"></app-icon>
-                          Locked
-                        </span>
-                      }
-                    </td>
-                    <td style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
-                      {{ formatDate(workout.date) }}
-                    </td>
-                    <td class="text-end" style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
-                      @if (workout.total_distance) {
-                        <strong>{{ formatDistance(workout.total_distance) }}</strong> km
-                      } @else {
-                        <span class="text-muted">-</span>
-                      }
-                    </td>
-                    <td class="text-end" style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
-                      @if (workout.total_duration) {
-                        {{ formatDuration(workout.total_duration) }}
-                      } @else {
-                        <span class="text-muted">-</span>
-                      }
-                    </td>
-                    <td class="text-end d-none d-md-table-cell" style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
-                      @if (workout.average_speed) {
-                        {{ (workout.average_speed * 3.6).toFixed(2) }} km/h
-                      } @else {
-                        <span class="text-muted">-</span>
-                      }
-                    </td>
-                    <td class="text-end d-none d-lg-table-cell" (click)="$event.stopPropagation()">
-                      <app-workout-actions
-                        [workout]="workout"
-                        [compact]="true"
-                        (workoutUpdated)="onWorkoutUpdated($event)"
-                        (workoutDeleted)="onWorkoutDeleted(workout.id)">
-                      </app-workout-actions>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+              }
+            </tbody>
+          </table>
         </div>
+      </div>
 
-        <!-- Pagination -->
-        @if (totalPages() > 1) {
-          <app-pagination [source]="pagination()"></app-pagination>
-        }
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <app-pagination [source]="pagination()" />
       }
     }
-  </div>
+  }
+</div>

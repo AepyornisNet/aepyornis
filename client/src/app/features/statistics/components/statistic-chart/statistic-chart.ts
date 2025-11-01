@@ -1,25 +1,25 @@
 import {
-  Component,
-  input,
-  effect,
-  ViewChild,
-  ElementRef,
   AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  ElementRef,
+  input,
   OnDestroy,
-  ChangeDetectionStrategy
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  Chart,
-  ChartConfiguration,
-  CategoryScale,
-  LinearScale,
-  TimeScale,
   BarController,
   BarElement,
+  CategoryScale,
+  Chart,
+  ChartConfiguration,
+  Colors,
   Legend,
+  LinearScale,
+  TimeScale,
   Tooltip,
-  Colors
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { Statistics } from '../../../../core/types/statistics';
@@ -33,25 +33,23 @@ Chart.register(
   BarElement,
   Colors,
   Tooltip,
-  Legend
+  Legend,
 );
 
 @Component({
   selector: 'app-statistic-chart',
   imports: [CommonModule],
-  template: `
-    <canvas #chartCanvas></canvas>
-  `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  template: ` <canvas #chartCanvas></canvas> `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticChartComponent implements AfterViewInit, OnDestroy {
   @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
 
-  stats = input.required<Statistics | null>();
-  preferredUnits = input<UserPreferredUnits>();
-  filterNoDuration = input<boolean>(false);
-  type = input.required<string>();
-  unit = input<string>();
+  readonly stats = input.required<Statistics | null>();
+  readonly preferredUnits = input<UserPreferredUnits>();
+  readonly filterNoDuration = input<boolean>(false);
+  readonly type = input.required<string>();
+  readonly unit = input<string>();
 
   private chart?: Chart;
 
@@ -76,19 +74,21 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
 
   private initChart() {
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     const config: ChartConfiguration<'bar'> = {
       type: 'bar',
       data: {
-        datasets: []
+        datasets: [],
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
         plugins: {
           legend: {
-            position: 'top'
+            position: 'top',
           },
           tooltip: {
             callbacks: {
@@ -96,25 +96,25 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
                 return this.formatTooltipValue(label, value);
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           x: {
             type: 'time',
             time: {
-              unit: 'month'
-            }
+              unit: 'month',
+            },
           },
           y: {
             beginAtZero: true,
             ticks: {
-              callback: (value) => this.formatYAxisValue(Number(value))
-            }
-          }
-        }
-      }
+              callback: (value) => this.formatYAxisValue(Number(value)),
+            },
+          },
+        },
+      },
     };
 
     this.chart = new Chart(ctx, config);
@@ -122,7 +122,9 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
   }
 
   private updateChart() {
-    if (!this.chart) return;
+    if (!this.chart) {
+      return;
+    }
 
     const statsData = this.stats();
     if (!statsData || !statsData.buckets) {
@@ -134,17 +136,19 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
     const datasets = Object.entries(statsData.buckets)
       .map(([, value]) => {
         const data = Object.values(value.buckets)
-          .filter(e => !this.filterNoDuration() || e.duration > 0)
-          .map(e => ({
+          .filter((e) => !this.filterNoDuration() || e.duration > 0)
+          .map((e) => ({
             x: e.bucket,
-            y: this.getValueForType(e)
+            y: this.getValueForType(e),
           }));
 
-        if (data.length === 0) return null;
+        if (data.length === 0) {
+          return null;
+        }
 
         return {
           label: value.local_workout_type,
-          data: data
+          data: data,
         };
       })
       .filter((dataset): dataset is NonNullable<typeof dataset> => dataset !== null);
@@ -188,7 +192,9 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
   }
 
   private formatDuration(seconds: number): string {
-    if (seconds < 0) seconds = -seconds;
+    if (seconds < 0) {
+      seconds = -seconds;
+    }
     const time = {
       d: Math.floor(seconds / 86400),
       h: Math.floor(seconds / 3600) % 24,

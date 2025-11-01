@@ -1,6 +1,14 @@
-import { Component, OnInit, signal, effect, inject } from '@angular/core';
+import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { User } from '../../../../core/services/user';
 import { AppConfig } from '../../../../core/services/app-config';
@@ -9,9 +17,9 @@ import { PublicLayout } from '../../../../layouts/public-layout/public-layout';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PublicLayout],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PublicLayout, TranslatePipe],
   templateUrl: './login.html',
-  styleUrl: './login.scss'
+  styleUrl: './login.scss',
 })
 export class Login implements OnInit {
   private userService = inject(User);
@@ -22,13 +30,13 @@ export class Login implements OnInit {
 
   // Login form (reactive form)
   loginForm!: FormGroup;
-  errorMessage = signal<string | null>(null);
-  returnUrl = signal('/dashboard');
+  readonly errorMessage = signal<string | null>(null);
+  readonly returnUrl = signal('/dashboard');
 
   // Register form (reactive form with 3 fields)
   registerForm!: FormGroup;
-  registerErrorMessage = signal<string | null>(null);
-  registerSuccessMessage = signal<string | null>(null);
+  readonly registerErrorMessage = signal<string | null>(null);
+  readonly registerSuccessMessage = signal<string | null>(null);
 
   get isRegistrationDisabled() {
     return this.appConfig.isRegistrationDisabled();
@@ -47,20 +55,23 @@ export class Login implements OnInit {
     // Initialize login form
     this.loginForm = this.fb.group({
       username: ['', Validators.required],
-      password: ['', Validators.required]
+      password: ['', Validators.required],
     });
 
     // Initialize register form with custom validator for password matching
-    this.registerForm = this.fb.group({
-      username: ['', Validators.required],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', Validators.required]
-    }, {
-      validators: this.passwordMatchValidator
-    });
+    this.registerForm = this.fb.group(
+      {
+        username: ['', Validators.required],
+        password: ['', [Validators.required, Validators.minLength(6)]],
+        confirmPassword: ['', Validators.required],
+      },
+      {
+        validators: this.passwordMatchValidator,
+      },
+    );
 
     // Check if there's an error parameter in the URL
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       if (params['error']) {
         this.errorMessage.set(decodeURIComponent(params['error']));
       }
@@ -74,12 +85,12 @@ export class Login implements OnInit {
   private passwordMatchValidator(group: FormGroup): ValidationErrors | null {
     const password = group.get('password')?.value;
     const confirmPassword = group.get('confirmPassword')?.value;
-    
+
     // Only validate if both fields have values
     if (!password || !confirmPassword) {
       return null;
     }
-    
+
     return password === confirmPassword ? null : { passwordMismatch: true };
   }
 

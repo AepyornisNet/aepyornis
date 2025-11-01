@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../core/services/api';
 import { WorkoutDetail } from '../../../core/types/workout';
@@ -7,32 +7,32 @@ import { WorkoutDetail } from '../../../core/types/workout';
  * Service responsible for managing workout data and providing common formatting utilities.
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WorkoutDetailDataService {
   private api = inject(Api);
 
-  workout = signal<WorkoutDetail | null>(null);
-  loading = signal(false);
-  error = signal<string | null>(null);
+  readonly workout = signal<WorkoutDetail | null>(null);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
   // Computed values
-  hasMapData = computed(() => {
+  readonly hasMapData = computed(() => {
     const w = this.workout();
     return w?.map_data?.details?.position && w.map_data.details.position.length > 0;
   });
 
-  hasClimbs = computed(() => {
+  readonly hasClimbs = computed(() => {
     const w = this.workout();
     return w?.climbs && w.climbs.length > 0;
   });
 
-  hasRouteSegmentMatches = computed(() => {
+  readonly hasRouteSegmentMatches = computed(() => {
     const w = this.workout();
     return w?.route_segment_matches && w.route_segment_matches.length > 0;
   });
 
-  extraMetrics = computed(() => {
+  readonly extraMetrics = computed(() => {
     const w = this.workout();
     return w?.map_data?.extra_metrics || [];
   });

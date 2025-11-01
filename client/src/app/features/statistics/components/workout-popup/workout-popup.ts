@@ -1,4 +1,4 @@
-import { Component, input, computed, ChangeDetectionStrategy, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { WorkoutPopupData } from '../../../../core/types/statistics';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { RouterLink } from '@angular/router';
@@ -14,41 +14,45 @@ import { User } from '../../../../core/services/user';
   selector: 'app-workout-popup',
   imports: [AppIcon, RouterLink],
   templateUrl: './workout-popup.html',
-  styles: [`
-    :host {
-      display: block;
-    }
+  styles: [
+    `
+      :host {
+        display: block;
+      }
 
-    app-icon {
-      display: inline-flex;
-      width: 16px;
-      height: 16px;
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+      app-icon {
+        display: inline-flex;
+        width: 16px;
+        height: 16px;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkoutPopup {
   private userService = inject(User);
-  
+
   /**
    * Workout data to display in the popup
    */
-  data = input.required<WorkoutPopupData>();
+  readonly data = input.required<WorkoutPopupData>();
 
   /**
    * Format workout type for display (convert snake_case to Title Case)
    */
-  formatWorkoutType = computed(() => {
+  readonly formatWorkoutType = computed(() => {
     const type = this.data().type;
-    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   });
 
   /**
    * Format duration in seconds to human-readable format (Xh Ym Zs)
    */
-  formatDuration = computed(() => {
+  readonly formatDuration = computed(() => {
     const seconds = this.data().total_duration;
-    if (seconds === undefined || seconds === null) return '';
+    if (seconds === undefined || seconds === null) {
+      return '';
+    }
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -66,9 +70,11 @@ export class WorkoutPopup {
   /**
    * Format distance in meters to km or mi
    */
-  formatDistance = computed(() => {
+  readonly formatDistance = computed(() => {
     const meters = this.data().total_distance;
-    if (meters === undefined || meters === null) return '';
+    if (meters === undefined || meters === null) {
+      return '';
+    }
 
     const unit = this.distanceUnit();
     if (unit === 'mi') {
@@ -85,9 +91,11 @@ export class WorkoutPopup {
   /**
    * Format weight in kg to kg or lbs
    */
-  formatWeight = computed(() => {
+  readonly formatWeight = computed(() => {
     const kg = this.data().total_weight;
-    if (kg === undefined || kg === null) return '';
+    if (kg === undefined || kg === null) {
+      return '';
+    }
 
     const unit = this.weightUnit();
     if (unit === 'lbs') {
@@ -102,9 +110,11 @@ export class WorkoutPopup {
   /**
    * Format speed in m/s to km/h or mph
    */
-  formatSpeed = computed(() => {
+  readonly formatSpeed = computed(() => {
     const mps = this.data().average_speed;
-    if (mps === undefined || mps === null) return '';
+    if (mps === undefined || mps === null) {
+      return '';
+    }
 
     const unit = this.speedUnit();
     if (unit === 'mph') {
@@ -121,7 +131,7 @@ export class WorkoutPopup {
   /**
    * Get distance unit from user profile
    */
-  distanceUnit = computed(() => {
+  readonly distanceUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     return userInfo?.profile?.preferred_units?.distance || 'km';
   });
@@ -129,7 +139,7 @@ export class WorkoutPopup {
   /**
    * Get weight unit from user profile
    */
-  weightUnit = computed(() => {
+  readonly weightUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     return userInfo?.profile?.preferred_units?.weight || 'kg';
   });
@@ -137,7 +147,7 @@ export class WorkoutPopup {
   /**
    * Get speed unit from user profile
    */
-  speedUnit = computed(() => {
+  readonly speedUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     return userInfo?.profile?.preferred_units?.speed || 'km/h';
   });

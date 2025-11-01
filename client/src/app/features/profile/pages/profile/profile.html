@@ -1,4 +1,4 @@
-<div class="container my-5" style="max-width: 800px;">
+<div class="container my-5" style="max-width: 800px">
   @if (error()) {
     <div class="alert alert-danger" role="alert">
       {{ error() }}
@@ -22,7 +22,7 @@
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
-          <app-icon name="person" size="24"></app-icon>
+          <app-icon name="person" size="24" />
           Your settings
         </h3>
 
@@ -31,49 +31,53 @@
           <div class="mb-3 pb-3 border-bottom">
             <div class="form-check">
               <input
-                type="checkbox"
                 class="form-check-input"
-                id="api_active"
                 formControlName="api_active"
+                id="api_active"
+                type="checkbox"
               />
               <label class="form-check-label" for="api_active">
                 Enable API access
-                <a href="https://github.com/jovandeginste/workout-tracker?tab=readme-ov-file#api-usage" target="_blank" class="link-primary ms-1">
-                  <app-icon name="info" size="16"></app-icon>
+                <a
+                  class="link-primary ms-1"
+                  href="https://github.com/jovandeginste/workout-tracker?tab=readme-ov-file#api-usage"
+                  target="_blank"
+                >
+                  <app-icon name="info" size="16" />
                 </a>
               </label>
             </div>
             @if (profileForm.value.api_active && profile() && profile()!.profile.api_key) {
               <div class="mt-2 d-flex align-items-center gap-2">
                 <input
+                  class="form-control form-control-sm"
+                  readonly
                   [type]="apiKeyVisible() ? 'text' : 'password'"
                   [value]="profile()!.profile.api_key!"
-                  readonly
-                  class="form-control form-control-sm"
                 />
                 <button
-                  type="button"
-                  (click)="toggleAPIKeyVisibility()"
                   class="btn btn-sm btn-outline-secondary"
                   title="Show/Hide"
+                  type="button"
+                  (click)="toggleAPIKeyVisibility()"
                 >
-                  <app-icon [name]="apiKeyVisible() ? 'visibility-off' : 'visibility'" size="20"></app-icon>
+                  <app-icon size="20" [name]="apiKeyVisible() ? 'visibility-off' : 'visibility'" />
                 </button>
                 <button
-                  type="button"
-                  (click)="copyToClipboard(profile()!.profile.api_key!)"
                   class="btn btn-sm btn-outline-secondary"
                   title="Copy to clipboard"
+                  type="button"
+                  (click)="copyToClipboard(profile()!.profile.api_key!)"
                 >
-                  <app-icon name="content-copy" size="20"></app-icon>
+                  <app-icon name="content-copy" size="20" />
                 </button>
                 <button
-                  type="button"
-                  (click)="resetAPIKey()"
                   class="btn btn-sm btn-outline-danger"
                   title="Generate a new API key"
+                  type="button"
+                  (click)="resetAPIKey()"
                 >
-                  <app-icon name="refresh" size="20"></app-icon>
+                  <app-icon name="refresh" size="20" />
                 </button>
               </div>
             }
@@ -81,14 +85,8 @@
 
           <!-- Totals Show -->
           <div class="mb-3">
-            <label for="totals_show" class="form-label">
-              Totals to show on dashboard
-            </label>
-            <select
-              id="totals_show"
-              formControlName="totals_show"
-              class="form-select"
-            >
+            <label class="form-label" for="totals_show"> Totals to show on dashboard </label>
+            <select class="form-select" formControlName="totals_show" id="totals_show">
               <option value="all">All</option>
               <option value="running">Running</option>
               <option value="cycling">Cycling</option>
@@ -98,31 +96,30 @@
 
           <!-- Timezone -->
           <div class="mb-3">
-            <label for="timezone" class="form-label">
-              Time zone
-            </label>
+            <label class="form-label" for="timezone"> Time zone </label>
             <input
-              type="text"
               class="form-control"
-              id="timezone"
               formControlName="timezone"
+              id="timezone"
               placeholder="UTC"
+              type="text"
             />
           </div>
 
           <!-- Language -->
           <div class="mb-3">
-            <label for="language" class="form-label">
+            <label class="form-label" for="language">
               Language
-              <a href="https://hosted.weblate.org/projects/workout-tracker/" target="_blank" class="link-primary ms-1" title="Please help translate via Weblate">
-                <app-icon name="translate" size="16"></app-icon>
+              <a
+                class="link-primary ms-1"
+                href="https://hosted.weblate.org/projects/workout-tracker/"
+                target="_blank"
+                title="Please help translate via Weblate"
+              >
+                <app-icon name="translate" size="16" />
               </a>
             </label>
-            <select
-              id="language"
-              formControlName="language"
-              class="form-select"
-            >
+            <select class="form-select" formControlName="language" id="language">
               <option value="browser">Browser / System</option>
               <option value="en">English</option>
               <option value="de">German</option>
@@ -132,14 +129,8 @@
 
           <!-- Theme -->
           <div class="mb-3">
-            <label for="theme" class="form-label">
-              Theme
-            </label>
-            <select
-              id="theme"
-              formControlName="theme"
-              class="form-select"
-            >
+            <label class="form-label" for="theme"> Theme </label>
+            <select class="form-select" formControlName="theme" id="theme">
               <option value="light">Light</option>
               <option value="dark">Dark</option>
               <option value="browser">Browser / System</option>
@@ -148,14 +139,12 @@
 
           <!-- Auto Import Directory -->
           <div class="mb-3">
-            <label for="auto_import_directory" class="form-label">
-              Auto-import directory
-            </label>
+            <label class="form-label" for="auto_import_directory"> Auto-import directory </label>
             <input
-              type="text"
               class="form-control"
-              id="auto_import_directory"
               formControlName="auto_import_directory"
+              id="auto_import_directory"
+              type="text"
               [placeholder]="'/imports/' + profile()!.username + '/'"
             />
           </div>
@@ -163,10 +152,10 @@
           <!-- Prefer Full Date -->
           <div class="mb-3 form-check">
             <input
-              type="checkbox"
               class="form-check-input"
-              id="prefer_full_date"
               formControlName="prefer_full_date"
+              id="prefer_full_date"
+              type="checkbox"
             />
             <label class="form-check-label" for="prefer_full_date">
               Show full date by default
@@ -176,10 +165,10 @@
           <!-- Disable Social Sharing Buttons -->
           <div class="mb-3 form-check">
             <input
-              type="checkbox"
               class="form-check-input"
-              id="socials_disabled"
               formControlName="socials_disabled"
+              id="socials_disabled"
+              type="checkbox"
             />
             <label class="form-check-label" for="socials_disabled">
               Disable social sharing buttons
@@ -189,12 +178,16 @@
           <!-- Save Button -->
           <div class="pt-3">
             <button
-              type="submit"
               class="btn btn-primary"
+              type="submit"
               [disabled]="saving() || profileForm.invalid"
             >
               @if (saving()) {
-                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span
+                  aria-hidden="true"
+                  class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                ></span>
                 Saving...
               } @else {
                 Update profile
@@ -209,22 +202,16 @@
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
-          <app-icon name="straighten" size="24"></app-icon>
+          <app-icon name="straighten" size="24" />
           Preferred units
         </h3>
 
         <div [formGroup]="profileForm">
-          <div formGroupName="preferred_units" class="row g-3">
+          <div class="row g-3" formGroupName="preferred_units">
             <!-- Speed -->
             <div class="col-md-6">
-              <label for="speed" class="form-label">
-                Speed
-              </label>
-              <select
-                id="speed"
-                formControlName="speed"
-                class="form-select"
-              >
+              <label class="form-label" for="speed"> Speed </label>
+              <select class="form-select" formControlName="speed" id="speed">
                 <option value="km/h">km/h</option>
                 <option value="mph">mph</option>
               </select>
@@ -232,14 +219,8 @@
 
             <!-- Distance -->
             <div class="col-md-6">
-              <label for="distance" class="form-label">
-                Distance
-              </label>
-              <select
-                id="distance"
-                formControlName="distance"
-                class="form-select"
-              >
+              <label class="form-label" for="distance"> Distance </label>
+              <select class="form-select" formControlName="distance" id="distance">
                 <option value="km">km</option>
                 <option value="mi">mi</option>
               </select>
@@ -247,14 +228,8 @@
 
             <!-- Elevation -->
             <div class="col-md-6">
-              <label for="elevation" class="form-label">
-                Elevation
-              </label>
-              <select
-                id="elevation"
-                formControlName="elevation"
-                class="form-select"
-              >
+              <label class="form-label" for="elevation"> Elevation </label>
+              <select class="form-select" formControlName="elevation" id="elevation">
                 <option value="m">m</option>
                 <option value="ft">ft</option>
               </select>
@@ -262,14 +237,8 @@
 
             <!-- Weight -->
             <div class="col-md-6">
-              <label for="weight" class="form-label">
-                Weight
-              </label>
-              <select
-                id="weight"
-                formControlName="weight"
-                class="form-select"
-              >
+              <label class="form-label" for="weight"> Weight </label>
+              <select class="form-select" formControlName="weight" id="weight">
                 <option value="kg">kg</option>
                 <option value="lbs">lbs</option>
               </select>
@@ -277,14 +246,8 @@
 
             <!-- Height -->
             <div class="col-md-6">
-              <label for="height" class="form-label">
-                Height
-              </label>
-              <select
-                id="height"
-                formControlName="height"
-                class="form-select"
-              >
+              <label class="form-label" for="height"> Height </label>
+              <select class="form-select" formControlName="height" id="height">
                 <option value="cm">cm</option>
                 <option value="in">in</option>
               </select>
@@ -298,25 +261,25 @@
     <div class="card shadow-sm">
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
-          <app-icon name="bolt" size="24"></app-icon>
+          <app-icon name="bolt" size="24" />
           Actions
         </h3>
 
-        <div class="d-flex align-items-center justify-content-between p-3 bg-body-secondary rounded">
+        <div
+          class="d-flex align-items-center justify-content-between p-3 bg-body-secondary rounded"
+        >
           <div>
-            <div class="fw-medium">
-              Refresh all your workouts
-            </div>
+            <div class="fw-medium">Refresh all your workouts</div>
             <p class="small text-muted mb-0">
               This will recalculate statistics for all your workouts
             </p>
           </div>
           <button
+            class="btn btn-primary d-flex align-items-center gap-2"
             type="button"
             (click)="refreshWorkouts()"
-            class="btn btn-primary d-flex align-items-center gap-2"
           >
-            <app-icon name="refresh" size="20"></app-icon>
+            <app-icon name="refresh" size="20" />
             Refresh
           </button>
         </div>

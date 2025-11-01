@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, computed } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,39 +6,40 @@ import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-create-route-segment',
-  imports: [CommonModule, FormsModule, AppIcon],
+  imports: [CommonModule, FormsModule, AppIcon, TranslatePipe],
   templateUrl: './create-route-segment.html',
-  styleUrl: './create-route-segment.scss'
+  styleUrl: './create-route-segment.scss',
 })
 export class CreateRouteSegmentPage implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  workout = signal<WorkoutDetail | null>(null);
-  loading = signal(true);
-  error = signal<string | null>(null);
-  creating = signal(false);
+  readonly workout = signal<WorkoutDetail | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+  readonly creating = signal(false);
 
   // Form fields
-  name = signal('');
-  start = signal(1);
-  end = signal(1);
+  readonly name = signal('');
+  readonly start = signal(1);
+  readonly end = signal(1);
 
   // Computed values
-  totalPoints = computed(() => {
+  readonly totalPoints = computed(() => {
     const w = this.workout();
     return w?.map_data?.details?.position?.length || 0;
   });
 
-  selectedDistance = computed(() => {
+  readonly selectedDistance = computed(() => {
     const w = this.workout();
     const startIdx = this.start() - 1;
     const endIdx = this.end() - 1;
-    
+
     if (!w?.map_data?.details?.distance || startIdx < 0 || endIdx < 0) {
       return 0;
     }
@@ -52,7 +53,7 @@ export class CreateRouteSegmentPage implements OnInit {
   });
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
       if (id) {
         this.loadWorkout(id);
@@ -71,7 +72,7 @@ export class CreateRouteSegmentPage implements OnInit {
         const workout = response.results;
         this.workout.set(workout);
         this.name.set(workout.name);
-        
+
         // Set end to the last point
         const points = workout.map_data?.details?.position?.length || 1;
         this.end.set(points);
@@ -86,7 +87,7 @@ export class CreateRouteSegmentPage implements OnInit {
 
   updateStart(value: number) {
     this.start.set(value);
-    
+
     // Ensure start is not greater than end
     if (value > this.end()) {
       this.end.set(value);
@@ -95,7 +96,7 @@ export class CreateRouteSegmentPage implements OnInit {
 
   updateEnd(value: number) {
     this.end.set(value);
-    
+
     // Ensure end is not less than start
     if (value < this.start()) {
       this.start.set(value);
@@ -103,20 +104,26 @@ export class CreateRouteSegmentPage implements OnInit {
   }
 
   async createRouteSegment() {
-    if (this.creating()) return;
+    if (this.creating()) {
+      return;
+    }
 
     const w = this.workout();
-    if (!w) return;
+    if (!w) {
+      return;
+    }
 
     this.creating.set(true);
     this.error.set(null);
 
     try {
-      const response = await firstValueFrom(this.api.createRouteSegmentFromWorkout(w.id, {
-        name: this.name(),
-        start: this.start(),
-        end: this.end()
-      }));
+      const response = await firstValueFrom(
+        this.api.createRouteSegmentFromWorkout(w.id, {
+          name: this.name(),
+          start: this.start(),
+          end: this.end(),
+        }),
+      );
 
       if (response) {
         // Navigate to the created route segment

@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, effect, computed } from '@angular/core';
+import { Component, computed, effect, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { TranslatePipe } from '@ngx-translate/core';
 import { WorkoutMapComponent } from '../../components/workout-map/workout-map';
 import { WorkoutChartComponent } from '../../components/workout-chart/workout-chart';
 import { WorkoutBreakdownComponent } from '../../components/workout-breakdown/workout-breakdown';
@@ -20,22 +21,23 @@ import { User } from '../../../../core/services/user';
     WorkoutMapComponent,
     WorkoutChartComponent,
     WorkoutBreakdownComponent,
-    WorkoutActionsComponent
+    WorkoutActionsComponent,
+    TranslatePipe,
   ],
   templateUrl: './workout-detail.html',
-  styleUrl: './workout-detail.scss'
+  styleUrl: './workout-detail.scss',
 })
 export class WorkoutDetailPage implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private userService = inject(User);
-  
+
   // Inject services
   dataService = inject(WorkoutDetailDataService);
   coordinatorService = inject(WorkoutDetailCoordinatorService);
-  
+
   // Check if socials are disabled from user profile
-  socialsDisabled = computed(() => {
+  readonly socialsDisabled = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     return userInfo?.profile?.socials_disabled ?? false;
   });

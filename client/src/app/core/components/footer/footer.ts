@@ -1,15 +1,16 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { AppConfig } from '../../../core/services/app-config';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-footer',
-  imports: [],
+  imports: [TranslatePipe],
   templateUrl: './footer.html',
-  styleUrl: './footer.scss'
+  styleUrl: './footer.scss',
 })
 export class Footer {
   private appConfig = inject(AppConfig);
 
-  version = computed(() => this.appConfig.getVersion());
-  versionSha = computed(() => this.appConfig.getVersionSha());
+  readonly version = computed(() => this.appConfig.getVersion());
+  readonly versionSha = computed(() => this.appConfig.getVersionSha());
 }

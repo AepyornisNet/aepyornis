@@ -1,17 +1,17 @@
 import {
+  AfterViewInit,
   Component,
+  effect,
+  ElementRef,
+  inject,
   Input,
   OnDestroy,
-  ElementRef,
   ViewChild,
-  AfterViewInit,
   ViewEncapsulation,
-  inject,
-  effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
-import { MapDataDetails, MapCenter } from '../../../../core/types/workout';
+import { MapCenter, MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { User } from '../../../../core/services/user';
 
@@ -27,7 +27,7 @@ interface PolyLineProps {
   imports: [CommonModule],
   encapsulation: ViewEncapsulation.None,
   templateUrl: './workout-map.html',
-  styleUrls: ['./workout-map.scss']
+  styleUrls: ['./workout-map.scss'],
 })
 export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
@@ -80,20 +80,20 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
 
     // Initialize map
     this.map = L.map(this.mapContainer.nativeElement, {
-      fadeAnimation: false
+      fadeAnimation: false,
     }).setView([centerLat, centerLng], 15);
 
     // Add tile layers
     const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      className: 'map-tiles'
+      className: 'map-tiles',
     });
 
     const aerialLayer = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       {
-        attribution: 'Powered by Esri'
-      }
+        attribution: 'Powered by Esri',
+      },
     );
 
     // Add default layer
@@ -107,7 +107,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     const polyLineProperties = {
       renderer: trackRenderer,
       weight: 4,
-      interactive: false
+      interactive: false,
     };
 
     // Draw the track with elevation coloring and add overlays
@@ -127,12 +127,12 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     const firstPos = this.mapData.position[0];
     this.hoverMarker = L.circleMarker([firstPos[0], firstPos[1]], {
       color: 'blue',
-      radius: 8
+      radius: 8,
     }).addTo(this.map);
 
     // Build overlay layers for control
     const overlays: Record<string, L.LayerGroup> = {
-      'Elevation': elevationLayer
+      Elevation: elevationLayer,
     };
     if (speedLayer) {
       overlays['Speed'] = speedLayer;
@@ -145,29 +145,33 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     L.control.scale().addTo(this.map);
 
     // Add layer control
-    L.control.layers(
-      {
-        'Streets': streetLayer,
-        'Aerial': aerialLayer
-      },
-      overlays,
-      { position: 'topright' }
-    ).addTo(this.map);
+    L.control
+      .layers(
+        {
+          Streets: streetLayer,
+          Aerial: aerialLayer,
+        },
+        overlays,
+        { position: 'topright' },
+      )
+      .addTo(this.map);
 
     // Fit bounds to track
     this.resetZoom();
   }
 
   private calculateMinMax() {
-    if (!this.mapData) return;
+    if (!this.mapData) {
+      return;
+    }
 
     // Calculate min/max elevation
-    const elevations = this.mapData.elevation.filter(e => e !== null && e !== undefined);
+    const elevations = this.mapData.elevation.filter((e) => e !== null && e !== undefined);
     this.minElevation = Math.min(...elevations);
     this.maxElevation = Math.max(...elevations);
 
     // Calculate max speed
-    const speeds = this.mapData.speed.filter(s => s !== null && s !== undefined && s > 0);
+    const speeds = this.mapData.speed.filter((s) => s !== null && s !== undefined && s > 0);
     this.maxSpeed = Math.max(...speeds);
   }
 
@@ -191,20 +195,20 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
             renderer: trackRenderer,
             opacity: 0,
             fill: false,
-            radius: 4
+            radius: 4,
           })
             .addTo(this.map!)
-            .bindTooltip(() => this.getTooltip(i))
+            .bindTooltip(() => this.getTooltip(i)),
         );
 
         // Color based on elevation
         const color = this.getColor(
-          (elevation - this.minElevation) / (this.maxElevation - this.minElevation)
+          (elevation - this.minElevation) / (this.maxElevation - this.minElevation),
         );
 
         L.polyline([prevPoint, [pos[0], pos[1]]], {
           ...polyLineProperties,
-          color
+          color,
         }).addTo(elevationLayer);
       }
       prevPoint = [pos[0], pos[1]];
@@ -223,10 +227,12 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     const movingSpeeds: number[] = [];
 
     // Calculate average and standard deviation
-    const speeds = this.mapData.speed.filter(s => s !== null && s !== undefined && s > 0) as number[];
+    const speeds = this.mapData.speed.filter(
+      (s) => s !== null && s !== undefined && s > 0,
+    ) as number[];
     const averageSpeed = speeds.reduce((a, x) => a + x, 0) / speeds.length;
     const stdevSpeed = Math.sqrt(
-      speeds.reduce((a, x) => a + Math.pow(x - averageSpeed, 2), 0) / (speeds.length - 1)
+      speeds.reduce((a, x) => a + Math.pow(x - averageSpeed, 2), 0) / (speeds.length - 1),
     );
 
     let prevPoint: [number, number] | null = null;
@@ -251,7 +257,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
 
         L.polyline([prevPoint, [pos[0], pos[1]]], {
           ...polyLineProperties,
-          color
+          color,
         }).addTo(speedLayer);
       }
       prevPoint = [pos[0], pos[1]];
@@ -267,7 +273,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
 
     const slopeLayer = L.featureGroup();
 
-    const slopes = this.mapData.slope.filter(s => s !== null && s !== undefined) as number[];
+    const slopes = this.mapData.slope.filter((s) => s !== null && s !== undefined) as number[];
     const maxSlope = Math.max(...slopes);
     const minSlope = Math.min(...slopes);
 
@@ -281,7 +287,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
 
         L.polyline([prevPoint, [pos[0], pos[1]]], {
           ...polyLineProperties,
-          color
+          color,
         }).addTo(slopeLayer);
       }
       prevPoint = [pos[0], pos[1]];
@@ -305,10 +311,10 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
         fill: true,
         fillColor: 'red',
         fillOpacity: 1,
-        radius: 6
+        radius: 6,
       })
         .addTo(this.map)
-        .bindTooltip(this.getTooltip(positions.length - 1))
+        .bindTooltip(this.getTooltip(positions.length - 1)),
     );
 
     // Add start marker (green)
@@ -319,10 +325,10 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
         fill: true,
         fillColor: 'green',
         fillOpacity: 1,
-        radius: 6
+        radius: 6,
       })
         .addTo(this.map)
-        .bindTooltip(this.getTooltip(0))
+        .bindTooltip(this.getTooltip(0)),
     );
   }
 
@@ -386,7 +392,11 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     }
 
     // Slope
-    if (this.mapData.slope && this.mapData.slope[index] !== undefined && this.mapData.slope[index] !== null) {
+    if (
+      this.mapData.slope &&
+      this.mapData.slope[index] !== undefined &&
+      this.mapData.slope[index] !== null
+    ) {
       tooltip += `<li><b>Slope</b>: ${this.mapData.slope[index].toFixed(1)}%</li>`;
     }
 
@@ -425,8 +435,8 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     // Interpolate between blue and green
     const lowColor = [50, 50, 255];
     const highColor = [50, 255, 50];
-    const color = [0, 1, 2].map(i =>
-      Math.floor(value * (highColor[i] - lowColor[i]) + lowColor[i])
+    const color = [0, 1, 2].map((i) =>
+      Math.floor(value * (highColor[i] - lowColor[i]) + lowColor[i]),
     );
 
     return `rgb(${color.join(',')})`;
@@ -453,15 +463,15 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
 
     // Draw highlighted segment using red color like the original map.js
     const positions = this.mapData.position.slice(selection.startIndex, selection.endIndex + 1);
-    
+
     for (let i = 1; i < positions.length; i++) {
       const prevPos: L.LatLngExpression = [positions[i - 1][0], positions[i - 1][1]];
       const currPos: L.LatLngExpression = [positions[i][0], positions[i][1]];
-      
+
       L.polyline([prevPos, currPos], {
         color: 'red',
         weight: 5,
-        opacity: 0.8
+        opacity: 0.8,
       }).addTo(this.highlightLayer);
     }
   }

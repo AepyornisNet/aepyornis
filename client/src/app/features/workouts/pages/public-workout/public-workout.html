@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="text-center">
       <div class="spinner-border" role="status">
-        <span class="visually-hidden" i18n>Loading...</span>
+        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -16,12 +16,12 @@
   @if (!loading() && !error() && workout()) {
     <div class="workout-header mb-4">
       <h1 class="display-4 mb-0">
-        <app-icon [name]="workout()!.type" size="32"></app-icon>
+        <app-icon size="32" [name]="workout()!.type" />
         {{ workout()!.name }}
       </h1>
       @if (workout()!.locked) {
         <span class="badge bg-warning">
-          <app-icon name="locked" size="16"></app-icon>
+          <app-icon name="locked" size="16" />
           Locked
         </span>
       }
@@ -30,24 +30,24 @@
     <div class="workout-info mb-4">
       <div class="row">
         <div class="col-md-3">
-          <strong i18n>Date</strong>
-          <p>{{ workout()!.date | date:'medium' }}</p>
+          <strong>{{ 'translation.date' | translate }}</strong>
+          <p>{{ workout()!.date | date: 'medium' }}</p>
         </div>
         @if (workout()!.total_distance) {
           <div class="col-md-3">
-            <strong i18n>Distance</strong>
+            <strong>{{ 'translation.distance' | translate }}</strong>
             <p>{{ (workout()!.total_distance! / 1000).toFixed(2) }} km</p>
           </div>
         }
         @if (workout()!.total_duration) {
           <div class="col-md-3">
-            <strong i18n>Duration</strong>
+            <strong>{{ 'translation.duration' | translate }}</strong>
             <p>{{ formatDuration(workout()!.total_duration!) }}</p>
           </div>
         }
         @if (workout()!.average_speed) {
           <div class="col-md-3">
-            <strong i18n>Avg Speed</strong>
+            <strong>{{ 'translation.average_speed' | translate }}</strong>
             <p>{{ (workout()!.average_speed! * 3.6).toFixed(2) }} km/h</p>
           </div>
         }
@@ -56,31 +56,31 @@
 
     @if (hasMapData()) {
       <div class="mb-4">
-        <app-workout-map 
+        <app-workout-map
+          [center]="workout()!.map_data!.center"
           [mapData]="workout()!.map_data!.details"
-          [center]="workout()!.map_data!.center">
-        </app-workout-map>
+        />
       </div>
 
       <div class="mb-4">
-        <app-workout-chart 
+        <app-workout-chart
+          [extraMetrics]="workout()!.map_data!.extra_metrics || []"
           [mapData]="workout()!.map_data!.details"
-          [extraMetrics]="workout()!.map_data!.extra_metrics || []">
-        </app-workout-chart>
+        />
       </div>
     }
 
     <div class="mb-4">
-      <app-workout-breakdown 
+      <app-workout-breakdown
+        [extraMetrics]="workout()!.map_data?.extra_metrics || []"
         [mapData]="workout()!.map_data?.details"
-        [extraMetrics]="workout()!.map_data?.extra_metrics || []">
-      </app-workout-breakdown>
+      />
     </div>
 
     @if (workout()!.notes) {
       <div class="card mb-4">
         <div class="card-header">
-          <h5 class="mb-0" i18n>Notes</h5>
+          <h5 class="mb-0">{{ 'translation.notes' | translate }}</h5>
         </div>
         <div class="card-body">
           <p class="mb-0">{{ workout()!.notes }}</p>
@@ -88,8 +88,15 @@
       </div>
     }
 
-    <div class="alert alert-info mt-4" i18n>
-      This is a publicly shared workout. To track your own workouts, <a routerLink="/login">sign in</a> or <a routerLink="/login">register</a>.
+    <div class="alert alert-info mt-4">
+      <!-- Public workout notice (translated below) -->
+      <p class="mb-0">
+        <span>{{ 'translation.public_workout_notice_part1' | translate }}</span>
+        <a routerLink="/login">{{ 'translation.sign_in' | translate }}</a>
+        <span>{{ 'translation.public_workout_notice_part2' | translate }}</span>
+        <a routerLink="/register">{{ 'translation.register' | translate }}</a>
+        <span>{{ 'translation.public_workout_notice_part3' | translate }}</span>
+      </p>
     </div>
   }
 </div>

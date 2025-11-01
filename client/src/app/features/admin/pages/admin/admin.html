@@ -1,6 +1,6 @@
 <div class="container my-5">
   <h2 class="display-5 mb-4 d-flex align-items-center gap-2">
-    <app-icon name="settings" size="32"></app-icon>
+    <app-icon name="settings" size="32" />
     Manage
   </h2>
 
@@ -55,36 +55,36 @@
                   <td>
                     <div class="d-flex gap-2">
                       <a
-                        [routerLink]="['/admin/users', user.id, 'edit']"
                         class="link-primary"
                         title="Edit user"
+                        [routerLink]="['/admin/users', user.id, 'edit']"
                       >
-                        <app-icon name="edit" size="20"></app-icon>
+                        <app-icon name="edit" size="20" />
                       </a>
                       @if (deleteConfirm() === user.id) {
                         <span class="text-muted small me-2">Delete?</span>
                         <button
+                          class="btn btn-sm btn-link text-danger p-0"
                           type="button"
                           (click)="deleteUser(user.id)"
-                          class="btn btn-sm btn-link text-danger p-0"
                         >
                           Yes
                         </button>
                         <button
+                          class="btn btn-sm btn-link text-secondary p-0"
                           type="button"
                           (click)="cancelDelete()"
-                          class="btn btn-sm btn-link text-secondary p-0"
                         >
                           No
                         </button>
                       } @else {
                         <button
-                          type="button"
-                          (click)="confirmDelete(user.id)"
                           class="btn btn-sm btn-link text-danger p-0"
                           title="Delete user"
+                          type="button"
+                          (click)="confirmDelete(user.id)"
                         >
-                          <app-icon name="delete" size="20"></app-icon>
+                          <app-icon name="delete" size="20" />
                         </button>
                       }
                     </div>
@@ -113,10 +113,10 @@
         <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
           <div class="mb-3 form-check">
             <input
-              type="checkbox"
               class="form-check-input"
-              id="registration_disabled"
               formControlName="registration_disabled"
+              id="registration_disabled"
+              type="checkbox"
             />
             <label class="form-check-label" for="registration_disabled">
               Disable account registration
@@ -125,10 +125,10 @@
 
           <div class="mb-3 form-check">
             <input
-              type="checkbox"
               class="form-check-input"
-              id="socials_disabled"
               formControlName="socials_disabled"
+              id="socials_disabled"
+              type="checkbox"
             />
             <label class="form-check-label" for="socials_disabled">
               Disable social sharing buttons
@@ -136,12 +136,16 @@
           </div>
 
           <button
-            type="submit"
             class="btn btn-primary"
+            type="submit"
             [disabled]="savingConfig() || configForm.invalid"
           >
             @if (savingConfig()) {
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <span
+                aria-hidden="true"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+              ></span>
               Saving...
             } @else {
               Update settings

@@ -1,206 +1,227 @@
 <div class="container my-5">
-    @if (loading()) {
-      <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden" i18n>Loading...</span>
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && routeSegment()) {
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <button class="btn btn-link p-0 mb-2" (click)="goBack()">
+          <app-icon name="back" size="20" />
+          <span>{{ 'translation.back_to_route_segments' | translate }}</span>
+        </button>
+        <h1 class="display-4 mb-0">
+          <app-icon name="route-segment" size="48" />
+          {{ routeSegment()!.name || '(no name)' }}
+        </h1>
+        <div class="d-flex gap-2 mt-2">
+          @if (routeSegment()!.bidirectional) {
+            <span class="badge bg-secondary">
+              <app-icon name="bidirectional" size="14" />
+              <span>{{ 'translation.bidirectional' | translate }}</span>
+            </span>
+          }
+          @if (routeSegment()!.circular) {
+            <span class="badge bg-secondary">
+              <app-icon name="circular" size="14" />
+              <span>{{ 'translation.circular' | translate }}</span>
+            </span>
+          }
         </div>
       </div>
-    }
-
-    @if (error()) {
-      <div class="alert alert-danger" role="alert">
-        {{ error() }}
+      <div>
+        <app-route-segment-actions
+          [routeSegment]="routeSegment()!"
+          (routeSegmentDeleted)="onRouteSegmentDeleted()"
+          (routeSegmentUpdated)="onRouteSegmentUpdated()"
+        />
       </div>
-    }
+    </div>
 
-    @if (!loading() && routeSegment()) {
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <button class="btn btn-link p-0 mb-2" (click)="goBack()">
-            <app-icon name="back" size="20"></app-icon>
-            <span i18n>Back to Route Segments</span>
-          </button>
-          <h1 class="display-4 mb-0">
-            <app-icon name="route-segment" size="48"></app-icon>
-            {{ routeSegment()!.name || '(no name)' }}
-          </h1>
-          <div class="d-flex gap-2 mt-2">
-            @if (routeSegment()!.bidirectional) {
-              <span class="badge bg-secondary">
-                <app-icon name="bidirectional" size="14"></app-icon>
-                <span i18n>Bidirectional</span>
-              </span>
-            }
-            @if (routeSegment()!.circular) {
-              <span class="badge bg-secondary">
-                <app-icon name="circular" size="14"></app-icon>
-                <span i18n>Circular</span>
-              </span>
-            }
+    <div class="row">
+      <!-- Map Section -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">{{ 'translation.route_map' | translate }}</h5>
+            <!-- Map placeholder - will be implemented in a separate component -->
+            <div
+              class="bg-light d-flex align-items-center justify-content-center"
+              style="height: 400px; border-radius: 8px"
+            >
+              <div class="text-center text-muted">
+                <app-icon name="route-segment" size="48" />
+                <p class="mt-2">{{ 'translation.map_visualization_coming_soon' | translate }}</p>
+                <small
+                  >{{ routeSegment()!.points.length }}
+                  {{ 'translation.gps_points' | translate }}</small
+                >
+              </div>
+            </div>
           </div>
         </div>
-        <div>
-          <app-route-segment-actions 
-            [routeSegment]="routeSegment()!"
-            (routeSegmentUpdated)="onRouteSegmentUpdated()"
-            (routeSegmentDeleted)="onRouteSegmentDeleted()">
-          </app-route-segment-actions>
-        </div>
       </div>
 
+      <!-- Details Section -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">{{ 'translation.details' | translate }}</h5>
+            <table class="table table-sm">
+              <tbody>
+                @if (routeSegment()!.filename) {
+                  <tr>
+                    <th style="width: 40%">
+                      <app-icon name="file" size="16" />
+                      <span>{{ 'translation.file' | translate }}</span>
+                    </th>
+                    <td>{{ routeSegment()!.filename }}</td>
+                  </tr>
+                }
+                <tr>
+                  <th>
+                    <app-icon name="date" size="16" />
+                    <span>{{ 'translation.created' | translate }}</span>
+                  </th>
+                  <td>{{ formatDate(routeSegment()!.created_at) }}</td>
+                </tr>
+                <tr>
+                  <th>
+                    <app-icon name="date" size="16" />
+                    <span>{{ 'translation.updated' | translate }}</span>
+                  </th>
+                  <td>{{ formatDate(routeSegment()!.updated_at) }}</td>
+                </tr>
+                @if (routeSegment()!.address_string) {
+                  <tr>
+                    <th>
+                      <app-icon name="location" size="16" />
+                      <span>{{ 'translation.location' | translate }}</span>
+                    </th>
+                    <td>{{ routeSegment()!.address_string }}</td>
+                  </tr>
+                }
+                <tr>
+                  <th>
+                    <app-icon name="distance" size="16" />
+                    <span>{{ 'translation.total_distance' | translate }}</span>
+                  </th>
+                  <td>
+                    <strong>{{ formatDistance(routeSegment()!.total_distance) }}</strong> km
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <app-icon name="elevation" size="16" />
+                    <span>{{ 'translation.min_elevation' | translate }}</span>
+                  </th>
+                  <td>{{ routeSegment()!.min_elevation.toFixed(0) }} m</td>
+                </tr>
+                <tr>
+                  <th>
+                    <app-icon name="elevation" size="16" />
+                    <span>{{ 'translation.max_elevation' | translate }}</span>
+                  </th>
+                  <td>{{ routeSegment()!.max_elevation.toFixed(0) }} m</td>
+                </tr>
+                <tr>
+                  <th>
+                    <app-icon name="up" size="16" />
+                    <span>{{ 'translation.total_up' | translate }}</span>
+                  </th>
+                  <td>{{ routeSegment()!.total_up.toFixed(0) }} m</td>
+                </tr>
+                <tr>
+                  <th>
+                    <app-icon name="down" size="16" />
+                    <span>{{ 'translation.total_down' | translate }}</span>
+                  </th>
+                  <td>{{ routeSegment()!.total_down.toFixed(0) }} m</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes Section -->
+    @if (routeSegment()!.notes) {
       <div class="row">
-        <!-- Map Section -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 mb-4">
           <div class="card shadow-sm">
             <div class="card-body">
-              <h5 class="card-title mb-3" i18n>Route Map</h5>
-              <!-- Map placeholder - will be implemented in a separate component -->
-              <div class="bg-light d-flex align-items-center justify-content-center" style="height: 400px; border-radius: 8px;">
-                <div class="text-center text-muted">
-                  <app-icon name="route-segment" size="48"></app-icon>
-                  <p class="mt-2" i18n>Map visualization coming soon</p>
-                  <small i18n>{{ routeSegment()!.points.length }} GPS points</small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Details Section -->
-        <div class="col-lg-6 mb-4">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title mb-3" i18n>Details</h5>
-              <table class="table table-sm">
-                <tbody>
-                  @if (routeSegment()!.filename) {
-                    <tr>
-                      <th style="width: 40%;">
-                        <app-icon name="file" size="16"></app-icon>
-                        <span i18n>File</span>
-                      </th>
-                      <td>{{ routeSegment()!.filename }}</td>
-                    </tr>
-                  }
-                  <tr>
-                    <th>
-                      <app-icon name="date" size="16"></app-icon>
-                      <span i18n>Created</span>
-                    </th>
-                    <td>{{ formatDate(routeSegment()!.created_at) }}</td>
-                  </tr>
-                  <tr>
-                    <th>
-                      <app-icon name="date" size="16"></app-icon>
-                      <span i18n>Updated</span>
-                    </th>
-                    <td>{{ formatDate(routeSegment()!.updated_at) }}</td>
-                  </tr>
-                  @if (routeSegment()!.address_string) {
-                    <tr>
-                      <th>
-                        <app-icon name="location" size="16"></app-icon>
-                        <span i18n>Location</span>
-                      </th>
-                      <td>{{ routeSegment()!.address_string }}</td>
-                    </tr>
-                  }
-                  <tr>
-                    <th>
-                      <app-icon name="distance" size="16"></app-icon>
-                      <span i18n>Total Distance</span>
-                    </th>
-                    <td><strong>{{ formatDistance(routeSegment()!.total_distance) }}</strong> km</td>
-                  </tr>
-                  <tr>
-                    <th>
-                      <app-icon name="elevation" size="16"></app-icon>
-                      <span i18n>Min Elevation</span>
-                    </th>
-                    <td>{{ routeSegment()!.min_elevation.toFixed(0) }} m</td>
-                  </tr>
-                  <tr>
-                    <th>
-                      <app-icon name="elevation" size="16"></app-icon>
-                      <span i18n>Max Elevation</span>
-                    </th>
-                    <td>{{ routeSegment()!.max_elevation.toFixed(0) }} m</td>
-                  </tr>
-                  <tr>
-                    <th>
-                      <app-icon name="up" size="16"></app-icon>
-                      <span i18n>Total Up</span>
-                    </th>
-                    <td>{{ routeSegment()!.total_up.toFixed(0) }} m</td>
-                  </tr>
-                  <tr>
-                    <th>
-                      <app-icon name="down" size="16"></app-icon>
-                      <span i18n>Total Down</span>
-                    </th>
-                    <td>{{ routeSegment()!.total_down.toFixed(0) }} m</td>
-                  </tr>
-                </tbody>
-              </table>
+              <h5 class="card-title mb-3">
+                <app-icon name="note" size="20" />
+                <span>{{ 'translation.notes' | translate }}</span>
+              </h5>
+              <div style="white-space: pre-wrap">{{ routeSegment()!.notes }}</div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Notes Section -->
-      @if (routeSegment()!.notes) {
-        <div class="row">
-          <div class="col-12 mb-4">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title mb-3">
-                  <app-icon name="note" size="20"></app-icon>
-                  <span i18n>Notes</span>
-                </h5>
-                <div style="white-space: pre-wrap;">{{ routeSegment()!.notes }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Matches Section -->
-      @if (routeSegment()!.matches && routeSegment()!.matches.length > 0) {
-        <div class="row">
-          <div class="col-12 mb-4">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title mb-3" i18n>Workout Matches ({{ routeSegment()!.matches.length }})</h5>
-                <div class="table-responsive">
-                  <table class="table table-hover mb-0">
-                    <thead>
-                      <tr>
-                        <th i18n>User</th>
-                        <th i18n>Workout</th>
-                        <th class="text-end" i18n>Distance</th>
-                        <th class="text-end" i18n>Duration</th>
-                        <th class="text-end d-none d-md-table-cell" i18n>Avg Speed</th>
-                        <th class="text-end d-none d-lg-table-cell" i18n>Tempo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (match of routeSegment()!.matches; track match.workout_id) {
-                        <tr style="cursor: pointer;" [routerLink]="['/workouts', match.workout_id]">
-                          <td>{{ match.user_name }}</td>
-                          <td>{{ match.workout_name }}</td>
-                          <td class="text-end">{{ formatDistance(match.distance) }} km</td>
-                          <td class="text-end">{{ formatDuration(match.duration) }}</td>
-                          <td class="text-end d-none d-md-table-cell">{{ formatSpeed(match.average_speed) }} km/h</td>
-                          <td class="text-end d-none d-lg-table-cell">{{ formatTempo(match.average_speed) }} min/km</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
     }
-  </div>
+
+    <!-- Matches Section -->
+    @if (routeSegment()!.matches && routeSegment()!.matches.length > 0) {
+      <div class="row">
+        <div class="col-12 mb-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title mb-3">
+                {{
+                  'translation.Workout_Matches'
+                    | translate: { count: routeSegment()!.matches.length }
+                }}
+              </h5>
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>{{ 'translation.user' | translate }}</th>
+                      <th>{{ 'translation.workout' | translate }}</th>
+                      <th class="text-end">{{ 'translation.distance' | translate }}</th>
+                      <th class="text-end">{{ 'translation.duration' | translate }}</th>
+                      <th class="text-end d-none d-md-table-cell">
+                        {{ 'translation.average_speed' | translate }}
+                      </th>
+                      <th class="text-end d-none d-lg-table-cell">
+                        {{ 'translation.tempo' | translate }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (match of routeSegment()!.matches; track match.workout_id) {
+                      <tr style="cursor: pointer" [routerLink]="['/workouts', match.workout_id]">
+                        <td>{{ match.user_name }}</td>
+                        <td>{{ match.workout_name }}</td>
+                        <td class="text-end">{{ formatDistance(match.distance) }} km</td>
+                        <td class="text-end">{{ formatDuration(match.duration) }}</td>
+                        <td class="text-end d-none d-md-table-cell">
+                          {{ formatSpeed(match.average_speed) }} km/h
+                        </td>
+                        <td class="text-end d-none d-lg-table-cell">
+                          {{ formatTempo(match.average_speed) }} min/km
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

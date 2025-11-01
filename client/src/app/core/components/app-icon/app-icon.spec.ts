@@ -14,10 +14,9 @@ describe('AppIcon', () => {
       imports: [AppIcon],
       providers: [
         provideZonelessChangeDetection(),
-        provideIcons({ faSolidDumbbell, faSolidQuestion })
-      ]
-    })
-    .compileComponents();
+        provideIcons({ faSolidDumbbell, faSolidQuestion }),
+      ],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(AppIcon);
     component = fixture.componentInstance;
@@ -30,14 +29,14 @@ describe('AppIcon', () => {
   it('should resolve icon name from icon map', () => {
     fixture.componentRef.setInput('name', 'workout');
     fixture.detectChanges();
-    
+
     expect(component.iconName()).toBe('faSolidDumbbell');
   });
 
   it('should return default icon for unknown icon key', () => {
     fixture.componentRef.setInput('name', 'unknown-icon-key');
     fixture.detectChanges();
-    
+
     expect(component.iconName()).toBe('faSolidQuestion');
   });
 });

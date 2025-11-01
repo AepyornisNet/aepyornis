@@ -1,5 +1,6 @@
-import { Component, signal, inject, OnInit, HostListener } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Workout } from '../../../../core/types/workout';
@@ -8,17 +9,17 @@ import { Api } from '../../../../core/services/api';
 
 @Component({
   selector: 'app-recent-activity',
-  imports: [CommonModule, RouterLink, AppIcon],
+  imports: [CommonModule, RouterLink, AppIcon, TranslatePipe],
   templateUrl: './recent-activity.html',
-  styleUrl: './recent-activity.scss'
+  styleUrl: './recent-activity.scss',
 })
 export class RecentActivity implements OnInit {
   private api = inject(Api);
 
-  displayedWorkouts = signal<Workout[]>([]);
-  loading = signal(false);
-  initialLoading = signal(true);
-  hasMore = signal(true);
+  readonly displayedWorkouts = signal<Workout[]>([]);
+  readonly loading = signal(false);
+  readonly initialLoading = signal(true);
+  readonly hasMore = signal(true);
   readonly pageSize = 10;
 
   ngOnInit() {
@@ -71,10 +72,12 @@ export class RecentActivity implements OnInit {
     this.loading.set(true);
     try {
       const currentOffset = this.displayedWorkouts().length;
-      const response = await firstValueFrom(this.api.getRecentWorkouts(this.pageSize, currentOffset));
+      const response = await firstValueFrom(
+        this.api.getRecentWorkouts(this.pageSize, currentOffset),
+      );
 
       if (response?.results && response.results.length > 0) {
-        this.displayedWorkouts.update(current => [...current, ...response.results]);
+        this.displayedWorkouts.update((current) => [...current, ...response.results]);
         this.hasMore.set(response.results.length === this.pageSize);
       } else {
         this.hasMore.set(false);

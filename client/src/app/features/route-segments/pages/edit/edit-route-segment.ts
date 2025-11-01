@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { RouteSegmentDetail } from '../../../../core/types/route-segment';
@@ -9,8 +10,8 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 
 @Component({
   selector: 'app-edit-route-segment',
-  imports: [CommonModule, ReactiveFormsModule, AppIcon],
-  templateUrl: './edit-route-segment.html'
+  imports: [CommonModule, ReactiveFormsModule, AppIcon, TranslatePipe],
+  templateUrl: './edit-route-segment.html',
 })
 export class EditRouteSegment implements OnInit {
   private api = inject(Api);
@@ -18,10 +19,10 @@ export class EditRouteSegment implements OnInit {
   private router = inject(Router);
   private fb = inject(FormBuilder);
 
-  routeSegment = signal<RouteSegmentDetail | null>(null);
-  loading = signal(true);
-  saving = signal(false);
-  error = signal<string | null>(null);
+  readonly routeSegment = signal<RouteSegmentDetail | null>(null);
+  readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly error = signal<string | null>(null);
 
   // Reactive form
   routeSegmentForm!: FormGroup;
@@ -32,7 +33,7 @@ export class EditRouteSegment implements OnInit {
       name: ['', Validators.required],
       notes: [''],
       bidirectional: [false],
-      circular: [false]
+      circular: [false],
     });
 
     const id = this.route.snapshot.params['id'];
@@ -57,7 +58,7 @@ export class EditRouteSegment implements OnInit {
           name: segment.name,
           notes: segment.notes || '',
           bidirectional: segment.bidirectional,
-          circular: segment.circular
+          circular: segment.circular,
         });
       }
     } catch (err) {
@@ -70,19 +71,23 @@ export class EditRouteSegment implements OnInit {
 
   async save() {
     const segment = this.routeSegment();
-    if (!segment || this.saving() || this.routeSegmentForm.invalid) return;
+    if (!segment || this.saving() || this.routeSegmentForm.invalid) {
+      return;
+    }
 
     this.saving.set(true);
     this.error.set(null);
 
     try {
       const formValue = this.routeSegmentForm.value;
-      await firstValueFrom(this.api.updateRouteSegment(segment.id, {
-        name: formValue.name,
-        notes: formValue.notes,
-        bidirectional: formValue.bidirectional,
-        circular: formValue.circular
-      }));
+      await firstValueFrom(
+        this.api.updateRouteSegment(segment.id, {
+          name: formValue.name,
+          notes: formValue.notes,
+          bidirectional: formValue.bidirectional,
+          circular: formValue.circular,
+        }),
+      );
 
       // Navigate back to detail page
       this.router.navigate(['/route-segments', segment.id]);
@@ -109,7 +114,7 @@ export class EditRouteSegment implements OnInit {
         name: segment.name,
         notes: segment.notes || '',
         bidirectional: segment.bidirectional,
-        circular: segment.circular
+        circular: segment.circular,
       });
     }
   }

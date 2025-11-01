@@ -1,27 +1,27 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
-import { UserProfile, AppConfig } from '../../../../core/types/user';
+import { AppConfig, UserProfile } from '../../../../core/types/user';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-admin',
   imports: [CommonModule, RouterLink, AppIcon, ReactiveFormsModule],
   templateUrl: './admin.html',
-  styleUrl: './admin.scss'
+  styleUrl: './admin.scss',
 })
 export class Admin implements OnInit {
   private api = inject(Api);
   private fb = inject(FormBuilder);
 
-  users = signal<UserProfile[]>([]);
-  loading = signal(true);
-  error = signal<string | null>(null);
-  savingConfig = signal(false);
-  deleteConfirm = signal<number | null>(null);
+  readonly users = signal<UserProfile[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+  readonly savingConfig = signal(false);
+  readonly deleteConfirm = signal<number | null>(null);
 
   // Reactive form for app config
   configForm!: FormGroup;
@@ -30,7 +30,7 @@ export class Admin implements OnInit {
     // Initialize config form
     this.configForm = this.fb.group({
       registration_disabled: [false],
-      socials_disabled: [false]
+      socials_disabled: [false],
     });
 
     this.loadData();
@@ -52,7 +52,7 @@ export class Admin implements OnInit {
       if (appInfoResponse?.results) {
         this.configForm.patchValue({
           registration_disabled: appInfoResponse.results.registration_disabled,
-          socials_disabled: appInfoResponse.results.socials_disabled
+          socials_disabled: appInfoResponse.results.socials_disabled,
         });
       }
     } catch (err) {
@@ -76,11 +76,13 @@ export class Admin implements OnInit {
       if (response?.results) {
         this.configForm.patchValue({
           registration_disabled: response.results.registration_disabled,
-          socials_disabled: response.results.socials_disabled
+          socials_disabled: response.results.socials_disabled,
         });
       }
     } catch (err) {
-      this.error.set('Failed to save config: ' + (err instanceof Error ? err.message : String(err)));
+      this.error.set(
+        'Failed to save config: ' + (err instanceof Error ? err.message : String(err)),
+      );
     } finally {
       this.savingConfig.set(false);
     }
@@ -103,7 +105,9 @@ export class Admin implements OnInit {
       await this.loadData();
       this.deleteConfirm.set(null);
     } catch (err) {
-      this.error.set('Failed to delete user: ' + (err instanceof Error ? err.message : String(err)));
+      this.error.set(
+        'Failed to delete user: ' + (err instanceof Error ? err.message : String(err)),
+      );
       this.deleteConfirm.set(null);
     }
   }

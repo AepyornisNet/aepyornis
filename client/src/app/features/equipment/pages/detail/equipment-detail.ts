@@ -1,35 +1,36 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Equipment } from '../../../../core/types/equipment';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-equipment-detail',
-  imports: [CommonModule, AppIcon],
-  templateUrl: './equipment-detail.html'
+  imports: [CommonModule, AppIcon, TranslatePipe],
+  templateUrl: './equipment-detail.html',
 })
 export class EquipmentDetail implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  equipment = signal<Equipment | null>(null);
-  loading = signal(true);
-  error = signal<string | null>(null);
+  readonly equipment = signal<Equipment | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   // Modal state
-  showEditModal = signal(false);
-  showDeleteModal = signal(false);
+  readonly showEditModal = signal(false);
+  readonly showDeleteModal = signal(false);
 
   // Form state
-  equipmentForm = signal({
+  readonly equipmentForm = signal({
     name: '',
     description: '',
     notes: '',
-    active: true
+    active: true,
   });
 
   // Form update helpers
@@ -54,7 +55,7 @@ export class EquipmentDetail implements OnInit {
   }
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
       if (id) {
         this.loadEquipment(id);
@@ -86,13 +87,15 @@ export class EquipmentDetail implements OnInit {
 
   openEditModal() {
     const eq = this.equipment();
-    if (!eq) return;
+    if (!eq) {
+      return;
+    }
 
     this.equipmentForm.set({
       name: eq.name,
       description: eq.description || '',
       notes: eq.notes || '',
-      active: eq.active
+      active: eq.active,
     });
     this.showEditModal.set(true);
   }
@@ -103,7 +106,9 @@ export class EquipmentDetail implements OnInit {
 
   async updateEquipment() {
     const eq = this.equipment();
-    if (!eq) return;
+    if (!eq) {
+      return;
+    }
 
     try {
       const form = this.equipmentForm();
@@ -126,7 +131,9 @@ export class EquipmentDetail implements OnInit {
 
   async deleteEquipment() {
     const eq = this.equipment();
-    if (!eq) return;
+    if (!eq) {
+      return;
+    }
 
     try {
       await firstValueFrom(this.api.deleteEquipment(eq.id));

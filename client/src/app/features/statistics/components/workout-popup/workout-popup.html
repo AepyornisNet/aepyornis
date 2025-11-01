@@ -1,7 +1,7 @@
 <div class="workout-popup">
   <!-- Name with link -->
   <div class="mb-2">
-    <a [routerLink]="['/workouts', data().id]" class="fw-semibold text-decoration-none">
+    <a class="fw-semibold text-decoration-none" [routerLink]="['/workouts', data().id]">
       {{ data().name || '(no name)' }}
     </a>
   </div>
@@ -40,7 +40,10 @@
             {{ data().total_repetitions }}
           </td>
         </tr>
-        @if (data().repetition_frequency_per_min !== undefined && data().repetition_frequency_per_min !== null) {
+        @if (
+          data().repetition_frequency_per_min !== undefined &&
+          data().repetition_frequency_per_min !== null
+        ) {
           <tr>
             <td class="pe-2">
               <app-icon name="tempo" />
@@ -58,9 +61,7 @@
           <td class="pe-2">
             <app-icon name="weight" />
           </td>
-          <td class="font-monospace">
-            {{ formatWeight() }} {{ weightUnit() }}
-          </td>
+          <td class="font-monospace">{{ formatWeight() }} {{ weightUnit() }}</td>
         </tr>
       }
 
@@ -100,9 +101,7 @@
           <td class="pe-2">
             <app-icon name="speed" />
           </td>
-          <td class="font-monospace">
-            {{ formatSpeed() }} {{ speedUnit() }}
-          </td>
+          <td class="font-monospace">{{ formatSpeed() }} {{ speedUnit() }}</td>
         </tr>
       }
     </tbody>

@@ -1,5 +1,6 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -10,8 +11,8 @@ import { PaginatedListView } from '../../../../core/components/paginated-list-vi
 
 @Component({
   selector: 'app-equipment',
-  imports: [CommonModule, AppIcon],
-  templateUrl: './equipment.html'
+  imports: [CommonModule, AppIcon, TranslatePipe],
+  templateUrl: './equipment.html',
 })
 export class Equipment extends PaginatedListView<EquipmentModel> {
   private api = inject(Api);
@@ -19,23 +20,21 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
 
   // Alias for better template readability
   equipment = this.items;
-  hasEquipment = computed(() => this.hasItems());
+  readonly hasEquipment = computed(() => this.hasItems());
 
   // Modal state
-  showCreateModal = signal(false);
-  showEditModal = signal(false);
-  showDeleteModal = signal(false);
-  selectedEquipment = signal<EquipmentModel | null>(null);
+  readonly showCreateModal = signal(false);
+  readonly showEditModal = signal(false);
+  readonly showDeleteModal = signal(false);
+  readonly selectedEquipment = signal<EquipmentModel | null>(null);
 
   // Form state
-  equipmentForm = signal({
+  readonly equipmentForm = signal({
     name: '',
     description: '',
     notes: '',
-    active: true
+    active: true,
   });
-
-
 
   // Form update helpers
   updateFormName(value: string) {
@@ -68,7 +67,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
 
     const params: PaginationParams = {
       page: this.currentPage(),
-      per_page: this.perPage()
+      per_page: this.perPage(),
     };
 
     try {
@@ -94,7 +93,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
       name: '',
       description: '',
       notes: '',
-      active: true
+      active: true,
     });
     this.showCreateModal.set(true);
   }
@@ -121,7 +120,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
       name: equipment.name,
       description: equipment.description || '',
       notes: equipment.notes || '',
-      active: equipment.active
+      active: equipment.active,
     });
     this.showEditModal.set(true);
   }
@@ -133,7 +132,9 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
 
   async updateEquipment() {
     const equipment = this.selectedEquipment();
-    if (!equipment) return;
+    if (!equipment) {
+      return;
+    }
 
     try {
       const form = this.equipmentForm();
@@ -158,7 +159,9 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
 
   async deleteEquipment() {
     const equipment = this.selectedEquipment();
-    if (!equipment) return;
+    if (!equipment) {
+      return;
+    }
 
     try {
       await firstValueFrom(this.api.deleteEquipment(equipment.id));

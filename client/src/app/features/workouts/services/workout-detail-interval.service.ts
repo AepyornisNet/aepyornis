@@ -27,7 +27,7 @@ export interface IntervalData {
  * Service responsible for calculating workout intervals and related statistics.
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WorkoutDetailIntervalService {
   /**
@@ -39,8 +39,8 @@ export class WorkoutDetailIntervalService {
     }
 
     const totalDistanceKm = mapData.distance[mapData.distance.length - 1];
-    const intervals = [1, 2, 5, 10, 25].filter(d => d < totalDistanceKm);
-    
+    const intervals = [1, 2, 5, 10, 25].filter((d) => d < totalDistanceKm);
+
     return intervals.length > 0 ? intervals : [1];
   }
 
@@ -50,10 +50,10 @@ export class WorkoutDetailIntervalService {
   calculateIntervals(
     mapData: MapDataDetails,
     intervalDistanceKm: number,
-    extraMetrics: string[]
+    extraMetrics: string[],
   ): IntervalData[] {
     const intervals: IntervalData[] = [];
-    
+
     if (!mapData || mapData.distance.length === 0) {
       return intervals;
     }
@@ -63,17 +63,15 @@ export class WorkoutDetailIntervalService {
 
     for (let i = 0; i < mapData.distance.length; i++) {
       const distance = mapData.distance[i];
-      
+
       // Check if we've reached the next interval boundary or end
-      if (distance >= intervalDistanceKm * intervalNumber || 
-          i === mapData.distance.length - 1) {
-        
+      if (distance >= intervalDistanceKm * intervalNumber || i === mapData.distance.length - 1) {
         const interval = this.calculateIntervalData(
           mapData,
           intervalNumber,
           currentIntervalStart,
           i,
-          extraMetrics
+          extraMetrics,
         );
         intervals.push(interval);
 
@@ -96,20 +94,19 @@ export class WorkoutDetailIntervalService {
     intervalNumber: number,
     startIndex: number,
     endIndex: number,
-    extraMetrics: string[]
+    extraMetrics: string[],
   ): IntervalData {
     const startDistance = mapData.distance[startIndex];
     const endDistance = mapData.distance[endIndex];
-    
+
     const startTime = mapData.duration[startIndex];
     const endTime = mapData.duration[endIndex];
     const duration = (endTime - startTime) * 1000; // Convert to milliseconds
 
     // Calculate average speed from the data points
-    const speedValues = mapData.speed.slice(startIndex, endIndex + 1).filter(s => s > 0);
-    const avgSpeed = speedValues.length > 0
-      ? speedValues.reduce((sum, s) => sum + s, 0) / speedValues.length
-      : 0;
+    const speedValues = mapData.speed.slice(startIndex, endIndex + 1).filter((s) => s > 0);
+    const avgSpeed =
+      speedValues.length > 0 ? speedValues.reduce((sum, s) => sum + s, 0) / speedValues.length : 0;
     const pace = this.calculatePace(avgSpeed);
 
     // Calculate elevation changes
@@ -137,27 +134,30 @@ export class WorkoutDetailIntervalService {
         const hrValues = mapData.extra_metrics['heart-rate']
           .slice(startIndex, endIndex + 1)
           .filter((v): v is number => v !== null && v > 0);
-        avgHeartRate = hrValues.length > 0 
-          ? hrValues.reduce((sum, v) => sum + v, 0) / hrValues.length 
-          : undefined;
+        avgHeartRate =
+          hrValues.length > 0
+            ? hrValues.reduce((sum, v) => sum + v, 0) / hrValues.length
+            : undefined;
       }
 
       if (extraMetrics.includes('cadence') && mapData.extra_metrics['cadence']) {
         const cadenceValues = mapData.extra_metrics['cadence']
           .slice(startIndex, endIndex + 1)
           .filter((v): v is number => v !== null && v > 0);
-        avgCadence = cadenceValues.length > 0 
-          ? cadenceValues.reduce((sum: number, v: number) => sum + v, 0) / cadenceValues.length 
-          : undefined;
+        avgCadence =
+          cadenceValues.length > 0
+            ? cadenceValues.reduce((sum: number, v: number) => sum + v, 0) / cadenceValues.length
+            : undefined;
       }
 
       if (extraMetrics.includes('temperature') && mapData.extra_metrics['temperature']) {
         const tempValues = mapData.extra_metrics['temperature']
           .slice(startIndex, endIndex + 1)
           .filter((v): v is number => v !== null);
-        avgTemperature = tempValues.length > 0 
-          ? tempValues.reduce((sum: number, v: number) => sum + v, 0) / tempValues.length 
-          : undefined;
+        avgTemperature =
+          tempValues.length > 0
+            ? tempValues.reduce((sum: number, v: number) => sum + v, 0) / tempValues.length
+            : undefined;
       }
     }
 
@@ -175,7 +175,7 @@ export class WorkoutDetailIntervalService {
       avgCadence,
       avgTemperature,
       startIndex,
-      endIndex
+      endIndex,
     };
   }
 
@@ -183,12 +183,14 @@ export class WorkoutDetailIntervalService {
    * Calculate pace from speed in m/s to min/km format.
    */
   private calculatePace(speedMps: number): string {
-    if (speedMps === 0) return '-';
-    
+    if (speedMps === 0) {
+      return '-';
+    }
+
     const paceSecondsPerKm = 1000 / speedMps;
     const minutes = Math.floor(paceSecondsPerKm / 60);
     const seconds = Math.round(paceSecondsPerKm % 60);
-    
+
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
@@ -196,7 +198,9 @@ export class WorkoutDetailIntervalService {
    * Mark the fastest and slowest intervals.
    */
   private markFastestSlowest(intervals: IntervalData[]): void {
-    if (intervals.length === 0) return;
+    if (intervals.length === 0) {
+      return;
+    }
 
     let fastestIndex = 0;
     let slowestIndex = 0;

@@ -14,11 +14,11 @@ export interface IntervalSelection {
  * the breakdown, chart, and map visualizations.
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WorkoutDetailCoordinatorService {
   // Signal to track the currently selected interval across all components
-  selectedInterval = signal<IntervalSelection | null>(null);
+  readonly selectedInterval = signal<IntervalSelection | null>(null);
 
   /**
    * Select an interval range. This will update all subscribed components.
@@ -48,8 +48,6 @@ export class WorkoutDetailCoordinatorService {
    */
   isIntervalSelected(startIndex: number, endIndex: number): boolean {
     const current = this.selectedInterval();
-    return current !== null && 
-           current.startIndex === startIndex && 
-           current.endIndex === endIndex;
+    return current !== null && current.startIndex === startIndex && current.endIndex === endIndex;
   }
 }

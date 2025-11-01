@@ -10,7 +10,7 @@
   .leaflet-tooltip,
   .leaflet-control {
     --brightness: brightness(0.85);
-    --contrast: contrast(0.80);
+    --contrast: contrast(0.8);
     --invert: invert(100%);
     --saturate: saturate(0);
     filter: var(--brightness) var(--contrast) var(--invert) var(--saturate);

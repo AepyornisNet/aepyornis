@@ -1,8 +1,10 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-pagination',
   templateUrl: './pagination.html',
+  imports: [TranslatePipe],
 })
 export class Pagination {
   @Input() source!: {

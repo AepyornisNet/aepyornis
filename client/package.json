@@ -6,9 +6,9 @@
     "start": "ng serve --host=0.0.0.0",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "i18n": "ng extract-i18n --output-path src/locale",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "migrate:translations": "node ./scripts/migrate-translations.js"
   },
   "prettier": {
     "printWidth": 100,
@@ -68,6 +68,8 @@
     "@vitest/browser": "^3.2.4",
     "angular-eslint": "20.4.0",
     "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "jasmine-core": "~5.9.0",
     "jsdom": "^27.0.0",
     "playwright": "^1.56.0",

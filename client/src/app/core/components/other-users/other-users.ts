@@ -1,5 +1,13 @@
-import { Component, OnInit, signal, inject, ChangeDetectionStrategy, computed } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../core/services/api';
@@ -8,26 +16,26 @@ import { UserProfile } from '../../types/user';
 
 @Component({
   selector: 'app-other-users',
-  imports: [CommonModule, RouterLink, AppIcon],
+  imports: [CommonModule, RouterLink, AppIcon, TranslatePipe],
   templateUrl: './other-users.html',
   styleUrl: './other-users.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OtherUsers implements OnInit {
   private api = inject(Api);
-  
-  users = signal<UserProfile[]>([]);
-  currentUserId = signal<number | null>(null);
-  loading = signal(true);
-  error = signal<string | null>(null);
-  
+
+  readonly users = signal<UserProfile[]>([]);
+  readonly currentUserId = signal<number | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+
   // Filter out the current user
-  otherUsers = computed(() => {
+  readonly otherUsers = computed(() => {
     const userId = this.currentUserId();
     if (userId === null) {
       return this.users();
     }
-    return this.users().filter(u => u.id !== userId);
+    return this.users().filter((u) => u.id !== userId);
   });
 
   ngOnInit() {
@@ -37,18 +45,18 @@ export class OtherUsers implements OnInit {
   private async loadUsers() {
     this.loading.set(true);
     this.error.set(null);
-    
+
     try {
       // Load current user and all users in parallel
       const [whoamiResponse, usersResponse] = await Promise.all([
         firstValueFrom(this.api.whoami()),
-        firstValueFrom(this.api.getUsers())
+        firstValueFrom(this.api.getUsers()),
       ]);
-      
+
       if (whoamiResponse) {
         this.currentUserId.set(whoamiResponse.results.id);
       }
-      
+
       if (usersResponse) {
         this.users.set(usersResponse.results);
       }
