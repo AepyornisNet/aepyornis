@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
@@ -13,23 +13,24 @@ import { PaginatedListView } from '../../../../core/components/paginated-list-vi
   selector: 'app-equipment',
   imports: [CommonModule, AppIcon, TranslatePipe],
   templateUrl: './equipment.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Equipment extends PaginatedListView<EquipmentModel> {
   private api = inject(Api);
   private router = inject(Router);
 
   // Alias for better template readability
-  equipment = this.items;
-  readonly hasEquipment = computed(() => this.hasItems());
+  public equipment = this.items;
+  public readonly hasEquipment = computed(() => this.hasItems());
 
   // Modal state
-  readonly showCreateModal = signal(false);
-  readonly showEditModal = signal(false);
-  readonly showDeleteModal = signal(false);
-  readonly selectedEquipment = signal<EquipmentModel | null>(null);
+  public readonly showCreateModal = signal(false);
+  public readonly showEditModal = signal(false);
+  public readonly showDeleteModal = signal(false);
+  public readonly selectedEquipment = signal<EquipmentModel | null>(null);
 
   // Form state
-  readonly equipmentForm = signal({
+  public readonly equipmentForm = signal({
     name: '',
     description: '',
     notes: '',
@@ -37,27 +38,27 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
   });
 
   // Form update helpers
-  updateFormName(value: string) {
+  public updateFormName(value: string): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, name: value });
   }
 
-  updateFormDescription(value: string) {
+  public updateFormDescription(value: string): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, description: value });
   }
 
-  updateFormNotes(value: string) {
+  public updateFormNotes(value: string): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, notes: value });
   }
 
-  updateFormActive(value: boolean) {
+  public updateFormActive(value: boolean): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, active: value });
   }
 
-  async loadData(page?: number) {
+  public async loadData(page?: number): Promise<void> {
     if (page) {
       this.currentPage.set(page);
     }
@@ -84,11 +85,11 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     }
   }
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  openCreateModal() {
+  public openCreateModal(): void {
     this.equipmentForm.set({
       name: '',
       description: '',
@@ -97,12 +98,11 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     });
     this.showCreateModal.set(true);
   }
-
-  closeCreateModal() {
+  public closeCreateModal(): void {
     this.showCreateModal.set(false);
   }
 
-  async createEquipment() {
+  public async createEquipment(): Promise<void> {
     try {
       const form = this.equipmentForm();
       await firstValueFrom(this.api.createEquipment(form));
@@ -114,7 +114,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     }
   }
 
-  openEditModal(equipment: EquipmentModel) {
+  public openEditModal(equipment: EquipmentModel): void {
     this.selectedEquipment.set(equipment);
     this.equipmentForm.set({
       name: equipment.name,
@@ -125,12 +125,12 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     this.showEditModal.set(true);
   }
 
-  closeEditModal() {
+  public closeEditModal(): void {
     this.showEditModal.set(false);
     this.selectedEquipment.set(null);
   }
 
-  async updateEquipment() {
+  public async updateEquipment(): Promise<void> {
     const equipment = this.selectedEquipment();
     if (!equipment) {
       return;
@@ -147,17 +147,17 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     }
   }
 
-  openDeleteModal(equipment: EquipmentModel) {
+  public openDeleteModal(equipment: EquipmentModel): void {
     this.selectedEquipment.set(equipment);
     this.showDeleteModal.set(true);
   }
 
-  closeDeleteModal() {
+  public closeDeleteModal(): void {
     this.showDeleteModal.set(false);
     this.selectedEquipment.set(null);
   }
 
-  async deleteEquipment() {
+  public async deleteEquipment(): Promise<void> {
     const equipment = this.selectedEquipment();
     if (!equipment) {
       return;
@@ -173,7 +173,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     }
   }
 
-  viewDetails(equipment: EquipmentModel) {
+  public viewDetails(equipment: EquipmentModel): void {
     this.router.navigate(['/equipment', equipment.id]);
   }
 }

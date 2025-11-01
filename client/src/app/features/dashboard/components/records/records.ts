@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
@@ -9,31 +9,34 @@ import { WorkoutRecord } from '../../../../core/types/workout';
   imports: [CommonModule, RouterLink, TranslatePipe],
   templateUrl: './records.html',
   styleUrl: './records.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Records {
-  readonly records = input<WorkoutRecord[]>([]);
+  public readonly records = input<WorkoutRecord[]>([]);
 
-  readonly activeRecords = computed(() => this.records().filter((r) => r.active && r.distance));
+  public readonly activeRecords = computed((): WorkoutRecord[] =>
+    this.records().filter((r) => r.active && r.distance),
+  );
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  formatSpeed(speed: number): string {
+  public formatSpeed(speed: number): string {
     // Convert m/s to km/h
     return (speed * 3.6).toFixed(2);
   }
 
-  formatDistance(distance: number): string {
+  public formatDistance(distance: number): string {
     // Convert meters to kilometers
     return (distance / 1000).toFixed(2);
   }
 
-  formatElevation(elevation: number): string {
+  public formatElevation(elevation: number): string {
     return elevation.toFixed(0);
   }
 
-  formatDuration(seconds: number): string {
+  public formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) {

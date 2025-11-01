@@ -4,7 +4,7 @@ import { MapDataDetails } from '../../../core/types/workout';
 /**
  * Data structure for a calculated interval.
  */
-export interface IntervalData {
+export type IntervalData = {
   intervalNumber: number;
   startDistance: number;
   endDistance: number;
@@ -21,7 +21,7 @@ export interface IntervalData {
   endIndex: number;
   isFastest?: boolean;
   isSlowest?: boolean;
-}
+};
 
 /**
  * Service responsible for calculating workout intervals and related statistics.
@@ -33,7 +33,7 @@ export class WorkoutDetailIntervalService {
   /**
    * Calculate available interval distances based on total workout distance.
    */
-  calculateAvailableIntervals(mapData: MapDataDetails): number[] {
+  public calculateAvailableIntervals(mapData: MapDataDetails): number[] {
     if (!mapData || mapData.distance.length === 0) {
       return [1];
     }
@@ -47,7 +47,7 @@ export class WorkoutDetailIntervalService {
   /**
    * Calculate intervals for a given distance.
    */
-  calculateIntervals(
+  public calculateIntervals(
     mapData: MapDataDetails,
     intervalDistanceKm: number,
     extraMetrics: string[],

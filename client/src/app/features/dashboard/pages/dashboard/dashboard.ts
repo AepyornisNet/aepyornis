@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -14,20 +14,21 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [CommonModule, WorkoutCalendar, KeyMetrics, Records, RecentActivity, TranslatePipe],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Dashboard implements OnInit {
   private api = inject(Api);
 
-  readonly totals = signal<Totals | null>(null);
-  readonly records = signal<WorkoutRecord[]>([]);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
+  public readonly totals = signal<Totals | null>(null);
+  public readonly records = signal<WorkoutRecord[]>([]);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
-  ngOnInit() {
+  public ngOnInit(): void {
     this.loadDashboardData();
   }
 
-  async loadDashboardData() {
+  public async loadDashboardData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 

@@ -1,14 +1,14 @@
 <div class="workout-actions" [class.compact]="compact()">
   <!-- Messages -->
-  @if (successMessage) {
+  @if (successMessage()) {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-      {{ successMessage }}
+      {{ successMessage() }}
     </div>
   }
 
-  @if (errorMessage) {
+  @if (errorMessage()) {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-      {{ errorMessage }}
+      {{ errorMessage() }}
     </div>
   }
 
@@ -19,7 +19,7 @@
       class="btn btn-sm"
       [class.btn-outline-secondary]="!workout().locked"
       [class.btn-warning]="workout().locked"
-      [disabled]="isProcessing"
+      [disabled]="isProcessing()"
       [title]="
         workout().locked
           ? ('translation.Unlock_workout' | translate)
@@ -39,7 +39,7 @@
     @if (workout().has_file) {
       <button
         class="btn btn-sm btn-outline-secondary"
-        [disabled]="isProcessing"
+        [disabled]="isProcessing()"
         [title]="'translation.Download_original_file' | translate"
         (click)="download()"
       >
@@ -53,7 +53,7 @@
     <!-- Edit -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [disabled]="isProcessing"
+      [disabled]="isProcessing()"
       [title]="'translation.Edit_workout' | translate"
       (click)="edit()"
     >
@@ -67,7 +67,7 @@
     @if (workout().has_file) {
       <button
         class="btn btn-sm btn-outline-secondary"
-        [disabled]="isProcessing"
+        [disabled]="isProcessing()"
         [title]="'translation.Refresh_workout_data' | translate"
         (click)="refresh()"
       >
@@ -82,7 +82,7 @@
     <div class="btn-group" role="group">
       <button
         class="btn btn-sm btn-outline-secondary dropdown-toggle"
-        [disabled]="isProcessing"
+        [disabled]="isProcessing()"
         [title]="'translation.Share_workout' | translate"
         (click)="toggleShareMenu()"
       >
@@ -91,22 +91,19 @@
           <span class="ms-1">{{ 'translation.share' | translate }}</span>
         }
       </button>
-      @if (showShareMenu) {
+      @if (showShareMenu()) {
         <div class="dropdown-menu show position-absolute" style="z-index: 1000">
           @if (workout().public_uuid) {
-            <button class="dropdown-item" (click)="copyShareLink(); showShareMenu = false">
+            <button class="dropdown-item" (click)="copyShareLink()">
               <app-icon name="copy" size="16" />
               <span class="ms-1">{{ 'translation.copy_share_link' | translate }}</span>
             </button>
-            <button
-              class="dropdown-item text-danger"
-              (click)="deleteShareLink(); showShareMenu = false"
-            >
+            <button class="dropdown-item text-danger" (click)="deleteShareLink()">
               <app-icon name="delete" size="16" />
               <span class="ms-1">{{ 'translation.delete_share_link' | translate }}</span>
             </button>
           } @else {
-            <button class="dropdown-item" (click)="generateShareLink(); showShareMenu = false">
+            <button class="dropdown-item" (click)="generateShareLink()">
               <app-icon name="generate-share" size="16" />
               <span class="ms-1">{{ 'translation.generate_share_link' | translate }}</span>
             </button>
@@ -118,7 +115,7 @@
     <!-- Delete -->
     <button
       class="btn btn-sm btn-outline-danger"
-      [disabled]="isProcessing"
+      [disabled]="isProcessing()"
       [title]="'translation.Delete_workout' | translate"
       (click)="confirmDelete()"
     >
@@ -130,7 +127,7 @@
   </div>
 
   <!-- Delete Confirmation Modal -->
-  @if (showDeleteConfirm) {
+  @if (showDeleteConfirm()) {
     <div class="modal d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">

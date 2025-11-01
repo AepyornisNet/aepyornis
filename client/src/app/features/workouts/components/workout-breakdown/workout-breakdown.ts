@@ -1,4 +1,4 @@
-import { Component, inject, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
@@ -13,46 +13,64 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [CommonModule, TranslatePipe],
   templateUrl: './workout-breakdown.html',
   styleUrl: './workout-breakdown.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkoutBreakdownComponent implements OnInit {
-  @Input() mapData?: MapDataDetails;
-  @Input() extraMetrics: string[] = [];
+export class WorkoutBreakdownComponent {
+  public readonly mapData = input<MapDataDetails | undefined>();
+  public readonly extraMetrics = input<string[]>([]);
 
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private intervalService = inject(WorkoutDetailIntervalService);
 
-  intervalDistance = 1; // km
-  availableIntervals: number[] = [];
-  intervals: IntervalData[] = [];
-  selectedIntervalIndex: number | null = null;
+  public intervalDistance = 1; // km
+  public availableIntervals: number[] = [];
+  public intervals: IntervalData[] = [];
+  public selectedIntervalIndex: number | null = null;
 
-  ngOnInit() {
-    if (this.mapData) {
-      this.availableIntervals = this.intervalService.calculateAvailableIntervals(this.mapData);
+  public constructor() {
+    effect(() => {
+      const data = this.mapData();
+      const metrics = this.extraMetrics();
+      if (!data) {
+        this.availableIntervals = [];
+        this.intervals = [];
+        this.selectedIntervalIndex = null;
+        return;
+      }
+
+      this.availableIntervals = this.intervalService.calculateAvailableIntervals(data);
       this.intervals = this.intervalService.calculateIntervals(
-        this.mapData,
+        data,
         this.intervalDistance,
-        this.extraMetrics,
+        metrics,
       );
-    }
+
+      if (
+        this.selectedIntervalIndex !== null &&
+        this.selectedIntervalIndex >= this.intervals.length
+      ) {
+        this.selectedIntervalIndex = null;
+      }
+    });
   }
 
-  setIntervalDistance(distance: number) {
+  public setIntervalDistance(distance: number): void {
     this.intervalDistance = distance;
     this.selectedIntervalIndex = null;
 
-    if (this.mapData) {
+    const data = this.mapData();
+    if (data) {
       this.intervals = this.intervalService.calculateIntervals(
-        this.mapData,
+        data,
         this.intervalDistance,
-        this.extraMetrics,
+        this.extraMetrics(),
       );
     }
 
     this.coordinatorService.clearSelection();
   }
 
-  selectInterval(index: number) {
+  public selectInterval(index: number): void {
     if (this.selectedIntervalIndex === index) {
       // Deselect
       this.selectedIntervalIndex = null;
@@ -65,7 +83,7 @@ export class WorkoutBreakdownComponent implements OnInit {
     }
   }
 
-  formatDuration(milliseconds: number): string {
+  public formatDuration(milliseconds: number): string {
     const totalSeconds = Math.floor(milliseconds / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -77,11 +95,11 @@ export class WorkoutBreakdownComponent implements OnInit {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  formatSpeed(speedMps: number): string {
+  public formatSpeed(speedMps: number): string {
     return (speedMps * 3.6).toFixed(2); // Convert m/s to km/h
   }
 
-  hasExtraMetric(metric: string): boolean {
-    return this.extraMetrics.includes(metric);
+  public hasExtraMetric(metric: string): boolean {
+    return this.extraMetrics().includes(metric);
   }
 }

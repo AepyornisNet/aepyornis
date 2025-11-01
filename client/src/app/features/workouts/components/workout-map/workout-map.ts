@@ -1,12 +1,13 @@
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
   effect,
   ElementRef,
   inject,
-  Input,
+  input,
   OnDestroy,
-  ViewChild,
+  viewChild,
   ViewEncapsulation,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -15,12 +16,12 @@ import { MapCenter, MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { User } from '../../../../core/services/user';
 
-interface PolyLineProps {
+type PolyLineProps = {
   renderer: L.Canvas;
   weight: number;
   interactive: boolean;
   color?: string;
-}
+};
 
 @Component({
   selector: 'app-workout-map',
@@ -28,12 +29,21 @@ interface PolyLineProps {
   encapsulation: ViewEncapsulation.None,
   templateUrl: './workout-map.html',
   styleUrls: ['./workout-map.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
+  private readonly mapContainer = viewChild<ElementRef<HTMLDivElement>>('mapContainer');
 
-  @Input() mapData?: MapDataDetails;
-  @Input() center?: MapCenter;
+  public readonly mapData = input<MapDataDetails | undefined>();
+  public readonly center = input<MapCenter | undefined>();
+
+  private get mapDataValue(): MapDataDetails | undefined {
+    return this.mapData();
+  }
+
+  private get centerValue(): MapCenter | undefined {
+    return this.center();
+  }
 
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private userService = inject(User);
@@ -45,28 +55,40 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
   private maxElevation = 0;
   private maxSpeed = 0;
 
-  constructor() {
+  public constructor() {
     // React to interval selection changes from the coordinator service
     effect(() => {
       const selection = this.coordinatorService.selectedInterval();
       this.highlightInterval(selection);
     });
+
+    // Initialize map once inputs and view are ready
+    effect(() => {
+      const mapData = this.mapDataValue;
+      const containerRef = this.mapContainer();
+      if (!this.map && containerRef && mapData && mapData.position.length > 0) {
+        this.initMap();
+      }
+    });
   }
 
-  ngAfterViewInit() {
+  public ngAfterViewInit(): void {
     setTimeout(() => {
       this.initMap();
     }, 100);
   }
 
-  ngOnDestroy() {
+  public ngOnDestroy(): void {
     if (this.map) {
       this.map.remove();
     }
   }
 
-  private initMap() {
-    if (!this.mapContainer || !this.mapData || this.mapData.position.length === 0) {
+  private initMap(): void {
+    const containerRef = this.mapContainer();
+    const mapData = this.mapDataValue;
+
+    if (!containerRef || !mapData || mapData.position.length === 0) {
       return;
     }
 
@@ -74,12 +96,12 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     this.calculateMinMax();
 
     // Calculate center from points if not provided
-    const midIndex = Math.floor(this.mapData.position.length / 2);
-    const centerLat = this.center?.lat || this.mapData.position[midIndex][0];
-    const centerLng = this.center?.lng || this.mapData.position[midIndex][1];
+    const midIndex = Math.floor(mapData.position.length / 2);
+    const centerLat = this.centerValue?.lat ?? mapData.position[midIndex][0];
+    const centerLng = this.centerValue?.lng ?? mapData.position[midIndex][1];
 
     // Initialize map
-    this.map = L.map(this.mapContainer.nativeElement, {
+    this.map = L.map(containerRef.nativeElement, {
       fadeAnimation: false,
     }).setView([centerLat, centerLng], 15);
 
@@ -124,7 +146,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     this.addMarkers();
 
     // Add hover marker
-    const firstPos = this.mapData.position[0];
+    const firstPos = mapData.position[0];
     this.hoverMarker = L.circleMarker([firstPos[0], firstPos[1]], {
       color: 'blue',
       radius: 8,
@@ -160,34 +182,45 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     this.resetZoom();
   }
 
-  private calculateMinMax() {
-    if (!this.mapData) {
+  private calculateMinMax(): void {
+    const mapData = this.mapDataValue;
+    if (!mapData) {
       return;
     }
 
     // Calculate min/max elevation
-    const elevations = this.mapData.elevation.filter((e) => e !== null && e !== undefined);
-    this.minElevation = Math.min(...elevations);
-    this.maxElevation = Math.max(...elevations);
+    const elevations = mapData.elevation.filter(
+      (value): value is number => value !== null && value !== undefined,
+    );
+    if (elevations.length > 0) {
+      this.minElevation = Math.min(...elevations);
+      this.maxElevation = Math.max(...elevations);
+    } else {
+      this.minElevation = 0;
+      this.maxElevation = 0;
+    }
 
     // Calculate max speed
-    const speeds = this.mapData.speed.filter((s) => s !== null && s !== undefined && s > 0);
-    this.maxSpeed = Math.max(...speeds);
+    const speeds = mapData.speed.filter(
+      (value): value is number => value !== null && value !== undefined && value > 0,
+    );
+    this.maxSpeed = speeds.length > 0 ? Math.max(...speeds) : 0;
   }
 
   private drawElevationTrack(polyLineProperties: PolyLineProps): L.FeatureGroup {
     const elevationLayer = L.featureGroup();
 
-    if (!this.map || !this.mapData || !this.trackGroup) {
+    const mapData = this.mapDataValue;
+    if (!this.map || !mapData || !this.trackGroup) {
       return elevationLayer;
     }
 
     const trackRenderer = polyLineProperties.renderer;
     let prevPoint: [number, number] | null = null;
 
-    this.mapData.position.forEach((pos, i) => {
+    mapData.position.forEach((pos, index) => {
       if (prevPoint) {
-        const elevation = this.mapData!.elevation[i] || 0;
+        const elevation = mapData.elevation[index] ?? 0;
 
         // Add invisible point for tooltip
         this.trackGroup!.addLayer(
@@ -198,7 +231,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
             radius: 4,
           })
             .addTo(this.map!)
-            .bindTooltip(() => this.getTooltip(i)),
+            .bindTooltip(() => this.getTooltip(index)),
         );
 
         // Color based on elevation
@@ -218,7 +251,8 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
   }
 
   private drawSpeedTrack(polyLineProperties: PolyLineProps): L.FeatureGroup | null {
-    if (!this.mapData?.speed || this.mapData.speed.length === 0) {
+    const mapData = this.mapDataValue;
+    if (!mapData?.speed || mapData.speed.length === 0) {
       return null;
     }
 
@@ -227,9 +261,9 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     const movingSpeeds: number[] = [];
 
     // Calculate average and standard deviation
-    const speeds = this.mapData.speed.filter(
-      (s) => s !== null && s !== undefined && s > 0,
-    ) as number[];
+    const speeds = mapData.speed.filter(
+      (value): value is number => value !== null && value !== undefined && value > 0,
+    );
     const averageSpeed = speeds.reduce((a, x) => a + x, 0) / speeds.length;
     const stdevSpeed = Math.sqrt(
       speeds.reduce((a, x) => a + Math.pow(x - averageSpeed, 2), 0) / (speeds.length - 1),
@@ -237,9 +271,9 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
 
     let prevPoint: [number, number] | null = null;
 
-    this.mapData.position.forEach((pos, i) => {
+    mapData.position.forEach((pos, index) => {
       if (prevPoint) {
-        const speed = this.mapData!.speed[i];
+        const speed = mapData.speed[index];
         let color: string;
 
         if (speed === null || speed === undefined || speed < 0.1) {
@@ -267,21 +301,24 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
   }
 
   private drawSlopeTrack(polyLineProperties: PolyLineProps): L.FeatureGroup | null {
-    if (!this.mapData?.slope || this.mapData.slope.length === 0) {
+    const mapData = this.mapDataValue;
+    if (!mapData?.slope || mapData.slope.length === 0) {
       return null;
     }
 
     const slopeLayer = L.featureGroup();
 
-    const slopes = this.mapData.slope.filter((s) => s !== null && s !== undefined) as number[];
+    const slopes = mapData.slope.filter(
+      (value): value is number => value !== null && value !== undefined,
+    );
     const maxSlope = Math.max(...slopes);
     const minSlope = Math.min(...slopes);
 
     let prevPoint: [number, number] | null = null;
 
-    this.mapData.position.forEach((pos, i) => {
+    mapData.position.forEach((pos, index) => {
       if (prevPoint) {
-        const slope = this.mapData!.slope[i] || 0;
+        const slope = mapData.slope[index] ?? 0;
         const zScore = (slope - minSlope) / (maxSlope - minSlope);
         const color = this.getColor(zScore);
 
@@ -296,12 +333,13 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     return slopeLayer;
   }
 
-  private addMarkers() {
-    if (!this.map || !this.mapData || !this.trackGroup) {
+  private addMarkers(): void {
+    const mapData = this.mapDataValue;
+    if (!this.map || !mapData || !this.trackGroup) {
       return;
     }
 
-    const positions = this.mapData.position;
+    const positions = mapData.position;
 
     // Add end marker (red)
     const lastPos = positions[positions.length - 1];
@@ -333,7 +371,8 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
   }
 
   private getTooltip(index: number): string {
-    if (!this.mapData) {
+    const mapData = this.mapDataValue;
+    if (!mapData) {
       return '';
     }
 
@@ -345,14 +384,14 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     let tooltip = '<ul style="list-style: none; padding: 0; margin: 0;">';
 
     // Time
-    if (this.mapData.time[index]) {
-      const time = new Date(this.mapData.time[index]).toTimeString().substr(0, 5);
+    if (mapData.time[index]) {
+      const time = new Date(mapData.time[index]).toTimeString().substring(0, 5);
       tooltip += `<li><b>Time</b>: ${time}</li>`;
     }
 
     // Distance
-    if (this.mapData.distance[index] !== undefined) {
-      const distanceKm = this.mapData.distance[index];
+    if (mapData.distance[index] !== undefined) {
+      const distanceKm = mapData.distance[index];
       let displayDistance: number;
       if (distanceUnit === 'mi') {
         displayDistance = distanceKm * 0.621371;
@@ -363,13 +402,13 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     }
 
     // Duration
-    if (this.mapData.duration[index] !== undefined) {
-      tooltip += `<li><b>Duration</b>: ${this.formatDuration(this.mapData.duration[index])}</li>`;
+    if (mapData.duration[index] !== undefined) {
+      tooltip += `<li><b>Duration</b>: ${this.formatDuration(mapData.duration[index])}</li>`;
     }
 
     // Speed
-    if (this.mapData.speed[index] !== undefined && this.mapData.speed[index] !== null) {
-      const speedMps = this.mapData.speed[index];
+    if (mapData.speed[index] !== undefined && mapData.speed[index] !== null) {
+      const speedMps = mapData.speed[index] as number;
       let displaySpeed: number;
       if (speedUnit === 'mph') {
         displaySpeed = speedMps * 2.23694;
@@ -380,8 +419,8 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     }
 
     // Elevation
-    if (this.mapData.elevation[index] !== undefined) {
-      const elevationM = this.mapData.elevation[index];
+    if (mapData.elevation[index] !== undefined) {
+      const elevationM = mapData.elevation[index] as number;
       let displayElevation: number;
       if (elevationUnit === 'ft') {
         displayElevation = elevationM * 3.28084;
@@ -392,24 +431,20 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     }
 
     // Slope
-    if (
-      this.mapData.slope &&
-      this.mapData.slope[index] !== undefined &&
-      this.mapData.slope[index] !== null
-    ) {
-      tooltip += `<li><b>Slope</b>: ${this.mapData.slope[index].toFixed(1)}%</li>`;
+    if (mapData.slope && mapData.slope[index] !== undefined && mapData.slope[index] !== null) {
+      tooltip += `<li><b>Slope</b>: ${mapData.slope[index]!.toFixed(1)}%</li>`;
     }
 
     // Extra metrics
-    if (this.mapData.extra_metrics) {
-      if (this.mapData.extra_metrics['heart-rate']?.[index]) {
-        tooltip += `<li><b>Heart Rate</b>: ${Math.round(this.mapData.extra_metrics['heart-rate'][index] as number)} bpm</li>`;
+    if (mapData.extra_metrics) {
+      if (mapData.extra_metrics['heart-rate']?.[index]) {
+        tooltip += `<li><b>Heart Rate</b>: ${Math.round(mapData.extra_metrics['heart-rate'][index] as number)} bpm</li>`;
       }
-      if (this.mapData.extra_metrics['cadence']?.[index]) {
-        tooltip += `<li><b>Cadence</b>: ${Math.round(this.mapData.extra_metrics['cadence'][index] as number)}</li>`;
+      if (mapData.extra_metrics['cadence']?.[index]) {
+        tooltip += `<li><b>Cadence</b>: ${Math.round(mapData.extra_metrics['cadence'][index] as number)}</li>`;
       }
-      if (this.mapData.extra_metrics['temperature']?.[index]) {
-        tooltip += `<li><b>Temperature</b>: ${(this.mapData.extra_metrics['temperature'][index] as number).toFixed(1)} °C</li>`;
+      if (mapData.extra_metrics['temperature']?.[index]) {
+        tooltip += `<li><b>Temperature</b>: ${(mapData.extra_metrics['temperature'][index] as number).toFixed(1)} °C</li>`;
       }
     }
 
@@ -442,13 +477,14 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     return `rgb(${color.join(',')})`;
   }
 
-  private highlightInterval(selection: { startIndex: number; endIndex: number } | null) {
+  private highlightInterval(selection: { startIndex: number; endIndex: number } | null): void {
     // Remove existing highlight
     if (this.highlightLayer) {
       this.highlightLayer.clearLayers();
     }
 
-    if (!selection || !this.map || !this.mapData) {
+    const mapData = this.mapDataValue;
+    if (!selection || !this.map || !mapData) {
       // If clearing, also reset zoom to show full track
       if (!selection && this.map) {
         this.resetZoom();
@@ -462,7 +498,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     }
 
     // Draw highlighted segment using red color like the original map.js
-    const positions = this.mapData.position.slice(selection.startIndex, selection.endIndex + 1);
+    const positions = mapData.position.slice(selection.startIndex, selection.endIndex + 1);
 
     for (let i = 1; i < positions.length; i++) {
       const prevPos: L.LatLngExpression = [positions[i - 1][0], positions[i - 1][1]];
@@ -476,7 +512,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private resetZoom() {
+  private resetZoom(): void {
     if (this.map && this.trackGroup) {
       this.map.fitBounds(this.trackGroup.getBounds(), { animate: false });
     }

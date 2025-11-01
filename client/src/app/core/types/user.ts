@@ -2,7 +2,7 @@
  * User domain models
  */
 
-export interface UserProfile {
+export type UserProfile = {
   id: number;
   username: string;
   name: string;
@@ -17,24 +17,24 @@ export interface UserProfile {
   timezone: string;
   socials_disabled: boolean;
   prefer_full_date: boolean;
-}
+};
 
-export interface AppInfo {
+export type AppInfo = {
   version: string;
   version_sha: string;
   registration_disabled: boolean;
   socials_disabled: boolean;
-}
+};
 
-export interface UserPreferredUnits {
+export type UserPreferredUnits = {
   speed: string;
   distance: string;
   elevation: string;
   weight: string;
   height: string;
-}
+};
 
-export interface ProfileSettings {
+export type ProfileSettings = {
   preferred_units: UserPreferredUnits;
   language: string;
   theme: string;
@@ -45,9 +45,9 @@ export interface ProfileSettings {
   api_key?: string;
   socials_disabled: boolean;
   prefer_full_date: boolean;
-}
+};
 
-export interface FullUserProfile {
+export type FullUserProfile = {
   id: number;
   username: string;
   name: string;
@@ -57,17 +57,17 @@ export interface FullUserProfile {
   created_at: string;
   updated_at: string;
   profile: ProfileSettings;
-}
+};
 
-export interface UserUpdateRequest {
+export type UserUpdateRequest = {
   name: string;
   username: string;
   admin: boolean;
   active: boolean;
   password?: string;
-}
+};
 
-export interface ProfileUpdateRequest {
+export type ProfileUpdateRequest = {
   preferred_units: UserPreferredUnits;
   language: string;
   theme: string;
@@ -77,9 +77,9 @@ export interface ProfileUpdateRequest {
   api_active: boolean;
   socials_disabled: boolean;
   prefer_full_date: boolean;
-}
+};
 
-export interface AppConfig {
+export type AppConfig = {
   registration_disabled: boolean;
   socials_disabled: boolean;
-}
+};

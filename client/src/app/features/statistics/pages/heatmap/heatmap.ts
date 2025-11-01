@@ -9,7 +9,7 @@ import {
   inject,
   OnDestroy,
   signal,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -39,7 +39,7 @@ L.Icon.Default.mergeOptions({
   styleUrls: ['./heatmap.scss'],
 })
 export class Heatmap implements AfterViewInit, OnDestroy {
-  @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef<HTMLDivElement>;
+  private readonly mapContainer = viewChild<ElementRef<HTMLDivElement>>('mapContainer');
 
   private api = inject(Api);
   private environmentInjector = inject(EnvironmentInjector);
@@ -48,34 +48,35 @@ export class Heatmap implements AfterViewInit, OnDestroy {
   private heatLayer?: L.HeatLayer;
   private markersLayer?: L.MarkerClusterGroup;
 
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
   // Control settings
-  readonly radius = signal(10);
-  readonly blur = signal(15);
-  readonly showMarkers = signal(true);
-  readonly onlyTrace = signal(false);
+  public readonly radius = signal(10);
+  public readonly blur = signal(15);
+  public readonly showMarkers = signal(true);
+  public readonly onlyTrace = signal(false);
 
   private heatMapData: L.HeatLatLngTuple[] = [];
 
-  ngAfterViewInit() {
+  public ngAfterViewInit(): void {
     this.initMap();
     this.loadHeatmapData();
   }
 
-  ngOnDestroy() {
+  public ngOnDestroy(): void {
     if (this.map) {
       this.map.remove();
     }
   }
 
-  private initMap() {
-    if (!this.mapContainer) {
+  private initMap(): void {
+    const containerRef = this.mapContainer();
+    if (!containerRef) {
       return;
     }
 
-    this.map = L.map(this.mapContainer.nativeElement, {
+    this.map = L.map(containerRef.nativeElement, {
       fadeAnimation: false,
     });
 
@@ -104,7 +105,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
     this.addCustomControl();
   }
 
-  private addCustomControl() {
+  private addCustomControl(): void {
     if (!this.map) {
       return;
     }
@@ -170,7 +171,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
     new CustomControl().addTo(this.map);
   }
 
-  private async loadHeatmapData() {
+  private async loadHeatmapData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -190,10 +191,10 @@ export class Heatmap implements AfterViewInit, OnDestroy {
         const geoJsonLayer = L.geoJSON(
           centersResponse.results as unknown as GeoJSON.GeoJsonObject,
           {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            onEachFeature: (feature: any, layer) => {
-              if (feature.properties && feature.properties['popup_data']) {
-                const popupData = feature.properties['popup_data'] as WorkoutPopupData;
+            onEachFeature: (feature: unknown, layer) => {
+              const feat = feature as { properties?: Record<string, unknown> } | null;
+              if (feat?.properties && feat.properties['popup_data']) {
+                const popupData = feat.properties['popup_data'] as WorkoutPopupData;
 
                 // Create Angular component for popup
                 const componentRef = createComponent(WorkoutPopup, {
@@ -250,7 +251,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
     );
   }
 
-  private rerenderHeatMap() {
+  private rerenderHeatMap(): void {
     if (!this.map || this.heatMapData.length === 0) {
       return;
     }

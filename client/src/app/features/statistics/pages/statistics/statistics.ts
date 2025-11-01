@@ -8,10 +8,10 @@ import { UserPreferredUnits } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { StatisticChartComponent } from '../../components/statistic-chart/statistic-chart';
 
-interface StatisticOption {
+type StatisticOption = {
   key: string;
   label: string;
-}
+};
 
 @Component({
   selector: 'app-statistics',
@@ -24,15 +24,15 @@ export class Statistics implements OnInit {
   private api = inject(Api);
   private fb = inject(FormBuilder);
 
-  readonly statistics = signal<StatisticsData | null>(null);
-  readonly preferredUnits = signal<UserPreferredUnits | null>(null);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
+  public readonly statistics = signal<StatisticsData | null>(null);
+  public readonly preferredUnits = signal<UserPreferredUnits | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
   // Reactive form for filters
-  filterForm!: FormGroup;
+  public filterForm!: FormGroup;
 
-  sinceOptions: StatisticOption[] = [
+  public sinceOptions: StatisticOption[] = [
     { key: '7 day', label: '7 days' },
     { key: '1 month', label: '1 month' },
     { key: '3 months', label: '3 months' },
@@ -44,13 +44,13 @@ export class Statistics implements OnInit {
     { key: 'forever', label: 'Forever' },
   ];
 
-  perOptions: StatisticOption[] = [
+  public perOptions: StatisticOption[] = [
     { key: 'day', label: 'Day' },
     { key: 'week', label: 'Week' },
     { key: 'month', label: 'Month' },
   ];
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Initialize filter form
     this.filterForm = this.fb.group({
       since: ['1 year'],
@@ -61,7 +61,7 @@ export class Statistics implements OnInit {
     this.loadStatistics();
   }
 
-  async loadPreferredUnits() {
+  public async loadPreferredUnits(): Promise<void> {
     try {
       const profile = await firstValueFrom(this.api.getProfile());
       if (profile?.results?.profile?.preferred_units) {
@@ -72,7 +72,7 @@ export class Statistics implements OnInit {
     }
   }
 
-  async loadStatistics() {
+  public async loadStatistics(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -96,7 +96,7 @@ export class Statistics implements OnInit {
     }
   }
 
-  onFilterChange() {
+  public onFilterChange(): void {
     this.loadStatistics();
   }
 }

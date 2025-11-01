@@ -6,7 +6,7 @@ import {
   ElementRef,
   input,
   OnDestroy,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -43,17 +43,17 @@ Chart.register(
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticChartComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+  private readonly chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('chartCanvas');
 
-  readonly stats = input.required<Statistics | null>();
-  readonly preferredUnits = input<UserPreferredUnits>();
-  readonly filterNoDuration = input<boolean>(false);
-  readonly type = input.required<string>();
-  readonly unit = input<string>();
+  public readonly stats = input.required<Statistics | null>();
+  public readonly preferredUnits = input<UserPreferredUnits>();
+  public readonly filterNoDuration = input<boolean>(false);
+  public readonly type = input.required<string>();
+  public readonly unit = input<string>();
 
   private chart?: Chart;
 
-  constructor() {
+  public constructor() {
     effect(() => {
       const statsData = this.stats();
       if (statsData && this.chart) {
@@ -62,18 +62,23 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  ngAfterViewInit() {
+  public ngAfterViewInit(): void {
     this.initChart();
   }
 
-  ngOnDestroy() {
+  public ngOnDestroy(): void {
     if (this.chart) {
       this.chart.destroy();
     }
   }
 
-  private initChart() {
-    const ctx = this.chartCanvas.nativeElement.getContext('2d');
+  private initChart(): void {
+    const canvasRef = this.chartCanvas();
+    if (!canvasRef) {
+      return;
+    }
+
+    const ctx = canvasRef.nativeElement.getContext('2d');
     if (!ctx) {
       return;
     }
@@ -121,7 +126,7 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
     this.updateChart();
   }
 
-  private updateChart() {
+  private updateChart(): void {
     if (!this.chart) {
       return;
     }
@@ -158,11 +163,10 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
     this.chart.update();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private getValueForType(bucket: any): number {
+  private getValueForType(bucket: Record<string, unknown>): number {
     const typeStr = this.type();
-    const value = bucket[typeStr];
-    return typeof value === 'number' ? value : 0;
+    const value = bucket[typeStr] as unknown;
+    return typeof value === 'number' ? (value as number) : 0;
   }
 
   private formatTooltipValue(label: string, value: number): string {

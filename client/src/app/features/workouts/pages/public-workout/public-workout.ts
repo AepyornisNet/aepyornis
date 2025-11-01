@@ -36,12 +36,11 @@ import { WorkoutDetail } from '../../../../core/types/workout';
 export class PublicWorkout implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(Api);
+  public readonly workout = signal<WorkoutDetail | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
-  readonly workout = signal<WorkoutDetail | null>(null);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
-
-  ngOnInit() {
+  public ngOnInit(): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {
       this.loadWorkout(uuid);
@@ -51,7 +50,7 @@ export class PublicWorkout implements OnInit {
     }
   }
 
-  loadWorkout(uuid: string) {
+  public loadWorkout(uuid: string): void {
     this.loading.set(true);
     this.error.set(null);
 
@@ -74,14 +73,14 @@ export class PublicWorkout implements OnInit {
     });
   }
 
-  readonly hasMapData = computed(() => {
+  public readonly hasMapData = computed<boolean>(() => {
     const workout = this.workout();
     return !!(workout?.map_data?.details?.position && workout.map_data.details.position.length > 0);
   });
 
-  readonly selectedPosition = computed(() => 0);
+  public readonly selectedPosition = computed<number>(() => 0);
 
-  formatDuration(seconds: number): string {
+  public formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;

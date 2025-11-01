@@ -24,13 +24,13 @@ import { UserProfile } from '../../types/user';
 export class OtherUsers implements OnInit {
   private api = inject(Api);
 
-  readonly users = signal<UserProfile[]>([]);
-  readonly currentUserId = signal<number | null>(null);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
+  public readonly users = signal<UserProfile[]>([]);
+  public readonly currentUserId = signal<number | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
   // Filter out the current user
-  readonly otherUsers = computed(() => {
+  public readonly otherUsers = computed(() => {
     const userId = this.currentUserId();
     if (userId === null) {
       return this.users();
@@ -38,11 +38,11 @@ export class OtherUsers implements OnInit {
     return this.users().filter((u) => u.id !== userId);
   });
 
-  ngOnInit() {
+  public ngOnInit(): void {
     this.loadUsers();
   }
 
-  private async loadUsers() {
+  private async loadUsers(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 

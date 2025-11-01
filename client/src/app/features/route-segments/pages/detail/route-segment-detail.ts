@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -12,17 +12,18 @@ import { TranslatePipe } from '@ngx-translate/core';
   selector: 'app-route-segment-detail',
   imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe],
   templateUrl: './route-segment-detail.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteSegmentDetailPage implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  readonly routeSegment = signal<RouteSegmentDetail | null>(null);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
+  public readonly routeSegment = signal<RouteSegmentDetail | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
-  ngOnInit() {
+  public ngOnInit(): void {
     this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
       if (id) {
@@ -31,7 +32,7 @@ export class RouteSegmentDetailPage implements OnInit {
     });
   }
 
-  async loadRouteSegment(id: number) {
+  public async loadRouteSegment(id: number): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -49,7 +50,7 @@ export class RouteSegmentDetailPage implements OnInit {
     }
   }
 
-  onRouteSegmentUpdated() {
+  public onRouteSegmentUpdated(): void {
     // Reload the route segment to get the updated state
     const id = this.route.snapshot.params['id'];
     if (id) {
@@ -57,19 +58,19 @@ export class RouteSegmentDetailPage implements OnInit {
     }
   }
 
-  onRouteSegmentDeleted() {
+  public onRouteSegmentDeleted(): void {
     // Navigation is handled by the actions component
   }
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  formatDistance(distance: number): string {
+  public formatDistance(distance: number): string {
     return (distance / 1000).toFixed(2);
   }
 
-  formatDuration(seconds: number): string {
+  public formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
@@ -80,11 +81,11 @@ export class RouteSegmentDetailPage implements OnInit {
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   }
 
-  formatSpeed(speedMs: number): string {
+  public formatSpeed(speedMs: number): string {
     return (speedMs * 3.6).toFixed(2);
   }
 
-  formatTempo(speedMs: number): string {
+  public formatTempo(speedMs: number): string {
     if (speedMs === 0) {
       return '-';
     }
@@ -94,7 +95,7 @@ export class RouteSegmentDetailPage implements OnInit {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  goBack() {
+  public goBack(): void {
     this.router.navigate(['/route-segments']);
   }
 }

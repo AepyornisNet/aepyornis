@@ -4,14 +4,14 @@
  * Workout types and configuration
  */
 
-export interface WorkoutTypeConfig {
+export type WorkoutTypeConfig = {
   value: string;
   location: boolean;
   distance: boolean;
   repetition: boolean;
   weight: boolean;
   duration: boolean;
-}
+};
 
 export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
   {

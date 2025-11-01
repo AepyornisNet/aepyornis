@@ -35,12 +35,12 @@ export class WorkoutPopup {
   /**
    * Workout data to display in the popup
    */
-  readonly data = input.required<WorkoutPopupData>();
+  public readonly data = input.required<WorkoutPopupData>();
 
   /**
    * Format workout type for display (convert snake_case to Title Case)
    */
-  readonly formatWorkoutType = computed(() => {
+  public readonly formatWorkoutType = computed(() => {
     const type = this.data().type;
     return type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   });
@@ -48,7 +48,7 @@ export class WorkoutPopup {
   /**
    * Format duration in seconds to human-readable format (Xh Ym Zs)
    */
-  readonly formatDuration = computed(() => {
+  public readonly formatDuration = computed(() => {
     const seconds = this.data().total_duration;
     if (seconds === undefined || seconds === null) {
       return '';
@@ -70,7 +70,7 @@ export class WorkoutPopup {
   /**
    * Format distance in meters to km or mi
    */
-  readonly formatDistance = computed(() => {
+  public readonly formatDistance = computed(() => {
     const meters = this.data().total_distance;
     if (meters === undefined || meters === null) {
       return '';
@@ -91,7 +91,7 @@ export class WorkoutPopup {
   /**
    * Format weight in kg to kg or lbs
    */
-  readonly formatWeight = computed(() => {
+  public readonly formatWeight = computed(() => {
     const kg = this.data().total_weight;
     if (kg === undefined || kg === null) {
       return '';
@@ -110,7 +110,7 @@ export class WorkoutPopup {
   /**
    * Format speed in m/s to km/h or mph
    */
-  readonly formatSpeed = computed(() => {
+  public readonly formatSpeed = computed(() => {
     const mps = this.data().average_speed;
     if (mps === undefined || mps === null) {
       return '';
@@ -131,7 +131,7 @@ export class WorkoutPopup {
   /**
    * Get distance unit from user profile
    */
-  readonly distanceUnit = computed(() => {
+  public readonly distanceUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     return userInfo?.profile?.preferred_units?.distance || 'km';
   });
@@ -139,7 +139,7 @@ export class WorkoutPopup {
   /**
    * Get weight unit from user profile
    */
-  readonly weightUnit = computed(() => {
+  public readonly weightUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     return userInfo?.profile?.preferred_units?.weight || 'kg';
   });
@@ -147,7 +147,7 @@ export class WorkoutPopup {
   /**
    * Get speed unit from user profile
    */
-  readonly speedUnit = computed(() => {
+  public readonly speedUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     return userInfo?.profile?.preferred_units?.speed || 'km/h';
   });

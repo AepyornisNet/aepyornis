@@ -6,7 +6,7 @@ import {
   inject,
   OnDestroy,
   signal,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Calendar } from '@fullcalendar/core';
@@ -24,34 +24,35 @@ import { TranslatePipe } from '@ngx-translate/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkoutCalendar implements AfterViewInit, OnDestroy {
-  @ViewChild('calendarContainer', { static: false }) calendarContainer!: ElementRef;
+  private readonly calendarContainer = viewChild<ElementRef<HTMLDivElement>>('calendarContainer');
 
   private api = inject(Api);
   private router = inject(Router);
 
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
   private calendar: Calendar | null = null;
 
-  ngAfterViewInit() {
+  public ngAfterViewInit(): void {
     this.initializeCalendar();
   }
 
-  ngOnDestroy() {
+  public ngOnDestroy(): void {
     if (this.calendar) {
       this.calendar.destroy();
     }
   }
 
-  private initializeCalendar() {
-    if (!this.calendarContainer) {
+  private initializeCalendar(): void {
+    const containerRef = this.calendarContainer();
+    if (!containerRef) {
       return;
     }
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    this.calendar = new Calendar(this.calendarContainer.nativeElement, {
+    this.calendar = new Calendar(containerRef.nativeElement, {
       plugins: [dayGridPlugin, interactionPlugin],
       initialView: 'dayGridMonth',
       timeZone: timeZone,
@@ -63,7 +64,7 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
         center: 'title',
         right: '',
       },
-      eventClick: (info) => {
+      eventClick: (info): void => {
         info.jsEvent.preventDefault();
         if (info.event.url) {
           // Extract workout ID from URL and navigate
@@ -73,7 +74,7 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
           }
         }
       },
-      events: (fetchInfo, successCallback, failureCallback) => {
+      events: (fetchInfo, successCallback, failureCallback): void => {
         this.loading.set(true);
         this.error.set(null);
 

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Header } from '../../core/components/header/header';
 import { Footer } from '../../core/components/footer/footer';
 
@@ -7,5 +7,6 @@ import { Footer } from '../../core/components/footer/footer';
   imports: [Header, Footer],
   templateUrl: './public-layout.html',
   styleUrl: './public-layout.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicLayout {}

@@ -12,19 +12,19 @@ export class AppConfig {
   private readonly appInfo = signal<AppInfo | null>(null);
   private readonly loading = signal<boolean>(false);
 
-  constructor() {
+  public constructor() {
     this.loadAppInfo();
   }
 
-  getAppInfo() {
+  public getAppInfo(): ReturnType<typeof this.appInfo.asReadonly> {
     return this.appInfo.asReadonly();
   }
 
-  isLoading(): boolean {
+  public isLoading(): boolean {
     return this.loading();
   }
 
-  loadAppInfo() {
+  public loadAppInfo(): void {
     this.loading.set(true);
     this.api
       .getAppInfo()
@@ -42,19 +42,19 @@ export class AppConfig {
       });
   }
 
-  isRegistrationDisabled(): boolean {
+  public isRegistrationDisabled(): boolean {
     return this.appInfo()?.registration_disabled ?? false;
   }
 
-  isSocialsDisabled(): boolean {
+  public isSocialsDisabled(): boolean {
     return this.appInfo()?.socials_disabled ?? false;
   }
 
-  getVersion(): string {
+  public getVersion(): string {
     return this.appInfo()?.version ?? '';
   }
 
-  getVersionSha(): string {
+  public getVersionSha(): string {
     return this.appInfo()?.version_sha ?? '';
   }
 }

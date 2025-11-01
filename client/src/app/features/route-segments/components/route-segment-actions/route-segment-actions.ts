@@ -1,4 +1,4 @@
-import { Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
@@ -11,23 +11,24 @@ import { RouteSegment, RouteSegmentDetail } from '../../../../core/types/route-s
   imports: [CommonModule, AppIcon, TranslatePipe],
   templateUrl: './route-segment-actions.html',
   styleUrl: './route-segment-actions.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteSegmentActionsComponent {
-  readonly routeSegment = input.required<RouteSegment | RouteSegmentDetail>();
-  readonly compact = input<boolean>(false);
+  public readonly routeSegment = input.required<RouteSegment | RouteSegmentDetail>();
+  public readonly compact = input<boolean>(false);
 
-  routeSegmentUpdated = output<void>();
-  routeSegmentDeleted = output<void>();
+  public readonly routeSegmentUpdated = output<void>();
+  public readonly routeSegmentDeleted = output<void>();
 
   private api = inject(Api);
   private router = inject(Router);
 
-  showDeleteConfirm = false;
-  isProcessing = false;
-  errorMessage: string | null = null;
-  successMessage: string | null = null;
+  public showDeleteConfirm = false;
+  public isProcessing = false;
+  public errorMessage: string | null = null;
+  public successMessage: string | null = null;
 
-  download() {
+  public download(): void {
     if (this.isProcessing) {
       return;
     }
@@ -65,11 +66,11 @@ export class RouteSegmentActionsComponent {
     });
   }
 
-  edit() {
+  public edit(): void {
     this.router.navigate(['/route-segments', this.routeSegment().id, 'edit']);
   }
 
-  refresh() {
+  public refresh(): void {
     if (this.isProcessing) {
       return;
     }
@@ -92,7 +93,7 @@ export class RouteSegmentActionsComponent {
     });
   }
 
-  findMatches() {
+  public findMatches(): void {
     if (this.isProcessing) {
       return;
     }
@@ -115,15 +116,15 @@ export class RouteSegmentActionsComponent {
     });
   }
 
-  confirmDelete() {
+  public confirmDelete(): void {
     this.showDeleteConfirm = true;
   }
 
-  cancelDelete() {
+  public cancelDelete(): void {
     this.showDeleteConfirm = false;
   }
 
-  delete() {
+  public delete(): void {
     if (this.isProcessing) {
       return;
     }

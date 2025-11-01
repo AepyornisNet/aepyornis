@@ -1,4 +1,4 @@
-import { Component, effect, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
@@ -20,6 +20,7 @@ import { PublicLayout } from '../../../../layouts/public-layout/public-layout';
   imports: [CommonModule, FormsModule, ReactiveFormsModule, PublicLayout, TranslatePipe],
   templateUrl: './login.html',
   styleUrl: './login.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login implements OnInit {
   private userService = inject(User);
@@ -29,20 +30,20 @@ export class Login implements OnInit {
   private fb = inject(FormBuilder);
 
   // Login form (reactive form)
-  loginForm!: FormGroup;
-  readonly errorMessage = signal<string | null>(null);
-  readonly returnUrl = signal('/dashboard');
+  public loginForm!: FormGroup;
+  public readonly errorMessage = signal<string | null>(null);
+  public readonly returnUrl = signal('/dashboard');
 
   // Register form (reactive form with 3 fields)
-  registerForm!: FormGroup;
-  readonly registerErrorMessage = signal<string | null>(null);
-  readonly registerSuccessMessage = signal<string | null>(null);
+  public registerForm!: FormGroup;
+  public readonly registerErrorMessage = signal<string | null>(null);
+  public readonly registerSuccessMessage = signal<string | null>(null);
 
-  get isRegistrationDisabled() {
+  public get isRegistrationDisabled(): boolean {
     return this.appConfig.isRegistrationDisabled();
   }
 
-  constructor() {
+  public constructor() {
     // Monitor auth state changes and redirect when authenticated
     effect(() => {
       if (this.userService.isAuthenticated() && !this.userService.isCheckingAuth()) {
@@ -51,7 +52,7 @@ export class Login implements OnInit {
     });
   }
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Initialize login form
     this.loginForm = this.fb.group({
       username: ['', Validators.required],
@@ -94,7 +95,7 @@ export class Login implements OnInit {
     return password === confirmPassword ? null : { passwordMismatch: true };
   }
 
-  onSubmit() {
+  public onSubmit(): void {
     if (this.loginForm.invalid) {
       return;
     }
@@ -125,7 +126,7 @@ export class Login implements OnInit {
     form.submit();
   }
 
-  onRegister() {
+  public onRegister(): void {
     if (this.registerForm.invalid) {
       return;
     }

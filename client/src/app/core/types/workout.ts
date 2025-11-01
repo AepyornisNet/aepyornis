@@ -4,7 +4,7 @@
 
 import { UserProfile } from './user';
 
-export interface Workout {
+export type Workout = {
   id: number;
   date: string;
   name: string;
@@ -34,7 +34,7 @@ export interface Workout {
   min_elevation?: number;
   max_elevation?: number;
   pause_duration?: number;
-}
+};
 
 export type WorkoutDetail = {
   equipment?: Equipment[];
@@ -43,20 +43,20 @@ export type WorkoutDetail = {
   route_segment_matches?: RouteSegmentMatch[];
 } & Workout;
 
-export interface MapData {
+export type MapData = {
   creator: string;
   center: MapCenter;
   extra_metrics?: string[];
   details?: MapDataDetails;
-}
+};
 
-export interface MapCenter {
+export type MapCenter = {
   tz: string;
   lat: number;
   lng: number;
-}
+};
 
-export interface MapDataDetails {
+export type MapDataDetails = {
   position: number[][]; // [[lat, lng], ...]
   time: string[];
   distance: number[]; // in km
@@ -66,9 +66,9 @@ export interface MapDataDetails {
   elevation: number[];
 
   extra_metrics?: Record<string, (number | null)[]>;
-}
+};
 
-export interface ClimbSegment {
+export type ClimbSegment = {
   index: number;
   type: string;
   start_distance: number;
@@ -76,15 +76,15 @@ export interface ClimbSegment {
   elevation: number;
   avg_slope: number;
   category: string;
-}
+};
 
-export interface RouteSegmentMatch {
+export type RouteSegmentMatch = {
   route_segment_id: number;
   workout_id: number;
   route_segment: RouteSegmentInfo;
-}
+};
 
-export interface RouteSegmentInfo {
+export type RouteSegmentInfo = {
   id: number;
   name: string;
   notes?: string;
@@ -99,9 +99,9 @@ export interface RouteSegmentInfo {
   match_count: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Equipment {
+export type Equipment = {
   id: number;
   name: string;
   description?: string;
@@ -111,23 +111,23 @@ export interface Equipment {
   user_id: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Totals {
+export type Totals = {
   workouts: number;
   distance: number;
   duration: number; // in seconds
   up: number;
   down: number;
-}
+};
 
-export interface RecordEntry {
+export type RecordEntry = {
   value: number;
   workout_id: number;
   date: string;
-}
+};
 
-export interface WorkoutRecord {
+export type WorkoutRecord = {
   workout_type: string;
   active: boolean;
   distance?: RecordEntry;
@@ -136,11 +136,11 @@ export interface WorkoutRecord {
   max_speed?: RecordEntry;
   duration?: RecordEntry;
   total_up?: RecordEntry;
-}
+};
 
-export interface CalendarEvent {
+export type CalendarEvent = {
   title: string;
   start: string;
   end: string;
   url: string;
-}
+};

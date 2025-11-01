@@ -2,7 +2,7 @@
  * Measurement domain models
  */
 
-export interface Measurement {
+export type Measurement = {
   id: number;
   date: string;
   weight?: number;
@@ -11,4 +11,4 @@ export interface Measurement {
   user_id: number;
   created_at: string;
   updated_at: string;
-}
+};

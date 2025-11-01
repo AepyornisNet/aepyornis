@@ -3,11 +3,11 @@ import { TranslateCompiler, TranslationObject } from '@ngx-translate/core';
 
 @Injectable()
 export class LowercaseTranslationCompiler extends TranslateCompiler {
-  compile(value: string): string {
+  public compile(value: string): string {
     return value;
   }
 
-  compileTranslations(translations: TranslationObject, lang: string): TranslationObject {
+  public compileTranslations(translations: TranslationObject, lang: string): TranslationObject {
     const compiled: TranslationObject = {};
 
     for (const key in translations) {

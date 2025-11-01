@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -14,15 +14,16 @@ import { TranslatePipe } from '@ngx-translate/core';
   selector: 'app-route-segments',
   imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe],
   templateUrl: './route-segments.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteSegments extends PaginatedListView<RouteSegment> {
   private api = inject(Api);
 
   // Alias for better template readability
-  routeSegments = this.items;
-  readonly hasRouteSegments = computed(() => this.hasItems());
+  public routeSegments = this.items;
+  public readonly hasRouteSegments = computed(() => this.hasItems());
 
-  async loadData(page?: number) {
+  public async loadData(page?: number): Promise<void> {
     if (page) {
       this.currentPage.set(page);
     }
@@ -49,11 +50,11 @@ export class RouteSegments extends PaginatedListView<RouteSegment> {
     }
   }
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  formatDistance(distance: number): string {
+  public formatDistance(distance: number): string {
     return (distance / 1000).toFixed(2);
   }
 }

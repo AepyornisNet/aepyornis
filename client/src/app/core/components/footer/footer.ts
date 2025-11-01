@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AppConfig } from '../../../core/services/app-config';
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -7,10 +7,11 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [TranslatePipe],
   templateUrl: './footer.html',
   styleUrl: './footer.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Footer {
   private appConfig = inject(AppConfig);
 
-  readonly version = computed(() => this.appConfig.getVersion());
-  readonly versionSha = computed(() => this.appConfig.getVersionSha());
+  public readonly version = computed(() => this.appConfig.getVersion());
+  public readonly versionSha = computed(() => this.appConfig.getVersionSha());
 }

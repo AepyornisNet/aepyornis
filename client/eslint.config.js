@@ -2,6 +2,7 @@
 const eslint = require('@eslint/js');
 const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
+const eslintConfigPrettier = require('eslint-config-prettier');
 
 module.exports = tseslint.config(
   {
@@ -11,6 +12,7 @@ module.exports = tseslint.config(
       ...tseslint.configs.recommended,
       ...tseslint.configs.stylistic,
       ...angular.configs.tsRecommended,
+      eslintConfigPrettier,
     ],
     processor: angular.processInlineTemplates,
     rules: {
@@ -30,6 +32,62 @@ module.exports = tseslint.config(
           style: 'kebab-case',
         },
       ],
+
+      // Angular best practices
+      '@angular-eslint/no-empty-lifecycle-method': 'error',
+      '@angular-eslint/prefer-on-push-component-change-detection': 'error',
+      '@angular-eslint/prefer-output-readonly': 'error',
+      '@angular-eslint/prefer-signals': 'error',
+      '@angular-eslint/prefer-standalone': 'error',
+
+      // TypeScript best practices
+      '@typescript-eslint/array-type': ['warn'],
+      '@typescript-eslint/consistent-indexed-object-style': 'off',
+      '@typescript-eslint/consistent-type-assertions': 'warn',
+      '@typescript-eslint/consistent-type-definitions': ['warn', 'type'],
+      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/explicit-member-accessibility': ['error'],
+      '@typescript-eslint/no-empty-function': 'warn',
+      '@typescript-eslint/no-empty-interface': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-inferrable-types': 'warn',
+      '@typescript-eslint/no-shadow': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
+
+      // JavaScript best practices
+      eqeqeq: 'error',
+      curly: 'error',
+      'guard-for-in': 'error',
+      'max-classes-per-file': ['error', 1],
+      'max-len': [
+        'warn',
+        {
+          code: 140,
+          comments: 160,
+        },
+      ],
+      'no-bitwise': 'error',
+      'no-console': 'off',
+      'no-new-wrappers': 'error',
+      'no-useless-concat': 'error',
+      'no-var': 'error',
+      'no-restricted-syntax': 'off',
+      'no-shadow': 'error',
+      'one-var': ['error', 'never'],
+      'prefer-arrow-callback': 'error',
+      'prefer-const': 'error',
+      'sort-imports': [
+        'error',
+        {
+          ignoreCase: true,
+          ignoreDeclarationSort: true,
+          allowSeparatedGroups: true,
+        },
+      ],
+
+      // Security
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
     },
   },
   {
@@ -53,6 +111,8 @@ module.exports = tseslint.config(
       ],
       '@angular-eslint/template/eqeqeq': 'error',
       '@angular-eslint/template/prefer-control-flow': 'error',
+      '@angular-eslint/template/prefer-self-closing-tags': 'warn',
+      '@angular-eslint/template/use-track-by-function': 'warn',
     },
   },
 );

@@ -12,32 +12,32 @@ import { WorkoutDetail } from '../../../core/types/workout';
 export class WorkoutDetailDataService {
   private api = inject(Api);
 
-  readonly workout = signal<WorkoutDetail | null>(null);
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
+  public readonly workout = signal<WorkoutDetail | null>(null);
+  public readonly loading = signal(false);
+  public readonly error = signal<string | null>(null);
 
   // Computed values
-  readonly hasMapData = computed(() => {
+  public readonly hasMapData = computed(() => {
     const w = this.workout();
     return w?.map_data?.details?.position && w.map_data.details.position.length > 0;
   });
 
-  readonly hasClimbs = computed(() => {
+  public readonly hasClimbs = computed(() => {
     const w = this.workout();
     return w?.climbs && w.climbs.length > 0;
   });
 
-  readonly hasRouteSegmentMatches = computed(() => {
+  public readonly hasRouteSegmentMatches = computed(() => {
     const w = this.workout();
     return w?.route_segment_matches && w.route_segment_matches.length > 0;
   });
 
-  readonly extraMetrics = computed(() => {
+  public readonly extraMetrics = computed(() => {
     const w = this.workout();
     return w?.map_data?.extra_metrics || [];
   });
 
-  async loadWorkout(id: number): Promise<void> {
+  public async loadWorkout(id: number): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -55,22 +55,22 @@ export class WorkoutDetailDataService {
     }
   }
 
-  clearWorkout(): void {
+  public clearWorkout(): void {
     this.workout.set(null);
     this.loading.set(false);
     this.error.set(null);
   }
 
   // Formatting utilities
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString();
   }
 
-  formatDistance(distance: number): string {
+  public formatDistance(distance: number): string {
     return (distance / 1000).toFixed(2);
   }
 
-  formatDuration(seconds: number): string {
+  public formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
@@ -84,11 +84,11 @@ export class WorkoutDetailDataService {
     return `${secs}s`;
   }
 
-  formatElevation(elevation: number): string {
+  public formatElevation(elevation: number): string {
     return elevation.toFixed(1);
   }
 
-  formatSpeed(speed: number): string {
+  public formatSpeed(speed: number): string {
     return (speed * 3.6).toFixed(2); // Convert m/s to km/h
   }
 }

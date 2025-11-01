@@ -1,4 +1,11 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,29 +20,30 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [CommonModule, FormsModule, AppIcon, TranslatePipe],
   templateUrl: './create-route-segment.html',
   styleUrl: './create-route-segment.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateRouteSegmentPage implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  readonly workout = signal<WorkoutDetail | null>(null);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
-  readonly creating = signal(false);
+  public readonly workout = signal<WorkoutDetail | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
+  public readonly creating = signal(false);
 
   // Form fields
-  readonly name = signal('');
-  readonly start = signal(1);
-  readonly end = signal(1);
+  public readonly name = signal('');
+  public readonly start = signal(1);
+  public readonly end = signal(1);
 
   // Computed values
-  readonly totalPoints = computed(() => {
+  public readonly totalPoints = computed(() => {
     const w = this.workout();
     return w?.map_data?.details?.position?.length || 0;
   });
 
-  readonly selectedDistance = computed(() => {
+  public readonly selectedDistance = computed(() => {
     const w = this.workout();
     const startIdx = this.start() - 1;
     const endIdx = this.end() - 1;
@@ -52,7 +60,7 @@ export class CreateRouteSegmentPage implements OnInit {
     return Math.abs(distances[endIdx] - distances[startIdx]);
   });
 
-  ngOnInit() {
+  public ngOnInit(): void {
     this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
       if (id) {
@@ -61,7 +69,7 @@ export class CreateRouteSegmentPage implements OnInit {
     });
   }
 
-  async loadWorkout(id: number) {
+  public async loadWorkout(id: number): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -85,7 +93,7 @@ export class CreateRouteSegmentPage implements OnInit {
     }
   }
 
-  updateStart(value: number) {
+  public updateStart(value: number): void {
     this.start.set(value);
 
     // Ensure start is not greater than end
@@ -94,7 +102,7 @@ export class CreateRouteSegmentPage implements OnInit {
     }
   }
 
-  updateEnd(value: number) {
+  public updateEnd(value: number): void {
     this.end.set(value);
 
     // Ensure end is not less than start
@@ -103,7 +111,7 @@ export class CreateRouteSegmentPage implements OnInit {
     }
   }
 
-  async createRouteSegment() {
+  public async createRouteSegment(): Promise<void> {
     if (this.creating()) {
       return;
     }
@@ -136,7 +144,7 @@ export class CreateRouteSegmentPage implements OnInit {
     }
   }
 
-  goBack() {
+  public goBack(): void {
     const w = this.workout();
     if (w) {
       this.router.navigate(['/workouts', w.id]);

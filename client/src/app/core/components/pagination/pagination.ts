@@ -1,13 +1,14 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-pagination',
   templateUrl: './pagination.html',
   imports: [TranslatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Pagination {
-  @Input() source!: {
+  public readonly source = input.required<{
     current: () => number;
     total: () => number;
     pages: () => number[];
@@ -17,36 +18,41 @@ export class Pagination {
     previous: () => void;
     goTo: (page: number) => void;
     next: () => void;
-  };
+  }>();
 
-  getCurrent() {
-    return this.source.current();
-  }
-  getTotal() {
-    return this.source.total();
-  }
-  getPages() {
-    return this.source.pages();
-  }
-  getHasPrevious() {
-    return this.source.hasPrevious();
-  }
-  getHasNext() {
-    return this.source.hasNext();
-  }
-  getTotalCount() {
-    return this.source.totalCount();
+  public getCurrent(): number {
+    return this.source().current();
   }
 
-  onPrevious() {
-    this.source.previous();
+  public getTotal(): number {
+    return this.source().total();
   }
 
-  onNext() {
-    this.source.next();
+  public getPages(): number[] {
+    return this.source().pages();
   }
 
-  onGoTo(page: number) {
-    this.source.goTo(page);
+  public getHasPrevious(): boolean {
+    return this.source().hasPrevious();
+  }
+
+  public getHasNext(): boolean {
+    return this.source().hasNext();
+  }
+
+  public getTotalCount(): number {
+    return this.source().totalCount();
+  }
+
+  public onPrevious(): void {
+    this.source().previous();
+  }
+
+  public onNext(): void {
+    this.source().next();
+  }
+
+  public onGoTo(page: number): void {
+    this.source().goTo(page);
   }
 }

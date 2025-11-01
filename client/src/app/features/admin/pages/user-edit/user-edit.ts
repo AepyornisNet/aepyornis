@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -12,6 +12,7 @@ import { UserProfile } from '../../../../core/types/user';
   imports: [CommonModule, RouterLink, AppIcon, ReactiveFormsModule],
   templateUrl: './user-edit.html',
   styleUrl: './user-edit.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserEdit implements OnInit {
   private api = inject(Api);
@@ -19,16 +20,16 @@ export class UserEdit implements OnInit {
   private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
 
-  readonly userId = signal<number>(0);
-  readonly user = signal<UserProfile | null>(null);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly error = signal<string | null>(null);
+  public readonly userId = signal<number>(0);
+  public readonly user = signal<UserProfile | null>(null);
+  public readonly loading = signal(true);
+  public readonly saving = signal(false);
+  public readonly error = signal<string | null>(null);
 
   // Reactive form
-  userForm!: FormGroup;
+  public userForm!: FormGroup;
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Initialize form
     this.userForm = this.fb.group({
       username: ['', Validators.required],
@@ -48,7 +49,7 @@ export class UserEdit implements OnInit {
     }
   }
 
-  async loadUser() {
+  public async loadUser(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -72,7 +73,7 @@ export class UserEdit implements OnInit {
     }
   }
 
-  async saveUser() {
+  public async saveUser(): Promise<void> {
     if (this.userForm.invalid) {
       return;
     }

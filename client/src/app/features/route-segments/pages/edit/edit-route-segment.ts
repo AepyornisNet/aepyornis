@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -12,6 +12,7 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
   selector: 'app-edit-route-segment',
   imports: [CommonModule, ReactiveFormsModule, AppIcon, TranslatePipe],
   templateUrl: './edit-route-segment.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditRouteSegment implements OnInit {
   private api = inject(Api);
@@ -19,15 +20,15 @@ export class EditRouteSegment implements OnInit {
   private router = inject(Router);
   private fb = inject(FormBuilder);
 
-  readonly routeSegment = signal<RouteSegmentDetail | null>(null);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly error = signal<string | null>(null);
+  public readonly routeSegment = signal<RouteSegmentDetail | null>(null);
+  public readonly loading = signal(true);
+  public readonly saving = signal(false);
+  public readonly error = signal<string | null>(null);
 
   // Reactive form
-  routeSegmentForm!: FormGroup;
+  public routeSegmentForm!: FormGroup;
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Initialize form
     this.routeSegmentForm = this.fb.group({
       name: ['', Validators.required],
@@ -42,7 +43,7 @@ export class EditRouteSegment implements OnInit {
     }
   }
 
-  async loadRouteSegment(id: number) {
+  public async loadRouteSegment(id: number): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -69,7 +70,7 @@ export class EditRouteSegment implements OnInit {
     }
   }
 
-  async save() {
+  public async save(): Promise<void> {
     const segment = this.routeSegment();
     if (!segment || this.saving() || this.routeSegmentForm.invalid) {
       return;
@@ -98,7 +99,7 @@ export class EditRouteSegment implements OnInit {
     }
   }
 
-  cancel() {
+  public cancel(): void {
     const segment = this.routeSegment();
     if (segment) {
       this.router.navigate(['/route-segments', segment.id]);
@@ -107,7 +108,7 @@ export class EditRouteSegment implements OnInit {
     }
   }
 
-  reset() {
+  public reset(): void {
     const segment = this.routeSegment();
     if (segment) {
       this.routeSegmentForm.patchValue({

@@ -1,14 +1,13 @@
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
   effect,
   ElementRef,
   inject,
-  Input,
-  OnChanges,
+  input,
   OnDestroy,
-  SimpleChanges,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -27,6 +26,7 @@ import {
   PointElement,
   TimeScale,
   Tooltip,
+  TooltipItem,
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -49,43 +49,53 @@ Chart.register(
   zoomPlugin,
 );
 
-interface MetricConfig {
+type MetricConfig = {
   formatter?: (val: number) => string;
   labelFormatter?: (val: number) => string;
   formatterYaxis?: boolean;
   yaxis?: boolean | { min?: number; max?: number; position?: string };
   hiddenByDefault?: boolean;
-}
+};
 
 @Component({
   selector: 'app-workout-chart',
   imports: [CommonModule, TranslatePipe],
   templateUrl: './workout-chart.html',
   styleUrl: './workout-chart.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestroy {
-  @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
+  private readonly chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('chartCanvas');
 
-  @Input() mapData?: MapDataDetails;
-  @Input() extraMetrics: string[] = [];
+  public readonly mapData = input<MapDataDetails | undefined>();
+  public readonly extraMetrics = input<string[]>([]);
 
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private chart?: Chart;
   private timeLabels: number[] = [];
   private isUpdatingFromZoom = false; // Flag to prevent infinite loops
-  viewMode: 'time' | 'distance' = 'time';
+  public viewMode: 'time' | 'distance' = 'time';
 
-  constructor() {
+  private get mapDataValue(): MapDataDetails | undefined {
+    return this.mapData();
+  }
+
+  private get extraMetricsValue(): string[] {
+    return this.extraMetrics();
+  }
+
+  public constructor() {
     // React to interval selection changes from the coordinator service
     effect(() => {
       const selection = this.coordinatorService.selectedInterval();
+      const mapData = this.mapDataValue;
 
       // Don't react if the change came from our own zoom
       if (this.isUpdatingFromZoom) {
         return;
       }
 
-      if (!this.mapData || !selection) {
+      if (!mapData || !selection) {
         // Only reset zoom if there's no selection
         if (!selection && this.chart) {
           this.resetZoom();
@@ -94,37 +104,45 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
       }
 
       // Zoom to the selected interval
-      const startTime = new Date(this.mapData.time[selection.startIndex]).getTime();
-      const endTime = new Date(this.mapData.time[selection.endIndex]).getTime();
+      const startTime = new Date(mapData.time[selection.startIndex]).getTime();
+      const endTime = new Date(mapData.time[selection.endIndex]).getTime();
       this.zoomToRange(startTime, endTime);
+    });
+
+    // Update chart state when inputs change
+    effect(() => {
+      const mapData = this.mapDataValue;
+      const metrics = this.extraMetricsValue;
+      if (!mapData || mapData.time.length === 0 || !this.chart) {
+        return;
+      }
+
+      // `metrics` dependency ensures we refresh datasets when requested metrics change
+      void metrics;
+      this.updateChart();
     });
   }
 
-  ngAfterViewInit() {
+  public ngAfterViewInit(): void {
     setTimeout(() => {
       this.initChart();
     }, 100);
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['mapData'] && !changes['mapData'].firstChange) {
-      this.updateChart();
-    }
-  }
-
-  ngOnDestroy() {
+  public ngOnDestroy(): void {
     if (this.chart) {
       this.chart.destroy();
     }
   }
 
-  toggleViewMode() {
+  public toggleViewMode(): void {
     this.viewMode = this.viewMode === 'time' ? 'distance' : 'time';
     this.updateChart();
   }
 
-  zoomToRange(startTime: number, endTime: number) {
-    if (!this.chart || !this.mapData) {
+  public zoomToRange(startTime: number, endTime: number): void {
+    const mapData = this.mapDataValue;
+    if (!this.chart || !mapData) {
       return;
     }
 
@@ -136,15 +154,15 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
       const startIndex = this.timeLabels.indexOf(startTime);
       const endIndex = this.timeLabels.indexOf(endTime);
       if (startIndex >= 0 && endIndex >= 0) {
-        min = this.mapData.distance[startIndex];
-        max = this.mapData.distance[endIndex];
+        min = mapData.distance[startIndex];
+        max = mapData.distance[endIndex];
       }
     }
 
     this.chart.zoomScale('x', { min, max });
   }
 
-  resetZoom() {
+  public resetZoom(): void {
     if (!this.chart) {
       return;
     }
@@ -155,8 +173,9 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
   /**
    * Handle chart zoom/pan events and translate them to interval selections
    */
-  private onChartZoom(chart: Chart) {
-    if (!this.mapData) {
+  private onChartZoom(chart: Chart): void {
+    const mapData = this.mapDataValue;
+    if (!mapData) {
       return;
     }
 
@@ -171,13 +190,11 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
 
     // Check if we're at full zoom (original bounds)
     const originalMin =
-      this.viewMode === 'time'
-        ? new Date(this.mapData.time[0]).valueOf()
-        : this.mapData.distance[0];
+      this.viewMode === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0];
     const originalMax =
       this.viewMode === 'time'
-        ? new Date(this.mapData.time[this.mapData.time.length - 1]).valueOf()
-        : this.mapData.distance[this.mapData.distance.length - 1];
+        ? new Date(mapData.time[mapData.time.length - 1]).valueOf()
+        : mapData.distance[mapData.distance.length - 1];
 
     // If we're at full zoom, clear the selection
     if (Math.abs(visibleMin - originalMin) < 1 && Math.abs(visibleMax - originalMax) < 1) {
@@ -189,19 +206,19 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
 
     // Find the indices corresponding to the visible range
     let startIndex = 0;
-    let endIndex = this.mapData.time.length - 1;
+    let endIndex = mapData.time.length - 1;
 
     if (this.viewMode === 'time') {
       // Find indices based on time
-      for (let i = 0; i < this.mapData.time.length; i++) {
-        const time = new Date(this.mapData.time[i]).valueOf();
+      for (let i = 0; i < mapData.time.length; i++) {
+        const time = new Date(mapData.time[i]).valueOf();
         if (time >= visibleMin) {
           startIndex = i;
           break;
         }
       }
-      for (let i = this.mapData.time.length - 1; i >= 0; i--) {
-        const time = new Date(this.mapData.time[i]).valueOf();
+      for (let i = mapData.time.length - 1; i >= 0; i--) {
+        const time = new Date(mapData.time[i]).valueOf();
         if (time <= visibleMax) {
           endIndex = i;
           break;
@@ -209,14 +226,14 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
       }
     } else {
       // Find indices based on distance
-      for (let i = 0; i < this.mapData.distance.length; i++) {
-        if (this.mapData.distance[i] >= visibleMin) {
+      for (let i = 0; i < mapData.distance.length; i++) {
+        if (mapData.distance[i] >= visibleMin) {
           startIndex = i;
           break;
         }
       }
-      for (let i = this.mapData.distance.length - 1; i >= 0; i--) {
-        if (this.mapData.distance[i] <= visibleMax) {
+      for (let i = mapData.distance.length - 1; i >= 0; i--) {
+        if (mapData.distance[i] <= visibleMax) {
           endIndex = i;
           break;
         }
@@ -229,12 +246,14 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
     this.isUpdatingFromZoom = false;
   }
 
-  private initChart() {
-    if (!this.chartCanvas || !this.mapData || this.mapData.time.length === 0) {
+  private initChart(): void {
+    const canvasRef = this.chartCanvas();
+    const mapData = this.mapDataValue;
+    if (!canvasRef || !mapData || mapData.time.length === 0) {
       return;
     }
 
-    const ctx = this.chartCanvas.nativeElement.getContext('2d');
+    const ctx = canvasRef.nativeElement.getContext('2d');
     if (!ctx) {
       return;
     }
@@ -251,8 +270,9 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
     this.chart = new Chart(ctx, config);
   }
 
-  private updateChart() {
-    if (!this.chart) {
+  private updateChart(): void {
+    const mapData = this.mapDataValue;
+    if (!this.chart || !mapData || mapData.time.length === 0) {
       this.initChart();
       return;
     }
@@ -264,33 +284,36 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
   }
 
   private getLabels(): (number | Date)[] {
-    if (!this.mapData) {
+    const mapData = this.mapDataValue;
+    if (!mapData) {
       return [];
     }
 
-    this.timeLabels = this.mapData.time.map((t) => new Date(t).valueOf());
+    this.timeLabels = mapData.time.map((timestamp: string) => new Date(timestamp).valueOf());
 
     if (this.viewMode === 'time') {
       return this.timeLabels;
     } else {
-      return this.mapData.distance;
+      return mapData.distance;
     }
   }
 
   private getDatasets(): ChartDataset[] {
-    if (!this.mapData) {
+    const mapData = this.mapDataValue;
+    if (!mapData) {
       return [];
     }
 
+    const metrics = this.extraMetricsValue;
     const metricSettings = this.getMetricSettings();
     const datasets: ChartDataset[] = [];
 
     // Add speed dataset
-    if (this.mapData.speed) {
+    if (mapData.speed) {
       datasets.push({
         type: 'line',
         label: 'Speed',
-        data: this.mapData.speed,
+        data: mapData.speed,
         yAxisID: 'speed',
         spanGaps: true,
         hidden: false,
@@ -298,11 +321,11 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
     }
 
     // Add elevation dataset with area fill
-    if (this.mapData.elevation) {
+    if (mapData.elevation) {
       datasets.push({
         type: 'line',
         label: 'Elevation',
-        data: this.mapData.elevation,
+        data: mapData.elevation,
         yAxisID: 'elevation',
         fill: 'start',
         spanGaps: true,
@@ -311,18 +334,18 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
     }
 
     // Add extra metrics
-    if (this.mapData.extra_metrics) {
-      for (const metric of this.extraMetrics) {
+    if (mapData.extra_metrics) {
+      for (const metric of metrics) {
         if (metric === 'speed') {
           continue;
         } // Already handled
 
-        if (this.mapData.extra_metrics[metric]) {
+        if (mapData.extra_metrics[metric]) {
           const settings = metricSettings[metric];
           datasets.push({
             type: 'line',
             label: this.getMetricLabel(metric),
-            data: this.mapData.extra_metrics[metric] as number[],
+            data: mapData.extra_metrics[metric] as number[],
             yAxisID: metric,
             spanGaps: true,
             hidden: settings?.hiddenByDefault || false,
@@ -346,7 +369,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
   }
 
   private getChartOptions(): ChartOptions {
-    if (!this.mapData) {
+    const mapData = this.mapDataValue;
+    if (!mapData) {
       return {};
     }
 
@@ -359,16 +383,13 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         x: {
           type: this.viewMode === 'time' ? 'time' : 'linear',
           time: this.viewMode === 'time' ? { unit: 'minute' } : undefined,
-          min:
-            this.viewMode === 'time'
-              ? new Date(this.mapData.time[0]).valueOf()
-              : this.mapData.distance[0],
+          min: this.viewMode === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0],
           max:
             this.viewMode === 'time'
-              ? new Date(this.mapData.time[this.mapData.time.length - 1]).valueOf()
-              : this.mapData.distance[this.mapData.distance.length - 1],
+              ? new Date(mapData.time[mapData.time.length - 1]).valueOf()
+              : mapData.distance[mapData.distance.length - 1],
           ticks: {
-            callback: (val: string | number) => {
+            callback: (val: string | number): string => {
               if (this.viewMode === 'distance') {
                 const numVal = val as number;
                 return `${numVal % 1 ? numVal.toFixed(1) : numVal} km`;
@@ -395,7 +416,11 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         },
         legend: {
           display: true,
-          onClick: (e, legendItem, legend) => {
+          onClick: (
+            e: unknown,
+            legendItem: { datasetIndex?: number },
+            legend: { chart: Chart },
+          ): void => {
             const chart = legend.chart;
             const index = legendItem.datasetIndex!;
             const meta = chart.getDatasetMeta(index);
@@ -410,23 +435,31 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         },
         tooltip: {
           callbacks: {
-            title: (tooltipItems) => {
-              if (!tooltipItems[0]) {
+            title: (tooltipItems: TooltipItem<'line'>[]): string => {
+              const items = tooltipItems;
+              if (!items[0]) {
                 return '';
               }
-              const x = tooltipItems[0].parsed.x;
+              const x = items[0].parsed.x as number;
               if (this.viewMode === 'distance') {
                 return `${x.toFixed(2)} km`;
               }
               return new Date(x).toTimeString().substr(0, 5);
             },
-            label: (tooltipItem) => {
-              const settings = metricSettings[tooltipItem.dataset.yAxisID as string];
-              let value = tooltipItem.formattedValue;
+            label: (tooltipItem: unknown): string => {
+              type TooltipItem = {
+                dataset?: { label?: string; yAxisID?: string };
+                formattedValue?: string;
+                raw?: unknown;
+              };
+              const ti = tooltipItem as TooltipItem;
+              const yAxisID = ti.dataset?.yAxisID as string | undefined;
+              const settings = yAxisID ? metricSettings[yAxisID] : undefined;
+              let value = ti.formattedValue ?? '';
               if (settings && settings.formatter) {
-                value = settings.formatter(tooltipItem.raw as number);
+                value = settings.formatter(ti.raw as number);
               }
-              return `${tooltipItem.dataset.label}: ${value}`;
+              return `${ti.dataset?.label}: ${value}`;
             },
           },
         },
@@ -443,7 +476,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
               enabled: true,
             },
             mode: 'x',
-            onZoomComplete: ({ chart }) => {
+            onZoomComplete: ({ chart }: { chart: Chart }): void => {
               this.onChartZoom(chart);
             },
           },
@@ -468,7 +501,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnChanges, OnDestro
         position: isYaxisObject && yaxisConfig.position ? yaxisConfig.position : 'left',
         ...(isYaxisObject ? yaxisConfig : {}),
         ticks: {
-          callback: (val: number) => {
+          callback: (val: number): string | number => {
             const settings = metricSettings[metric];
             if (settings.formatterYaxis && settings.labelFormatter) {
               return settings.labelFormatter(val);

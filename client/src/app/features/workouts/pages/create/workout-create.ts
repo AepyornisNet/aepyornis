@@ -33,44 +33,44 @@ export class WorkoutCreate implements OnInit {
   private fb = inject(FormBuilder);
 
   // Edit mode
-  readonly editMode = signal(false);
-  readonly workoutId = signal<number | null>(null);
+  public readonly editMode = signal(false);
+  public readonly workoutId = signal<number | null>(null);
 
   // State
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
-  readonly success = signal<string | null>(null);
+  public readonly loading = signal(false);
+  public readonly error = signal<string | null>(null);
+  public readonly success = signal<string | null>(null);
 
   // Equipment list
-  readonly equipment = signal<Equipment[]>([]);
+  public readonly equipment = signal<Equipment[]>([]);
 
   // File upload form
-  readonly selectedFiles = signal<File[]>([]);
-  fileUploadForm!: FormGroup;
+  public readonly selectedFiles = signal<File[]>([]);
+  public fileUploadForm!: FormGroup;
 
   // Manual form
-  manualWorkoutForm!: FormGroup;
+  public manualWorkoutForm!: FormGroup;
   private readonly _manualWorkoutType = signal<string>('');
-  readonly manualWorkoutType = computed(() => this._manualWorkoutType());
-  readonly manualFormVisible = computed(() => this._manualWorkoutType() !== '');
+  public readonly manualWorkoutType = computed(() => this._manualWorkoutType());
+  public readonly manualFormVisible = computed(() => this._manualWorkoutType() !== '');
 
   // Computed properties for conditional field display
-  readonly workoutTypeConfig = computed<WorkoutTypeConfig | undefined>(() => {
+  public readonly workoutTypeConfig = computed<WorkoutTypeConfig | undefined>(() => {
     const type = this.manualWorkoutType();
     return type ? getWorkoutTypeConfig(type) : undefined;
   });
 
-  readonly showLocation = computed(() => this.workoutTypeConfig()?.location ?? false);
-  readonly showDistance = computed(() => this.workoutTypeConfig()?.distance ?? false);
-  readonly showDuration = computed(() => this.workoutTypeConfig()?.duration ?? false);
-  readonly showRepetitions = computed(() => this.workoutTypeConfig()?.repetition ?? false);
-  readonly showWeight = computed(() => this.workoutTypeConfig()?.weight ?? false);
-  readonly showCustomType = computed(() => this.manualWorkoutType() === 'other');
+  public readonly showLocation = computed(() => this.workoutTypeConfig()?.location ?? false);
+  public readonly showDistance = computed(() => this.workoutTypeConfig()?.distance ?? false);
+  public readonly showDuration = computed(() => this.workoutTypeConfig()?.duration ?? false);
+  public readonly showRepetitions = computed(() => this.workoutTypeConfig()?.repetition ?? false);
+  public readonly showWeight = computed(() => this.workoutTypeConfig()?.weight ?? false);
+  public readonly showCustomType = computed(() => this.manualWorkoutType() === 'other');
 
   // Available workout types
-  workoutTypes = WORKOUT_TYPES;
+  public readonly workoutTypes = WORKOUT_TYPES;
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Initialize file upload form
     this.fileUploadForm = this.fb.group({
       type: ['auto'],
@@ -103,7 +103,7 @@ export class WorkoutCreate implements OnInit {
     this.loadEquipment();
   }
 
-  async loadWorkoutForEdit(id: number) {
+  public async loadWorkoutForEdit(id: number): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -169,7 +169,7 @@ export class WorkoutCreate implements OnInit {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
-  async loadEquipment() {
+  public async loadEquipment(): Promise<void> {
     try {
       const response = await firstValueFrom(this.api.getEquipment({ page: 1, per_page: 100 }));
       if (response) {
@@ -181,20 +181,20 @@ export class WorkoutCreate implements OnInit {
   }
 
   // File upload handlers
-  onFilesSelected(event: Event) {
+  public onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files) {
       this.selectedFiles.set(Array.from(input.files));
     }
   }
 
-  removeFile(index: number) {
+  public removeFile(index: number): void {
     const files = this.selectedFiles();
     files.splice(index, 1);
     this.selectedFiles.set([...files]);
   }
 
-  async submitFileUpload() {
+  public async submitFileUpload(): Promise<void> {
     const files = this.selectedFiles();
     if (files.length === 0) {
       this.error.set('Please select at least one file');
@@ -237,7 +237,7 @@ export class WorkoutCreate implements OnInit {
   }
 
   // Manual form handlers
-  updateManualWorkoutType(value: string) {
+  public updateManualWorkoutType(value: string): void {
     this._manualWorkoutType.set(value);
     // Pre-fill name with workout type and timestamp
     if (value) {
@@ -248,7 +248,7 @@ export class WorkoutCreate implements OnInit {
     }
   }
 
-  toggleEquipment(equipmentId: number) {
+  public toggleEquipment(equipmentId: number): void {
     const currentIds = this.manualWorkoutForm.value.equipment_ids || [];
     const index = currentIds.indexOf(equipmentId);
     if (index > -1) {
@@ -259,12 +259,12 @@ export class WorkoutCreate implements OnInit {
     this.manualWorkoutForm.patchValue({ equipment_ids: [...currentIds] });
   }
 
-  isEquipmentSelected(equipmentId: number): boolean {
+  public isEquipmentSelected(equipmentId: number): boolean {
     const ids = this.manualWorkoutForm.value.equipment_ids || [];
     return ids.includes(equipmentId);
   }
 
-  async submitManualWorkout() {
+  public async submitManualWorkout(): Promise<void> {
     const type = this._manualWorkoutType();
 
     if (!type) {
@@ -361,7 +361,7 @@ export class WorkoutCreate implements OnInit {
     }
   }
 
-  navigateToWorkouts() {
+  public navigateToWorkouts(): void {
     this.router.navigate(['/workouts']);
   }
 }

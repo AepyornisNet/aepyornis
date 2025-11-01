@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -11,22 +11,23 @@ import { TranslatePipe } from '@ngx-translate/core';
   selector: 'app-equipment-detail',
   imports: [CommonModule, AppIcon, TranslatePipe],
   templateUrl: './equipment-detail.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EquipmentDetail implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  readonly equipment = signal<Equipment | null>(null);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
+  public readonly equipment = signal<Equipment | null>(null);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
 
   // Modal state
-  readonly showEditModal = signal(false);
-  readonly showDeleteModal = signal(false);
+  public readonly showEditModal = signal(false);
+  public readonly showDeleteModal = signal(false);
 
   // Form state
-  readonly equipmentForm = signal({
+  public readonly equipmentForm = signal({
     name: '',
     description: '',
     notes: '',
@@ -34,27 +35,27 @@ export class EquipmentDetail implements OnInit {
   });
 
   // Form update helpers
-  updateFormName(value: string) {
+  public updateFormName(value: string): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, name: value });
   }
 
-  updateFormDescription(value: string) {
+  public updateFormDescription(value: string): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, description: value });
   }
 
-  updateFormNotes(value: string) {
+  public updateFormNotes(value: string): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, notes: value });
   }
 
-  updateFormActive(value: boolean) {
+  public updateFormActive(value: boolean): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, active: value });
   }
 
-  ngOnInit() {
+  public ngOnInit(): void {
     this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
       if (id) {
@@ -63,7 +64,7 @@ export class EquipmentDetail implements OnInit {
     });
   }
 
-  async loadEquipment(id: number) {
+  public async loadEquipment(id: number): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -81,11 +82,11 @@ export class EquipmentDetail implements OnInit {
     }
   }
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  openEditModal() {
+  public openEditModal(): void {
     const eq = this.equipment();
     if (!eq) {
       return;
@@ -100,11 +101,11 @@ export class EquipmentDetail implements OnInit {
     this.showEditModal.set(true);
   }
 
-  closeEditModal() {
+  public closeEditModal(): void {
     this.showEditModal.set(false);
   }
 
-  async updateEquipment() {
+  public async updateEquipment(): Promise<void> {
     const eq = this.equipment();
     if (!eq) {
       return;
@@ -121,15 +122,15 @@ export class EquipmentDetail implements OnInit {
     }
   }
 
-  openDeleteModal() {
+  public openDeleteModal(): void {
     this.showDeleteModal.set(true);
   }
 
-  closeDeleteModal() {
+  public closeDeleteModal(): void {
     this.showDeleteModal.set(false);
   }
 
-  async deleteEquipment() {
+  public async deleteEquipment(): Promise<void> {
     const eq = this.equipment();
     if (!eq) {
       return;
@@ -145,7 +146,7 @@ export class EquipmentDetail implements OnInit {
     }
   }
 
-  goBack() {
+  public goBack(): void {
     this.router.navigate(['/equipment']);
   }
 }

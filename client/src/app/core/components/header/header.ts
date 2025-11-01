@@ -12,11 +12,11 @@ import { FormsModule } from '@angular/forms';
 import { AppIcon } from '../app-icon/app-icon';
 import { TranslateService } from '@ngx-translate/core';
 
-interface Language {
+type Language = {
   code: string;
   name: string;
   flag: string;
-}
+};
 
 @Component({
   selector: 'app-header',
@@ -30,21 +30,21 @@ export class Header {
   private translate = inject(TranslateService);
 
   // Input for user info and logout handler
-  readonly userName = input<string>();
-  readonly onLogout = input<() => void>();
-  readonly showSidebar = input<boolean>(false);
+  public readonly userName = input<string>();
+  public readonly onLogout = input<() => void>();
+  public readonly showSidebar = input<boolean>(false);
 
   // Output for sidebar toggle
-  toggleSidebar = output<void>();
+  public readonly toggleSidebar = output<void>();
 
-  readonly selectedLanguage = signal('en');
+  public readonly selectedLanguage = signal('en');
 
-  languages: Language[] = [
+  public languages: Language[] = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
   ];
 
-  constructor() {
+  public constructor() {
     const localeId = this.localeId;
 
     // Set the current locale from stored locale or Angular's LOCALE_ID
@@ -52,7 +52,7 @@ export class Header {
     this.selectedLanguage.set(stored || 'en');
   }
 
-  onLanguageChange(event: Event) {
+  public onLanguageChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
     const newLocale = select.value;
     if (newLocale !== this.selectedLanguage()) {
@@ -62,7 +62,7 @@ export class Header {
     }
   }
 
-  onToggleSidebar() {
+  public onToggleSidebar(): void {
     this.toggleSidebar.emit();
   }
 }

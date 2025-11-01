@@ -6,12 +6,12 @@ import { UserProfile } from '../../core/types/user';
 import { catchError, of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
-export interface UserInfo {
+export type UserInfo = {
   username: string;
   name: string;
   isAuthenticated: boolean;
   profile?: UserProfile;
-}
+};
 
 @Injectable({
   providedIn: 'root',
@@ -24,23 +24,23 @@ export class User {
   private readonly userInfo = signal<UserInfo | null>(null);
   private readonly checkingAuth = signal<boolean>(false);
 
-  constructor() {
+  public constructor() {
     this.checkAuthStatus();
   }
 
-  getUserInfo() {
+  public getUserInfo(): ReturnType<typeof this.userInfo.asReadonly> {
     return this.userInfo.asReadonly();
   }
 
-  isAuthenticated(): boolean {
+  public isAuthenticated(): boolean {
     return this.userInfo()?.isAuthenticated ?? false;
   }
 
-  isCheckingAuth(): boolean {
+  public isCheckingAuth(): boolean {
     return this.checkingAuth();
   }
 
-  checkAuthStatus() {
+  public checkAuthStatus(): void {
     this.checkingAuth.set(true);
     this.api
       .whoami()
@@ -73,11 +73,11 @@ export class User {
       });
   }
 
-  clearUser() {
+  public clearUser(): void {
     this.userInfo.set(null);
   }
 
-  logout() {
+  public logout(): void {
     // Clear local user info
     this.clearUser();
 

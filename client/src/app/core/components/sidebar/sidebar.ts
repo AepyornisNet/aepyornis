@@ -5,12 +5,12 @@ import { AppIcon } from '../app-icon/app-icon';
 import { User } from '../../../core/services/user';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface MenuItem {
+type MenuItem = {
   label: string;
   iconKey: string;
   route: string;
   adminOnly?: boolean;
-}
+};
 
 @Component({
   selector: 'app-sidebar',
@@ -22,10 +22,10 @@ interface MenuItem {
 export class Sidebar {
   private userService = inject(User);
 
-  readonly isOpen = input<boolean>(false);
-  sidebarToggle = output<void>();
+  public readonly isOpen = input<boolean>(false);
+  public readonly sidebarToggle = output<void>();
 
-  allMenuItems: MenuItem[] = [
+  public allMenuItems: MenuItem[] = [
     { label: $localize`Dashboard`, iconKey: 'dashboard', route: '/dashboard' },
     { label: $localize`Workouts`, iconKey: 'workout', route: '/workouts' },
     { label: $localize`Measurements`, iconKey: 'scale', route: '/measurements' },
@@ -38,14 +38,14 @@ export class Sidebar {
   ];
 
   // Computed property to filter menu items based on user permissions
-  readonly menuItems = computed(() => {
+  public readonly menuItems = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     const isAdmin = userInfo?.profile?.admin ?? false;
 
     return this.allMenuItems.filter((item) => !item.adminOnly || isAdmin);
   });
 
-  onToggle() {
+  public onToggle(): void {
     this.sidebarToggle.emit();
   }
 }

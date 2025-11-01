@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
@@ -11,22 +11,23 @@ import { FullUserProfile } from '../../../../core/types/user';
   imports: [CommonModule, AppIcon, ReactiveFormsModule],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Profile implements OnInit {
   private api = inject(Api);
   private fb = inject(FormBuilder);
 
-  readonly profile = signal<FullUserProfile | null>(null);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly error = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
-  readonly apiKeyVisible = signal(false);
+  public readonly profile = signal<FullUserProfile | null>(null);
+  public readonly loading = signal(true);
+  public readonly saving = signal(false);
+  public readonly error = signal<string | null>(null);
+  public readonly successMessage = signal<string | null>(null);
+  public readonly apiKeyVisible = signal(false);
 
   // Reactive form
-  profileForm!: FormGroup;
+  public profileForm!: FormGroup;
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Initialize form
     this.profileForm = this.fb.group({
       api_active: [false],
@@ -49,7 +50,7 @@ export class Profile implements OnInit {
     this.loadProfile();
   }
 
-  async loadProfile() {
+  public async loadProfile(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -79,7 +80,7 @@ export class Profile implements OnInit {
     }
   }
 
-  async saveProfile() {
+  public async saveProfile(): Promise<void> {
     if (this.profileForm.invalid) {
       return;
     }
@@ -105,7 +106,7 @@ export class Profile implements OnInit {
     }
   }
 
-  async resetAPIKey() {
+  public async resetAPIKey(): Promise<void> {
     if (
       !confirm('Are you sure you want to generate a new API key? The old key will no longer work.')
     ) {
@@ -129,7 +130,7 @@ export class Profile implements OnInit {
     }
   }
 
-  async refreshWorkouts() {
+  public async refreshWorkouts(): Promise<void> {
     if (
       !confirm('Are you sure you want to refresh all your workouts? This may take several minutes.')
     ) {
@@ -151,11 +152,11 @@ export class Profile implements OnInit {
     }
   }
 
-  toggleAPIKeyVisibility() {
+  public toggleAPIKeyVisibility(): void {
     this.apiKeyVisible.set(!this.apiKeyVisible());
   }
 
-  copyToClipboard(text: string) {
+  public copyToClipboard(text: string): void {
     navigator.clipboard
       .writeText(text)
       .then(() => {

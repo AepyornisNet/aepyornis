@@ -2,7 +2,7 @@
  * Equipment domain models
  */
 
-export interface Equipment {
+export type Equipment = {
   id: number;
   name: string;
   description?: string;
@@ -12,4 +12,4 @@ export interface Equipment {
   user_id: number;
   created_at: string;
   updated_at: string;
-}
+};

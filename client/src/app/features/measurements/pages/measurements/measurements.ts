@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -12,22 +12,23 @@ import { PaginatedListView } from '../../../../core/components/paginated-list-vi
   selector: 'app-measurements',
   imports: [CommonModule, AppIcon, TranslatePipe],
   templateUrl: './measurements.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Measurements extends PaginatedListView<Measurement> {
   private api = inject(Api);
 
   // Alias for better template readability
-  measurements = this.items;
-  readonly hasMeasurements = computed(() => this.hasItems());
+  public measurements = this.items;
+  public readonly hasMeasurements = computed(() => this.hasItems());
 
   // Modal state
-  readonly showCreateModal = signal(false);
-  readonly showEditModal = signal(false);
-  readonly showDeleteModal = signal(false);
-  readonly selectedMeasurement = signal<Measurement | null>(null);
+  public readonly showCreateModal = signal(false);
+  public readonly showEditModal = signal(false);
+  public readonly showDeleteModal = signal(false);
+  public readonly selectedMeasurement = signal<Measurement | null>(null);
 
   // Form state
-  readonly measurementForm = signal({
+  public readonly measurementForm = signal({
     date: '',
     weight: null as number | null,
     height: null as number | null,
@@ -35,27 +36,27 @@ export class Measurements extends PaginatedListView<Measurement> {
   });
 
   // Form update helpers
-  updateFormDate(value: string) {
+  public updateFormDate(value: string): void {
     const form = this.measurementForm();
     this.measurementForm.set({ ...form, date: value });
   }
 
-  updateFormWeight(value: string) {
+  public updateFormWeight(value: string): void {
     const form = this.measurementForm();
     this.measurementForm.set({ ...form, weight: value ? parseFloat(value) : null });
   }
 
-  updateFormHeight(value: string) {
+  public updateFormHeight(value: string): void {
     const form = this.measurementForm();
     this.measurementForm.set({ ...form, height: value ? parseFloat(value) : null });
   }
 
-  updateFormSteps(value: string) {
+  public updateFormSteps(value: string): void {
     const form = this.measurementForm();
     this.measurementForm.set({ ...form, steps: value ? parseInt(value) : null });
   }
 
-  async loadData(page?: number) {
+  public async loadData(page?: number): Promise<void> {
     if (page) {
       this.currentPage.set(page);
     }
@@ -82,20 +83,20 @@ export class Measurements extends PaginatedListView<Measurement> {
     }
   }
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  formatDateForInput(dateString: string): string {
+  public formatDateForInput(dateString: string): string {
     const date = new Date(dateString);
     return date.toISOString().split('T')[0];
   }
 
-  getTodayDate(): string {
+  public getTodayDate(): string {
     return new Date().toISOString().split('T')[0];
   }
 
-  openCreateModal() {
+  public openCreateModal(): void {
     this.measurementForm.set({
       date: this.getTodayDate(),
       weight: null,
@@ -105,11 +106,11 @@ export class Measurements extends PaginatedListView<Measurement> {
     this.showCreateModal.set(true);
   }
 
-  closeCreateModal() {
+  public closeCreateModal(): void {
     this.showCreateModal.set(false);
   }
 
-  async createMeasurement() {
+  public async createMeasurement(): Promise<void> {
     try {
       const form = this.measurementForm();
       if (!form.date) {
@@ -142,7 +143,7 @@ export class Measurements extends PaginatedListView<Measurement> {
     }
   }
 
-  openEditModal(measurement: Measurement) {
+  public openEditModal(measurement: Measurement): void {
     this.selectedMeasurement.set(measurement);
     this.measurementForm.set({
       date: this.formatDateForInput(measurement.date),
@@ -153,12 +154,12 @@ export class Measurements extends PaginatedListView<Measurement> {
     this.showEditModal.set(true);
   }
 
-  closeEditModal() {
+  public closeEditModal(): void {
     this.showEditModal.set(false);
     this.selectedMeasurement.set(null);
   }
 
-  async updateMeasurement() {
+  public async updateMeasurement(): Promise<void> {
     const measurement = this.selectedMeasurement();
     if (!measurement) {
       return;
@@ -191,17 +192,17 @@ export class Measurements extends PaginatedListView<Measurement> {
     }
   }
 
-  openDeleteModal(measurement: Measurement) {
+  public openDeleteModal(measurement: Measurement): void {
     this.selectedMeasurement.set(measurement);
     this.showDeleteModal.set(true);
   }
 
-  closeDeleteModal() {
+  public closeDeleteModal(): void {
     this.showDeleteModal.set(false);
     this.selectedMeasurement.set(null);
   }
 
-  async deleteMeasurement() {
+  public async deleteMeasurement(): Promise<void> {
     const measurement = this.selectedMeasurement();
     if (!measurement) {
       return;

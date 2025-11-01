@@ -1,4 +1,11 @@
-import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
@@ -12,22 +19,23 @@ import { Api } from '../../../../core/services/api';
   imports: [CommonModule, RouterLink, AppIcon, TranslatePipe],
   templateUrl: './recent-activity.html',
   styleUrl: './recent-activity.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecentActivity implements OnInit {
   private api = inject(Api);
 
-  readonly displayedWorkouts = signal<Workout[]>([]);
-  readonly loading = signal(false);
-  readonly initialLoading = signal(true);
-  readonly hasMore = signal(true);
-  readonly pageSize = 10;
+  public readonly displayedWorkouts = signal<Workout[]>([]);
+  public readonly loading = signal(false);
+  public readonly initialLoading = signal(true);
+  public readonly hasMore = signal(true);
+  public readonly pageSize = 10;
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Load initial workouts
     this.loadInitialWorkouts();
   }
 
-  async loadInitialWorkouts() {
+  public async loadInitialWorkouts(): Promise<void> {
     this.initialLoading.set(true);
     try {
       const response = await firstValueFrom(this.api.getRecentWorkouts(this.pageSize, 0));
@@ -42,16 +50,16 @@ export class RecentActivity implements OnInit {
     }
   }
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  formatDistance(distance: number): string {
+  public formatDistance(distance: number): string {
     // Convert meters to kilometers
     return (distance / 1000).toFixed(2);
   }
 
-  formatDuration(seconds: number): string {
+  public formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) {
@@ -60,11 +68,11 @@ export class RecentActivity implements OnInit {
     return `${minutes}m`;
   }
 
-  formatWeight(weight: number): string {
+  public formatWeight(weight: number): string {
     return weight.toFixed(1);
   }
 
-  async loadMore() {
+  public async loadMore(): Promise<void> {
     if (this.loading() || !this.hasMore()) {
       return;
     }
@@ -91,7 +99,7 @@ export class RecentActivity implements OnInit {
   }
 
   @HostListener('window:scroll')
-  onWindowScroll() {
+  public onWindowScroll(): void {
     // Check if user has scrolled near the bottom of the page
     const scrollPosition = window.pageYOffset + window.innerHeight;
     const pageHeight = document.documentElement.scrollHeight;

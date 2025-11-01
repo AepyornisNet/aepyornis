@@ -15,14 +15,14 @@ import { User } from '../../core/services/user';
 export class AuthenticatedLayout {
   private userService = inject(User);
 
-  readonly userName = computed(() => this.userService.getUserInfo()()?.name || '');
-  readonly sidebarOpen = signal(false);
+  public readonly userName = computed(() => this.userService.getUserInfo()()?.name || '');
+  public readonly sidebarOpen = signal(false);
 
-  handleLogout = () => {
+  public handleLogout(): void {
     this.userService.logout();
-  };
+  }
 
-  toggleSidebar = () => {
+  public toggleSidebar(): void {
     this.sidebarOpen.update((open) => !open);
-  };
+  }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -12,21 +12,22 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
   imports: [CommonModule, RouterLink, AppIcon, ReactiveFormsModule],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Admin implements OnInit {
   private api = inject(Api);
   private fb = inject(FormBuilder);
 
-  readonly users = signal<UserProfile[]>([]);
-  readonly loading = signal(true);
-  readonly error = signal<string | null>(null);
-  readonly savingConfig = signal(false);
-  readonly deleteConfirm = signal<number | null>(null);
+  public readonly users = signal<UserProfile[]>([]);
+  public readonly loading = signal(true);
+  public readonly error = signal<string | null>(null);
+  public readonly savingConfig = signal(false);
+  public readonly deleteConfirm = signal<number | null>(null);
 
   // Reactive form for app config
-  configForm!: FormGroup;
+  public configForm!: FormGroup;
 
-  ngOnInit() {
+  public ngOnInit(): void {
     // Initialize config form
     this.configForm = this.fb.group({
       registration_disabled: [false],
@@ -36,7 +37,7 @@ export class Admin implements OnInit {
     this.loadData();
   }
 
-  async loadData() {
+  public async loadData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -62,7 +63,7 @@ export class Admin implements OnInit {
     }
   }
 
-  async saveConfig() {
+  public async saveConfig(): Promise<void> {
     if (this.configForm.invalid) {
       return;
     }
@@ -88,15 +89,15 @@ export class Admin implements OnInit {
     }
   }
 
-  confirmDelete(userId: number) {
+  public confirmDelete(userId: number): void {
     this.deleteConfirm.set(userId);
   }
 
-  cancelDelete() {
+  public cancelDelete(): void {
     this.deleteConfirm.set(null);
   }
 
-  async deleteUser(userId: number) {
+  public async deleteUser(userId: number): Promise<void> {
     this.error.set(null);
 
     try {

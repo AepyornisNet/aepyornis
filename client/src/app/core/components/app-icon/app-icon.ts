@@ -37,36 +37,38 @@ export class AppIcon {
   /**
    * Icon key from the icon map (e.g., 'workout', 'dashboard', 'edit')
    */
-  readonly name = input.required<string>();
+  public readonly name = input.required<string>();
 
   /**
    * Icon size (e.g., '24', '1.5rem', '48')
    */
-  readonly size = input<string | number>();
+  public readonly size = input<string | number>();
 
   /**
    * Stroke width for icons that support it
    */
-  readonly strokeWidth = input<string | number>();
+  public readonly strokeWidth = input<string | number>();
 
   /**
    * Resolved icon name from the icon map
    */
-  iconName = () => getIcon(this.name());
+  public iconName(): string {
+    return getIcon(this.name());
+  }
 
   /**
    * Convert size to string for ng-icon
    */
-  sizeAsString = (): string => {
+  public sizeAsString(): string {
     const sizeValue = this.size();
     return sizeValue ? String(sizeValue) : '';
-  };
+  }
 
   /**
    * Convert strokeWidth to string for ng-icon
    */
-  strokeWidthAsString = (): string => {
+  public strokeWidthAsString(): string {
     const strokeValue = this.strokeWidth();
     return strokeValue ? String(strokeValue) : '';
-  };
+  }
 }

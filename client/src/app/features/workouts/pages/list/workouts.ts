@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -7,24 +7,25 @@ import { Workout } from '../../../../core/types/workout';
 import { PaginationParams } from '../../../../core/types/api-response';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
-import { WorkoutActionsComponent } from '../../components/workout-actions/workout-actions';
+import { WorkoutActions } from '../../components/workout-actions/workout-actions';
 import { Pagination } from '../../../../core/components/pagination/pagination';
 import { TranslatePipe } from '@ngx-translate/core';
 
 // TODO: Implement filtering and sorting of workouts
 @Component({
   selector: 'app-workouts',
-  imports: [CommonModule, RouterLink, AppIcon, WorkoutActionsComponent, Pagination, TranslatePipe],
+  imports: [CommonModule, RouterLink, AppIcon, WorkoutActions, Pagination, TranslatePipe],
   templateUrl: './workouts.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Workouts extends PaginatedListView<Workout> {
   private api = inject(Api);
 
   // Alias for better template readability
-  workouts = this.items;
-  readonly hasWorkouts = computed(() => this.hasItems());
+  public workouts = this.items;
+  public readonly hasWorkouts = computed(() => this.hasItems());
 
-  async loadData(page?: number) {
+  public async loadData(page?: number): Promise<void> {
     if (page) {
       this.currentPage.set(page);
     }
@@ -51,15 +52,15 @@ export class Workouts extends PaginatedListView<Workout> {
     }
   }
 
-  formatDate(dateString: string): string {
+  public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  formatDistance(distance: number): string {
+  public formatDistance(distance: number): string {
     return (distance / 1000).toFixed(2);
   }
 
-  formatDuration(seconds: number): string {
+  public formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) {
@@ -68,7 +69,7 @@ export class Workouts extends PaginatedListView<Workout> {
     return `${minutes}m`;
   }
 
-  onWorkoutUpdated(workout: Workout) {
+  public onWorkoutUpdated(workout: Workout): void {
     // Update the workout in the list
     const index = this.items().findIndex((w) => w.id === workout.id);
     if (index >= 0) {
@@ -77,8 +78,7 @@ export class Workouts extends PaginatedListView<Workout> {
       this.items.set(updatedItems);
     }
   }
-
-  onWorkoutDeleted(workoutId: number) {
+  public onWorkoutDeleted(workoutId: number): void {
     // Remove workout from the list
     const updatedItems = this.items().filter((w) => w.id !== workoutId);
     this.items.set(updatedItems);

@@ -2,7 +2,7 @@
  * Route segment domain models
  */
 
-export interface RouteSegment {
+export type RouteSegment = {
   id: number;
   name: string;
   notes?: string;
@@ -17,16 +17,16 @@ export interface RouteSegment {
   match_count: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface MapPoint {
+export type MapPoint = {
   lat: number;
   lng: number;
   elevation: number;
   total_distance: number;
-}
+};
 
-export interface RouteSegmentMatch {
+export type RouteSegmentMatch = {
   workout_id: number;
   workout_name: string;
   user_id: number;
@@ -34,7 +34,7 @@ export interface RouteSegmentMatch {
   distance: number;
   duration: number;
   average_speed: number;
-}
+};
 
 export type RouteSegmentDetail = {
   points: MapPoint[];
