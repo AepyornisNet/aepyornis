@@ -1,0 +1,37 @@
+@if (getTotal() > 1) {
+  <nav aria-label="Pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item" [class.disabled]="!getHasPrevious()">
+        <button class="page-link" (click)="onPrevious()" [disabled]="!getHasPrevious()" i18n>
+          Previous
+        </button>
+      </li>
+
+      @for (page of getPages(); track $index) {
+        @if (page === -1) {
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        } @else {
+          <li class="page-item" [class.active]="getCurrent() === page">
+            <button class="page-link" (click)="onGoTo(page)">
+              {{ page }}
+            </button>
+          </li>
+        }
+      }
+
+      <li class="page-item" [class.disabled]="!getHasNext()">
+        <button class="page-link" (click)="onNext()" [disabled]="!getHasNext()" i18n>
+          Next
+        </button>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="text-center text-muted">
+    <small i18n>
+      Page {{ getCurrent() }} of {{ getTotal() }} • {{ getTotalCount() }} items
+    </small>
+  </div>
+}

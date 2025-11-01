@@ -134,4 +134,25 @@ export abstract class PaginatedListView<T> implements OnInit {
     this.totalPages.set(response.total_pages);
     this.totalCount.set(response.total_count);
   }
+
+  /**
+   * Provide a compact pagination context object for pagination components.
+   * This allows templates to bind a single [source]="pagination()" instead of multiple attributes.
+   */
+  pagination() {
+    return {
+      // getters return the current values so templates can call them: source.current()
+      current: () => this.currentPage(),
+      total: () => this.totalPages(),
+      pages: () => this.visiblePages(),
+      hasPrevious: () => this.hasPreviousPage(),
+      hasNext: () => this.hasNextPage(),
+      totalCount: () => this.totalCount(),
+
+      // navigation helpers call the existing methods on the PaginatedListView
+      previous: () => this.previousPage(),
+      goTo: (page: number) => this.goToPage(page),
+      next: () => this.nextPage(),
+    };
+  }
 }
