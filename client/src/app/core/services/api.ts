@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { APIResponse, PaginatedAPIResponse, PaginationParams } from '../../core/types/api-response';
 import {
@@ -152,8 +152,9 @@ export class Api {
     );
   }
 
-  downloadWorkout(id: number): Observable<Blob> {
+  downloadWorkout(id: number): Observable<HttpResponse<Blob>> {
     return this.http.get(`${this.baseUrl}/workouts/${id}/download`, {
+      observe: 'response',
       responseType: 'blob',
     });
   }

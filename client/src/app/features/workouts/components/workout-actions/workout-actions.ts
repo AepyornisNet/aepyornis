@@ -60,18 +60,23 @@ export class WorkoutActionsComponent {
     this.errorMessage = null;
 
     this.api.downloadWorkout(this.workout().id).subscribe({
-      next: (blob) => {
+      next: (response) => {
         this.isProcessing = false;
 
         // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `workout_${this.workout().id}.gpx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        if (response.body) {
+          const url = window.URL.createObjectURL(response.body);
+          const a = document.createElement('a');
+          a.href = url;
+          const contentDisposition = response.headers.get('content-disposition');
+          a.download = contentDisposition
+            ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+            : 'workout.gpx';
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }
 
         this.successMessage = 'Download started';
         setTimeout(() => (this.successMessage = null), 3000);

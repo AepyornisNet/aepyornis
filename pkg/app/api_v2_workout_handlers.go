@@ -93,6 +93,7 @@ func (a *App) apiV2WorkoutHandler(c echo.Context) error {
 	var workout database.Workout
 	db := a.db.Preload("Data.Details").
 		Preload("Data").
+		Preload("GPX").
 		Preload("Equipment").
 		Preload("RouteSegmentMatches.RouteSegment").
 		Where("user_id = ? AND id = ?", user.ID, id)
