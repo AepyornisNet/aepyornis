@@ -62,7 +62,7 @@
                     <td style="cursor: pointer;" [routerLink]="['/workouts', workout.id]">
                       <strong>{{ workout.name }}</strong>
                       <br>
-                      <small class="text-muted">{{ workout.type }}</small>
+                      <small class="text-muted">{{ 'sports.' + workout.type | translate }}</small>
                       @if (workout.locked) {
                         <br>
                         <span class="badge bg-warning text-dark">

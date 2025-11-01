@@ -2,6 +2,7 @@ import { Component, signal, LOCALE_ID, inject, input, output, ChangeDetectionStr
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppIcon } from '../app-icon/app-icon';
+import { TranslateService } from '@ngx-translate/core';
 
 interface Language {
   code: string;
@@ -18,6 +19,7 @@ interface Language {
 })
 export class Header {
   private localeId = inject(LOCALE_ID);
+  private translate = inject(TranslateService);
 
   // Input for user info and logout handler
   userName = input<string>();
@@ -37,17 +39,18 @@ export class Header {
   constructor() {
     const localeId = this.localeId;
 
-    // Set the current locale from Angular's LOCALE_ID
-    this.selectedLanguage.set(localeId);
+    // Set the current locale from stored locale or Angular's LOCALE_ID
+    const stored = localStorage.getItem('locale') || localeId;
+    this.selectedLanguage.set(stored || 'en');
   }
 
   onLanguageChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     const newLocale = select.value;
-
-    if (newLocale !== this.localeId) {
-      localStorage.setItem("locale", newLocale)
-      window.location.reload()
+    if (newLocale !== this.selectedLanguage()) {
+      localStorage.setItem('locale', newLocale);
+      this.translate.use(newLocale);
+      this.selectedLanguage.set(newLocale);
     }
   }
 

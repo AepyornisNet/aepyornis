@@ -9,11 +9,12 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { WorkoutActionsComponent } from '../../components/workout-actions/workout-actions';
 import { Pagination } from '../../../../core/components/pagination/pagination';
+import { TranslatePipe } from '@ngx-translate/core';
 
 // TODO: Implement filtering and sorting of workouts
 @Component({
   selector: 'app-workouts',
-  imports: [CommonModule, RouterLink, AppIcon, WorkoutActionsComponent, Pagination],
+  imports: [CommonModule, RouterLink, AppIcon, WorkoutActionsComponent, Pagination, TranslatePipe],
   templateUrl: './workouts.html'
 })
 export class Workouts extends PaginatedListView<Workout> {

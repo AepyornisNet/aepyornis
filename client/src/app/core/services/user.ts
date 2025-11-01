@@ -4,6 +4,7 @@ import { AUTH_LOGOUT_URL } from '../../core/types/auth';
 import { Api } from './api';
 import { UserProfile } from '../../core/types/user';
 import { catchError, of } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 export interface UserInfo {
   username: string;
@@ -18,12 +19,12 @@ export interface UserInfo {
 export class User {
   private router = inject(Router);
   private api = inject(Api);
+  private translate = inject(TranslateService);
 
   private userInfo = signal<UserInfo | null>(null);
   private checkingAuth = signal<boolean>(false);
 
   constructor() {
-    // Check if user is already authenticated via backend API
     this.checkAuthStatus();
   }
 
@@ -59,6 +60,12 @@ export class User {
             profile: response.results
           };
           this.userInfo.set(user);
+          // If user profile contains a language, use it for translations
+          const lang = user.profile?.language;
+          if (lang) {
+            this.translate.use(lang);
+            localStorage.setItem('locale', lang);
+          }
         } else {
           this.userInfo.set(null);
         }
