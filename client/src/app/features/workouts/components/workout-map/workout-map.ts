@@ -1,5 +1,4 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   effect,
@@ -31,7 +30,7 @@ type PolyLineProps = {
   styleUrls: ['./workout-map.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
+export class WorkoutMapComponent implements OnDestroy {
   private readonly mapContainer = viewChild<ElementRef<HTMLDivElement>>('mapContainer');
 
   public readonly mapData = input<MapDataDetails | undefined>();
@@ -70,12 +69,6 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
         this.initMap();
       }
     });
-  }
-
-  public ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.initMap();
-    }, 100);
   }
 
   public ngOnDestroy(): void {
@@ -151,6 +144,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
       color: 'blue',
       radius: 8,
     }).addTo(this.map);
+    this.trackGroup.addTo(this.map);
 
     // Build overlay layers for control
     const overlays: Record<string, L.LayerGroup> = {
@@ -216,36 +210,33 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     }
 
     const trackRenderer = polyLineProperties.renderer;
-    let prevPoint: [number, number] | null = null;
+    const markerProps: L.CircleMarkerOptions = {
+      renderer: trackRenderer,
+      opacity: 0,
+      fill: false,
+      radius: 4,
+    };
 
-    mapData.position.forEach((pos, index) => {
-      if (prevPoint) {
-        const elevation = mapData.elevation[index] ?? 0;
+    for (let i = 1; i < mapData.position.length; i++) {
+      const pos = mapData.position[i];
+      const prevPos = mapData.position[i - 1];
+      const elevation = mapData.elevation[i] ?? 0;
 
-        // Add invisible point for tooltip
-        this.trackGroup!.addLayer(
-          L.circleMarker([pos[0], pos[1]], {
-            renderer: trackRenderer,
-            opacity: 0,
-            fill: false,
-            radius: 4,
-          })
-            .addTo(this.map!)
-            .bindTooltip(() => this.getTooltip(index)),
-        );
+      // Add invisible point for tooltip
+      L.circleMarker(pos, markerProps)
+        .bindTooltip(() => this.getTooltip(i))
+        .addTo(this.trackGroup);
 
-        // Color based on elevation
-        const color = this.getColor(
-          (elevation - this.minElevation) / (this.maxElevation - this.minElevation),
-        );
+      // Color based on elevation
+      const color = this.getColor(
+        (elevation - this.minElevation) / (this.maxElevation - this.minElevation),
+      );
 
-        L.polyline([prevPoint, [pos[0], pos[1]]], {
-          ...polyLineProperties,
-          color,
-        }).addTo(elevationLayer);
-      }
-      prevPoint = [pos[0], pos[1]];
-    });
+      L.polyline([prevPos, pos], {
+        ...polyLineProperties,
+        color,
+      }).addTo(elevationLayer);
+    }
 
     return elevationLayer;
   }
@@ -314,21 +305,19 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
     const maxSlope = Math.max(...slopes);
     const minSlope = Math.min(...slopes);
 
-    let prevPoint: [number, number] | null = null;
+    for (let i = 1; i < mapData.position.length; i++) {
+      const pos = mapData.position[i];
+      const prevPos = mapData.position[i - 1];
 
-    mapData.position.forEach((pos, index) => {
-      if (prevPoint) {
-        const slope = mapData.slope[index] ?? 0;
-        const zScore = (slope - minSlope) / (maxSlope - minSlope);
-        const color = this.getColor(zScore);
+      const slope = mapData.slope[i] ?? 0;
+      const zScore = (slope - minSlope) / (maxSlope - minSlope);
+      const color = this.getColor(zScore);
 
-        L.polyline([prevPoint, [pos[0], pos[1]]], {
-          ...polyLineProperties,
-          color,
-        }).addTo(slopeLayer);
-      }
-      prevPoint = [pos[0], pos[1]];
-    });
+      L.polyline([prevPos, pos], {
+        ...polyLineProperties,
+        color,
+      }).addTo(slopeLayer);
+    };
 
     return slopeLayer;
   }
@@ -352,7 +341,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
         radius: 6,
       })
         .addTo(this.map)
-        .bindTooltip(this.getTooltip(positions.length - 1)),
+        .bindTooltip(() => this.getTooltip(positions.length - 1)),
     );
 
     // Add start marker (green)
@@ -366,7 +355,7 @@ export class WorkoutMapComponent implements AfterViewInit, OnDestroy {
         radius: 6,
       })
         .addTo(this.map)
-        .bindTooltip(this.getTooltip(0)),
+        .bindTooltip(() => this.getTooltip(0)),
     );
   }
 

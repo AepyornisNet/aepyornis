@@ -17,26 +17,26 @@ func (a *App) userSigninHandler(c echo.Context) error {
 
 	// Parse the submitted data and fill the User struct with the data from the SignIn form.
 	if err := c.Bind(u); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("user-login"), err)
+		return a.redirectWithError(c, "/login", err)
 	}
 
 	storedUser, err := database.GetUser(a.db, u.Username)
 	if err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("user-login"), err)
+		return a.redirectWithError(c, "/login", err)
 	}
 
 	if !storedUser.ValidLogin(c.FormValue("password")) {
-		return a.redirectWithError(c, a.echo.Reverse("user-login"), ErrLoginFailed)
+		return a.redirectWithError(c, "/login", ErrLoginFailed)
 	}
 
 	// If password is correct, generate tokens and set cookies.
 	a.sessionManager.Put(c.Request().Context(), "username", u.Username)
 
 	if err := a.createToken(storedUser, c); err != nil {
-		return a.redirectWithError(c, a.echo.Reverse("user-login"), ErrLoginFailed)
+		return a.redirectWithError(c, "/login", ErrLoginFailed)
 	}
 
-	return c.Redirect(http.StatusFound, a.echo.Reverse("dashboard"))
+	return c.Redirect(http.StatusFound, "/")
 }
 
 // userSignoutHandler will log a user out

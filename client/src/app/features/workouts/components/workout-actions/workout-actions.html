@@ -13,7 +13,7 @@
   }
 
   <!-- Actions -->
-  <div class="btn-group" role="group">
+  <div class="d-grid gap-2">
     <!-- Lock/Unlock -->
     <button
       class="btn btn-sm"
@@ -79,9 +79,10 @@
     }
 
     <!-- Share -->
-    <div class="btn-group" role="group">
+    <div ngbDropdown>
       <button
-        class="btn btn-sm btn-outline-secondary dropdown-toggle"
+        class="btn btn-sm btn-outline-secondary dropdown-toggle w-100"
+        ngbDropdownToggle
         [disabled]="isProcessing()"
         [title]="'translation.Share_workout' | translate"
         (click)="toggleShareMenu()"
@@ -92,7 +93,7 @@
         }
       </button>
       @if (showShareMenu()) {
-        <div class="dropdown-menu show position-absolute" style="z-index: 1000">
+        <div class="dropdown-menu show position-absolute" ngbDropdownMenu>
           @if (workout().public_uuid) {
             <button class="dropdown-item" (click)="copyShareLink()">
               <app-icon name="copy" size="16" />
@@ -111,6 +112,51 @@
         </div>
       }
     </div>
+
+    @if (hasMapData()) {
+      <button
+        class="btn btn-sm btn-outline-primary"
+        [routerLink]="['/workouts', workout()!.id, 'create-route-segment']"
+      >
+        <app-icon name="route-segment-add" size="20" />
+        <span>{{ 'translation.create_route_segment' | translate }}</span>
+      </button>
+    }
+
+    @if (!socialsDisabled()) {
+      <div class="btn-group" role="group">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [attr.title]="
+            'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+          "
+        >
+          <app-icon name="share" size="20" />
+          <span class="visually-hidden">Strava</span>
+        </button>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [attr.title]="
+            'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+          "
+        >
+          <app-icon name="share" size="20" />
+          <span class="visually-hidden">Facebook</span>
+        </button>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [attr.title]="
+            'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+          "
+        >
+          <app-icon name="share" size="20" />
+          <span class="visually-hidden">Twitter</span>
+        </button>
+      </div>
+    }
 
     <!-- Delete -->
     <button

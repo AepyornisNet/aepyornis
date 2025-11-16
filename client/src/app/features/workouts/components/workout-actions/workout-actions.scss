@@ -9,19 +9,4 @@
     z-index: 1050;
     margin-bottom: 1rem;
   }
-
-  &.compact {
-    .btn-group {
-      .btn {
-        padding: 0.25rem 0.5rem;
-      }
-    }
-  }
-
-  .btn-group {
-    .dropdown-menu {
-      right: 0;
-      left: auto;
-    }
-  }
 }

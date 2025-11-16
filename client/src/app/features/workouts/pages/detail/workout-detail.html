@@ -224,43 +224,10 @@
             </div>
           </div>
         }
-
-        <!-- Notes -->
-        @if (dataService.workout()!.notes) {
-          <div class="card shadow-sm mb-4">
-            <div class="card-header">
-              <h5 class="mb-0">{{ 'translation.notes' | translate }}</h5>
-            </div>
-            <div class="card-body">
-              <p class="mb-0" style="white-space: pre-wrap">{{ dataService.workout()!.notes }}</p>
-            </div>
-          </div>
-        }
-
-        <!-- Equipment -->
-        @if (dataService.workout()!.equipment && dataService.workout()!.equipment!.length > 0) {
-          <div class="card shadow-sm mb-4">
-            <div class="card-header">
-              <h5 class="mb-0">{{ 'translation.equipment' | translate }}</h5>
-            </div>
-            <div class="card-body">
-              <div class="list-group">
-                @for (equip of dataService.workout()!.equipment; track equip.id) {
-                  <div class="list-group-item">
-                    <h6 class="mb-1">{{ equip.name }}</h6>
-                    @if (equip.description) {
-                      <p class="mb-0 text-muted">{{ equip.description }}</p>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-        }
       </div>
       <div class="col-12 col-lg-4">
         <!-- Additional Details -->
-        <div class="card shadow-sm">
+        <div class="card shadow-sm mb-4">
           <div class="card-header">
             <h5 class="mb-0">{{ 'translation.details' | translate }}</h5>
           </div>
@@ -304,54 +271,46 @@
             </dl>
           </div>
         </div>
+
+        <!-- Notes -->
+        @if (dataService.workout()!.notes) {
+          <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'translation.notes' | translate }}</h5>
+            </div>
+            <div class="card-body">
+              <p class="mb-0" style="white-space: pre-wrap">{{ dataService.workout()!.notes }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- Equipment -->
+        @if (dataService.workout()!.equipment && dataService.workout()!.equipment!.length > 0) {
+          <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'translation.equipment' | translate }}</h5>
+            </div>
+            <div class="card-body">
+              <div class="list-group">
+                @for (equip of dataService.workout()!.equipment; track equip.id) {
+                  <div class="list-group-item">
+                    <h6 class="mb-1">{{ equip.name }}</h6>
+                    @if (equip.description) {
+                      <p class="mb-0 text-muted">{{ equip.description }}</p>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
         <app-workout-actions
+          [hasMapData]="dataService.hasMapData()!"
           [workout]="dataService.workout()!"
           (workoutDeleted)="onWorkoutDeleted()"
           (workoutUpdated)="onWorkoutUpdated($event)"
         />
-        @if (dataService.hasMapData()) {
-          <button
-            class="btn btn-outline-primary"
-            [routerLink]="['/workouts', dataService.workout()!.id, 'create-route-segment']"
-          >
-            <app-icon name="route-segment-add" size="20" />
-            <span>{{ 'translation.create_route_segment' | translate }}</span>
-          </button>
-        }
-        @if (!socialsDisabled()) {
-          <div class="btn-group" role="group">
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              [attr.title]="
-                'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
-              "
-            >
-              <app-icon name="share" size="20" />
-              <span class="visually-hidden">Strava</span>
-            </button>
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              [attr.title]="
-                'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
-              "
-            >
-              <app-icon name="share" size="20" />
-              <span class="visually-hidden">Facebook</span>
-            </button>
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              [attr.title]="
-                'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
-              "
-            >
-              <app-icon name="share" size="20" />
-              <span class="visually-hidden">Twitter</span>
-            </button>
-          </div>
-        }
       </div>
     </div>
   }

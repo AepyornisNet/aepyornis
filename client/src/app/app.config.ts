@@ -1,5 +1,7 @@
 import {
   ApplicationConfig,
+  inject,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -11,6 +13,8 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { routes } from './app.routes';
 import { iconProviders } from './core/config/icon-providers';
 import { LowercaseTranslationCompiler } from './core/config/lowercase-translation-compiler';
+import { User } from './core/services/user';
+import { AppConfig } from './core/services/app-config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -18,6 +22,14 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(withFetch()),
+    provideAppInitializer(() => {
+      const appConfigService = inject(AppConfig);
+      return appConfigService.loadAppInfo();
+    }),
+    provideAppInitializer(() => {
+      const userService = inject(User);
+      return userService.checkAuthStatus();
+    }),
     provideTranslateService({
       loader: provideTranslateHttpLoader({
         prefix: './i18n/',

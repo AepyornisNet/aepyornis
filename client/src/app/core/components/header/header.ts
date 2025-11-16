@@ -31,11 +31,11 @@ export class Header {
 
   // Input for user info and logout handler
   public readonly userName = input<string>();
-  public readonly onLogout = input<() => void>();
   public readonly showSidebar = input<boolean>(false);
 
   // Output for sidebar toggle
   public readonly toggleSidebar = output<void>();
+  public readonly logout = output<void>();
 
   public readonly selectedLanguage = signal('en');
 

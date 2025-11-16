@@ -1,9 +1,8 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { AUTH_LOGOUT_URL } from '../../core/types/auth';
 import { Api } from './api';
 import { UserProfile } from '../../core/types/user';
-import { catchError, of } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 export type UserInfo = {
@@ -17,16 +16,11 @@ export type UserInfo = {
   providedIn: 'root',
 })
 export class User {
-  private router = inject(Router);
   private api = inject(Api);
   private translate = inject(TranslateService);
 
   private readonly userInfo = signal<UserInfo | null>(null);
   private readonly checkingAuth = signal<boolean>(false);
-
-  public constructor() {
-    this.checkAuthStatus();
-  }
 
   public getUserInfo(): ReturnType<typeof this.userInfo.asReadonly> {
     return this.userInfo.asReadonly();
@@ -40,9 +34,9 @@ export class User {
     return this.checkingAuth();
   }
 
-  public checkAuthStatus(): void {
+  public checkAuthStatus(): Observable<UserProfile | null> {
     this.checkingAuth.set(true);
-    this.api
+    return this.api
       .whoami()
       .pipe(
         catchError(() => {
@@ -50,27 +44,28 @@ export class User {
           this.userInfo.set(null);
           return of(null);
         }),
-      )
-      .subscribe((response) => {
-        this.checkingAuth.set(false);
-        if (response && response.results) {
-          const user: UserInfo = {
-            username: response.results.username,
-            name: response.results.name || response.results.username,
-            isAuthenticated: true,
-            profile: response.results,
-          };
-          this.userInfo.set(user);
-          // If user profile contains a language, use it for translations
-          const lang = user.profile?.language;
-          if (lang) {
-            this.translate.use(lang);
-            localStorage.setItem('locale', lang);
+        tap((response) => {
+          this.checkingAuth.set(false);
+          if (response && response.results) {
+            const user: UserInfo = {
+              username: response.results.username,
+              name: response.results.name || response.results.username,
+              isAuthenticated: true,
+              profile: response.results,
+            };
+            this.userInfo.set(user);
+            // If user profile contains a language, use it for translations
+            const lang = user.profile?.language;
+            if (lang) {
+              this.translate.use(lang);
+              localStorage.setItem('locale', lang);
+            }
+          } else {
+            this.userInfo.set(null);
           }
-        } else {
-          this.userInfo.set(null);
-        }
-      });
+        }),
+        map(respone => respone ? respone.results : null)
+      );
   }
 
   public clearUser(): void {

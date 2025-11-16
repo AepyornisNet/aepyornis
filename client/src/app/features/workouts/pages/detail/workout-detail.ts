@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   effect,
   inject,
   OnInit,
@@ -17,7 +16,6 @@ import { WorkoutActions } from '../../components/workout-actions/workout-actions
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
-import { User } from '../../../../core/services/user';
 
 @Component({
   selector: 'app-workout-detail',
@@ -38,17 +36,10 @@ import { User } from '../../../../core/services/user';
 export class WorkoutDetailPage implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private userService = inject(User);
 
   // Inject services
   public dataService = inject(WorkoutDetailDataService);
   public coordinatorService = inject(WorkoutDetailCoordinatorService);
-
-  // Check if socials are disabled from user profile
-  public readonly socialsDisabled = computed(() => {
-    const userInfo = this.userService.getUserInfo()();
-    return userInfo?.profile?.socials_disabled ?? false;
-  });
 
   public constructor() {
     // React to interval selection changes

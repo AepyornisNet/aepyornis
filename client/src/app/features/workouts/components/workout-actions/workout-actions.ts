@@ -1,14 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { Workout, WorkoutDetail } from '../../../../core/types/workout';
 import { TranslatePipe } from '@ngx-translate/core';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { User } from '../../../../core/services/user';
 
 @Component({
   selector: 'app-workout-actions',
-  imports: [CommonModule, AppIcon, TranslatePipe],
+  imports: [CommonModule, AppIcon, TranslatePipe, NgbDropdownModule, RouterLink],
   templateUrl: './workout-actions.html',
   styleUrl: './workout-actions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,18 +18,26 @@ import { TranslatePipe } from '@ngx-translate/core';
 export class WorkoutActions {
   public readonly workout = input.required<Workout | WorkoutDetail>();
   public readonly compact = input<boolean>(false);
+  public readonly hasMapData = input<boolean>(false);
 
   public readonly workoutUpdated = output<Workout>();
   public readonly workoutDeleted = output<void>();
 
   private api = inject(Api);
   private router = inject(Router);
+  private userService = inject(User);
 
   public readonly showDeleteConfirm = signal(false);
   public readonly showShareMenu = signal(false);
   public readonly isProcessing = signal(false);
   public readonly errorMessage = signal<string | null>(null);
   public readonly successMessage = signal<string | null>(null);
+
+  // Check if socials are disabled from user profile
+  public readonly socialsDisabled = computed(() => {
+    const userInfo = this.userService.getUserInfo()();
+    return userInfo?.profile?.socials_disabled ?? false;
+  });
 
   public toggleLock(): void {
     if (this.isProcessing()) {

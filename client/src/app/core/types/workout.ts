@@ -57,7 +57,7 @@ export type MapCenter = {
 };
 
 export type MapDataDetails = {
-  position: number[][]; // [[lat, lng], ...]
+  position: [number, number][]; // [[lat, lng], ...]
   time: string[];
   distance: number[]; // in km
   duration: number[]; // in seconds

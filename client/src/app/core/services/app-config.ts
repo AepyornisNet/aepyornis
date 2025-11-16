@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Api } from './api';
 import { AppInfo } from '../../core/types/user';
-import { catchError, of } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -12,10 +12,6 @@ export class AppConfig {
   private readonly appInfo = signal<AppInfo | null>(null);
   private readonly loading = signal<boolean>(false);
 
-  public constructor() {
-    this.loadAppInfo();
-  }
-
   public getAppInfo(): ReturnType<typeof this.appInfo.asReadonly> {
     return this.appInfo.asReadonly();
   }
@@ -24,22 +20,23 @@ export class AppConfig {
     return this.loading();
   }
 
-  public loadAppInfo(): void {
+  public loadAppInfo(): Observable<AppInfo | null> {
     this.loading.set(true);
-    this.api
+    return this.api
       .getAppInfo()
       .pipe(
         catchError(() => {
           console.error('Failed to load app info');
           return of(null);
         }),
-      )
-      .subscribe((response) => {
-        this.loading.set(false);
-        if (response && response.results) {
-          this.appInfo.set(response.results);
-        }
-      });
+        tap((response) => {
+          this.loading.set(false);
+          if (response && response.results) {
+            this.appInfo.set(response.results);
+          }
+        }),
+        map((response => response ? response.results : null))
+      );
   }
 
   public isRegistrationDisabled(): boolean {
