@@ -1,0 +1,7 @@
+@use 'leaflet/dist/leaflet.css';
+
+.route-segment-map {
+  .leaflet-control-container {
+    font-size: 12px;
+  }
+}

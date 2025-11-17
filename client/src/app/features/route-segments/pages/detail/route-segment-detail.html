@@ -54,20 +54,10 @@
         <div class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title mb-3">{{ 'translation.route_map' | translate }}</h5>
-            <!-- Map placeholder - will be implemented in a separate component -->
-            <div
-              class="bg-light d-flex align-items-center justify-content-center"
-              style="height: 400px; border-radius: 8px"
-            >
-              <div class="text-center text-muted">
-                <app-icon name="route-segment" size="48" />
-                <p class="mt-2">{{ 'translation.map_visualization_coming_soon' | translate }}</p>
-                <small
-                  >{{ routeSegment()!.points.length }}
-                  {{ 'translation.gps_points' | translate }}</small
-                >
-              </div>
-            </div>
+            <app-route-segment-map
+              [points]="routeSegment()!.points"
+              [center]="routeSegment()!.center"
+            />
           </div>
         </div>
       </div>

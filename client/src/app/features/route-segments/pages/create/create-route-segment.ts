@@ -14,10 +14,11 @@ import { Api } from '../../../../core/services/api';
 import { WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
+import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
 
 @Component({
   selector: 'app-create-route-segment',
-  imports: [CommonModule, FormsModule, AppIcon, TranslatePipe],
+  imports: [CommonModule, FormsModule, AppIcon, TranslatePipe, RouteSegmentMapComponent],
   templateUrl: './create-route-segment.html',
   styleUrl: './create-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,8 +35,8 @@ export class CreateRouteSegmentPage implements OnInit {
 
   // Form fields
   public readonly name = signal('');
-  public readonly start = signal(1);
-  public readonly end = signal(1);
+  public readonly start = signal(1); // 1-based for UI
+  public readonly end = signal(1);   // 1-based for UI
 
   // Computed values
   public readonly totalPoints = computed(() => {
@@ -57,7 +58,28 @@ export class CreateRouteSegmentPage implements OnInit {
       return 0;
     }
 
-    return Math.abs(distances[endIdx] - distances[startIdx]);
+    return Math.abs(distances[endIdx] - distances[startIdx]); // convert to km
+  });
+
+  public readonly workoutPoints = computed(() => {
+    const w = this.workout();
+    if (!w?.map_data?.details?.position || !w.map_data.details.elevation || !w.map_data.details.distance) {
+      return [];
+    }
+    return w.map_data.details.position.map((p: [number, number], i: number) => ({
+      lat: p[0],
+      lng: p[1],
+      elevation: w.map_data!.details!.elevation![i] ?? 0,
+      total_distance: w.map_data!.details!.distance![i] ?? 0,
+    }));
+  });
+
+  public readonly selection = computed(() => {
+    const total = this.totalPoints();
+    if (total < 2) { return null; }
+    const startIdx = Math.max(0, Math.min(this.start() - 1, total - 2));
+    const endIdx = Math.max(startIdx + 1, Math.min(this.end() - 1, total - 1));
+    return { startIndex: startIdx, endIndex: endIdx };
   });
 
   public ngOnInit(): void {
@@ -95,8 +117,6 @@ export class CreateRouteSegmentPage implements OnInit {
 
   public updateStart(value: number): void {
     this.start.set(value);
-
-    // Ensure start is not greater than end
     if (value > this.end()) {
       this.end.set(value);
     }
@@ -104,22 +124,15 @@ export class CreateRouteSegmentPage implements OnInit {
 
   public updateEnd(value: number): void {
     this.end.set(value);
-
-    // Ensure end is not less than start
     if (value < this.start()) {
       this.start.set(value);
     }
   }
 
   public async createRouteSegment(): Promise<void> {
-    if (this.creating()) {
-      return;
-    }
-
+    if (this.creating()) { return; }
     const w = this.workout();
-    if (!w) {
-      return;
-    }
+    if (!w) { return; }
 
     this.creating.set(true);
     this.error.set(null);
@@ -132,9 +145,7 @@ export class CreateRouteSegmentPage implements OnInit {
           end: this.end(),
         }),
       );
-
       if (response) {
-        // Navigate to the created route segment
         this.router.navigate(['/route-segments', response.results.id]);
       }
     } catch (err) {

@@ -36,19 +36,10 @@
         <div class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title mb-3">{{ 'translation.route_preview' | translate }}</h5>
-            <!-- Map placeholder - will be implemented in a separate component -->
-            <div
-              class="bg-light d-flex align-items-center justify-content-center"
-              style="height: 400px; border-radius: 8px"
-            >
-              <div class="text-center text-muted">
-                <app-icon name="route-segment" size="48" />
-                <p class="mt-2">{{ 'translation.interactive_map_coming_soon' | translate }}</p>
-                <small
-                  >{{ totalPoints() }} {{ 'translation.gps_points_available' | translate }}</small
-                >
-              </div>
-            </div>
+            <app-route-segment-map
+              [points]="workoutPoints()"
+              [selection]="selection()"
+            />
           </div>
         </div>
       </div>
@@ -115,7 +106,7 @@
               </div>
 
               <div class="mb-4">
-                <div class="card bg-light">
+                <div class="card bg-primary-subtle text-primary-emphasis">
                   <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                       <span class="text-muted">{{

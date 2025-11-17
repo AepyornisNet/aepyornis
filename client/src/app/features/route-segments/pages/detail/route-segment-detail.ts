@@ -7,10 +7,11 @@ import { RouteSegmentDetail } from '../../../../core/types/route-segment';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
 import { TranslatePipe } from '@ngx-translate/core';
+import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
 
 @Component({
   selector: 'app-route-segment-detail',
-  imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe],
+  imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe, RouteSegmentMapComponent],
   templateUrl: './route-segment-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
