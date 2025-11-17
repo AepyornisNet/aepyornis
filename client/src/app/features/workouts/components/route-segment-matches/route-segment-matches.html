@@ -1,0 +1,10 @@
+<div class="list-group">
+  @for (match of matches(); track match.route_segment_id) {
+    <div class="list-group-item">
+      <h6 class="mb-1">{{ match.route_segment.name }}</h6>
+      <p class="mb-1 text-muted">
+        {{ formatDistance(match.route_segment.total_distance) }} km
+      </p>
+    </div>
+  }
+</div>

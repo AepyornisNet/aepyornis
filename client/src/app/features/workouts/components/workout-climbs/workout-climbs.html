@@ -1,0 +1,32 @@
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>{{ 'translation.type' | translate }}</th>
+        <th>{{ 'translation.start' | translate }}</th>
+        <th>{{ 'translation.distance' | translate }}</th>
+        <th>{{ 'translation.elevation' | translate }}</th>
+        <th>{{ 'translation.average_slope' | translate }}</th>
+        <th>{{ 'translation.category' | translate }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (climb of climbs(); track climb.index) {
+        <tr>
+          <td>
+            @if (climb.type === 'climb') {
+              <span class="text-success">↑ Climb {{ climb.index }}</span>
+            } @else {
+              <span class="text-warning">↓ Descent {{ climb.index }}</span>
+            }
+          </td>
+          <td>{{ formatDistance(climb.start_distance) }} km</td>
+          <td>{{ formatDistance(climb.length) }} km</td>
+          <td>{{ formatElevation(climb.elevation) }} m</td>
+          <td>{{ climb.avg_slope.toFixed(1) }}%</td>
+          <td>{{ climb.category }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

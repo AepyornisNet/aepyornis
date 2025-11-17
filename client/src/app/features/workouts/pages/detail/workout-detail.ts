@@ -6,13 +6,15 @@ import {
   OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { WorkoutMapComponent } from '../../components/workout-map/workout-map';
 import { WorkoutChartComponent } from '../../components/workout-chart/workout-chart';
 import { WorkoutBreakdownComponent } from '../../components/workout-breakdown/workout-breakdown';
 import { WorkoutActions } from '../../components/workout-actions/workout-actions';
+import { RouteSegmentMatchesComponent } from '../../components/route-segment-matches/route-segment-matches';
+import { WorkoutClimbsComponent } from '../../components/workout-climbs/workout-climbs';
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
@@ -21,12 +23,13 @@ import { Workout } from '../../../../core/types/workout';
   selector: 'app-workout-detail',
   imports: [
     CommonModule,
-    RouterLink,
     AppIcon,
     WorkoutMapComponent,
     WorkoutChartComponent,
     WorkoutBreakdownComponent,
     WorkoutActions,
+    RouteSegmentMatchesComponent,
+    WorkoutClimbsComponent,
     TranslatePipe,
   ],
   templateUrl: './workout-detail.html',
