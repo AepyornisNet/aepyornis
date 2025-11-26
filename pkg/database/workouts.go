@@ -334,7 +334,7 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 
 	gpxContent, err := converters.ParseCollection(filename, content)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not parse workout data: %w", err)
 	}
 
 	workouts := make([]*Workout, len(gpxContent))

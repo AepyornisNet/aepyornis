@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -16,11 +17,11 @@ import (
 
 func ParseFit(content []byte) (*gpx.GPX, error) {
 	// Decode the FIT file data
-	dec := decoder.New(bytes.NewReader(content))
+	dec := decoder.New(bytes.NewReader(content), decoder.WithIgnoreChecksum())
 
 	f, err := dec.Decode()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode FIT file: %w", err)
 	}
 
 	act := filedef.NewActivity(f.Messages...)
