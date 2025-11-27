@@ -25,7 +25,7 @@ COPY pkg ./pkg
 COPY vendor ./vendor
 COPY assets ./assets
 COPY translations ./translations
-COPY --from=client /app/assets ./assets
+COPY --from=client /app/assets/client ./assets/client
 
 ENV CGO_ENABLED=0
 RUN go build \
