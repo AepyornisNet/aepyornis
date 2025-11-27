@@ -75,20 +75,12 @@ func (a *App) ConfigureWebserver() error {
 	a.apiRoutes(publicGroup)
 	a.apiV2Routes(publicGroup)
 
-	if a.AssetDir != "" {
-		publicGroup.Static("/assets", a.AssetDir)
-	} else {
-		publicGroup.StaticFS("/assets", a.Assets)
-	}
-
-	publicGroup.GET("/assets", func(c echo.Context) error {
-		return c.Redirect(http.StatusFound, a.echo.Reverse("dashboard"))
-	}).Name = "assets"
-
 	authGroup := publicGroup.Group("/auth")
 	authGroup.POST("/signin", a.userSigninHandler).Name = "user-signin"
 	authGroup.POST("/register", a.userRegisterHandler).Name = "user-register"
 	authGroup.GET("/signout", a.userSignoutHandler).Name = "user-signout"
+
+	publicGroup.GET("/*", a.serveClientAppHandler).Name = "client-app"
 
 	a.echo = e
 

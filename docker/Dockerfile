@@ -1,19 +1,12 @@
-FROM node:24-alpine AS frontend
+FROM node:24-alpine AS client
 
 RUN apk --no-cache add make
 
 WORKDIR /app
-
-COPY frontend ./frontend
-RUN cd frontend && \
-  npm ci
+COPY client ./client
 
 COPY Makefile ./
-COPY assets ./assets
-COPY views ./views
-COPY translations ./translations
-
-RUN make build-frontend
+RUN make build-client
 
 FROM golang:1.25.1-alpine AS backend
 ARG BUILD_TIME
@@ -30,10 +23,9 @@ RUN go mod download
 COPY cmd ./cmd
 COPY pkg ./pkg
 COPY vendor ./vendor
-COPY views ./views
 COPY assets ./assets
 COPY translations ./translations
-COPY --from=frontend /app/assets ./assets
+COPY --from=client /app/assets ./assets
 
 ENV CGO_ENABLED=0
 RUN go build \

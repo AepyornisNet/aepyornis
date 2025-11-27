@@ -30,7 +30,7 @@ release:
 	@echo "- gh release create --generate-notes $(VERSION)"
 
 install-deps:
-	cd client && npm install
+	cd client && npm ci
 
 clean:
 	rm -fv ./assets/output.css ./workout-tracker
@@ -81,10 +81,10 @@ dev-docker-clean:
 			--profile dev-postgres \
 			down --remove-orphans --volumes
 
-build: build-server build-docker screenshots
+build: build-client build-server build-docker screenshots
 meta: swagger screenshots changelog
 
-build-cli: build-frontend build-templates
+build-cli:
 	go build \
 			-ldflags "-X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.gitRef=$(GIT_REF)' -X 'main.gitRefName=$(GIT_REF_NAME)' -X 'main.gitRefType=$(GIT_REF_TYPE)'" \
 			-o $(WT_DEBUG_OUTPUT_FILE) ./cmd/wt-debug/
@@ -99,6 +99,7 @@ build-client: install-deps
 
 build-docker:
 	docker build \
+			-f ./docker/Dockerfile \
 			-t workout-tracker --pull \
 			--build-arg BUILD_TIME="$(BUILD_TIME)" \
 			--build-arg GIT_COMMIT="$(GIT_COMMIT)" \
