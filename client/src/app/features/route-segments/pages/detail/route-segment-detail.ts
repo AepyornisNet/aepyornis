@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -11,7 +11,7 @@ import { RouteSegmentMapComponent } from '../../components/route-segment-map/rou
 
 @Component({
   selector: 'app-route-segment-detail',
-  imports: [CommonModule, RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe, RouteSegmentMapComponent],
+  imports: [RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe, RouteSegmentMapComponent],
   templateUrl: './route-segment-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

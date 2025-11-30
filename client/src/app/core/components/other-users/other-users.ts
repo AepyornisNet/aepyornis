@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -16,7 +16,7 @@ import { UserProfile } from '../../types/user';
 
 @Component({
   selector: 'app-other-users',
-  imports: [CommonModule, RouterLink, AppIcon, TranslatePipe],
+  imports: [RouterLink, AppIcon, TranslatePipe],
   templateUrl: './other-users.html',
   styleUrl: './other-users.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

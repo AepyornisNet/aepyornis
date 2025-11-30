@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
@@ -8,7 +8,7 @@ import { RouteSegment, RouteSegmentDetail } from '../../../../core/types/route-s
 
 @Component({
   selector: 'app-route-segment-actions',
-  imports: [CommonModule, AppIcon, TranslatePipe],
+  imports: [AppIcon, TranslatePipe],
   templateUrl: './route-segment-actions.html',
   styleUrl: './route-segment-actions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

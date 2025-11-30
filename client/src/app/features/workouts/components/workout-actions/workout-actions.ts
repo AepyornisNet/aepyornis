@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router, RouterLink } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
@@ -10,7 +10,7 @@ import { User } from '../../../../core/services/user';
 
 @Component({
   selector: 'app-workout-actions',
-  imports: [CommonModule, AppIcon, TranslatePipe, NgbDropdownModule, RouterLink],
+  imports: [AppIcon, TranslatePipe, NgbDropdownModule, RouterLink],
   templateUrl: './workout-actions.html',
   styleUrl: './workout-actions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

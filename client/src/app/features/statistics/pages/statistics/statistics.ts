@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -15,7 +15,7 @@ type StatisticOption = {
 
 @Component({
   selector: 'app-statistics',
-  imports: [CommonModule, ReactiveFormsModule, AppIcon, StatisticChartComponent],
+  imports: [ReactiveFormsModule, AppIcon, StatisticChartComponent],
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

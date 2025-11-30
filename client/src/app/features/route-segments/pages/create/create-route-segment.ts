@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -18,7 +18,7 @@ import { RouteSegmentMapComponent } from '../../components/route-segment-map/rou
 
 @Component({
   selector: 'app-create-route-segment',
-  imports: [CommonModule, FormsModule, AppIcon, TranslatePipe, RouteSegmentMapComponent],
+  imports: [FormsModule, AppIcon, TranslatePipe, RouteSegmentMapComponent],
   templateUrl: './create-route-segment.html',
   styleUrl: './create-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

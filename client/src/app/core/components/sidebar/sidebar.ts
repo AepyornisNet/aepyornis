@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { AppIcon } from '../app-icon/app-icon';
 import { User } from '../../../core/services/user';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
@@ -14,7 +14,7 @@ type MenuItem = {
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive, CommonModule, AppIcon, NgbTooltipModule],
+  imports: [RouterLink, RouterLinkActive, AppIcon, NgbTooltipModule],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

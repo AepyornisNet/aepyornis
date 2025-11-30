@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, effect, ElementRef, input, OnDestroy, viewChild, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import * as L from 'leaflet';
 import { MapPoint } from '../../../../core/types/route-segment';
 
 @Component({
   selector: 'app-route-segment-map',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './route-segment-map.html',
   styleUrls: ['./route-segment-map.scss'],
   encapsulation: ViewEncapsulation.None,

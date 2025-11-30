@@ -9,7 +9,7 @@ import {
   OnDestroy,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   CategoryScale,
   Chart,
@@ -59,7 +59,7 @@ type MetricConfig = {
 
 @Component({
   selector: 'app-workout-chart',
-  imports: [CommonModule, TranslatePipe],
+  imports: [TranslatePipe],
   templateUrl: './workout-chart.html',
   styleUrl: './workout-chart.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

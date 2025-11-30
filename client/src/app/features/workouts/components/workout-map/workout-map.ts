@@ -9,7 +9,7 @@ import {
   viewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import * as L from 'leaflet';
 import { MapCenter, MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
@@ -24,7 +24,7 @@ type PolyLineProps = {
 
 @Component({
   selector: 'app-workout-map',
-  imports: [CommonModule],
+  imports: [],
   encapsulation: ViewEncapsulation.None,
   templateUrl: './workout-map.html',
   styleUrls: ['./workout-map.scss'],

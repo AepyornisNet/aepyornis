@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -16,7 +16,7 @@ import { Api } from '../../../../core/services/api';
 
 @Component({
   selector: 'app-recent-activity',
-  imports: [CommonModule, RouterLink, AppIcon, TranslatePipe],
+  imports: [RouterLink, AppIcon, TranslatePipe],
   templateUrl: './recent-activity.html',
   styleUrl: './recent-activity.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

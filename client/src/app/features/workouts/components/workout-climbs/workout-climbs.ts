@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { ClimbSegment } from '../../../../core/types/workout';
 
 @Component({
   selector: 'app-workout-climbs',
-  imports: [CommonModule, TranslatePipe],
+  imports: [TranslatePipe],
   templateUrl: './workout-climbs.html',
   styleUrl: './workout-climbs.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

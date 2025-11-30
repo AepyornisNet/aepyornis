@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -22,7 +22,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-create',
-  imports: [CommonModule, ReactiveFormsModule, AppIcon, TranslatePipe],
+  imports: [ReactiveFormsModule, AppIcon, TranslatePipe],
   templateUrl: './workout-create.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

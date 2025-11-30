@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Totals, WorkoutRecord } from '../../../../core/types/workout';
@@ -11,7 +11,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, WorkoutCalendar, KeyMetrics, Records, RecentActivity, TranslatePipe],
+  imports: [WorkoutCalendar, KeyMetrics, Records, RecentActivity, TranslatePipe],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

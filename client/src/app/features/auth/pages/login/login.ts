@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import {
   FormBuilder,
@@ -17,7 +17,7 @@ import { PublicLayout } from '../../../../layouts/public-layout/public-layout';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PublicLayout, TranslatePipe],
+  imports: [FormsModule, ReactiveFormsModule, PublicLayout, TranslatePipe],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { WorkoutRecord } from '../../../../core/types/workout';
 
 @Component({
   selector: 'app-records',
-  imports: [CommonModule, RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './records.html',
   styleUrl: './records.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

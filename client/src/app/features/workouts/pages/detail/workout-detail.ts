@@ -5,7 +5,7 @@ import {
   inject,
   OnInit,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -22,7 +22,6 @@ import { Workout } from '../../../../core/types/workout';
 @Component({
   selector: 'app-workout-detail',
   imports: [
-    CommonModule,
     AppIcon,
     WorkoutMapComponent,
     WorkoutChartComponent,
@@ -30,8 +29,8 @@ import { Workout } from '../../../../core/types/workout';
     WorkoutActions,
     RouteSegmentMatchesComponent,
     WorkoutClimbsComponent,
-    TranslatePipe,
-  ],
+    TranslatePipe
+],
   templateUrl: './workout-detail.html',
   styleUrl: './workout-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

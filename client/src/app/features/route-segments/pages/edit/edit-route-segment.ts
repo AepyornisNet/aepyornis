@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -10,7 +10,7 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 
 @Component({
   selector: 'app-edit-route-segment',
-  imports: [CommonModule, ReactiveFormsModule, AppIcon, TranslatePipe],
+  imports: [ReactiveFormsModule, AppIcon, TranslatePipe],
   templateUrl: './edit-route-segment.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -7,7 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AppIcon } from '../app-icon/app-icon';
 import { TranslateService } from '@ngx-translate/core';
@@ -20,7 +20,7 @@ type Language = {
 
 @Component({
   selector: 'app-header',
-  imports: [CommonModule, FormsModule, AppIcon],
+  imports: [FormsModule, AppIcon],
   templateUrl: './header.html',
   styleUrl: './header.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

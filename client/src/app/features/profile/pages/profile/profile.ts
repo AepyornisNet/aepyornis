@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -8,7 +8,7 @@ import { FullUserProfile } from '../../../../core/types/user';
 
 @Component({
   selector: 'app-profile',
-  imports: [CommonModule, AppIcon, ReactiveFormsModule],
+  imports: [AppIcon, ReactiveFormsModule],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

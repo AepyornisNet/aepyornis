@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -10,7 +10,7 @@ import { PaginatedListView } from '../../../../core/components/paginated-list-vi
 
 @Component({
   selector: 'app-measurements',
-  imports: [CommonModule, AppIcon, TranslatePipe],
+  imports: [AppIcon, TranslatePipe],
   templateUrl: './measurements.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

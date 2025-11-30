@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import {
@@ -10,7 +10,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-breakdown',
-  imports: [CommonModule, TranslatePipe],
+  imports: [TranslatePipe],
   templateUrl: './workout-breakdown.html',
   styleUrl: './workout-breakdown.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

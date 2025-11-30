@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
@@ -9,7 +9,7 @@ import { UserProfile } from '../../../../core/types/user';
 
 @Component({
   selector: 'app-user-edit',
-  imports: [CommonModule, RouterLink, AppIcon, ReactiveFormsModule],
+  imports: [RouterLink, AppIcon, ReactiveFormsModule],
   templateUrl: './user-edit.html',
   styleUrl: './user-edit.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

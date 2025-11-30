@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -14,7 +14,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 // TODO: Implement filtering and sorting of workouts
 @Component({
   selector: 'app-workouts',
-  imports: [CommonModule, RouterLink, AppIcon, WorkoutActions, Pagination, TranslatePipe],
+  imports: [RouterLink, AppIcon, WorkoutActions, Pagination, TranslatePipe],
   templateUrl: './workouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

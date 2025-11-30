@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Totals } from '../../../../core/types/workout';
 
 @Component({
   selector: 'app-key-metrics',
-  imports: [CommonModule, AppIcon, TranslatePipe],
+  imports: [AppIcon, TranslatePipe],
   templateUrl: './key-metrics.html',
   styleUrl: './key-metrics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

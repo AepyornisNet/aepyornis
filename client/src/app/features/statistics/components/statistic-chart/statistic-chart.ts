@@ -8,7 +8,7 @@ import {
   OnDestroy,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   BarController,
   BarElement,
@@ -38,7 +38,7 @@ Chart.register(
 
 @Component({
   selector: 'app-statistic-chart',
-  imports: [CommonModule],
+  imports: [],
   template: ` <canvas #chartCanvas></canvas> `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -99,7 +99,7 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
             callbacks: {
               label: (context) => {
                 const label = context.dataset.label || '';
-                const value = context.parsed.y;
+                const value = context.parsed.y || 0;
                 return this.formatTooltipValue(label, value);
               },
             },

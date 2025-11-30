@@ -11,7 +11,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -33,7 +33,7 @@ L.Icon.Default.mergeOptions({
 
 @Component({
   selector: 'app-heatmap',
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './heatmap.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./heatmap.scss'],
