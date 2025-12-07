@@ -34,6 +34,10 @@ func ParseFit(content []byte) (*gpx.GPX, error) {
 		activityTime = act.Sessions[0].StartTime.Local()
 	}
 
+	if activityTime.IsZero() {
+		activityTime = act.FileId.TimeCreated.Local()
+	}
+
 	name := act.Sessions[0].Sport.String() + " - " + activityTime.Format(time.DateTime)
 	gpxFile := &gpx.GPX{
 		Name:    name,
@@ -80,6 +84,10 @@ func ParseFit(content []byte) (*gpx.GPX, error) {
 
 		if r.Temperature != math.MaxInt8 {
 			gpxExtensionData["temperature"] = cast.ToString(r.Temperature)
+		}
+
+		if r.Power != math.MaxUint16 {
+			gpxExtensionData["power"] = cast.ToString(r.Power)
 		}
 
 		for key, value := range gpxExtensionData {

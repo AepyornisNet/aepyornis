@@ -435,6 +435,9 @@ export class WorkoutMapComponent implements OnDestroy {
       if (mapData.extra_metrics['temperature']?.[index]) {
         tooltip += `<li><b>Temperature</b>: ${(mapData.extra_metrics['temperature'][index] as number).toFixed(1)} °C</li>`;
       }
+      if (mapData.extra_metrics['power']?.[index]) {
+        tooltip += `<li><b>Power</b>: ${Math.round(mapData.extra_metrics['power'][index] as number)} W</li>`;
+      }
     }
 
     tooltip += '</ul>';

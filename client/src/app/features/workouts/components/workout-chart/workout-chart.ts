@@ -364,6 +364,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
       'heart-rate': 'Heart Rate',
       cadence: 'Cadence',
       temperature: 'Temperature',
+      power: 'Power',
     };
     return labels[metric] || metric;
   }
@@ -549,6 +550,14 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         formatterYaxis: true,
         hiddenByDefault: true,
         yaxis: {},
+      },
+      power: {
+        formatter: (val: number) =>
+          `${val !== null && val !== undefined ? val.toFixed(0) : '-'} W`,
+        labelFormatter: (val: number) => `${(val ?? 0).toFixed(0)} W`,
+        formatterYaxis: true,
+        hiddenByDefault: true,
+        yaxis: { min: 0, position: 'right' },
       },
     };
   }
