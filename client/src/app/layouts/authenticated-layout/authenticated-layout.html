@@ -1,7 +1,7 @@
 <div class="d-flex flex-row min-vh-100">
   <app-sidebar [isOpen]="sidebarOpen()" (sidebarToggle)="toggleSidebar()" />
 
-  <div class="d-flex flex-column flex-grow-1 position-relative">
+  <div class="app-content">
     <app-header
       class="sticky-top"
       [showSidebar]="sidebarOpen()"
