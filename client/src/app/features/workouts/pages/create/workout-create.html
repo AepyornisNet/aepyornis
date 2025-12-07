@@ -3,8 +3,8 @@
     <h1 class="display-4 mb-0">
       {{
         editMode()
-          ? ('translation.Edit_Workout' | translate)
-          : ('translation.Add_a_Workout' | translate)
+          ? ('workout.edit_workout' | translate)
+          : ('workout.Add_a_Workout' | translate)
       }}
     </h1>
   </div>
@@ -27,12 +27,12 @@
       <div class="col-12 col-lg-6">
         <div class="card shadow-sm">
           <div class="card-header">
-            <h5 class="mb-0">{{ 'translation.use_a_file' | translate }}</h5>
+            <h5 class="mb-0">{{ 'workout.use_a_file' | translate }}</h5>
           </div>
           <div class="card-body">
             <form #fileForm="ngForm" [formGroup]="fileUploadForm" (ngSubmit)="submitFileUpload()">
               <div class="mb-3">
-                <label class="form-label" for="file">{{ 'translation.file' | translate }}</label>
+                <label class="form-label" for="file">{{ 'route_segment.file' | translate }}</label>
                 <input
                   accept=".fit,.ftb,.gpx,.tcx,.zip"
                   class="form-control"
@@ -64,9 +64,9 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="type">{{ 'translation.type' | translate }}</label>
+                <label class="form-label" for="type">{{ 'workout.type' | translate }}</label>
                 <select class="form-select" formControlName="type" id="type" [disabled]="loading()">
-                  <option value="auto">{{ 'translation.autodetect' | translate }}</option>
+                  <option value="auto">{{ 'workout.autodetect' | translate }}</option>
                   @for (wt of workoutTypes; track wt.value) {
                     <option [value]="wt.value">{{ wt.value }}</option>
                   }
@@ -75,7 +75,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="file-notes">{{
-                  'translation.notes' | translate
+                  'equipment.notes' | translate
                 }}</label>
                 <textarea
                   class="form-control"
@@ -87,23 +87,23 @@
               </div>
 
               <div class="mb-3">
-                <p class="fw-bold mb-2">{{ 'translation.resources' | translate }}</p>
+                <p class="fw-bold mb-2">{{ 'workout.resources' | translate }}</p>
                 <p class="text-muted small">
                   {{
-                    'translation.You_can_edit_your_GPX_files_before_uploading_them_here' | translate
+                    'workout.You_can_edit_your_GPX_files_before_uploading_them_here' | translate
                   }}
                 </p>
                 <ul class="small text-muted">
-                  <li>{{ 'translation.split_files_with_multiple_tracks' | translate }}</li>
+                  <li>{{ 'workout.split_files_with_multiple_tracks' | translate }}</li>
                   <li>
-                    {{ 'translation.convert_from_not_yet_supported_file_format' | translate }}
+                    {{ 'workout.convert_from_not_yet_supported_file_format' | translate }}
                   </li>
                   <li>
-                    {{ 'translation.remove_the_beginning_or_the_ending_of_a_workout' | translate }}
+                    {{ 'workout.remove_the_beginning_or_the_ending_of_a_workout' | translate }}
                   </li>
                 </ul>
                 <p class="text-muted small">
-                  {{ 'translation.try_one_of_these_sites' | translate }}
+                  {{ 'workout.try_one_of_these_sites' | translate }}
                 </p>
                 <ul class="small">
                   <li>
@@ -135,7 +135,7 @@
                       role="status"
                     ></span>
                   }
-                  <span>{{ 'translation.add_workouts' | translate }}</span>
+                  <span>{{ 'workout.add_workouts' | translate }}</span>
                 </button>
               </div>
             </form>
@@ -150,7 +150,7 @@
         <div class="card-header">
           <h5 class="mb-0">
             {{
-              editMode() ? ('translation.details' | translate) : ('translation.manual' | translate)
+              editMode() ? ('equipment.details' | translate) : ('shared.manual' | translate)
             }}
           </h5>
         </div>
@@ -162,7 +162,7 @@
           >
             <div class="mb-3">
               <label class="form-label" for="workout-type">{{
-                'translation.Workout_type' | translate
+                'workout.Workout_type' | translate
               }}</label>
               <select
                 class="form-select"
@@ -173,7 +173,7 @@
                 [value]="manualWorkoutType()"
                 (change)="updateManualWorkoutType($any($event.target).value)"
               >
-                <option value="">{{ 'translation.select...' | translate }}</option>
+                <option value="">{{ 'workout.select' | translate }}</option>
                 @for (wt of workoutTypes; track wt.value) {
                   <option [value]="wt.value">{{ wt.value }}</option>
                 }
@@ -184,7 +184,7 @@
               @if (showCustomType()) {
                 <div class="mb-3">
                   <label class="form-label" for="custom-type">{{
-                    'translation.type' | translate
+                    'workout.type' | translate
                   }}</label>
                   <input
                     class="form-control"
@@ -198,7 +198,7 @@
               }
 
               <div class="mb-3">
-                <label class="form-label" for="name">{{ 'translation.name' | translate }}</label>
+                <label class="form-label" for="name">{{ 'equipment.name' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="name"
@@ -210,7 +210,7 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="date">{{ 'translation.date' | translate }}</label>
+                <label class="form-label" for="date">{{ 'workout.date' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="date"
@@ -224,7 +224,7 @@
               @if (showLocation()) {
                 <div class="mb-3">
                   <label class="form-label" for="location">{{
-                    'translation.location' | translate
+                    'route_segment.location' | translate
                   }}</label>
                   <input
                     class="form-control"
@@ -239,7 +239,7 @@
               @if (showDuration()) {
                 <div class="mb-3">
                   <label class="form-label" for="duration-hours">{{
-                    'translation.duration' | translate
+                    'dashboard.duration' | translate
                   }}</label>
                   <div class="d-flex align-items-center gap-2">
                     <input
@@ -286,7 +286,7 @@
               @if (showDistance()) {
                 <div class="mb-3">
                   <label class="form-label" for="distance">{{
-                    'translation.distance' | translate
+                    'dashboard.distance' | translate
                   }}</label>
                   <div class="input-group">
                     <input
@@ -306,7 +306,7 @@
               @if (showRepetitions()) {
                 <div class="mb-3">
                   <label class="form-label" for="repetitions">{{
-                    'translation.repetitions' | translate
+                    'workout.repetitions' | translate
                   }}</label>
                   <input
                     class="form-control"
@@ -323,7 +323,7 @@
               @if (showWeight()) {
                 <div class="mb-3">
                   <label class="form-label" for="weight">{{
-                    'translation.weight' | translate
+                    'measurements.weight' | translate
                   }}</label>
                   <div class="input-group">
                     <input
@@ -342,7 +342,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="manual-notes">{{
-                  'translation.notes' | translate
+                  'equipment.notes' | translate
                 }}</label>
                 <textarea
                   class="form-control"
@@ -355,7 +355,7 @@
 
               @if (equipment().length > 0) {
                 <div class="mb-3">
-                  <p class="fw-bold mb-2">{{ 'translation.equipment' | translate }}</p>
+                  <p class="fw-bold mb-2">{{ 'equipment.equipment' | translate }}</p>
                   <div class="d-flex flex-wrap gap-2">
                     @for (eq of equipment(); track eq.id) {
                       <div class="form-check">
@@ -391,8 +391,8 @@
                   }
                   <span>{{
                     editMode()
-                      ? ('translation.The_workout_s_has_been_updated' | translate)
-                      : ('translation.Add_Workout' | translate)
+                      ? ('workout.The_workout_s_has_been_updated' | translate)
+                      : ('workout.Add_Workout' | translate)
                   }}</span>
                 </button>
               </div>

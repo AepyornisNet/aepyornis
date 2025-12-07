@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -18,14 +18,14 @@
       <div>
         <button class="btn btn-link p-0 mb-2" (click)="goBack()">
           <app-icon name="back" size="20" />
-          <span>{{ 'translation.back_to_workout' | translate }}</span>
+          <span>{{ 'route_segment.back_to_workout' | translate }}</span>
         </button>
         <h1 class="display-4 mb-0">
           <app-icon name="route-segment-add" size="48" />
-          <span>{{ 'translation.create_route_segment' | translate }}</span>
+          <span>{{ 'route_segment.create_route_segment' | translate }}</span>
         </h1>
         <p class="text-muted">
-          {{ 'translation.Create_a_route_segment_from' | translate: { name: workout()!.name } }}
+          {{ 'route_segment.Create_a_route_segment_from' | translate: { name: workout()!.name } }}
         </p>
       </div>
     </div>
@@ -35,7 +35,7 @@
       <div class="col-lg-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'translation.route_preview' | translate }}</h5>
+            <h5 class="card-title mb-3">{{ 'route_segment.route_preview' | translate }}</h5>
             <app-route-segment-map
               [points]="workoutPoints()"
               [selection]="selection()"
@@ -48,11 +48,11 @@
       <div class="col-lg-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'translation.segment_details' | translate }}</h5>
+            <h5 class="card-title mb-3">{{ 'route_segment.segment_details' | translate }}</h5>
 
             <form (ngSubmit)="createRouteSegment()">
               <div class="mb-3">
-                <label class="form-label" for="name">{{ 'translation.name' | translate }}</label>
+                <label class="form-label" for="name">{{ 'equipment.name' | translate }}</label>
                 <input
                   class="form-control"
                   id="name"
@@ -65,7 +65,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="start">{{
-                  'translation.Start_Point' | translate
+                  'route_segment.Start_Point' | translate
                 }}</label>
                 <div class="d-flex align-items-center gap-2">
                   <input
@@ -80,13 +80,13 @@
                   <span class="badge bg-primary">{{ start() }}</span>
                 </div>
                 <small class="text-muted">{{
-                  'translation.Select_the_starting_point_of_your_route_segment' | translate
+                  'route_segment.Select_the_starting_point_of_your_route_segment' | translate
                 }}</small>
               </div>
 
               <div class="mb-3">
                 <label class="form-label" for="end">{{
-                  'translation.End_Point' | translate
+                  'route_segment.End_Point' | translate
                 }}</label>
                 <div class="d-flex align-items-center gap-2">
                   <input
@@ -101,7 +101,7 @@
                   <span class="badge bg-primary">{{ end() }}</span>
                 </div>
                 <small class="text-muted">{{
-                  'translation.Select_the_ending_point_of_your_route_segment' | translate
+                  'route_segment.Select_the_ending_point_of_your_route_segment' | translate
                 }}</small>
               </div>
 
@@ -110,7 +110,7 @@
                   <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                       <span class="text-muted">{{
-                        'translation.Selected_Distance' | translate
+                        'route_segment.Selected_Distance' | translate
                       }}</span>
                       <span class="h5 mb-0">{{ selectedDistance().toFixed(2) }} km</span>
                     </div>
@@ -130,10 +130,10 @@
                       class="spinner-border spinner-border-sm me-2"
                       role="status"
                     ></span>
-                    <span>{{ 'translation.creating' | translate }}</span>
+                    <span>{{ 'route_segment.creating' | translate }}</span>
                   } @else {
                     <app-icon name="route-segment-add" size="20" />
-                    <span>{{ 'translation.create_route_segment' | translate }}</span>
+                    <span>{{ 'route_segment.create_route_segment' | translate }}</span>
                   }
                 </button>
                 <button
@@ -142,7 +142,7 @@
                   [disabled]="creating()"
                   (click)="goBack()"
                 >
-                  <span>{{ 'translation.cancel' | translate }}</span>
+                  <span>{{ 'equipment.cancel' | translate }}</span>
                 </button>
               </div>
             </form>

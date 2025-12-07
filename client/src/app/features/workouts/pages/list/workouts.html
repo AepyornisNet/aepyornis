@@ -1,14 +1,14 @@
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="display-4 mb-0">{{ 'translation.workouts' | translate }}</h1>
+    <h1 class="display-4 mb-0">{{ 'dashboard.workouts' | translate }}</h1>
     <div class="d-flex align-items-center gap-3">
       @if (totalCount() > 0) {
         <div class="text-muted">
-          <span>{{ totalCount() }} {{ 'translation.total_workouts' | translate }}</span>
+          <span>{{ totalCount() }} {{ 'workout.total_workouts' | translate }}</span>
         </div>
       }
       <button class="btn btn-success" [routerLink]="['/workouts/add']">
-        <span>{{ 'translation.add_workout' | translate }}</span>
+        <span>{{ 'measurements.add_workout' | translate }}</span>
       </button>
     </div>
   </div>
@@ -16,7 +16,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -31,9 +31,9 @@
     @if (!hasWorkouts()) {
       <div class="card shadow-sm">
         <div class="card-body text-center py-5">
-          <h5 class="card-title">{{ 'translation.no_workouts_yet' | translate }}</h5>
+          <h5 class="card-title">{{ 'workout.no_workouts_yet' | translate }}</h5>
           <p class="card-text text-muted">
-            {{ 'translation.workouts_placeholder' | translate }}
+            {{ 'dashboard.workouts_placeholder' | translate }}
           </p>
         </div>
       </div>
@@ -44,16 +44,16 @@
           <table class="table table-hover mb-0">
             <thead>
               <tr>
-                <th>{{ 'translation.type' | translate }}</th>
-                <th>{{ 'translation.name' | translate }}</th>
-                <th>{{ 'translation.date' | translate }}</th>
-                <th class="text-end">{{ 'translation.distance' | translate }}</th>
-                <th class="text-end">{{ 'translation.duration' | translate }}</th>
+                <th>{{ 'workout.type' | translate }}</th>
+                <th>{{ 'equipment.name' | translate }}</th>
+                <th>{{ 'workout.date' | translate }}</th>
+                <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
+                <th class="text-end">{{ 'dashboard.duration' | translate }}</th>
                 <th class="text-end d-none d-md-table-cell">
-                  {{ 'translation.average_speed' | translate }}
+                  {{ 'dashboard.average_speed' | translate }}
                 </th>
                 <th class="text-end d-none d-lg-table-cell">
-                  {{ 'translation.actions' | translate }}
+                  {{ 'equipment.actions' | translate }}
                 </th>
               </tr>
             </thead>

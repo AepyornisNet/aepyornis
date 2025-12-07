@@ -3,7 +3,7 @@
     <h1 class="display-4 mb-0">{{ 'menu.route_segments' | translate }}</h1>
     <div class="text-muted">
       @if (totalCount() > 0) {
-        <span>{{ totalCount() }} {{ 'translation.route_segment' | translate }}</span>
+        <span>{{ totalCount() }} {{ 'route_segment.route_segment' | translate }}</span>
       }
     </div>
   </div>
@@ -11,7 +11,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -26,9 +26,9 @@
     @if (!hasRouteSegments()) {
       <div class="card shadow-sm">
         <div class="card-body text-center py-5">
-          <h5 class="card-title">{{ 'translation.no_route_segments' | translate }}</h5>
+          <h5 class="card-title">{{ 'route_segment.no_route_segments' | translate }}</h5>
           <p class="card-text text-muted">
-            {{ 'translation.route_segments_placeholder' | translate }}
+            {{ 'route_segment.route_segments_placeholder' | translate }}
           </p>
         </div>
       </div>
@@ -39,19 +39,19 @@
           <table class="table table-hover mb-0">
             <thead>
               <tr>
-                <th>{{ 'translation.name' | translate }}</th>
-                <th class="text-end">{{ 'translation.distance' | translate }}</th>
+                <th>{{ 'equipment.name' | translate }}</th>
+                <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
                 <th class="text-end d-none d-md-table-cell">
-                  {{ 'translation.max_elevation' | translate }}
+                  {{ 'route_segment.max_elevation' | translate }}
                 </th>
                 <th class="text-end d-none d-lg-table-cell">
-                  {{ 'translation.matches' | translate }}
+                  {{ 'route_segment.matches' | translate }}
                 </th>
                 <th class="text-end d-none d-lg-table-cell">
-                  {{ 'translation.created' | translate }}
+                  {{ 'equipment.created' | translate }}
                 </th>
                 <th class="text-end d-none d-xl-table-cell">
-                  {{ 'translation.actions' | translate }}
+                  {{ 'equipment.actions' | translate }}
                 </th>
               </tr>
             </thead>
@@ -71,14 +71,14 @@
                           <br />
                           <small class="text-muted">
                             <app-icon name="bidirectional" size="14" />
-                            <span>{{ 'translation.bidirectional' | translate }}</span>
+                            <span>{{ 'route_segment.bidirectional' | translate }}</span>
                           </small>
                         }
                         @if (segment.circular) {
                           <br />
                           <small class="text-muted">
                             <app-icon name="circular" size="14" />
-                            <span>{{ 'translation.circular' | translate }}</span>
+                            <span>{{ 'route_segment.circular' | translate }}</span>
                           </small>
                         }
                       </div>
@@ -133,7 +133,7 @@
           <ul class="pagination justify-content-center">
             <li class="page-item" [class.disabled]="!hasPreviousPage()">
               <button class="page-link" [disabled]="!hasPreviousPage()" (click)="previousPage()">
-                {{ 'translation.last' | translate }}
+                {{ 'dashboard.last' | translate }}
               </button>
             </li>
 
@@ -153,7 +153,7 @@
 
             <li class="page-item" [class.disabled]="!hasNextPage()">
               <button class="page-link" [disabled]="!hasNextPage()" (click)="nextPage()">
-                {{ 'translation.next' | translate }}
+                {{ 'equipment.next' | translate }}
               </button>
             </li>
           </ul>
@@ -161,9 +161,9 @@
 
         <div class="text-center text-muted">
           <small>
-            {{ 'translation.page' | translate }} {{ currentPage() }}
-            {{ 'translation.of' | translate }} {{ totalPages() }} • {{ totalCount() }}
-            {{ 'translation.route_segment' | translate }}
+            {{ 'route_segment.page' | translate }} {{ currentPage() }}
+            {{ 'route_segment.of' | translate }} {{ totalPages() }} • {{ totalCount() }}
+            {{ 'route_segment.route_segment' | translate }}
           </small>
         </div>
       }

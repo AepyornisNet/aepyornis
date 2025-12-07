@@ -22,15 +22,15 @@
       [disabled]="isProcessing()"
       [title]="
         workout().locked
-          ? ('translation.Unlock_workout' | translate)
-          : ('translation.Lock_workout' | translate)
+          ? ('workout.Unlock_workout' | translate)
+          : ('workout.Lock_workout' | translate)
       "
       (click)="toggleLock()"
     >
       <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
       @if (!compact()) {
         <span class="ms-1">{{
-          workout().locked ? ('translation.unlock' | translate) : ('translation.lock' | translate)
+          workout().locked ? ('workout.unlock' | translate) : ('shared.lock' | translate)
         }}</span>
       }
     </button>
@@ -40,12 +40,12 @@
       <button
         class="btn btn-sm btn-outline-secondary"
         [disabled]="isProcessing()"
-        [title]="'translation.Download_original_file' | translate"
+        [title]="'workout.Download_original_file' | translate"
         (click)="download()"
       >
         <app-icon name="download" size="16" />
         @if (!compact()) {
-          <span class="ms-1">{{ 'translation.download' | translate }}</span>
+          <span class="ms-1">{{ 'route_segment.download' | translate }}</span>
         }
       </button>
     }
@@ -54,12 +54,12 @@
     <button
       class="btn btn-sm btn-outline-secondary"
       [disabled]="isProcessing()"
-      [title]="'translation.Edit_workout' | translate"
+  [title]="'workout.edit_workout' | translate"
       (click)="edit()"
     >
       <app-icon name="edit" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'translation.edit' | translate }}</span>
+        <span class="ms-1">{{ 'equipment.edit' | translate }}</span>
       }
     </button>
 
@@ -68,12 +68,12 @@
       <button
         class="btn btn-sm btn-outline-secondary"
         [disabled]="isProcessing()"
-        [title]="'translation.Refresh_workout_data' | translate"
+        [title]="'workout.Refresh_workout_data' | translate"
         (click)="refresh()"
       >
         <app-icon name="refresh" size="16" />
         @if (!compact()) {
-          <span class="ms-1">{{ 'translation.refresh' | translate }}</span>
+          <span class="ms-1">{{ 'route_segment.refresh' | translate }}</span>
         }
       </button>
     }
@@ -84,12 +84,12 @@
         class="btn btn-sm btn-outline-secondary dropdown-toggle w-100"
         ngbDropdownToggle
         [disabled]="isProcessing()"
-        [title]="'translation.Share_workout' | translate"
+        [title]="'workout.Share_workout' | translate"
         (click)="toggleShareMenu()"
       >
         <app-icon name="share" size="16" />
         @if (!compact()) {
-          <span class="ms-1">{{ 'translation.share' | translate }}</span>
+          <span class="ms-1">{{ 'workout.share' | translate }}</span>
         }
       </button>
       @if (showShareMenu()) {
@@ -97,16 +97,16 @@
           @if (workout().public_uuid) {
             <button class="dropdown-item" (click)="copyShareLink()">
               <app-icon name="copy" size="16" />
-              <span class="ms-1">{{ 'translation.copy_share_link' | translate }}</span>
+              <span class="ms-1">{{ 'workout.copy_share_link' | translate }}</span>
             </button>
             <button class="dropdown-item text-danger" (click)="deleteShareLink()">
               <app-icon name="delete" size="16" />
-              <span class="ms-1">{{ 'translation.delete_share_link' | translate }}</span>
+              <span class="ms-1">{{ 'workout.delete_share_link' | translate }}</span>
             </button>
           } @else {
             <button class="dropdown-item" (click)="generateShareLink()">
               <app-icon name="generate-share" size="16" />
-              <span class="ms-1">{{ 'translation.generate_share_link' | translate }}</span>
+              <span class="ms-1">{{ 'workout.generate_share_link' | translate }}</span>
             </button>
           }
         </div>
@@ -114,13 +114,13 @@
     </div>
 
     @if (hasMapData()) {
-      <button
-        class="btn btn-sm btn-outline-primary"
-        [routerLink]="['/workouts', workout()!.id, 'create-route-segment']"
-      >
-        <app-icon name="route-segment-add" size="20" />
-        <span>{{ 'translation.create_route_segment' | translate }}</span>
-      </button>
+        <button
+          class="btn btn-sm btn-outline-primary"
+          [routerLink]="['/workouts', workout()!.id, 'create-route-segment']"
+        >
+          <app-icon name="route-segment-add" size="20" />
+          <span>{{ 'route_segment.create_route_segment' | translate }}</span>
+        </button>
     }
 
     @if (!socialsDisabled()) {
@@ -129,7 +129,7 @@
           class="btn btn-outline-secondary"
           type="button"
           [attr.title]="
-            'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+            'workout.Publicly_shareable_link_was_copied_to_clipboard' | translate
           "
         >
           <app-icon name="share" size="20" />
@@ -139,7 +139,7 @@
           class="btn btn-outline-secondary"
           type="button"
           [attr.title]="
-            'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+            'workout.Publicly_shareable_link_was_copied_to_clipboard' | translate
           "
         >
           <app-icon name="share" size="20" />
@@ -149,7 +149,7 @@
           class="btn btn-outline-secondary"
           type="button"
           [attr.title]="
-            'translation.Publicly_shareable_link_was_copied_to_clipboard' | translate
+            'workout.Publicly_shareable_link_was_copied_to_clipboard' | translate
           "
         >
           <app-icon name="share" size="20" />
@@ -162,12 +162,12 @@
     <button
       class="btn btn-sm btn-outline-danger"
       [disabled]="isProcessing()"
-      [title]="'translation.Delete_workout' | translate"
+      [title]="'workout.Delete_workout' | translate"
       (click)="confirmDelete()"
     >
       <app-icon name="delete" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'translation.delete' | translate }}</span>
+        <span class="ms-1">{{ 'equipment.delete' | translate }}</span>
       }
     </button>
   </div>
@@ -178,13 +178,13 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ 'translation.confirm_delete' | translate }}</h5>
+            <h5 class="modal-title">{{ 'workout.confirm_delete' | translate }}</h5>
             <button class="btn-close" type="button" (click)="cancelDelete()">
-              <span class="visually-hidden">{{ 'translation.close' | translate }}</span>
+              <span class="visually-hidden">{{ 'workout.close' | translate }}</span>
             </button>
           </div>
           <div class="modal-body">
-            <p>{{ 'translation.are_you_sure_you_want_to_delete_this_workout' | translate }}</p>
+            <p>{{ 'workout.are_you_sure_you_want_to_delete_this_workout' | translate }}</p>
             <p>
               <strong>{{ workout().name }}</strong>
             </p>
@@ -192,10 +192,10 @@
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
-              {{ 'translation.cancel' | translate }}
+              {{ 'equipment.cancel' | translate }}
             </button>
             <button class="btn btn-danger" type="button" (click)="delete()">
-              {{ 'translation.delete' | translate }}
+              {{ 'equipment.delete' | translate }}
             </button>
           </div>
         </div>

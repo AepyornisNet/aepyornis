@@ -6,7 +6,7 @@
         <span class="text-muted">{{ totalCount() }} total items</span>
       }
       <button class="btn btn-primary" (click)="openCreateModal()">
-        {{ 'translation.add_equipment' | translate }}
+        {{ 'equipment.add_equipment' | translate }}
       </button>
     </div>
   </div>
@@ -14,7 +14,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'translation.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -29,10 +29,10 @@
     @if (!hasEquipment()) {
       <div class="card shadow-sm">
         <div class="card-body text-center py-5">
-          <h5 class="card-title">{{ 'translation.no_equipment' | translate }}</h5>
-          <p class="card-text text-muted">{{ 'translation.equipment_add_first' | translate }}</p>
+          <h5 class="card-title">{{ 'equipment.no_equipment' | translate }}</h5>
+          <p class="card-text text-muted">{{ 'equipment.equipment_add_first' | translate }}</p>
           <button class="btn btn-primary" (click)="openCreateModal()">
-            {{ 'translation.add_equipment' | translate }}
+            {{ 'equipment.add_equipment' | translate }}
           </button>
         </div>
       </div>
@@ -43,10 +43,10 @@
           <table class="table table-hover mb-0">
             <thead>
               <tr>
-                <th>{{ 'translation.name' | translate }}</th>
-                <th class="d-none d-md-table-cell">{{ 'translation.description' | translate }}</th>
-                <th class="text-center">{{ 'translation.active' | translate }}</th>
-                <th class="text-center">{{ 'translation.actions' | translate }}</th>
+                <th>{{ 'equipment.name' | translate }}</th>
+                <th class="d-none d-md-table-cell">{{ 'equipment.description' | translate }}</th>
+                <th class="text-center">{{ 'equipment.active' | translate }}</th>
+                <th class="text-center">{{ 'equipment.actions' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -74,10 +74,10 @@
                   </td>
                   <td class="text-center">
                     @if (item.active) {
-                      <span class="badge bg-success">{{ 'translation.active' | translate }}</span>
+                      <span class="badge bg-success">{{ 'equipment.active' | translate }}</span>
                     } @else {
                       <span class="badge bg-secondary">{{
-                        'translation.inactive' | translate
+                        'equipment.inactive' | translate
                       }}</span>
                     }
                   </td>
@@ -85,21 +85,21 @@
                     <div class="btn-group btn-group-sm" role="group">
                       <button
                         class="btn btn-outline-primary"
-                        [attr.title]="'translation.details' | translate"
+                        [attr.title]="'equipment.details' | translate"
                         (click)="viewDetails(item)"
                       >
                         <app-icon name="view" size="16" />
                       </button>
                       <button
                         class="btn btn-outline-secondary"
-                        [attr.title]="'translation.edit' | translate"
+                        [attr.title]="'equipment.edit' | translate"
                         (click)="openEditModal(item)"
                       >
                         <app-icon name="edit" size="16" />
                       </button>
                       <button
                         class="btn btn-outline-danger"
-                        [attr.title]="'translation.delete' | translate"
+                        [attr.title]="'equipment.delete' | translate"
                         (click)="openDeleteModal(item)"
                       >
                         <app-icon name="delete" size="16" />
@@ -119,7 +119,7 @@
           <ul class="pagination justify-content-center">
             <li class="page-item" [class.disabled]="!hasPreviousPage()">
               <button class="page-link" [disabled]="!hasPreviousPage()" (click)="previousPage()">
-                {{ 'translation.last' | translate }}
+                {{ 'dashboard.last' | translate }}
               </button>
             </li>
 
@@ -139,7 +139,7 @@
 
             <li class="page-item" [class.disabled]="!hasNextPage()">
               <button class="page-link" [disabled]="!hasNextPage()" (click)="nextPage()">
-                {{ 'translation.next' | translate }}
+                {{ 'equipment.next' | translate }}
               </button>
             </li>
           </ul>
@@ -159,7 +159,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'translation.add_equipment' | translate }}</h5>
+          <h5 class="modal-title">{{ 'equipment.add_equipment' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -169,7 +169,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="create-name">{{ 'translation.name' | translate }}</label>
+            <label class="form-label" for="create-name">{{ 'equipment.name' | translate }}</label>
             <input
               class="form-control"
               id="create-name"
@@ -180,7 +180,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-description">{{
-              'translation.description' | translate
+              'equipment.description' | translate
             }}</label>
             <textarea
               class="form-control"
@@ -192,7 +192,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-notes">{{
-              'translation.notes' | translate
+              'equipment.notes' | translate
             }}</label>
             <textarea
               class="form-control"
@@ -211,16 +211,16 @@
               (change)="updateFormActive($any($event.target).checked)"
             />
             <label class="form-check-label" for="create-active">
-              {{ 'translation.active' | translate }}
+              {{ 'equipment.active' | translate }}
             </label>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
-            {{ 'translation.cancel' | translate }}
+            {{ 'equipment.cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="createEquipment()">
-            {{ 'translation.create' | translate }}
+            {{ 'equipment.create' | translate }}
           </button>
         </div>
       </div>
@@ -234,7 +234,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'translation.equipment' | translate }}</h5>
+          <h5 class="modal-title">{{ 'equipment.equipment' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -244,7 +244,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="edit-name">{{ 'translation.name' | translate }}</label>
+            <label class="form-label" for="edit-name">{{ 'equipment.name' | translate }}</label>
             <input
               class="form-control"
               id="edit-name"
@@ -255,7 +255,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-description">{{
-              'translation.description' | translate
+              'equipment.description' | translate
             }}</label>
             <textarea
               class="form-control"
@@ -266,7 +266,7 @@
             ></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="edit-notes">{{ 'translation.notes' | translate }}</label>
+            <label class="form-label" for="edit-notes">{{ 'equipment.notes' | translate }}</label>
             <textarea
               class="form-control"
               id="edit-notes"
@@ -284,16 +284,16 @@
               (change)="updateFormActive($any($event.target).checked)"
             />
             <label class="form-check-label" for="edit-active">
-              {{ 'translation.active' | translate }}
+              {{ 'equipment.active' | translate }}
             </label>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'translation.cancel' | translate }}
+            {{ 'equipment.cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="updateEquipment()">
-            {{ 'translation.update' | translate }}
+            {{ 'equipment.update' | translate }}
           </button>
         </div>
       </div>
@@ -307,7 +307,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'translation.delete' | translate }}</h5>
+          <h5 class="modal-title">{{ 'equipment.delete' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -316,17 +316,17 @@
           ></button>
         </div>
         <div class="modal-body">
-          <p>{{ 'translation.are_you_sure' | translate }}</p>
+          <p>{{ 'equipment.are_you_sure' | translate }}</p>
           <p>
             <strong>{{ selectedEquipment()!.name }}</strong>
           </p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'translation.cancel' | translate }}
+            {{ 'equipment.cancel' | translate }}
           </button>
           <button class="btn btn-danger" type="button" (click)="deleteEquipment()">
-            {{ 'translation.delete' | translate }}
+            {{ 'equipment.delete' | translate }}
           </button>
         </div>
       </div>

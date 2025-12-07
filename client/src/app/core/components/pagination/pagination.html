@@ -3,7 +3,7 @@
     <ul class="pagination justify-content-center">
       <li class="page-item" [class.disabled]="!getHasPrevious()">
         <button class="page-link" [disabled]="!getHasPrevious()" (click)="onPrevious()">
-          {{ 'translation.last' | translate }}
+          {{ 'dashboard.last' | translate }}
         </button>
       </li>
 
@@ -23,7 +23,7 @@
 
       <li class="page-item" [class.disabled]="!getHasNext()">
         <button class="page-link" [disabled]="!getHasNext()" (click)="onNext()">
-          {{ 'translation.next' | translate }}
+          {{ 'equipment.next' | translate }}
         </button>
       </li>
     </ul>

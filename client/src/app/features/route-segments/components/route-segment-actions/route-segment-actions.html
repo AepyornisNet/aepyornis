@@ -17,65 +17,65 @@
     <!-- Download -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'translation.download' | translate"
+      [attr.title]="'route_segment.download' | translate"
       [disabled]="isProcessing"
       (click)="download()"
     >
       <app-icon name="download" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'translation.download' | translate }}</span>
+        <span class="ms-1">{{ 'route_segment.download' | translate }}</span>
       }
     </button>
 
     <!-- Edit -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'translation.edit' | translate"
+      [attr.title]="'equipment.edit' | translate"
       [disabled]="isProcessing"
       (click)="edit()"
     >
       <app-icon name="edit" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'translation.edit' | translate }}</span>
+        <span class="ms-1">{{ 'equipment.edit' | translate }}</span>
       }
     </button>
 
     <!-- Refresh -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'translation.refresh' | translate"
+      [attr.title]="'route_segment.refresh' | translate"
       [disabled]="isProcessing"
       (click)="refresh()"
     >
       <app-icon name="refresh" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'translation.refresh' | translate }}</span>
+        <span class="ms-1">{{ 'route_segment.refresh' | translate }}</span>
       }
     </button>
 
     <!-- Find Matches -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'translation.find_matches' | translate"
+      [attr.title]="'route_segment.find_matches' | translate"
       [disabled]="isProcessing"
       (click)="findMatches()"
     >
       <app-icon name="route-segment" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'translation.find_matches' | translate }}</span>
+        <span class="ms-1">{{ 'route_segment.find_matches' | translate }}</span>
       }
     </button>
 
     <!-- Delete -->
     <button
       class="btn btn-sm btn-outline-danger"
-      [attr.title]="'translation.delete' | translate"
+      [attr.title]="'equipment.delete' | translate"
       [disabled]="isProcessing"
       (click)="confirmDelete()"
     >
       <app-icon name="delete" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'translation.delete' | translate }}</span>
+        <span class="ms-1">{{ 'equipment.delete' | translate }}</span>
       }
     </button>
   </div>
@@ -86,7 +86,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ 'translation.are_you_sure' | translate }}</h5>
+            <h5 class="modal-title">{{ 'equipment.are_you_sure' | translate }}</h5>
             <button
               aria-label="Close"
               class="btn-close"
@@ -95,20 +95,20 @@
             ></button>
           </div>
           <div class="modal-body">
-            <p>{{ 'translation.are_you_sure' | translate }}</p>
+            <p>{{ 'equipment.are_you_sure' | translate }}</p>
             <p>
               <strong>{{ routeSegment().name }}</strong>
             </p>
             <p class="text-muted">
-              {{ 'translation.the_workout_s_will_be_refreshed_soon' | translate }}
+              {{ 'route_segment.the_workout_s_will_be_refreshed_soon' | translate }}
             </p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
-              {{ 'translation.cancel' | translate }}
+              {{ 'equipment.cancel' | translate }}
             </button>
             <button class="btn btn-danger" type="button" (click)="delete()">
-              {{ 'translation.delete' | translate }}
+              {{ 'equipment.delete' | translate }}
             </button>
           </div>
         </div>

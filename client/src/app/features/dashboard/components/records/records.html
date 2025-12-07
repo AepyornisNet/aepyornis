@@ -11,7 +11,7 @@
               <tbody>
                 @if (record.average_speed) {
                   <tr>
-                    <td>{{ 'translation.average_speed' | translate }}</td>
+                    <td>{{ 'dashboard.average_speed' | translate }}</td>
                     <td class="text-end">
                       <strong>{{ formatSpeed(record.average_speed.value) }} km/h</strong>
                     </td>
@@ -24,7 +24,7 @@
                 }
                 @if (record.average_speed_no_pause) {
                   <tr>
-                    <td>{{ 'translation.average_speed_no_pause' | translate }}</td>
+                    <td>{{ 'dashboard.average_speed_no_pause' | translate }}</td>
                     <td class="text-end">
                       <strong>{{ formatSpeed(record.average_speed_no_pause.value) }} km/h</strong>
                     </td>
@@ -37,7 +37,7 @@
                 }
                 @if (record.max_speed) {
                   <tr>
-                    <td>{{ 'translation.max_speed' | translate }}</td>
+                    <td>{{ 'dashboard.max_speed' | translate }}</td>
                     <td class="text-end">
                       <strong>{{ formatSpeed(record.max_speed.value) }} km/h</strong>
                     </td>
@@ -50,7 +50,7 @@
                 }
                 @if (record.distance) {
                   <tr>
-                    <td>{{ 'translation.distance' | translate }}</td>
+                    <td>{{ 'dashboard.distance' | translate }}</td>
                     <td class="text-end">
                       <strong>{{ formatDistance(record.distance.value) }} km</strong>
                     </td>
@@ -63,7 +63,7 @@
                 }
                 @if (record.total_up) {
                   <tr>
-                    <td>{{ 'translation.elevation' | translate }}</td>
+                    <td>{{ 'dashboard.elevation' | translate }}</td>
                     <td class="text-end">
                       <strong>{{ formatElevation(record.total_up.value) }} m</strong>
                     </td>
@@ -76,7 +76,7 @@
                 }
                 @if (record.duration) {
                   <tr>
-                    <td>{{ 'translation.duration' | translate }}</td>
+                    <td>{{ 'dashboard.duration' | translate }}</td>
                     <td class="text-end">
                       <strong>{{ formatDuration(record.duration.value) }}</strong>
                     </td>

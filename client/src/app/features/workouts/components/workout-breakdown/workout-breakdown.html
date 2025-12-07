@@ -2,7 +2,7 @@
   @if (availableIntervals.length > 0 && intervals.length > 0) {
     <div class="breakdown-header mb-3">
       <div class="d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">{{ 'translation.breakdown' | translate }}</h5>
+        <h5 class="mb-0">{{ 'workout.breakdown' | translate }}</h5>
         <div class="btn-group btn-group-sm" role="group">
           @for (interval of availableIntervals; track interval) {
             <button
@@ -23,25 +23,25 @@
       <table class="table table-sm table-hover breakdown-table">
         <thead>
           <tr>
-            <th>{{ 'translation.index' | translate }}</th>
-            <th class="text-end">{{ 'translation.distance' | translate }}</th>
-            <th class="text-end">{{ 'translation.time' | translate }}</th>
-            <th class="text-end">{{ 'translation.speed' | translate }}</th>
-            <th class="text-end">{{ 'translation.pace' | translate }}</th>
-            <th class="text-end d-none d-lg-table-cell">{{ 'translation.elev_up' | translate }}</th>
+            <th>{{ 'workout.index' | translate }}</th>
+            <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
+            <th class="text-end">{{ 'workout.time' | translate }}</th>
+            <th class="text-end">{{ 'workout.speed' | translate }}</th>
+            <th class="text-end">{{ 'workout.pace' | translate }}</th>
+            <th class="text-end d-none d-lg-table-cell">{{ 'workout.elev_up' | translate }}</th>
             <th class="text-end d-none d-lg-table-cell">
-              {{ 'translation.elev_down' | translate }}
+              {{ 'workout.elev_down' | translate }}
             </th>
             @if (hasExtraMetric('heart-rate')) {
-              <th class="text-end d-none d-xl-table-cell">{{ 'translation.hr' | translate }}</th>
+              <th class="text-end d-none d-xl-table-cell">{{ 'workout.hr' | translate }}</th>
             }
             @if (hasExtraMetric('cadence')) {
               <th class="text-end d-none d-xl-table-cell">
-                {{ 'translation.cadence' | translate }}
+                {{ 'workout.cadence' | translate }}
               </th>
             }
             @if (hasExtraMetric('temperature')) {
-              <th class="text-end d-none d-xl-table-cell">{{ 'translation.temp' | translate }}</th>
+              <th class="text-end d-none d-xl-table-cell">{{ 'workout.temp' | translate }}</th>
             }
           </tr>
         </thead>
