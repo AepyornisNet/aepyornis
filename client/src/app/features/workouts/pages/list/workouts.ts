@@ -95,7 +95,48 @@ export class Workouts extends PaginatedListView<Workout> {
   });
   public readonly filterState = computed(() => this._filters());
 
+  private readonly _orderByWithOwnColumn = new Set(['date', 'total_distance', 'total_duration', 'average_speed']);
+  public readonly sortedColumnMeta = computed<FilterOption | null>(() => {
+    const orderBy = this.filterState().orderBy;
+    if (this._orderByWithOwnColumn.has(orderBy)) {
+      return null;
+    }
+    return this.orderByOptions.find((option) => option.value === orderBy) ?? null;
+  });
+
   public readonly getWorkoutLink = (workout: Workout): (string | number)[] => ['/workouts', workout.id];
+
+  public getSortedColumnValue(workout: Workout): string {
+    const orderBy = this.filterState().orderBy;
+    switch (orderBy) {
+      case 'total_weight': {
+        const formatted = this.formatNumber(workout.total_weight, { maximumFractionDigits: 1 });
+        return formatted !== null ? formatted : '-';
+      }
+      case 'total_repetitions': {
+        const formatted = this.formatNumber(workout.total_repetitions, { maximumFractionDigits: 0 });
+        return formatted !== null ? formatted : '-';
+      }
+      case 'total_up': {
+        const formatted = this.formatNumber(workout.total_up, { maximumFractionDigits: 0 });
+        return formatted !== null ? `${formatted} m` : '-';
+      }
+      case 'total_down': {
+        const formatted = this.formatNumber(workout.total_down, { maximumFractionDigits: 0 });
+        return formatted !== null ? `${formatted} m` : '-';
+      }
+      case 'average_speed_no_pause': {
+        const speed = this.formatSpeed(workout.average_speed_no_pause);
+        return speed !== null ? `${speed} km/h` : '-';
+      }
+      case 'max_speed': {
+        const speed = this.formatSpeed(workout.max_speed);
+        return speed !== null ? `${speed} km/h` : '-';
+      }
+      default:
+        return '-';
+    }
+  }
 
   public async loadData(page?: number): Promise<void> {
     if (page) {
@@ -232,5 +273,19 @@ export class Workouts extends PaginatedListView<Workout> {
   public onWorkoutOrderDirChange(value: string): void {
     const dir: WorkoutListFilterState['orderDir'] = value === 'asc' ? 'asc' : 'desc';
     this.handleFilterChange({ orderDir: dir });
+  }
+
+  private formatNumber(value: number | null | undefined, options?: Intl.NumberFormatOptions): string | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+    return value.toLocaleString(undefined, options);
+  }
+
+  private formatSpeed(value: number | null | undefined): string | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+    return (value * 3.6).toFixed(2);
   }
 }

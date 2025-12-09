@@ -90,6 +90,9 @@
         <th>{{ 'workout.date' | translate }}</th>
         <th>{{ 'dashboard.distance' | translate }}</th>
         <th>{{ 'dashboard.duration' | translate }}</th>
+        @if (sortedColumnMeta()) {
+          <th class="text-end">{{ sortedColumnMeta()?.label | translate }}</th>
+        }
         <th class="d-none d-md-table-cell">{{ 'dashboard.average_speed' | translate }}</th>
         <th class="text-end d-none d-lg-table-cell">{{ 'equipment.actions' | translate }}</th>
       </ng-template>
@@ -158,6 +161,17 @@
             }
           </div>
         </td>
+        @if (sortedColumnMeta()) {
+          <td class="position-relative text-end" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+            @if (!multiSelectActive) {
+              <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
+              <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
+            }
+            <div class="cell-content text-nowrap">
+              {{ getSortedColumnValue(workout) }}
+            </div>
+          </td>
+        }
         <td class="d-none d-md-table-cell position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
