@@ -1,0 +1,63 @@
+<div class="workout-list-actions">
+  <div container="body" ngbDropdown>
+    <div class="btn-group" role="group">
+      <button class="btn btn-sm btn-outline-primary" [title]="'equipment.view' | translate" (click)="view()">
+        <app-icon name="view" size="16" />
+      </button>
+      <button
+        class="btn btn-sm btn-outline-secondary"
+        ngbDropdownToggle
+        [disabled]="isProcessing()"
+        [title]="'shared.Actions' | translate"
+      ></button>
+    </div>
+    <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+      <button class="dropdown-item" (click)="edit()">
+        <app-icon name="edit" size="16" />
+        <span class="ms-2">{{ 'equipment.edit' | translate }}</span>
+      </button>
+      <button class="dropdown-item" (click)="toggleLock()">
+        <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
+        <span class="ms-2">{{
+          workout().locked ? ('workout.unlock' | translate) : ('shared.lock' | translate)
+        }}</span>
+      </button>
+      <div class="dropdown-divider"></div>
+      <button class="dropdown-item text-danger" (click)="confirmDelete()">
+        <app-icon name="delete" size="16" />
+        <span class="ms-2">{{ 'equipment.delete' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  @if (showDeleteConfirm()) {
+    <div class="modal d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ 'workout.confirm_delete' | translate }}</h5>
+            <button class="btn-close" type="button" (click)="cancelDelete()">
+              <span class="visually-hidden">Close</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>{{ 'workout.are_you_sure_you_want_to_delete_this_workout' | translate }}</p>
+            <p>
+              <strong>{{ workout().name }}</strong>
+            </p>
+            <p class="text-muted">This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
+              {{ 'equipment.cancel' | translate }}
+            </button>
+            <button class="btn btn-danger" type="button" (click)="delete()">
+              {{ 'equipment.delete' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

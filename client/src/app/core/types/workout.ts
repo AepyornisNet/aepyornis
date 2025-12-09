@@ -2,6 +2,7 @@
  * Workout domain models
  */
 
+import { PaginationParams } from './api-response';
 import { UserProfile } from './user';
 
 export type Workout = {
@@ -143,4 +144,12 @@ export type CalendarEvent = {
   start: string;
   end: string;
   url: string;
+};
+
+export type WorkoutListParams = PaginationParams & {
+  type?: string;
+  active?: boolean;
+  since?: string;
+  order_by?: string;
+  order_dir?: string;
 };

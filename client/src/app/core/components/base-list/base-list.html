@@ -1,0 +1,139 @@
+<div class="base-list-container">
+  <!-- Topbar - styled like navbar -->
+  <nav class="topbar shadow-sm bg-body mb-4">
+    <div class="container-fluid py-3">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <!-- Left side: Title and search -->
+        <div class="d-flex align-items-center gap-3 flex-grow-1">
+          <h1 class="display-4 mb-0">{{ config().title | translate }}</h1>
+
+          @if (config().enableSearch) {
+            <div class="search-box">
+              <div class="input-group">
+                <span class="input-group-text">
+                  <app-icon name="info" size="16" />
+                </span>
+                <input
+                  class="form-control"
+                  type="text"
+                  [placeholder]="config().searchPlaceholder || ('shared.search' | translate)"
+                  [value]="searchQuery()"
+                  (input)="onSearchInput($event)"
+                />
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Right side: Actions -->
+        <div class="d-flex align-items-center gap-2">
+          @if (config().enableFilters) {
+            <button
+              class="btn btn-outline-secondary"
+              [class.active]="showFilters()"
+              [title]="'shared.toggle_filters' | translate"
+              (click)="toggleFilters()"
+            >
+              <app-icon name="settings" size="16" />
+              <span class="d-none d-md-inline ms-1">{{ 'shared.filters' | translate }}</span>
+            </button>
+          }
+
+          @if (config().enableMultiSelect) {
+            <button
+              class="btn btn-outline-secondary"
+              [class.active]="multiSelectActive()"
+              [title]="'shared.toggle_multiselect' | translate"
+              (click)="toggleMultiSelect()"
+            >
+              <app-icon name="check" size="16" />
+              <span class="d-none d-md-inline ms-1">{{ 'shared.select' | translate }}</span>
+            </button>
+          }
+
+          @if (config().addButtonText) {
+            <button class="btn btn-success" (click)="onAddClick()">
+              <app-icon name="add" size="16" />
+              <span class="ms-1">{{ config().addButtonText | translate }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Multi-select info bar and actions -->
+      @if (multiSelectActive() && hasSelection()) {
+        <div class="selection-bar alert alert-info mt-3 mb-0">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>
+              <strong>{{ selectionCount() }}</strong>
+              {{
+                selectionCount() === 1
+                  ? ('shared.item_selected' | translate)
+                  : ('shared.items_selected' | translate)
+              }}
+            </span>
+            <div class="d-flex gap-2">
+              <ng-content select="[bulkActions]" />
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                [title]="'shared.clear_selection' | translate"
+                (click)="clearSelection()"
+              >
+                {{ 'shared.clear' | translate }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </nav>
+
+  <!-- Filter area (projected content) -->
+  @if (showFilters()) {
+    <div class="container-fluid mb-4">
+      <div class="filters-container">
+        <ng-content select="[filters]" />
+      </div>
+    </div>
+  }
+
+  <!-- Content container -->
+  <div class="container-fluid">
+    <!-- Loading state -->
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Error state -->
+    @if (error()) {
+      <div class="alert alert-danger" role="alert">
+        {{ error() }}
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!loading() && !error()) {
+      @if (!hasItems()) {
+        <div class="card shadow-sm">
+          <div class="card-body text-center py-5">
+            <p class="text-muted mb-0">{{ emptyMessage() | translate }}</p>
+          </div>
+        </div>
+      } @else {
+        <!-- Table content (projected) -->
+        <div class="card shadow-sm">
+          <div class="table-responsive">
+            <ng-content select="[table]" />
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <app-pagination [source]="paginationSource()" />
+      }
+    }
+  </div>
+</div>

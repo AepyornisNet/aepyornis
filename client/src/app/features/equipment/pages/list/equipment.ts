@@ -7,11 +7,12 @@ import { Api } from '../../../../core/services/api';
 import { Equipment as EquipmentModel } from '../../../../core/types/equipment';
 import { PaginationParams } from '../../../../core/types/api-response';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { BaseList, BaseListConfig } from '../../../../core/components/base-list/base-list';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 
 @Component({
   selector: 'app-equipment',
-  imports: [AppIcon, TranslatePipe],
+  imports: [AppIcon, BaseList, TranslatePipe],
   templateUrl: './equipment.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -22,6 +23,11 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
   // Alias for better template readability
   public equipment = this.items;
   public readonly hasEquipment = computed(() => this.hasItems());
+
+  public readonly equipmentListConfig: BaseListConfig = {
+    title: 'menu.equipment',
+    addButtonText: 'equipment.add_equipment',
+  };
 
   // Modal state
   public readonly showCreateModal = signal(false);

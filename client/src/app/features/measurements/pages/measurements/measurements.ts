@@ -6,16 +6,22 @@ import { Api } from '../../../../core/services/api';
 import { Measurement } from '../../../../core/types/measurement';
 import { PaginationParams } from '../../../../core/types/api-response';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { BaseList, BaseListConfig } from '../../../../core/components/base-list/base-list';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 
 @Component({
   selector: 'app-measurements',
-  imports: [AppIcon, TranslatePipe],
+  imports: [AppIcon, BaseList, TranslatePipe],
   templateUrl: './measurements.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Measurements extends PaginatedListView<Measurement> {
   private api = inject(Api);
+
+  public readonly measurementListConfig: BaseListConfig = {
+    title: 'menu.measurements',
+    addButtonText: 'measurements.add_measurement',
+  };
 
   // Alias for better template readability
   public measurements = this.items;

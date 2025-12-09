@@ -1,4 +1,4 @@
-<div class="workout-actions" [class.compact]="compact()">
+<div class="workout-actions">
   <!-- Messages -->
   @if (successMessage()) {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -28,11 +28,9 @@
       (click)="toggleLock()"
     >
       <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
-      @if (!compact()) {
-        <span class="ms-1">{{
-          workout().locked ? ('workout.unlock' | translate) : ('shared.lock' | translate)
-        }}</span>
-      }
+      <span class="ms-1">{{
+        workout().locked ? ('workout.unlock' | translate) : ('shared.lock' | translate)
+      }}</span>
     </button>
 
     <!-- Download -->
@@ -44,9 +42,7 @@
         (click)="download()"
       >
         <app-icon name="download" size="16" />
-        @if (!compact()) {
-          <span class="ms-1">{{ 'route_segment.download' | translate }}</span>
-        }
+        <span class="ms-1">{{ 'route_segment.download' | translate }}</span>
       </button>
     }
 
@@ -54,13 +50,11 @@
     <button
       class="btn btn-sm btn-outline-secondary"
       [disabled]="isProcessing()"
-  [title]="'workout.edit_workout' | translate"
+      [title]="'workout.edit_workout' | translate"
       (click)="edit()"
     >
       <app-icon name="edit" size="16" />
-      @if (!compact()) {
-        <span class="ms-1">{{ 'equipment.edit' | translate }}</span>
-      }
+      <span class="ms-1">{{ 'equipment.edit' | translate }}</span>
     </button>
 
     <!-- Refresh -->
@@ -72,9 +66,7 @@
         (click)="refresh()"
       >
         <app-icon name="refresh" size="16" />
-        @if (!compact()) {
-          <span class="ms-1">{{ 'route_segment.refresh' | translate }}</span>
-        }
+        <span class="ms-1">{{ 'route_segment.refresh' | translate }}</span>
       </button>
     }
 
@@ -88,9 +80,7 @@
         (click)="toggleShareMenu()"
       >
         <app-icon name="share" size="16" />
-        @if (!compact()) {
-          <span class="ms-1">{{ 'workout.share' | translate }}</span>
-        }
+        <span class="ms-1">{{ 'workout.share' | translate }}</span>
       </button>
       @if (showShareMenu()) {
         <div class="dropdown-menu show position-absolute" ngbDropdownMenu>
@@ -114,13 +104,13 @@
     </div>
 
     @if (hasMapData()) {
-        <button
-          class="btn btn-sm btn-outline-primary"
-          [routerLink]="['/workouts', workout()!.id, 'create-route-segment']"
-        >
-          <app-icon name="route-segment-add" size="20" />
-          <span>{{ 'route_segment.create_route_segment' | translate }}</span>
-        </button>
+      <button
+        class="btn btn-sm btn-outline-primary"
+        [routerLink]="['/workouts', workout()!.id, 'create-route-segment']"
+      >
+        <app-icon name="route-segment-add" size="20" />
+        <span>{{ 'route_segment.create_route_segment' | translate }}</span>
+      </button>
     }
 
     @if (!socialsDisabled()) {
@@ -166,9 +156,7 @@
       (click)="confirmDelete()"
     >
       <app-icon name="delete" size="16" />
-      @if (!compact()) {
-        <span class="ms-1">{{ 'equipment.delete' | translate }}</span>
-      }
+      <span class="ms-1">{{ 'equipment.delete' | translate }}</span>
     </button>
   </div>
 

@@ -1,7 +1,11 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { APIResponse, PaginatedAPIResponse, PaginationParams } from '../../core/types/api-response';
+import {
+  APIResponse,
+  PaginatedAPIResponse,
+  PaginationParams,
+} from '../../core/types/api-response';
 import {
   AppConfig,
   AppInfo,
@@ -15,6 +19,7 @@ import {
   Totals,
   Workout,
   WorkoutDetail,
+  WorkoutListParams,
   WorkoutRecord,
 } from '../../core/types/workout';
 import { Measurement } from '../../core/types/measurement';
@@ -42,13 +47,28 @@ export class Api {
   }
 
   // Workouts endpoints
-  public getWorkouts(params?: PaginationParams): Observable<PaginatedAPIResponse<Workout>> {
+  public getWorkouts(params?: WorkoutListParams): Observable<PaginatedAPIResponse<Workout>> {
     let httpParams = new HttpParams();
     if (params?.page) {
       httpParams = httpParams.set('page', params.page.toString());
     }
     if (params?.per_page) {
       httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+    if (params?.type) {
+      httpParams = httpParams.set('type', params.type);
+    }
+    if (params?.active !== undefined) {
+      httpParams = httpParams.set('active', params.active ? 'true' : 'false');
+    }
+    if (params?.since) {
+      httpParams = httpParams.set('since', params.since);
+    }
+    if (params?.order_by) {
+      httpParams = httpParams.set('order_by', params.order_by);
+    }
+    if (params?.order_dir) {
+      httpParams = httpParams.set('order_dir', params.order_dir);
     }
     return this.http.get<PaginatedAPIResponse<Workout>>(`${this.baseUrl}/workouts`, {
       params: httpParams,

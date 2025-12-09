@@ -1,157 +1,83 @@
-<div class="container my-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="display-4 mb-0">{{ 'menu.equipment' | translate }}</h1>
-    <div class="d-flex align-items-center gap-3">
-      @if (totalCount() > 0) {
-        <span class="text-muted">{{ totalCount() }} total items</span>
-      }
-      <button class="btn btn-primary" (click)="openCreateModal()">
-        {{ 'equipment.add_equipment' | translate }}
-      </button>
-    </div>
-  </div>
-
-  @if (loading()) {
-    <div class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
-      </div>
-    </div>
-  }
-
-  @if (error()) {
-    <div class="alert alert-danger" role="alert">
-      {{ error() }}
-    </div>
-  }
-
-  @if (!loading() && !error()) {
-    @if (!hasEquipment()) {
-      <div class="card shadow-sm">
-        <div class="card-body text-center py-5">
-          <h5 class="card-title">{{ 'equipment.no_equipment' | translate }}</h5>
-          <p class="card-text text-muted">{{ 'equipment.equipment_add_first' | translate }}</p>
-          <button class="btn btn-primary" (click)="openCreateModal()">
-            {{ 'equipment.add_equipment' | translate }}
-          </button>
-        </div>
-      </div>
-    } @else {
-      <!-- Equipment Table -->
-      <div class="card shadow-sm">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th>{{ 'equipment.name' | translate }}</th>
-                <th class="d-none d-md-table-cell">{{ 'equipment.description' | translate }}</th>
-                <th class="text-center">{{ 'equipment.active' | translate }}</th>
-                <th class="text-center">{{ 'equipment.actions' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of equipment(); track item.id) {
-                <tr>
-                  <td>
-                    <strong
-                      style="cursor: pointer"
-                      tabindex="0"
-                      (click)="viewDetails(item)"
-                      (keydown.enter)="viewDetails(item)"
-                      >{{ item.name }}</strong
-                    >
-                  </td>
-                  <td class="d-none d-md-table-cell">
-                    @if (item.description) {
-                      {{
-                        item.description.length > 50
-                          ? item.description.substring(0, 50) + '...'
-                          : item.description
-                      }}
-                    } @else {
-                      <span class="text-muted">-</span>
-                    }
-                  </td>
-                  <td class="text-center">
-                    @if (item.active) {
-                      <span class="badge bg-success">{{ 'equipment.active' | translate }}</span>
-                    } @else {
-                      <span class="badge bg-secondary">{{
-                        'equipment.inactive' | translate
-                      }}</span>
-                    }
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group btn-group-sm" role="group">
-                      <button
-                        class="btn btn-outline-primary"
-                        [attr.title]="'equipment.details' | translate"
-                        (click)="viewDetails(item)"
-                      >
-                        <app-icon name="view" size="16" />
-                      </button>
-                      <button
-                        class="btn btn-outline-secondary"
-                        [attr.title]="'equipment.edit' | translate"
-                        (click)="openEditModal(item)"
-                      >
-                        <app-icon name="edit" size="16" />
-                      </button>
-                      <button
-                        class="btn btn-outline-danger"
-                        [attr.title]="'equipment.delete' | translate"
-                        (click)="openDeleteModal(item)"
-                      >
-                        <app-icon name="delete" size="16" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Pagination -->
-      @if (totalPages() > 1) {
-        <nav aria-label="Equipment pagination" class="mt-4">
-          <ul class="pagination justify-content-center">
-            <li class="page-item" [class.disabled]="!hasPreviousPage()">
-              <button class="page-link" [disabled]="!hasPreviousPage()" (click)="previousPage()">
-                {{ 'dashboard.last' | translate }}
-              </button>
-            </li>
-
-            @for (page of visiblePages(); track $index) {
-              @if (page === -1) {
-                <li class="page-item disabled">
-                  <span class="page-link">...</span>
-                </li>
+<app-base-list
+  [config]="equipmentListConfig"
+  [emptyMessage]="'equipment.no_equipment'"
+  [error]="error()"
+  [hasItems]="hasEquipment()"
+  [loading]="loading()"
+  [paginationSource]="pagination()"
+  (addClicked)="openCreateModal()"
+>
+  <div table>
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>{{ 'equipment.name' | translate }}</th>
+          <th class="d-none d-md-table-cell">{{ 'equipment.description' | translate }}</th>
+          <th class="text-center">{{ 'equipment.active' | translate }}</th>
+          <th class="text-center">{{ 'equipment.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of equipment(); track item.id) {
+          <tr>
+            <td>
+              <strong
+                style="cursor: pointer"
+                tabindex="0"
+                (click)="viewDetails(item)"
+                (keydown.enter)="viewDetails(item)"
+                >{{ item.name }}</strong
+              >
+            </td>
+            <td class="d-none d-md-table-cell">
+              @if (item.description) {
+                {{
+                  item.description.length > 50
+                    ? item.description.substring(0, 50) + '...'
+                    : item.description
+                }}
               } @else {
-                <li class="page-item" [class.active]="currentPage() === page">
-                  <button class="page-link" (click)="goToPage(page)">
-                    {{ page }}
-                  </button>
-                </li>
+                <span class="text-muted">-</span>
               }
-            }
-
-            <li class="page-item" [class.disabled]="!hasNextPage()">
-              <button class="page-link" [disabled]="!hasNextPage()" (click)="nextPage()">
-                {{ 'equipment.next' | translate }}
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        <div class="text-center text-muted">
-          <small> Page {{ currentPage() }} of {{ totalPages() }} • {{ totalCount() }} items </small>
-        </div>
-      }
-    }
-  }
-</div>
+            </td>
+            <td class="text-center">
+              @if (item.active) {
+                <span class="badge bg-success">{{ 'equipment.active' | translate }}</span>
+              } @else {
+                <span class="badge bg-secondary">{{ 'equipment.inactive' | translate }}</span>
+              }
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <button
+                  class="btn btn-outline-primary"
+                  [attr.title]="'equipment.details' | translate"
+                  (click)="viewDetails(item)"
+                >
+                  <app-icon name="view" size="16" />
+                </button>
+                <button
+                  class="btn btn-outline-secondary"
+                  [attr.title]="'equipment.edit' | translate"
+                  (click)="openEditModal(item)"
+                >
+                  <app-icon name="edit" size="16" />
+                </button>
+                <button
+                  class="btn btn-outline-danger"
+                  [attr.title]="'equipment.delete' | translate"
+                  (click)="openDeleteModal(item)"
+                >
+                  <app-icon name="delete" size="16" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</app-base-list>
 
 <!-- Create Modal -->
 @if (showCreateModal()) {

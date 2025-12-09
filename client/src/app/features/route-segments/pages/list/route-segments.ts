@@ -6,13 +6,14 @@ import { Api } from '../../../../core/services/api';
 import { RouteSegment } from '../../../../core/types/route-segment';
 import { PaginationParams } from '../../../../core/types/api-response';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { BaseList, BaseListConfig } from '../../../../core/components/base-list/base-list';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-route-segments',
-  imports: [RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe],
+  imports: [RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe, BaseList],
   templateUrl: './route-segments.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -22,6 +23,10 @@ export class RouteSegments extends PaginatedListView<RouteSegment> {
   // Alias for better template readability
   public routeSegments = this.items;
   public readonly hasRouteSegments = computed(() => this.hasItems());
+
+  public readonly routeSegmentListConfig: BaseListConfig = {
+    title: 'menu.route_segments',
+  };
 
   public async loadData(page?: number): Promise<void> {
     if (page) {

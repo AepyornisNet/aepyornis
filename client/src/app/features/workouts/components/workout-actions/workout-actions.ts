@@ -17,7 +17,6 @@ import { User } from '../../../../core/services/user';
 })
 export class WorkoutActions {
   public readonly workout = input.required<Workout | WorkoutDetail>();
-  public readonly compact = input<boolean>(false);
   public readonly hasMapData = input<boolean>(false);
 
   public readonly workoutUpdated = output<Workout>();

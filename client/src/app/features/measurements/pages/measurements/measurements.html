@@ -1,161 +1,76 @@
-<div class="container my-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="display-4 mb-0">{{ 'menu.measurements' | translate }}</h1>
-    <div class="d-flex align-items-center gap-3">
-      @if (totalCount() > 0) {
-        <span class="text-muted">{{ totalCount() }} total measurements</span>
-      }
-      <button class="btn btn-primary" (click)="openCreateModal()">
-        {{ 'measurements.add_a_workout' | translate }}
-      </button>
-    </div>
-  </div>
-
-  @if (loading()) {
-    <div class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'dashboard.last' | translate }}</span>
-      </div>
-    </div>
-  }
-
-  @if (error()) {
-    <div class="alert alert-danger" role="alert">
-      {{ error() }}
-    </div>
-  }
-
-  @if (!loading() && !error()) {
-    @if (!hasMeasurements()) {
-      <div class="card shadow-sm">
-        <div class="card-body text-center py-5">
-    <h5 class="card-title">{{ 'measurements.no_measurements_found' | translate }}</h5>
-          <p class="card-text text-muted">
-            {{ 'measurements.measurements_start_tracking' | translate }}
-          </p>
-          <button class="btn btn-primary" (click)="openCreateModal()">
-            {{ 'measurements.add_measurement' | translate }}
-          </button>
-        </div>
-      </div>
-    } @else {
-      <!-- Measurements Table -->
-      <div class="card shadow-sm">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th>{{ 'workout.date' | translate }}</th>
-                <th class="text-end">{{ 'measurements.weight' | translate }} (kg)</th>
-                <th class="text-end d-none d-md-table-cell">
-                  {{ 'measurements.height' | translate }} (cm)
-                </th>
-                <th class="text-end d-none d-lg-table-cell">
-                  {{ 'measurements.steps' | translate }}
-                </th>
-                <th class="text-center">{{ 'equipment.actions' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (measurement of measurements(); track measurement.id) {
-                <tr>
-                  <td>
-                    <strong>{{ formatDate(measurement.date) }}</strong>
-                  </td>
-                  <td class="text-end">
-                    @if (measurement.weight) {
-                      {{ measurement.weight.toFixed(1) }}
-                    } @else {
-                      <span class="text-muted">-</span>
-                    }
-                  </td>
-                  <td class="text-end d-none d-md-table-cell">
-                    @if (measurement.height) {
-                      {{ measurement.height.toFixed(1) }}
-                    } @else {
-                      <span class="text-muted">-</span>
-                    }
-                  </td>
-                  <td class="text-end d-none d-lg-table-cell">
-                    @if (measurement.steps) {
-                      {{ measurement.steps.toLocaleString() }}
-                    } @else {
-                      <span class="text-muted">-</span>
-                    }
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group btn-group-sm" role="group">
-                      <button
-                        class="btn btn-outline-secondary"
-                        [attr.title]="'equipment.edit' | translate"
-                        (click)="openEditModal(measurement)"
-                      >
-                        <app-icon name="edit" size="16" />
-                      </button>
-                      <button
-                        class="btn btn-outline-danger"
-                        [attr.title]="'equipment.delete' | translate"
-                        (click)="openDeleteModal(measurement)"
-                      >
-                        <app-icon name="delete" size="16" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Pagination -->
-      @if (totalPages() > 1) {
-        <nav aria-label="Measurement pagination" class="mt-4">
-          <ul class="pagination justify-content-center">
-            <li class="page-item" [class.disabled]="!hasPreviousPage()">
-              <button class="page-link" [disabled]="!hasPreviousPage()" (click)="previousPage()">
-                {{ 'dashboard.last' | translate }}
-              </button>
-            </li>
-
-            @for (page of visiblePages(); track $index) {
-              @if (page === -1) {
-                <li class="page-item disabled">
-                  <span class="page-link">...</span>
-                </li>
+<app-base-list
+  [config]="measurementListConfig"
+  [emptyMessage]="'measurements.no_measurements_found'"
+  [error]="error()"
+  [hasItems]="hasMeasurements()"
+  [loading]="loading()"
+  [paginationSource]="pagination()"
+  (addClicked)="openCreateModal()"
+>
+  <div table>
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>{{ 'workout.date' | translate }}</th>
+          <th class="text-end">{{ 'measurements.weight' | translate }} (kg)</th>
+          <th class="text-end d-none d-md-table-cell">
+            {{ 'measurements.height' | translate }} (cm)
+          </th>
+          <th class="text-end d-none d-lg-table-cell">{{ 'measurements.steps' | translate }}</th>
+          <th class="text-center">{{ 'equipment.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (measurement of measurements(); track measurement.id) {
+          <tr>
+            <td>
+              <strong>{{ formatDate(measurement.date) }}</strong>
+            </td>
+            <td class="text-end">
+              @if (measurement.weight) {
+                {{ measurement.weight.toFixed(1) }}
               } @else {
-                <li class="page-item" [class.active]="currentPage() === page">
-                  <button class="page-link" (click)="goToPage(page)">
-                    {{ page }}
-                  </button>
-                </li>
+                <span class="text-muted">-</span>
               }
-            }
-
-            <li class="page-item" [class.disabled]="!hasNextPage()">
-              <button class="page-link" [disabled]="!hasNextPage()" (click)="nextPage()">
-                {{ 'equipment.next' | translate }}
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        <div class="text-center text-muted">
-          <small>
-            {{ 'route_segment.page' | translate }} {{ currentPage() }}
-            {{ 'route_segment.of' | translate }} {{ totalPages() }} • {{ totalCount() }}
-            {{ 'measurements.measurements' | translate }}
-          </small>
-          <small>
-            {{ 'route_segment.page' | translate }} {{ currentPage() }}
-            {{ 'route_segment.of' | translate }} {{ totalPages() }} • {{ totalCount() }}
-            {{ 'measurements.measurements' | translate }}
-          </small>
-        </div>
-      }
-    }
-  }
-</div>
+            </td>
+            <td class="text-end d-none d-md-table-cell">
+              @if (measurement.height) {
+                {{ measurement.height.toFixed(1) }}
+              } @else {
+                <span class="text-muted">-</span>
+              }
+            </td>
+            <td class="text-end d-none d-lg-table-cell">
+              @if (measurement.steps) {
+                {{ measurement.steps.toLocaleString() }}
+              } @else {
+                <span class="text-muted">-</span>
+              }
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <button
+                  class="btn btn-outline-secondary"
+                  [attr.title]="'equipment.edit' | translate"
+                  (click)="openEditModal(measurement)"
+                >
+                  <app-icon name="edit" size="16" />
+                </button>
+                <button
+                  class="btn btn-outline-danger"
+                  [attr.title]="'equipment.delete' | translate"
+                  (click)="openDeleteModal(measurement)"
+                >
+                  <app-icon name="delete" size="16" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</app-base-list>
 
 <!-- Create Modal -->
 @if (showCreateModal()) {
