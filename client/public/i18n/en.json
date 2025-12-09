@@ -60,15 +60,15 @@
     "other": "other"
   },
   "menu": {
-    "Measurements": "Measurements",
     "measurements": "Measurements",
-    "Heatmap": "Heatmap",
-    "Dashboard": "Dashboard",
-    "Equipment": "Equipment",
+    "heatmap": "Heatmap",
+    "dashboard": "Dashboard",
     "equipment": "Equipment",
     "route_segments": "Route segments",
-    "Statistics": "Statistics",
-    "Workouts": "Workouts"
+    "statistics": "Statistics",
+    "workouts": "Workouts",
+    "admin": "Admin",
+    "profile": "Profile"
   },
   "units": {
     "feet": "feet",

@@ -25,11 +25,11 @@
             [class.py-3]="!isOpen()"
             [class.rounded-0]="!isOpen()"
             [disableTooltip]="isOpen()"
-            [ngbTooltip]="item.label"
+            [ngbTooltip]="item.label | translate"
             [routerLink]="item.route"
           >
             <app-icon size="1.125rem" [class.me-2]="isOpen()" [name]="item.iconKey" />
-            <span [class.visually-hidden]="!isOpen()">{{ item.label }}</span>
+            <span [class.visually-hidden]="!isOpen()">{{ item.label | translate }}</span>
           </a>
         </li>
       }

@@ -4,6 +4,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AppIcon } from '../app-icon/app-icon';
 import { User } from '../../../core/services/user';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { TranslatePipe } from '@ngx-translate/core';
 
 type MenuItem = {
   label: string;
@@ -14,7 +15,7 @@ type MenuItem = {
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive, AppIcon, NgbTooltipModule],
+  imports: [RouterLink, RouterLinkActive, AppIcon, NgbTooltipModule, TranslatePipe],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,15 +27,15 @@ export class Sidebar {
   public readonly sidebarToggle = output<void>();
 
   public allMenuItems: MenuItem[] = [
-    { label: $localize`Dashboard`, iconKey: 'dashboard', route: '/dashboard' },
-    { label: $localize`Workouts`, iconKey: 'workout', route: '/workouts' },
-    { label: $localize`Measurements`, iconKey: 'scale', route: '/measurements' },
-    { label: $localize`Statistics`, iconKey: 'statistics', route: '/statistics' },
-    { label: $localize`Heatmap`, iconKey: 'heatmap', route: '/heatmap' },
-    { label: $localize`Route segments`, iconKey: 'route-segment', route: '/route-segments' },
-    { label: $localize`Equipment`, iconKey: 'equipment', route: '/equipment' },
-    { label: $localize`Profile`, iconKey: 'user-profile', route: '/profile' },
-    { label: $localize`Admin`, iconKey: 'admin', route: '/admin', adminOnly: true },
+    { label: `menu.dashboard`, iconKey: 'dashboard', route: '/dashboard' },
+    { label: `menu.workouts`, iconKey: 'workout', route: '/workouts' },
+    { label: `menu.measurements`, iconKey: 'scale', route: '/measurements' },
+    { label: `menu.statistics`, iconKey: 'statistics', route: '/statistics' },
+    { label: `menu.heatmap`, iconKey: 'heatmap', route: '/heatmap' },
+    { label: `menu.route_segments`, iconKey: 'route-segment', route: '/route-segments' },
+    { label: `menu.equipment`, iconKey: 'equipment', route: '/equipment' },
+    { label: `menu.profile`, iconKey: 'user-profile', route: '/profile' },
+    { label: `menu.admin`, iconKey: 'admin', route: '/admin', adminOnly: true },
   ];
 
   // Computed property to filter menu items based on user permissions

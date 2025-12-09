@@ -48,7 +48,7 @@ export class Workouts extends PaginatedListView<Workout> {
   public readonly hasWorkouts = computed(() => this.hasItems());
 
   public readonly listConfig: BaseListConfig = {
-    title: 'menu.Workouts',
+    title: 'menu.workouts',
     addButtonText: 'measurements.add_workout',
     enableSearch: false,
     enableFilters: true,
