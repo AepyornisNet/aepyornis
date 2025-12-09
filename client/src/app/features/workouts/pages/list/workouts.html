@@ -132,7 +132,7 @@
             {{ formatDate(workout.date) }}
           </div>
         </td>
-        <td class="position-relative text-end" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -145,7 +145,7 @@
             }
           </div>
         </td>
-        <td class="text-end position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -158,7 +158,7 @@
             }
           </div>
         </td>
-        <td class="text-end d-none d-md-table-cell position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td class="d-none d-md-table-cell position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
