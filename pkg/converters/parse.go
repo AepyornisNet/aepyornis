@@ -60,7 +60,7 @@ func parseContent(filename string, content []byte) ([]*Workout, error) {
 	case ".gpx":
 		return parseSingle(ParseGPX, "gpx", content)
 	case ".fit":
-		return parseSingle(ParseFit, "fit", content)
+		return ParseFit(content)
 	case ".tcx":
 		return parseSingle(ParseTCX, "tcx", content)
 	case ".zip":

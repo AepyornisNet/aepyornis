@@ -351,6 +351,14 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 			data = gpxAsMapData(g.GPX)
 		}
 
+		if data == nil {
+			data = &MapData{}
+		}
+
+		if g.NativeParsed {
+			data.WorkoutData.MergeNonZero(g.Data)
+		}
+
 		if workoutType == WorkoutTypeAutoDetect {
 			workoutType = autoDetectWorkoutType(data, g.GPX, g.Data.Name)
 		}
@@ -602,7 +610,7 @@ func (w *Workout) save(db *gorm.DB) error {
 	return db.Save(w).Error
 }
 
-func (w *Workout) AsGPX() (*gpx.GPX, error) {
+func (w *Workout) ReparseFile() (*converters.Workout, error) {
 	if !w.HasFile() {
 		return nil, errors.New("workout has no GPX")
 	}
@@ -612,7 +620,7 @@ func (w *Workout) AsGPX() (*gpx.GPX, error) {
 		return nil, err
 	}
 
-	return wo.GPX, nil
+	return wo, nil
 }
 
 func (w *Workout) setData(data *MapData) {
@@ -714,12 +722,17 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 		return w.Save(db)
 	}
 
-	gpxContent, err := w.AsGPX()
+	updatedWorkout, err := w.ReparseFile()
 	if err != nil {
 		return err
 	}
 
-	w.setData(gpxAsMapData(gpxContent))
+	w.setData(gpxAsMapData(updatedWorkout.GPX))
+	if updatedWorkout.NativeParsed {
+		w.Data.WorkoutData.MergeNonZero(updatedWorkout.Data)
+		w.setData(w.Data)
+	}
+
 	if err := w.Data.Save(db); err != nil {
 		return err
 	}

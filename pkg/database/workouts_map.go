@@ -400,14 +400,16 @@ func createMapData(gpxContent *gpx.GPX) *MapData {
 		WorkoutData: converters.WorkoutData{
 			TotalDistance:       totalDistance,
 			TotalDuration:       totalDuration,
-			MaxSpeed:            maxSpeed,
-			AverageSpeed:        totalDistance / totalDuration.Seconds(),
-			AverageSpeedNoPause: totalDistance / (totalDuration - pauseDuration).Seconds(),
 			PauseDuration:       pauseDuration,
-			MinElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, minElevation),
-			MaxElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, maxElevation),
-			TotalUp:             uphill,
-			TotalDown:           downhill,
+			WorkoutStats: converters.WorkoutStats{
+				MinElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, minElevation),
+				MaxElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, maxElevation),
+				MaxSpeed:            maxSpeed,
+				AverageSpeed:        totalDistance / totalDuration.Seconds(),
+				AverageSpeedNoPause: totalDistance / (totalDuration - pauseDuration).Seconds(),
+				TotalUp:             uphill,
+				TotalDown:           downhill,
+			},
 		},
 	}
 

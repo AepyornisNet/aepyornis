@@ -14,6 +14,7 @@ type WorkoutResponse struct {
 	Name       string               `json:"name"`
 	Notes      string               `json:"notes"`
 	Type       string               `json:"type"`
+	SubType    string               `json:"sub_type"`
 	CustomType string               `json:"custom_type,omitempty"`
 	UserID     uint64               `json:"user_id"`
 	User       *UserProfileResponse `json:"user,omitempty"`
@@ -38,6 +39,12 @@ type WorkoutResponse struct {
 	MinElevation        *float64 `json:"min_elevation,omitempty"`
 	MaxElevation        *float64 `json:"max_elevation,omitempty"`
 	PauseDuration       *int64   `json:"pause_duration,omitempty"` // Duration in seconds
+	AverageCadence      *float64 `json:"average_cadence,omitempty"`
+	MaxCadence          *float64 `json:"max_cadence,omitempty"`
+	AverageHeartRate    *float64 `json:"average_heart_rate,omitempty"`
+	MaxHeartRate        *float64 `json:"max_heart_rate,omitempty"`
+	AveragePower        *float64 `json:"average_power,omitempty"`
+	MaxPower            *float64 `json:"max_power,omitempty"`
 }
 
 // WorkoutDetailResponse represents a detailed workout in API v2 responses
@@ -47,6 +54,28 @@ type WorkoutDetailResponse struct {
 	MapData             *MapDataResponse            `json:"map_data,omitempty"`
 	Climbs              []ClimbSegmentResponse      `json:"climbs,omitempty"`
 	RouteSegmentMatches []RouteSegmentMatchResponse `json:"route_segment_matches,omitempty"`
+	Laps                []WorkoutLapResponse        `json:"laps,omitempty"`
+}
+
+type WorkoutLapResponse struct {
+	Start               time.Time `json:"start"`
+	Stop                time.Time `json:"stop"`
+	TotalDistance       float64   `json:"total_distance"`
+	TotalDuration       int64     `json:"total_duration"`
+	PauseDuration       int64     `json:"pause_duration"`
+	MinElevation        float64   `json:"min_elevation"`
+	MaxElevation        float64   `json:"max_elevation"`
+	TotalUp             float64   `json:"total_up"`
+	TotalDown           float64   `json:"total_down"`
+	AverageSpeed        float64   `json:"average_speed"`
+	AverageSpeedNoPause float64   `json:"average_speed_no_pause"`
+	MaxSpeed            float64   `json:"max_speed"`
+	AverageCadence      float64   `json:"average_cadence"`
+	MaxCadence          float64   `json:"max_cadence"`
+	AverageHeartRate    float64   `json:"average_heart_rate"`
+	MaxHeartRate        float64   `json:"max_heart_rate"`
+	AveragePower        float64   `json:"average_power"`
+	MaxPower            float64   `json:"max_power"`
 }
 
 // MapDataResponse represents workout map data in API v2 responses
@@ -146,6 +175,7 @@ func NewWorkoutResponse(w *database.Workout) WorkoutResponse {
 
 	// Add map data if available
 	if w.Data != nil {
+		wr.SubType = w.Data.SubType
 		wr.AddressString = w.Data.AddressString
 		wr.TotalDistance = &w.Data.TotalDistance
 
@@ -162,6 +192,12 @@ func NewWorkoutResponse(w *database.Workout) WorkoutResponse {
 		wr.MaxSpeed = &w.Data.MaxSpeed
 		wr.MinElevation = &w.Data.MinElevation
 		wr.MaxElevation = &w.Data.MaxElevation
+		wr.AverageCadence = &w.Data.AverageCadence
+		wr.MaxCadence = &w.Data.MaxCadence
+		wr.AverageHeartRate = &w.Data.AverageHeartRate
+		wr.MaxHeartRate = &w.Data.MaxHeartRate
+		wr.AveragePower = &w.Data.AveragePower
+		wr.MaxPower = &w.Data.MaxPower
 
 		// Convert pause duration to seconds (int64)
 		pauseDurationSecs := int64(w.Data.PauseDuration.Seconds())
@@ -251,6 +287,32 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 		}
 
 		wr.MapData = workoutResponseMapData(w)
+	}
+
+	if w.Data != nil && len(w.Data.Laps) > 0 {
+		wr.Laps = make([]WorkoutLapResponse, len(w.Data.Laps))
+		for i, lap := range w.Data.Laps {
+			wr.Laps[i] = WorkoutLapResponse{
+				Start:               lap.Start,
+				Stop:                lap.Stop,
+				TotalDistance:       lap.TotalDistance,
+				TotalDuration:       int64(lap.TotalDuration.Seconds()),
+				PauseDuration:       int64(lap.PauseDuration.Seconds()),
+				MinElevation:        lap.MinElevation,
+				MaxElevation:        lap.MaxElevation,
+				TotalUp:             lap.TotalUp,
+				TotalDown:           lap.TotalDown,
+				AverageSpeed:        lap.AverageSpeed,
+				AverageSpeedNoPause: lap.AverageSpeedNoPause,
+				MaxSpeed:            lap.MaxSpeed,
+				AverageCadence:      lap.AverageCadence,
+				MaxCadence:          lap.MaxCadence,
+				AverageHeartRate:    lap.AverageHeartRate,
+				MaxHeartRate:        lap.MaxHeartRate,
+				AveragePower:        lap.AveragePower,
+				MaxPower:            lap.MaxPower,
+			}
+		}
 	}
 
 	// Add route segment matches

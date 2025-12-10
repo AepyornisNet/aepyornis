@@ -15,7 +15,7 @@ import (
 	"github.com/tkrajina/gpxgo/gpx"
 )
 
-func ParseFit(content []byte) (*gpx.GPX, error) {
+func ParseFit(content []byte) ([]*Workout, error) {
 	// Decode the FIT file data
 	dec := decoder.New(bytes.NewReader(content), decoder.WithIgnoreChecksum())
 
@@ -99,5 +99,155 @@ func ParseFit(content []byte) (*gpx.GPX, error) {
 		gpxFile.AppendPoint(p)
 	}
 
-	return gpxFile, nil
+	session := act.Sessions[0]
+	laps := make([]WorkoutLap, 0, len(act.Laps))
+
+	for _, lap := range act.Laps {
+		lapStart := lap.StartTime.Local()
+		elapsed := time.Duration(0)
+		timer := time.Duration(0)
+		totalDistance := 0.0
+
+		if lap.TotalElapsedTime != math.MaxUint32 {
+			elapsed = time.Duration(lap.TotalElapsedTimeScaled() * float64(time.Second))
+		}
+
+		if lap.TotalTimerTime != math.MaxUint32 {
+			timer = time.Duration(lap.TotalTimerTimeScaled() * float64(time.Second))
+		}
+
+		if lap.TotalDistance != math.MaxUint32 {
+			totalDistance = lap.TotalDistanceScaled()
+		}
+
+		lapStop := lapStart
+		if !lapStart.IsZero() && elapsed > 0 {
+			lapStop = lapStart.Add(elapsed)
+		}
+
+		pause := max(elapsed - timer, 0)
+
+		minElevation := 0.0
+		maxElevation := 0.0
+
+		if lap.EnhancedMinAltitude != math.MaxUint32 {
+			minElevation = lap.EnhancedMinAltitudeScaled()
+		} else if lap.MinAltitude != math.MaxUint16 {
+			minElevation = lap.MinAltitudeScaled()
+		}
+
+		if lap.EnhancedMaxAltitude != math.MaxUint32 {
+			maxElevation = lap.EnhancedMaxAltitudeScaled()
+		} else if lap.MaxAltitude != math.MaxUint16 {
+			maxElevation = lap.MaxAltitudeScaled()
+		}
+
+		avgSpeed := 0.0
+		if lap.EnhancedAvgSpeed != math.MaxUint32 {
+			avgSpeed = lap.EnhancedAvgSpeedScaled()
+		} else if lap.AvgSpeed != math.MaxUint16 {
+			avgSpeed = lap.AvgSpeedScaled()
+		}
+
+		maxSpeed := 0.0
+		if lap.EnhancedMaxSpeed != math.MaxUint32 {
+			maxSpeed = lap.EnhancedMaxSpeedScaled()
+		} else if lap.MaxSpeed != math.MaxUint16 {
+			maxSpeed = lap.MaxSpeedScaled()
+		}
+
+		avgCadence := 0.0
+		if lap.AvgCadence != math.MaxUint8 {
+			avgCadence = float64(lap.AvgCadence)
+		}
+
+		maxCadence := 0.0
+		if lap.MaxCadence != math.MaxUint8 {
+			maxCadence = float64(lap.MaxCadence)
+		}
+
+		avgHeartRate := 0.0
+		if lap.AvgHeartRate != math.MaxUint8 {
+			avgHeartRate = float64(lap.AvgHeartRate)
+		}
+
+		maxHeartRate := 0.0
+		if lap.MaxHeartRate != math.MaxUint8 {
+			maxHeartRate = float64(lap.MaxHeartRate)
+		}
+
+		avgPower := 0.0
+		if lap.AvgPower != math.MaxUint16 {
+			avgPower = float64(lap.AvgPower)
+		}
+
+		maxPower := 0.0
+		if lap.MaxPower != math.MaxUint16 {
+			maxPower = float64(lap.MaxPower)
+		}
+
+		totalUp := 0.0
+		if lap.TotalAscent != math.MaxUint16 {
+			totalUp = float64(lap.TotalAscent)
+		}
+
+		totalDown := 0.0
+		if lap.TotalDescent != math.MaxUint16 {
+			totalDown = float64(lap.TotalDescent)
+		}
+
+		movingDuration := elapsed - pause
+		avgSpeedNoPause := avgSpeed
+		if totalDistance > 0 && movingDuration > 0 {
+			avgSpeedNoPause = totalDistance / movingDuration.Seconds()
+		}
+
+		laps = append(laps, WorkoutLap{
+			Start:         lapStart,
+			Stop:          lapStop,
+			TotalDistance: totalDistance,
+			TotalDuration: elapsed,
+			PauseDuration: pause,
+			WorkoutStats: WorkoutStats{
+				MinElevation:        minElevation,
+				MaxElevation:        maxElevation,
+				TotalUp:             totalUp,
+				TotalDown:           totalDown,
+				AverageSpeed:        avgSpeed,
+				AverageSpeedNoPause: avgSpeedNoPause,
+				MaxSpeed:            maxSpeed,
+				AverageCadence:      avgCadence,
+				MaxCadence:          maxCadence,
+				AverageHeartRate:    avgHeartRate,
+				MaxHeartRate:        maxHeartRate,
+				AveragePower:        avgPower,
+				MaxPower:            maxPower,
+			},
+		})
+	}
+	w := &Workout{
+		GPX:      gpxFile,
+		FileType: "fit",
+		Content:  content,
+		Data: WorkoutData{
+			SubType:       session.SubSport.String(),
+			TotalDistance: session.TotalDistanceScaled(),
+			Laps:          laps,
+			WorkoutStats: WorkoutStats{
+				AverageCadence:   float64(session.AvgCadence),
+				MaxCadence:       float64(session.MaxCadence),
+				AverageHeartRate: float64(session.AvgHeartRate),
+				MaxHeartRate:     float64(session.MaxHeartRate),
+				AverageSpeed:     session.EnhancedAvgSpeedScaled(),
+				MaxSpeed:         session.MaxSpeedScaled(),
+				AveragePower:     float64(session.AvgPower),
+				MaxPower:         cast.ToFloat64(session.MaxPower),
+				TotalUp:          float64(session.TotalAscent),
+				TotalDown:        float64(session.TotalDescent),
+			},
+		},
+		NativeParsed: true,
+	}
+
+	return []*Workout{w}, nil
 }
