@@ -30,6 +30,7 @@ export class Profile implements OnInit {
   public ngOnInit(): void {
     // Initialize form
     this.profileForm = this.fb.group({
+      birthdate: [''],
       api_active: [false],
       totals_show: ['all'],
       timezone: ['UTC'],
@@ -60,6 +61,7 @@ export class Profile implements OnInit {
         this.profile.set(response.results);
         // Update form with loaded profile data
         this.profileForm.patchValue({
+          birthdate: response.results.birthdate ? response.results.birthdate.split('T')[0] : '',
           api_active: response.results.profile.api_active,
           totals_show: response.results.profile.totals_show,
           timezone: response.results.profile.timezone,

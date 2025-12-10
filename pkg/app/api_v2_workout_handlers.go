@@ -102,6 +102,8 @@ func (a *App) apiV2WorkoutHandler(c echo.Context) error {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
 
+	workout.User = user
+
 	// Convert to API response
 	result := api.NewWorkoutDetailResponse(&workout)
 

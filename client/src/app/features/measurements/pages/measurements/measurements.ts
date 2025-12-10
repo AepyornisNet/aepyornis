@@ -39,6 +39,9 @@ export class Measurements extends PaginatedListView<Measurement> {
     weight: null as number | null,
     height: null as number | null,
     steps: null as number | null,
+    ftp: null as number | null,
+    resting_heart_rate: null as number | null,
+    max_heart_rate: null as number | null,
   });
 
   // Form update helpers
@@ -60,6 +63,21 @@ export class Measurements extends PaginatedListView<Measurement> {
   public updateFormSteps(value: string): void {
     const form = this.measurementForm();
     this.measurementForm.set({ ...form, steps: value ? parseInt(value) : null });
+  }
+
+  public updateFormFTP(value: string): void {
+    const form = this.measurementForm();
+    this.measurementForm.set({ ...form, ftp: value ? parseFloat(value) : null });
+  }
+
+  public updateFormRestingHeartRate(value: string): void {
+    const form = this.measurementForm();
+    this.measurementForm.set({ ...form, resting_heart_rate: value ? parseFloat(value) : null });
+  }
+
+  public updateFormMaxHeartRate(value: string): void {
+    const form = this.measurementForm();
+    this.measurementForm.set({ ...form, max_heart_rate: value ? parseFloat(value) : null });
   }
 
   public async loadData(page?: number): Promise<void> {
@@ -108,6 +126,9 @@ export class Measurements extends PaginatedListView<Measurement> {
       weight: null,
       height: null,
       steps: null,
+      ftp: null,
+      resting_heart_rate: null,
+      max_heart_rate: null,
     });
     this.showCreateModal.set(true);
   }
@@ -129,6 +150,9 @@ export class Measurements extends PaginatedListView<Measurement> {
         weight?: number;
         height?: number;
         steps?: number;
+        ftp?: number;
+        resting_heart_rate?: number;
+        max_heart_rate?: number;
       } = { date: form.date };
       if (form.weight !== null && form.weight > 0) {
         payload.weight = form.weight;
@@ -138,6 +162,15 @@ export class Measurements extends PaginatedListView<Measurement> {
       }
       if (form.steps !== null && form.steps > 0) {
         payload.steps = form.steps;
+      }
+      if (form.ftp !== null && form.ftp > 0) {
+        payload.ftp = form.ftp;
+      }
+      if (form.resting_heart_rate !== null && form.resting_heart_rate > 0) {
+        payload.resting_heart_rate = form.resting_heart_rate;
+      }
+      if (form.max_heart_rate !== null && form.max_heart_rate > 0) {
+        payload.max_heart_rate = form.max_heart_rate;
       }
 
       await firstValueFrom(this.api.createOrUpdateMeasurement(payload));
@@ -156,6 +189,9 @@ export class Measurements extends PaginatedListView<Measurement> {
       weight: measurement.weight || null,
       height: measurement.height || null,
       steps: measurement.steps || null,
+      ftp: measurement.ftp || null,
+      resting_heart_rate: measurement.resting_heart_rate || null,
+      max_heart_rate: measurement.max_heart_rate || null,
     });
     this.showEditModal.set(true);
   }
@@ -178,6 +214,9 @@ export class Measurements extends PaginatedListView<Measurement> {
         weight?: number;
         height?: number;
         steps?: number;
+        ftp?: number;
+        resting_heart_rate?: number;
+        max_heart_rate?: number;
       } = { date: form.date };
       if (form.weight !== null && form.weight > 0) {
         payload.weight = form.weight;
@@ -187,6 +226,15 @@ export class Measurements extends PaginatedListView<Measurement> {
       }
       if (form.steps !== null && form.steps > 0) {
         payload.steps = form.steps;
+      }
+      if (form.ftp !== null && form.ftp > 0) {
+        payload.ftp = form.ftp;
+      }
+      if (form.resting_heart_rate !== null && form.resting_heart_rate > 0) {
+        payload.resting_heart_rate = form.resting_heart_rate;
+      }
+      if (form.max_heart_rate !== null && form.max_heart_rate > 0) {
+        payload.max_heart_rate = form.max_heart_rate;
       }
 
       await firstValueFrom(this.api.createOrUpdateMeasurement(payload));

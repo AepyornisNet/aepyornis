@@ -9,11 +9,14 @@ import (
 
 type Measurement struct {
 	Model
-	Date   datatypes.Date `form:"date" json:"date" gorm:"not null;index;uniqueIndex:idx_user_date"` // The date of the measurement
-	Weight float64        `form:"weight" json:"weight"`                                             // The weight of the user, in kilograms
-	Height float64        `form:"height" json:"height"`                                             // The height of the user, in centimeter
-	Steps  float64        `form:"steps" json:"steps"`                                               // The number of steps taken
-	UserID uint64         `gorm:"not null;index;uniqueIndex:idx_user_date" json:"userID"`           // The ID of the user who owns the workout
+	Date             datatypes.Date `form:"date" json:"date" gorm:"not null;index;uniqueIndex:idx_user_date"` // The date of the measurement
+	Weight           float64        `form:"weight" json:"weight"`                                             // The weight of the user, in kilograms
+	Height           float64        `form:"height" json:"height"`                                             // The height of the user, in centimeter
+	Steps            float64        `form:"steps" json:"steps"`                                               // The number of steps taken
+	FTP              float64        `form:"ftp" json:"ftp"`                                                   // Functional Threshold Power, in watts
+	RestingHeartRate float64        `form:"resting_heart_rate" json:"resting_heart_rate"`                     // Resting heart rate, in bpm
+	MaxHeartRate     float64        `form:"max_heart_rate" json:"max_heart_rate"`                             // Maximum heart rate, in bpm
+	UserID           uint64         `gorm:"not null;index;uniqueIndex:idx_user_date" json:"userID"`           // The ID of the user who owns the workout
 }
 
 func (u *User) NewMeasurement(d time.Time) *Measurement {

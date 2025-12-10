@@ -40,8 +40,9 @@ type UserData struct {
 	Model
 	LastVersion string `gorm:"last_version" json:"lastVersion"` // Which version of the app the user has last seen and acknowledged
 
-	Username string `form:"username" gorm:"uniqueIndex;not null;type:varchar(32)" json:"username"` // The user's username
-	Name     string `form:"name" gorm:"type:varchar(64);not null" json:"name"`                     // The user's name
+	Username  string          `form:"username" gorm:"uniqueIndex;not null;type:varchar(32)" json:"username"` // The user's username
+	Name      string          `form:"name" gorm:"type:varchar(64);not null" json:"name"`                     // The user's name
+	Birthdate *datatypes.Date `form:"birthdate" json:"birthdate,omitempty"`                                  // The user's birthdate
 
 	Active bool `form:"active" json:"active"` // Whether the user is active
 	Admin  bool `form:"admin" json:"admin"`   // Whether the user is an admin
@@ -464,6 +465,55 @@ func (u *User) WeightAt(d time.Time) float64 {
 	}
 
 	return w
+}
+
+func (u *User) FTPAt(d time.Time) float64 {
+	val := u.measurementAt("ftp", d)
+	if val == 0 {
+		return 200
+	}
+
+	return val
+}
+
+func (u *User) RestingHeartRateAt(d time.Time) float64 {
+	val := u.measurementAt("resting_heart_rate", d)
+	if val == 0 {
+		return 60
+	}
+
+	return val
+}
+
+func (u *User) MaxHeartRateAt(d time.Time) float64 {
+	val := u.measurementAt("max_heart_rate", d)
+	if val == 0 {
+		if u.Birthdate == nil {
+			return 200
+		}
+
+		return calculateMaxHeartRate(time.Time(*u.Birthdate), d)
+	}
+
+	return val
+}
+
+func calculateMaxHeartRate(birthdate time.Time, at time.Time) float64 {
+	age := at.Year() - birthdate.Year()
+	if at.Month() < birthdate.Month() || (at.Month() == birthdate.Month() && at.Day() < birthdate.Day()) {
+		age--
+	}
+
+	if age < 0 {
+		age = 0
+	}
+
+	maxHR := 220 - age
+	if maxHR <= 0 {
+		return 200
+	}
+
+	return float64(maxHR)
 }
 
 func (u *User) measurementAt(key string, d time.Time) float64 {

@@ -2,10 +2,12 @@ package app
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
+	"gorm.io/datatypes"
 )
 
 func (a *App) registerAPIV2ProfileRoutes(apiGroup *echo.Group) {
@@ -38,6 +40,7 @@ func (a *App) apiV2ProfileUpdateHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
 	var updateData struct {
+		Birthdate           *string                     `json:"birthdate"`
 		PreferredUnits      database.UserPreferredUnits `json:"preferred_units"`
 		Language            string                      `json:"language"`
 		Theme               string                      `json:"theme"`
@@ -53,6 +56,18 @@ func (a *App) apiV2ProfileUpdateHandler(c echo.Context) error {
 		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
 	}
 
+	// Update user birthdate if provided
+	if updateData.Birthdate != nil && *updateData.Birthdate != "" {
+		t, err := time.Parse("2006-01-02", *updateData.Birthdate)
+		if err != nil {
+			return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		}
+		bd := datatypes.Date(t)
+		user.Birthdate = &bd
+	} else {
+		user.Birthdate = nil
+	}
+
 	// Update profile fields
 	user.Profile.PreferredUnits = updateData.PreferredUnits
 	user.Profile.Language = updateData.Language
@@ -66,6 +81,11 @@ func (a *App) apiV2ProfileUpdateHandler(c echo.Context) error {
 	user.Profile.UserID = user.ID
 
 	if err := user.Profile.Save(a.db); err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
+	// Save user to update birthdate
+	if err := user.Save(a.db); err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
 

@@ -159,10 +159,13 @@
     "add_measurement": "Add Measurement",
     "add_workout": "Add workout",
     "date": "Date",
+    "ftp": "FTP",
     "height": "Height",
+    "max_hr": "Max HR",
     "measurements": "Measurements",
     "measurements_start_tracking": "Measurements Start Tracking",
     "no_measurements_found": "No measurements found",
+    "resting_hr": "Resting HR",
     "steps": "Steps",
     "update_measurement": "Update measurement",
     "weight": "Weight"
@@ -449,6 +452,7 @@
     "profile": {
       "your_settings": "Your settings",
       "auto_import_directory": "Auto import directory",
+      "birthdate": "Birthdate",
       "disable_social_sharing_buttons": "Disable social sharing buttons",
       "enable_api_access": "Enable API access",
       "Language": "Language",

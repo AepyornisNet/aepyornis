@@ -293,14 +293,18 @@ func workoutResponseMapData(w *database.Workout) *MapDataResponse {
 			ExtraMetrics: make(map[string][]any),
 		}
 
+		zoneMetrics := newZoneMetricsBuilder(w)
+
 		// Initialize extra metrics arrays
-		for _, metric := range w.Data.ExtraMetrics {
+		for _, metric := range mapData.ExtraMetrics {
 			if metric == "speed" || metric == "elevation" {
 				continue
 			}
 
 			mapData.Details.ExtraMetrics[metric] = make([]any, len(points))
 		}
+
+		zoneMetrics.ensureBuffers(mapData.Details.ExtraMetrics, len(points))
 
 		for i, point := range points {
 			mapData.Details.Position[i] = []float64{point.Lat, point.Lng}
@@ -328,8 +332,153 @@ func workoutResponseMapData(w *database.Workout) *MapDataResponse {
 					mapData.Details.ExtraMetrics[metric][i] = nil
 				}
 			}
+
+			zoneMetrics.setForPoint(i, point.ExtraMetrics)
 		}
 	}
 
 	return mapData
+}
+
+const (
+	hrZoneMetricName  = "hr-zone"
+	ftpZoneMetricName = "zone"
+)
+
+type zoneMetricsBuilder struct {
+	user     *database.User
+	date     time.Time
+	maxHR    float64
+	restHR   float64
+	ftp      float64
+	hasHR    bool
+	hasPower bool
+	hrZones  []any
+	ftpZones []any
+}
+
+func newZoneMetricsBuilder(w *database.Workout) *zoneMetricsBuilder {
+	if w == nil || w.Data == nil {
+		return &zoneMetricsBuilder{}
+	}
+
+	return &zoneMetricsBuilder{
+		user:     w.User,
+		date:     w.Date,
+		maxHR:    0,
+		restHR:   0,
+		ftp:      0,
+		hasHR:    w.HasHeartRate(),
+		hasPower: w.HasExtraMetric("power"),
+	}
+}
+
+func (z *zoneMetricsBuilder) shouldBuild() bool {
+	return z.user != nil && (z.hasHR || z.hasPower)
+}
+
+func (z *zoneMetricsBuilder) ensureBuffers(extra map[string][]any, length int) {
+	if !z.shouldBuild() {
+		return
+	}
+
+	// Cache user-dependent metrics once
+	if z.maxHR == 0 {
+		z.maxHR = z.user.MaxHeartRateAt(z.date)
+	}
+	if z.restHR == 0 {
+		z.restHR = z.user.RestingHeartRateAt(z.date)
+	}
+	if z.ftp == 0 {
+		z.ftp = z.user.FTPAt(z.date)
+	}
+
+	if z.hasHR {
+		hrBuf := make([]any, length)
+		extra[hrZoneMetricName] = hrBuf
+		z.hrZones = hrBuf
+	}
+
+	if z.hasPower {
+		ftpBuf := make([]any, length)
+		extra[ftpZoneMetricName] = ftpBuf
+		z.ftpZones = ftpBuf
+	}
+}
+
+func (z *zoneMetricsBuilder) setForPoint(idx int, metrics database.ExtraMetrics) {
+	if !z.shouldBuild() {
+		return
+	}
+
+	if z.hasHR && z.hrZones != nil {
+		if hr, ok := metrics["heart-rate"]; ok && hr > 0 {
+			z.hrZones[idx] = calculateHeartRateZone(hr, z.maxHR, z.restHR)
+		} else {
+			z.hrZones[idx] = nil
+		}
+	}
+
+	if z.hasPower && z.ftpZones != nil {
+		if power, ok := metrics["power"]; ok && power > 0 {
+			z.ftpZones[idx] = calculateFTPZone(power, z.ftp)
+		} else {
+			z.ftpZones[idx] = nil
+		}
+	}
+}
+
+func calculateHeartRateZone(hr float64, maxHR float64, restHR float64) int {
+	if maxHR <= 0 {
+		maxHR = 200
+	}
+
+	if restHR <= 0 {
+		restHR = 60
+	}
+
+	reserve := maxHR - restHR
+	if reserve <= 0 {
+		reserve = maxHR
+	}
+
+	percent := (hr - restHR) / reserve
+
+	switch {
+	case percent < 0.6:
+		return 1
+	case percent < 0.7:
+		return 2
+	case percent < 0.8:
+		return 3
+	case percent < 0.9:
+		return 4
+	default:
+		return 5
+	}
+}
+
+func calculateFTPZone(power float64, ftp float64) int {
+	if ftp <= 0 {
+		ftp = 200
+	}
+
+	ratio := power / ftp
+
+	switch {
+	case ratio < 0.55:
+		return 1
+	case ratio < 0.75:
+		return 2
+	case ratio < 0.9:
+		return 3
+	case ratio < 1.05:
+		return 4
+	case ratio < 1.2:
+		return 5
+	case ratio < 1.5:
+		return 6
+	default:
+		return 7
+	}
 }

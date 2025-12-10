@@ -34,6 +34,27 @@ import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { TranslatePipe } from '@ngx-translate/core';
 
+const HR_ZONE_COLORS: Record<number, string> = {
+  1: '#3b82f6',
+  2: '#22d3ee',
+  3: '#22c55e',
+  4: '#f59e0b',
+  5: '#ef4444',
+};
+
+const FTP_ZONE_COLORS: Record<number, string> = {
+  1: '#9ca3af',
+  2: '#2563eb',
+  3: '#22c55e',
+  4: '#fcd34d',
+  5: '#f97316',
+  6: '#dc2626',
+  7: '#7f1d1d',
+};
+
+const DEFAULT_HEART_RATE_COLOR = '#3b82f6';
+const DEFAULT_POWER_COLOR = '#9ca3af';
+
 Chart.register(
   TimeScale,
   CategoryScale,
@@ -320,19 +341,6 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    // Add elevation dataset with area fill
-    if (mapData.elevation) {
-      datasets.push({
-        type: 'line',
-        label: 'Elevation',
-        data: mapData.elevation,
-        yAxisID: 'elevation',
-        fill: 'start',
-        spanGaps: true,
-        hidden: false,
-      });
-    }
-
     // Add extra metrics
     if (mapData.extra_metrics) {
       for (const metric of metrics) {
@@ -349,9 +357,50 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             yAxisID: metric,
             spanGaps: true,
             hidden: settings?.hiddenByDefault || false,
+            ...(metric === 'heart-rate'
+              ? {
+                  segment: {
+                    borderColor: (ctx): string =>
+                      this.zoneColor(
+                        mapData,
+                        'hr-zone',
+                        ctx.p0DataIndex,
+                        HR_ZONE_COLORS,
+                        DEFAULT_HEART_RATE_COLOR,
+                      ),
+                  },
+                }
+              : {}),
+            ...(metric === 'power'
+              ? {
+                  segment: {
+                    borderColor: (ctx): string =>
+                      this.zoneColor(
+                        mapData,
+                        'zone',
+                        ctx.p0DataIndex,
+                        FTP_ZONE_COLORS,
+                        DEFAULT_POWER_COLOR,
+                      ),
+                  },
+                }
+              : {}),
           });
         }
       }
+    }
+
+    // Add elevation dataset with area fill
+    if (mapData.elevation) {
+      datasets.push({
+        type: 'line',
+        label: 'Elevation',
+        data: mapData.elevation,
+        yAxisID: 'elevation',
+        fill: 'start',
+        spanGaps: true,
+        hidden: false,
+      });
     }
 
     return datasets;
@@ -560,5 +609,29 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         yaxis: { min: 0, position: 'right' },
       },
     };
+  }
+
+  private zoneColor(
+    mapData: MapDataDetails,
+    metricKey: string,
+    index: number | undefined,
+    palette: Record<number, string>,
+    fallback: string,
+  ): string {
+    if (!mapData?.extra_metrics || index === undefined) {
+      return fallback;
+    }
+
+    const zones = mapData.extra_metrics[metricKey] as (number | null | undefined)[] | undefined;
+    if (!zones || index < 0 || index >= zones.length) {
+      return fallback;
+    }
+
+    const zone = zones[index];
+    if (typeof zone !== 'number') {
+      return fallback;
+    }
+
+    return palette[zone] ?? fallback;
   }
 }

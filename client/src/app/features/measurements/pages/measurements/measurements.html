@@ -17,6 +17,13 @@
             {{ 'measurements.height' | translate }} (cm)
           </th>
           <th class="text-end d-none d-lg-table-cell">{{ 'measurements.steps' | translate }}</th>
+          <th class="text-end d-none d-xl-table-cell">{{ 'measurements.ftp' | translate }} (W)</th>
+          <th class="text-end d-none d-xl-table-cell">
+            {{ 'measurements.resting_hr' | translate }} (bpm)
+          </th>
+          <th class="text-end d-none d-xl-table-cell">
+            {{ 'measurements.max_hr' | translate }} (bpm)
+          </th>
           <th class="text-center">{{ 'equipment.actions' | translate }}</th>
         </tr>
       </thead>
@@ -43,6 +50,27 @@
             <td class="text-end d-none d-lg-table-cell">
               @if (measurement.steps) {
                 {{ measurement.steps.toLocaleString() }}
+              } @else {
+                <span class="text-muted">-</span>
+              }
+            </td>
+            <td class="text-end d-none d-xl-table-cell">
+              @if (measurement.ftp) {
+                {{ measurement.ftp.toFixed(0) }}
+              } @else {
+                <span class="text-muted">-</span>
+              }
+            </td>
+            <td class="text-end d-none d-xl-table-cell">
+              @if (measurement.resting_heart_rate) {
+                {{ measurement.resting_heart_rate.toFixed(0) }}
+              } @else {
+                <span class="text-muted">-</span>
+              }
+            </td>
+            <td class="text-end d-none d-xl-table-cell">
+              @if (measurement.max_heart_rate) {
+                {{ measurement.max_heart_rate.toFixed(0) }}
               } @else {
                 <span class="text-muted">-</span>
               }
@@ -135,6 +163,45 @@
               (input)="updateFormSteps($any($event.target).value)"
             />
           </div>
+          <div class="mb-3">
+            <label class="form-label" for="create-ftp">
+              {{ 'measurements.ftp' | translate }} (W)
+            </label>
+            <input
+              class="form-control"
+              id="create-ftp"
+              step="1"
+              type="number"
+              [value]="measurementForm().ftp || ''"
+              (input)="updateFormFTP($any($event.target).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="create-rhr">
+              {{ 'measurements.resting_hr' | translate }} (bpm)
+            </label>
+            <input
+              class="form-control"
+              id="create-rhr"
+              step="1"
+              type="number"
+              [value]="measurementForm().resting_heart_rate || ''"
+              (input)="updateFormRestingHeartRate($any($event.target).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="create-mhr">
+              {{ 'measurements.max_hr' | translate }} (bpm)
+            </label>
+            <input
+              class="form-control"
+              id="create-mhr"
+              step="1"
+              type="number"
+              [value]="measurementForm().max_heart_rate || ''"
+              (input)="updateFormMaxHeartRate($any($event.target).value)"
+            />
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
@@ -208,6 +275,45 @@
               type="number"
               [value]="measurementForm().steps || ''"
               (input)="updateFormSteps($any($event.target).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="edit-ftp">
+              {{ 'measurements.ftp' | translate }} (W)
+            </label>
+            <input
+              class="form-control"
+              id="edit-ftp"
+              step="1"
+              type="number"
+              [value]="measurementForm().ftp || ''"
+              (input)="updateFormFTP($any($event.target).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="edit-rhr">
+              {{ 'measurements.resting_hr' | translate }} (bpm)
+            </label>
+            <input
+              class="form-control"
+              id="edit-rhr"
+              step="1"
+              type="number"
+              [value]="measurementForm().resting_heart_rate || ''"
+              (input)="updateFormRestingHeartRate($any($event.target).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="edit-mhr">
+              {{ 'measurements.max_hr' | translate }} (bpm)
+            </label>
+            <input
+              class="form-control"
+              id="edit-mhr"
+              step="1"
+              type="number"
+              [value]="measurementForm().max_heart_rate || ''"
+              (input)="updateFormMaxHeartRate($any($event.target).value)"
             />
           </div>
         </div>

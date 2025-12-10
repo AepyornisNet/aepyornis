@@ -197,6 +197,9 @@ export class Api {
     weight?: number;
     height?: number;
     steps?: number;
+    ftp?: number;
+    resting_heart_rate?: number;
+    max_heart_rate?: number;
   }): Observable<APIResponse<Measurement>> {
     return this.http.post<APIResponse<Measurement>>(`${this.baseUrl}/measurements`, measurement);
   }

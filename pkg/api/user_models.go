@@ -11,6 +11,7 @@ type UserProfileResponse struct {
 	ID              uint64                      `json:"id"`
 	Username        string                      `json:"username"`
 	Name            string                      `json:"name"`
+	Birthdate       *time.Time                  `json:"birthdate,omitempty"`
 	Active          bool                        `json:"active"`
 	Admin           bool                        `json:"admin"`
 	LastVersion     string                      `json:"last_version"`
@@ -51,7 +52,7 @@ type AppInfoResponse struct {
 
 // NewUserProfileResponse converts a database user to API response
 func NewUserProfileResponse(u *database.User) UserProfileResponse {
-	return UserProfileResponse{
+	resp := UserProfileResponse{
 		ID:              u.ID,
 		Username:        u.Username,
 		Name:            u.Name,
@@ -78,4 +79,11 @@ func NewUserProfileResponse(u *database.User) UserProfileResponse {
 			PreferFullDate:      u.Profile.PreferFullDate,
 		},
 	}
+
+	if u.Birthdate != nil {
+		bd := time.Time(*u.Birthdate)
+		resp.Birthdate = &bd
+	}
+
+	return resp
 }

@@ -6,6 +6,7 @@ export type UserProfile = {
   id: number;
   username: string;
   name: string;
+  birthdate?: string;
   active: boolean;
   admin: boolean;
   last_version: string;
@@ -51,6 +52,7 @@ export type FullUserProfile = {
   id: number;
   username: string;
   name: string;
+  birthdate?: string;
   active: boolean;
   admin: boolean;
   last_version: string;
@@ -68,6 +70,7 @@ export type UserUpdateRequest = {
 };
 
 export type ProfileUpdateRequest = {
+  birthdate?: string;
   preferred_units: UserPreferredUnits;
   language: string;
   theme: string;
