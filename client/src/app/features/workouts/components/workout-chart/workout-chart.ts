@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -33,6 +34,7 @@ import zoomPlugin from 'chartjs-plugin-zoom';
 import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { TranslatePipe } from '@ngx-translate/core';
+import { User } from '../../../../core/services/user';
 
 const HR_ZONE_COLORS: Record<number, string> = {
   1: '#3b82f6',
@@ -92,10 +94,15 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   public readonly extraMetrics = input<string[]>([]);
 
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
+  private userService = inject(User);
   private chart?: Chart;
   private timeLabels: number[] = [];
   private isUpdatingFromZoom = false; // Flag to prevent infinite loops
   public viewMode: 'time' | 'distance' = 'time';
+
+  private readonly speedUnit = computed(() =>
+    this.userService.getUserInfo()()?.profile?.preferred_units?.speed || 'km/h',
+  );
 
   private get mapDataValue(): MapDataDetails | undefined {
     return this.mapData();
@@ -329,12 +336,13 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     const metricSettings = this.getMetricSettings();
     const datasets: ChartDataset[] = [];
 
-    // Add speed dataset
+    // Add speed dataset (convert to preferred unit)
     if (mapData.speed) {
+      const speedData = mapData.speed.map((val) => this.convertSpeed(val));
       datasets.push({
         type: 'line',
         label: 'Speed',
-        data: mapData.speed,
+        data: speedData,
         yAxisID: 'speed',
         spanGaps: true,
         hidden: false,
@@ -566,10 +574,12 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   }
 
   private getMetricSettings(): Record<string, MetricConfig> {
+    const speedUnit = this.speedUnit();
+
     return {
       speed: {
-        formatter: (val: number) => `${val?.toFixed(2) ?? '-'} m/s`,
-        labelFormatter: (val: number) => `${val} m/s`,
+        formatter: (val: number) => `${val?.toFixed(2) ?? '-'} ${speedUnit === 'mph' ? 'mph' : 'km/h'}`,
+        labelFormatter: (val: number) => `${val} ${speedUnit === 'mph' ? 'mph' : 'km/h'}`,
         formatterYaxis: true,
         yaxis: { min: 0 },
       },
@@ -633,5 +643,20 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     }
 
     return palette[zone] ?? fallback;
+  }
+
+  private convertSpeed(value: number | null | undefined): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const unit = this.speedUnit();
+
+    if (unit === 'mph') {
+      return value * 2.23694;
+    }
+
+    // Default to km/h when unit is not mph
+    return value * 3.6;
   }
 }
