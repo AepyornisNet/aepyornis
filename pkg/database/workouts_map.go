@@ -398,9 +398,9 @@ func createMapData(gpxContent *gpx.GPX) *MapData {
 		Creator: gpxContent.Creator,
 		Center:  mapCenter,
 		WorkoutData: converters.WorkoutData{
-			TotalDistance:       totalDistance,
-			TotalDuration:       totalDuration,
-			PauseDuration:       pauseDuration,
+			TotalDistance: totalDistance,
+			TotalDuration: totalDuration,
+			PauseDuration: pauseDuration,
 			WorkoutStats: converters.WorkoutStats{
 				MinElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, minElevation),
 				MaxElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, maxElevation),

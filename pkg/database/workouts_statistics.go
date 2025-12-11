@@ -11,16 +11,36 @@ import (
 type BreakdownItem struct {
 	FirstPoint    *MapPoint     `json:"firstPoint"`    // First GPS point in this item
 	LastPoint     *MapPoint     `json:"lastPoint"`     // Last GPS point in this item
+	StartIndex    int           `json:"startIndex"`    // Start index in the points slice
+	EndIndex      int           `json:"endIndex"`      // End index in the points slice
 	UnitName      string        `json:"unitName"`      // Unit name
 	UnitCount     float64       `json:"unitCount"`     // Count of the unit per item
 	Counter       int           `json:"counter"`       // Counter of this item in the list of items
 	Distance      float64       `json:"distance"`      // Distance in this item
 	TotalDistance float64       `json:"totalDistance"` // Total distance in all items up to and including this item
-	Duration      time.Duration `json:"duration"`      // Duration in this item
-	TotalDuration time.Duration `json:"totalDuration"` // Total duration in all items up to and including this item
+	Duration      time.Duration `json:"duration"`      // Duration in this item (moving time)
+	TotalDuration time.Duration `json:"totalDuration"` // Total duration in all items up to and including this item (moving time)
 	Speed         float64       `json:"speed"`         // Speed in this item
-	IsBest        bool          `json:"isBest"`        // Whether this item is the best of the list
-	IsWorst       bool          `json:"isWorst"`       // Whether this item is the worst of the list
+	PauseDuration time.Duration `json:"pauseDuration"` // Paused duration in this item
+
+	MinElevation float64 `json:"minElevation"`
+	MaxElevation float64 `json:"maxElevation"`
+	TotalUp      float64 `json:"totalUp"`
+	TotalDown    float64 `json:"totalDown"`
+
+	AverageSpeedNoPause float64 `json:"averageSpeedNoPause"`
+	MaxSpeed            float64 `json:"maxSpeed"`
+
+	AverageCadence float64 `json:"averageCadence"`
+	MaxCadence     float64 `json:"maxCadence"`
+
+	AverageHeartRate float64 `json:"averageHeartRate"`
+	MaxHeartRate     float64 `json:"maxHeartRate"`
+
+	AveragePower float64 `json:"averagePower"`
+	MaxPower     float64 `json:"maxPower"`
+	IsBest       bool    `json:"isBest"`  // Whether this item is the best of the list
+	IsWorst      bool    `json:"isWorst"` // Whether this item is the worst of the list
 
 	LocalTotalDistance string `json:"localTotalDistance,omitempty"` // Total distance in all items up to and including this item
 	LocalDistance      string `json:"localDistance,omitempty"`      // The total distance in the bucket, localized
@@ -29,11 +49,13 @@ type BreakdownItem struct {
 	LocalHeartRate     string `json:"localHeartRate,omitempty"`     // The starting heart rate in the bucket, localized
 	LocalCadence       string `json:"localCadence,omitempty"`       // The starting cadence in the bucket, localized
 
+	DurationSeconds      float64 `json:"durationSeconds,omitempty"`      // Moving duration in the bucket, in seconds
 	TotalDurationSeconds float64 `json:"totalDurationSeconds,omitempty"` // The total duration in the bucket, in seconds
 }
 
 func (bi *BreakdownItem) Localize(units *UserPreferredUnits) {
 	bi.LocalTotalDistance = templatehelpers.HumanDistanceFor(units.Distance())(bi.TotalDistance)
+	bi.DurationSeconds = bi.Duration.Seconds()
 	bi.TotalDurationSeconds = bi.TotalDuration.Seconds()
 
 	bi.LocalDistance = templatehelpers.HumanDistanceFor(units.Distance())(bi.Distance)
@@ -52,6 +74,7 @@ func (bi *BreakdownItem) createNext(fp *MapPoint) BreakdownItem {
 		TotalDistance: bi.TotalDistance,
 		TotalDuration: bi.TotalDuration,
 		FirstPoint:    fp,
+		StartIndex:    bi.EndIndex,
 	}
 }
 
@@ -81,6 +104,104 @@ func (bi *BreakdownItem) CalcultateSpeed() {
 	}
 
 	bi.Speed = bi.Distance / bi.Duration.Seconds()
+}
+
+func (bi *BreakdownItem) enrichStats(points []MapPoint, startIdx, endIdx int) {
+	if len(points) == 0 || startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
+		return
+	}
+
+	bi.MinElevation = points[startIdx].Elevation
+	bi.MaxElevation = points[startIdx].Elevation
+	bi.TotalUp = 0
+	bi.TotalDown = 0
+
+	var maxSpeed float64
+	var sumCadence float64
+	var cadenceCount int
+	var maxCadence float64
+	var sumHR float64
+	var hrCount int
+	var maxHR float64
+	var sumPower float64
+	var powerCount int
+	var maxPower float64
+
+	for i := startIdx; i <= endIdx; i++ {
+		p := points[i]
+
+		if p.Elevation < bi.MinElevation {
+			bi.MinElevation = p.Elevation
+		}
+		if p.Elevation > bi.MaxElevation {
+			bi.MaxElevation = p.Elevation
+		}
+
+		if i > startIdx {
+			diff := p.Elevation - points[i-1].Elevation
+			if diff > 0 {
+				bi.TotalUp += diff
+			} else {
+				bi.TotalDown += -diff
+			}
+		}
+
+		sp := p.AverageSpeed()
+		if sp > maxSpeed {
+			maxSpeed = sp
+		}
+
+		if cad, ok := p.ExtraMetrics["cadence"]; ok && cad > 0 {
+			sumCadence += cad
+			cadenceCount++
+			if cad > maxCadence {
+				maxCadence = cad
+			}
+		}
+
+		if hr, ok := p.ExtraMetrics["heart-rate"]; ok && hr > 0 {
+			sumHR += hr
+			hrCount++
+			if hr > maxHR {
+				maxHR = hr
+			}
+		}
+
+		if power, ok := p.ExtraMetrics["power"]; ok && power > 0 {
+			sumPower += power
+			powerCount++
+			if power > maxPower {
+				maxPower = power
+			}
+		}
+	}
+
+	bi.MaxSpeed = maxSpeed
+	if bi.Duration.Seconds() > 0 {
+		bi.AverageSpeedNoPause = bi.Distance / bi.Duration.Seconds()
+	}
+
+	totalDurationSeconds := bi.Duration.Seconds() + bi.PauseDuration.Seconds()
+	if totalDurationSeconds > 0 {
+		bi.Speed = bi.Distance / totalDurationSeconds
+	}
+
+	bi.TotalDurationSeconds = totalDurationSeconds
+
+	if cadenceCount > 0 {
+		bi.AverageCadence = sumCadence / float64(cadenceCount)
+		bi.MaxCadence = maxCadence
+	}
+
+	if hrCount > 0 {
+		bi.AverageHeartRate = sumHR / float64(hrCount)
+		bi.MaxHeartRate = maxHR
+	}
+
+	if powerCount > 0 {
+		bi.AveragePower = sumPower / float64(powerCount)
+		bi.MaxPower = maxPower
+	}
 }
 
 func calculateBestAndWorst(items []BreakdownItem) {
@@ -113,19 +234,27 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 
 	var items []BreakdownItem
 
+	points := w.Data.Details.Points
+
 	nextItem := BreakdownItem{
 		UnitCount:  count,
 		UnitName:   unit,
 		Counter:    1,
-		FirstPoint: &w.Data.Details.Points[0],
+		FirstPoint: &points[0],
+		StartIndex: 0,
 	}
 
-	for i, p := range w.Data.Details.Points {
-		if !nextItem.canHave(count, unit, &w.Data.Details.Points[i]) {
-			nextItem.LastPoint = &w.Data.Details.Points[i]
+	for i := 0; i < len(points); i++ {
+		p := points[i]
+
+		if !nextItem.canHave(count, unit, &points[i]) {
+			nextItem.EndIndex = i
+			nextItem.LastPoint = &points[i]
 			nextItem.CalcultateSpeed()
+			nextItem.enrichStats(points, nextItem.StartIndex, i)
 			items = append(items, nextItem)
-			nextItem = nextItem.createNext(&w.Data.Details.Points[i])
+			nextItem = nextItem.createNext(&points[i])
+			nextItem.StartIndex = i
 		}
 
 		nextItem.Distance += p.Distance
@@ -135,13 +264,17 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 		if p.AverageSpeed()*3.6 >= 1.0 {
 			nextItem.Duration += p.Duration
 			nextItem.TotalDuration += p.Duration
+		} else {
+			nextItem.PauseDuration += p.Duration
 		}
 	}
 
-	nextItem.LastPoint = &w.Data.Details.Points[len(w.Data.Details.Points)-1]
+	nextItem.EndIndex = len(points) - 1
+	nextItem.LastPoint = &points[len(points)-1]
 
 	if nextItem.FirstPoint != nil {
 		nextItem.CalcultateSpeed()
+		nextItem.enrichStats(points, nextItem.StartIndex, nextItem.EndIndex)
 		items = append(items, nextItem)
 	}
 

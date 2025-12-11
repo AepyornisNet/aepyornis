@@ -11,6 +11,7 @@ export type Workout = {
   name: string;
   notes: string;
   type: string;
+  sub_type?: string;
   custom_type?: string;
   user_id: number;
   user?: UserProfile;
@@ -35,6 +36,12 @@ export type Workout = {
   min_elevation?: number;
   max_elevation?: number;
   pause_duration?: number;
+  average_cadence?: number;
+  max_cadence?: number;
+  average_heart_rate?: number;
+  max_heart_rate?: number;
+  average_power?: number;
+  max_power?: number;
 };
 
 export type WorkoutDetail = {
@@ -42,6 +49,7 @@ export type WorkoutDetail = {
   map_data?: MapData;
   climbs?: ClimbSegment[];
   route_segment_matches?: RouteSegmentMatch[];
+  laps?: WorkoutLap[];
 } & Workout;
 
 export type MapData = {
@@ -67,6 +75,56 @@ export type MapDataDetails = {
   elevation: number[];
 
   extra_metrics?: Record<string, (number | null)[]>;
+};
+
+export type WorkoutLap = {
+  start: string;
+  stop: string;
+  total_distance: number;
+  total_duration: number;
+  pause_duration: number;
+  min_elevation: number;
+  max_elevation: number;
+  total_up: number;
+  total_down: number;
+  average_speed: number;
+  average_speed_no_pause: number;
+  max_speed: number;
+  average_pace?: number;
+  average_cadence: number;
+  max_cadence: number;
+  average_heart_rate: number;
+  max_heart_rate: number;
+  average_power: number;
+  max_power: number;
+};
+
+export type WorkoutBreakdownItem = {
+  start_index: number;
+  end_index: number;
+  distance: number;
+  duration: number;
+  min_elevation: number;
+  max_elevation: number;
+  total_up: number;
+  total_down: number;
+  average_speed: number;
+  average_speed_no_pause: number;
+  average_pace?: number;
+  max_speed: number;
+  average_cadence: number;
+  max_cadence: number;
+  average_heart_rate: number;
+  max_heart_rate: number;
+  average_power: number;
+  max_power: number;
+  is_best?: boolean;
+  is_worst?: boolean;
+};
+
+export type WorkoutBreakdown = {
+  mode: 'laps' | 'unit';
+  items?: WorkoutBreakdownItem[];
 };
 
 export type ClimbSegment = {

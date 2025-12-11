@@ -18,6 +18,7 @@ import {
   CalendarEvent,
   Totals,
   Workout,
+  WorkoutBreakdown,
   WorkoutDetail,
   WorkoutListParams,
   WorkoutRecord,
@@ -77,6 +78,26 @@ export class Api {
 
   public getWorkout(id: number): Observable<APIResponse<WorkoutDetail>> {
     return this.http.get<APIResponse<WorkoutDetail>>(`${this.baseUrl}/workouts/${id}`);
+  }
+
+  public getWorkoutBreakdown(
+    id: number,
+    params?: { count?: number; mode?: 'auto' | 'laps' | 'unit' | string },
+  ): Observable<APIResponse<WorkoutBreakdown>> {
+    let httpParams = new HttpParams();
+
+    if (params?.count) {
+      httpParams = httpParams.set('count', params.count.toString());
+    }
+
+    if (params?.mode) {
+      httpParams = httpParams.set('mode', params.mode);
+    }
+
+    return this.http.get<APIResponse<WorkoutBreakdown>>(
+      `${this.baseUrl}/workouts/${id}/breakdown`,
+      { params: httpParams },
+    );
   }
 
   public getPublicWorkout(uuid: string): Observable<APIResponse<WorkoutDetail>> {

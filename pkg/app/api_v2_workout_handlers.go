@@ -20,6 +20,7 @@ func (a *App) registerAPIV2WorkoutRoutes(apiGroup *echo.Group, apiGroupPublic *e
 	workoutGroup.GET("/recent", a.apiV2RecentWorkoutsHandler).Name = "api-v2-workouts-recent"
 	workoutGroup.GET("/calendar", a.apiV2WorkoutsCalendarHandler).Name = "api-v2-workouts-calendar"
 	workoutGroup.GET("/:id", a.apiV2WorkoutHandler).Name = "api-v2-workout"
+	workoutGroup.GET("/:id/breakdown", a.apiV2WorkoutBreakdownHandler).Name = "api-v2-workout-breakdown"
 	workoutGroup.GET("/:id/download", a.apiV2WorkoutDownloadHandler).Name = "api-v2-workout-download"
 	workoutGroup.PUT("/:id", a.apiV2WorkoutUpdateHandler).Name = "api-v2-workout-update"
 	workoutGroup.POST("/:id/toggle-lock", a.apiV2WorkoutToggleLockHandler).Name = "api-v2-workout-toggle-lock"
@@ -109,6 +110,75 @@ func (a *App) apiV2WorkoutHandler(c echo.Context) error {
 
 	resp := api.Response[api.WorkoutDetailResponse]{
 		Results: result,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2WorkoutBreakdownHandler returns breakdown table data or laps for a workout
+func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
+	user := a.getCurrentUser(c)
+
+	// Parse workout ID
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	params := struct {
+		Count float64 `query:"count"`
+		Mode  string  `query:"mode"`
+	}{
+		Count: 1.0,
+		Mode:  "auto",
+	}
+
+	if err := c.Bind(&params); err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	if params.Count <= 0 {
+		params.Count = 1.0
+	}
+
+	// Get workout with details and laps
+	var workout database.Workout
+	if err := a.db.Preload("Data").Preload("Data.Details").Preload("GPX").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+
+	workout.User = user
+
+	resp := api.Response[api.WorkoutBreakdownResponse]{}
+
+	preferLaps := (params.Mode == "" || params.Mode == "auto" || params.Mode == "laps") && workout.Data != nil && len(workout.Data.Laps) > 1
+
+	if preferLaps {
+		resp.Results = api.WorkoutBreakdownResponse{
+			Mode:  "laps",
+			Items: api.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Details.Points, user.PreferredUnits()),
+		}
+
+		return c.JSON(http.StatusOK, resp)
+	}
+
+	if workout.Data == nil || workout.Data.Details == nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+	}
+
+	breakdown, err := workout.StatisticsPer(params.Count, user.PreferredUnits().Distance())
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	units := user.PreferredUnits()
+	for i := range breakdown.Items {
+		breakdown.Items[i].Localize(units)
+	}
+
+	resp.Results = api.WorkoutBreakdownResponse{
+		Mode:  "unit",
+		Items: api.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, user.PreferredUnits()),
 	}
 
 	return c.JSON(http.StatusOK, resp)

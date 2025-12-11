@@ -1,112 +1,120 @@
 <div class="workout-breakdown">
-  @if (availableIntervals.length > 0 && intervals.length > 0) {
+  @if (breakdown() || loading()) {
     <div class="breakdown-header mb-3">
       <div class="d-flex justify-content-between align-items-center">
         <h5 class="mb-0">{{ 'workout.breakdown' | translate }}</h5>
         <div class="btn-group btn-group-sm" role="group">
-          @for (interval of availableIntervals; track interval) {
+          @if (workoutHasLaps()) {
             <button
               class="btn"
               type="button"
-              [class.btn-outline-secondary]="intervalDistance !== interval"
-              [class.btn-primary]="intervalDistance === interval"
+              [class.btn-outline-secondary]="breakdownMode() !== 'laps'"
+              [class.btn-primary]="breakdownMode() === 'laps'"
+              (click)="useLaps()"
+            >
+              {{ 'workout.laps' | translate }}
+            </button>
+          }
+
+          @for (interval of availableIntervals(); track interval) {
+            <button
+              class="btn"
+              type="button"
+              [class.btn-outline-secondary]="!isIntervalActive(interval)"
+              [class.btn-primary]="isIntervalActive(interval)"
               (click)="setIntervalDistance(interval)"
             >
-              {{ interval }} km
+              {{ interval }} {{ distanceUnit() }}
             </button>
           }
         </div>
       </div>
     </div>
 
-    <div class="table-responsive">
-      <table class="table table-sm table-hover breakdown-table">
-        <thead>
-          <tr>
-            <th>{{ 'workout.index' | translate }}</th>
-            <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
-            <th class="text-end">{{ 'workout.time' | translate }}</th>
-            <th class="text-end">{{ 'workout.speed' | translate }}</th>
-            <th class="text-end">{{ 'workout.pace' | translate }}</th>
-            <th class="text-end d-none d-lg-table-cell">{{ 'workout.elev_up' | translate }}</th>
-            <th class="text-end d-none d-lg-table-cell">
-              {{ 'workout.elev_down' | translate }}
-            </th>
-            @if (hasExtraMetric('heart-rate')) {
-              <th class="text-end d-none d-xl-table-cell">{{ 'workout.hr' | translate }}</th>
-            }
-            @if (hasExtraMetric('cadence')) {
-              <th class="text-end d-none d-xl-table-cell">
-                {{ 'workout.cadence' | translate }}
-              </th>
-            }
-            @if (hasExtraMetric('temperature')) {
-              <th class="text-end d-none d-xl-table-cell">{{ 'workout.temp' | translate }}</th>
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (interval of intervals; track interval.intervalNumber; let idx = $index) {
-            <tr
-              class="interval-row"
-              style="cursor: pointer"
-              [class.fastest]="interval.isFastest"
-              [class.slowest]="interval.isSlowest"
-              [class.table-active]="selectedIntervalIndex === idx"
-              (click)="selectInterval(idx)"
-            >
-              <td>
-                @if (interval.isFastest) {
-                  <span class="text-success me-1">↑</span>
-                }
-                @if (interval.isSlowest) {
-                  <span class="text-warning me-1">↓</span>
-                }
-                {{ interval.intervalNumber }}
-              </td>
-              <td class="text-end font-monospace">{{ interval.endDistance.toFixed(2) }} km</td>
-              <td class="text-end font-monospace">
-                {{ formatDuration(interval.duration) }}
-              </td>
-              <td class="text-end font-monospace">{{ formatSpeed(interval.avgSpeed) }} km/h</td>
-              <td class="text-end font-monospace">{{ interval.pace }} /km</td>
-              <td class="text-end font-monospace d-none d-lg-table-cell">
-                {{ interval.elevationGain.toFixed(1) }} m
-              </td>
-              <td class="text-end font-monospace d-none d-lg-table-cell">
-                {{ interval.elevationLoss.toFixed(1) }} m
-              </td>
+    @if (loading()) {
+      <div class="text-center text-muted small mb-2">{{ 'statistics.loading' | translate }}</div>
+    }
+
+    @if (breakdown()?.items?.length) {
+      <div class="table-responsive">
+        <table class="table table-sm table-hover breakdown-table">
+          <thead>
+            <tr>
+              <th>{{ 'workout.index' | translate }}</th>
+              <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
+              <th class="text-end">{{ 'workout.time' | translate }}</th>
+              <th class="text-end">{{ 'workout.speed' | translate }}</th>
+              <th class="text-end">{{ 'workout.pace' | translate }}</th>
+              <th class="text-end d-none d-lg-table-cell">{{ 'workout.elev_up' | translate }}</th>
+              <th class="text-end d-none d-lg-table-cell">{{ 'workout.elev_down' | translate }}</th>
               @if (hasExtraMetric('heart-rate')) {
-                <td class="text-end font-monospace d-none d-xl-table-cell">
-                  @if (interval.avgHeartRate) {
-                    {{ interval.avgHeartRate.toFixed(0) }} bpm
-                  } @else {
-                    -
-                  }
-                </td>
+                <th class="text-end d-none d-xl-table-cell">{{ 'workout.hr' | translate }}</th>
               }
               @if (hasExtraMetric('cadence')) {
-                <td class="text-end font-monospace d-none d-xl-table-cell">
-                  @if (interval.avgCadence) {
-                    {{ interval.avgCadence.toFixed(0) }}
-                  } @else {
-                    -
-                  }
-                </td>
-              }
-              @if (hasExtraMetric('temperature')) {
-                <td class="text-end font-monospace d-none d-xl-table-cell">
-                  @if (interval.avgTemperature !== undefined) {
-                    {{ interval.avgTemperature.toFixed(1) }} °C
-                  } @else {
-                    -
-                  }
-                </td>
+                <th class="text-end d-none d-xl-table-cell">{{ 'workout.cadence' | translate }}</th>
               }
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (item of breakdown()!.items!; track $index; let idx = $index) {
+              <tr
+                class="interval-row"
+                style="cursor: pointer"
+                [class.fastest]="item.is_best"
+                [class.slowest]="item.is_worst"
+                [class.table-active]="selectedIntervalIndex === idx"
+                (click)="selectItem(idx)"
+              >
+                <td>
+                  @if (item.is_best) {
+                    <span class="text-success me-1">↑</span>
+                  }
+                  @if (item.is_worst) {
+                    <span class="text-warning me-1">↓</span>
+                  }
+                  {{ idx + 1 }}
+                </td>
+                <td class="text-end font-monospace">
+                  {{ formatDistance(item.distance) }}
+                </td>
+                <td class="text-end font-monospace">
+                  {{ formatDurationSeconds(item.duration) }}
+                </td>
+                <td class="text-end font-monospace">
+                  {{ formatSpeed(item.average_speed) }}
+                </td>
+                <td class="text-end font-monospace">{{ formatPace(item.average_pace, item.average_speed) }}</td>
+                <td class="text-end font-monospace d-none d-lg-table-cell">
+                  {{ formatElevation(item.total_up) }}
+                </td>
+                <td class="text-end font-monospace d-none d-lg-table-cell">
+                  {{ formatElevation(item.total_down) }}
+                </td>
+                @if (hasExtraMetric('heart-rate')) {
+                  <td class="text-end font-monospace d-none d-xl-table-cell">
+                    @if (item.average_heart_rate) {
+                      {{ item.average_heart_rate.toFixed(0) }} bpm
+                    } @else {
+                      -
+                    }
+                  </td>
+                }
+                @if (hasExtraMetric('cadence')) {
+                  <td class="text-end font-monospace d-none d-xl-table-cell">
+                    @if (item.average_cadence) {
+                      {{ item.average_cadence.toFixed(0) }}
+                    } @else {
+                      -
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!loading()) {
+      <div class="text-muted small">{{ 'shared.no_items' | translate }}</div>
+    }
   }
 </div>

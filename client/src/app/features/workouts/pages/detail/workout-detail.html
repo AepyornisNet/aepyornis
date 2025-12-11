@@ -152,7 +152,8 @@
             <div class="card-body">
               <app-workout-breakdown
                 [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                [mapData]="dataService.workout()!.map_data!.details"
+                [totalDistance]="dataService.workout()!.total_distance"
+                [workoutId]="dataService.workout()!.id"
               />
             </div>
           </div>

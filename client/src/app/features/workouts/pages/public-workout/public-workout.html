@@ -73,7 +73,8 @@
     <div class="mb-4">
       <app-workout-breakdown
         [extraMetrics]="workout()!.map_data?.extra_metrics || []"
-        [mapData]="workout()!.map_data?.details"
+        [totalDistance]="workout()!.total_distance"
+        [workoutId]="workout()!.id"
       />
     </div>
 

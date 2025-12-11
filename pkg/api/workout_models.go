@@ -1,10 +1,13 @@
 package api
 
 import (
+	"math"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 )
 
 // WorkoutResponse represents a workout in API v2 responses
@@ -47,16 +50,6 @@ type WorkoutResponse struct {
 	MaxPower            *float64 `json:"max_power,omitempty"`
 }
 
-// WorkoutDetailResponse represents a detailed workout in API v2 responses
-type WorkoutDetailResponse struct {
-	WorkoutResponse
-	Equipment           []EquipmentResponse         `json:"equipment,omitempty"`
-	MapData             *MapDataResponse            `json:"map_data,omitempty"`
-	Climbs              []ClimbSegmentResponse      `json:"climbs,omitempty"`
-	RouteSegmentMatches []RouteSegmentMatchResponse `json:"route_segment_matches,omitempty"`
-	Laps                []WorkoutLapResponse        `json:"laps,omitempty"`
-}
-
 type WorkoutLapResponse struct {
 	Start               time.Time `json:"start"`
 	Stop                time.Time `json:"stop"`
@@ -76,6 +69,51 @@ type WorkoutLapResponse struct {
 	MaxHeartRate        float64   `json:"max_heart_rate"`
 	AveragePower        float64   `json:"average_power"`
 	MaxPower            float64   `json:"max_power"`
+}
+
+type WorkoutBreakdownResponse struct {
+	Mode  string                         `json:"mode"` // "laps" or "unit"
+	Items []WorkoutBreakdownItemResponse `json:"items,omitempty"`
+}
+
+type WorkoutBreakdownItemResponse struct {
+	StartIndex int `json:"start_index"`
+	EndIndex   int `json:"end_index"`
+
+	Distance    float64 `json:"distance"`     // meters
+	Duration    float64 `json:"duration"`     // moving duration in seconds
+	AveragePace float64 `json:"average_pace"` // seconds per preferred unit
+
+	MinElevation float64 `json:"min_elevation"`
+	MaxElevation float64 `json:"max_elevation"`
+	TotalUp      float64 `json:"total_up"`
+	TotalDown    float64 `json:"total_down"`
+
+	AverageSpeed        float64 `json:"average_speed"`
+	AverageSpeedNoPause float64 `json:"average_speed_no_pause"`
+	MaxSpeed            float64 `json:"max_speed"`
+
+	AverageCadence float64 `json:"average_cadence"`
+	MaxCadence     float64 `json:"max_cadence"`
+
+	AverageHeartRate float64 `json:"average_heart_rate"`
+	MaxHeartRate     float64 `json:"max_heart_rate"`
+
+	AveragePower float64 `json:"average_power"`
+	MaxPower     float64 `json:"max_power"`
+
+	IsBest  bool `json:"is_best"`
+	IsWorst bool `json:"is_worst"`
+}
+
+// WorkoutDetailResponse represents a detailed workout in API v2 responses
+type WorkoutDetailResponse struct {
+	WorkoutResponse
+	Equipment           []EquipmentResponse         `json:"equipment,omitempty"`
+	MapData             *MapDataResponse            `json:"map_data,omitempty"`
+	Climbs              []ClimbSegmentResponse      `json:"climbs,omitempty"`
+	RouteSegmentMatches []RouteSegmentMatchResponse `json:"route_segment_matches,omitempty"`
+	Laps                []WorkoutLapResponse        `json:"laps,omitempty"`
 }
 
 // MapDataResponse represents workout map data in API v2 responses
@@ -289,32 +327,6 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 		wr.MapData = workoutResponseMapData(w)
 	}
 
-	if w.Data != nil && len(w.Data.Laps) > 0 {
-		wr.Laps = make([]WorkoutLapResponse, len(w.Data.Laps))
-		for i, lap := range w.Data.Laps {
-			wr.Laps[i] = WorkoutLapResponse{
-				Start:               lap.Start,
-				Stop:                lap.Stop,
-				TotalDistance:       lap.TotalDistance,
-				TotalDuration:       int64(lap.TotalDuration.Seconds()),
-				PauseDuration:       int64(lap.PauseDuration.Seconds()),
-				MinElevation:        lap.MinElevation,
-				MaxElevation:        lap.MaxElevation,
-				TotalUp:             lap.TotalUp,
-				TotalDown:           lap.TotalDown,
-				AverageSpeed:        lap.AverageSpeed,
-				AverageSpeedNoPause: lap.AverageSpeedNoPause,
-				MaxSpeed:            lap.MaxSpeed,
-				AverageCadence:      lap.AverageCadence,
-				MaxCadence:          lap.MaxCadence,
-				AverageHeartRate:    lap.AverageHeartRate,
-				MaxHeartRate:        lap.MaxHeartRate,
-				AveragePower:        lap.AveragePower,
-				MaxPower:            lap.MaxPower,
-			}
-		}
-	}
-
 	// Add route segment matches
 	if len(w.RouteSegmentMatches) > 0 {
 		wr.RouteSegmentMatches = make([]RouteSegmentMatchResponse, len(w.RouteSegmentMatches))
@@ -327,7 +339,222 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 		}
 	}
 
+	if w.Data != nil && len(w.Data.Laps) > 0 {
+		wr.Laps = NewWorkoutLapResponses(w.Data.Laps)
+	}
+
 	return wr
+}
+
+func NewWorkoutLapResponses(laps []converters.WorkoutLap) []WorkoutLapResponse {
+	if len(laps) == 0 {
+		return nil
+	}
+
+	resp := make([]WorkoutLapResponse, len(laps))
+	for i, lap := range laps {
+		resp[i] = WorkoutLapResponse{
+			Start:               lap.Start,
+			Stop:                lap.Stop,
+			TotalDistance:       lap.TotalDistance,
+			TotalDuration:       int64(lap.TotalDuration.Seconds()),
+			PauseDuration:       int64(lap.PauseDuration.Seconds()),
+			MinElevation:        lap.MinElevation,
+			MaxElevation:        lap.MaxElevation,
+			TotalUp:             lap.TotalUp,
+			TotalDown:           lap.TotalDown,
+			AverageSpeed:        lap.AverageSpeed,
+			AverageSpeedNoPause: lap.AverageSpeedNoPause,
+			MaxSpeed:            lap.MaxSpeed,
+			AverageCadence:      lap.AverageCadence,
+			MaxCadence:          lap.MaxCadence,
+			AverageHeartRate:    lap.AverageHeartRate,
+			MaxHeartRate:        lap.MaxHeartRate,
+			AveragePower:        lap.AveragePower,
+			MaxPower:            lap.MaxPower,
+		}
+	}
+
+	return resp
+}
+
+func NewWorkoutBreakdownItemsFromLaps(laps []converters.WorkoutLap, points []database.MapPoint, units *database.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+	if len(laps) == 0 {
+		return nil
+	}
+
+	items := make([]WorkoutBreakdownItemResponse, len(laps))
+
+	for i, lap := range laps {
+		startIdx := findClosestPointIndex(points, lap.Start)
+		endIdx := findClosestPointIndex(points, lap.Stop)
+
+		totalDuration := lap.TotalDuration.Seconds()
+		pauseDuration := lap.PauseDuration.Seconds()
+		movingDuration := totalDuration - pauseDuration
+		if movingDuration < 0 {
+			movingDuration = totalDuration
+		}
+
+		avgSpeed := 0.0
+		avgSpeedNoPause := 0.0
+		if totalDuration > 0 {
+			avgSpeed = lap.TotalDistance / totalDuration
+		}
+		if movingDuration > 0 {
+			avgSpeedNoPause = lap.TotalDistance / movingDuration
+		}
+
+		convertedDistance := convertDistanceToPreferred(lap.TotalDistance, units)
+		pace := 0.0
+		if convertedDistance > 0 {
+			pace = movingDuration / convertedDistance
+		}
+
+		items[i] = WorkoutBreakdownItemResponse{
+			StartIndex:          startIdx,
+			EndIndex:            endIdx,
+			Distance:            convertedDistance,
+			Duration:            movingDuration,
+			AveragePace:         pace,
+			MinElevation:        convertElevationToPreferred(lap.MinElevation, units),
+			MaxElevation:        convertElevationToPreferred(lap.MaxElevation, units),
+			TotalUp:             convertElevationToPreferred(lap.TotalUp, units),
+			TotalDown:           convertElevationToPreferred(lap.TotalDown, units),
+			AverageSpeed:        convertSpeedToPreferred(avgSpeed, units),
+			AverageSpeedNoPause: convertSpeedToPreferred(avgSpeedNoPause, units),
+			MaxSpeed:            convertSpeedToPreferred(lap.MaxSpeed, units),
+			AverageCadence:      lap.AverageCadence,
+			MaxCadence:          lap.MaxCadence,
+			AverageHeartRate:    lap.AverageHeartRate,
+			MaxHeartRate:        lap.MaxHeartRate,
+			AveragePower:        lap.AveragePower,
+			MaxPower:            lap.MaxPower,
+		}
+	}
+
+	return items
+}
+
+func NewWorkoutBreakdownItemsFromUnit(items []database.BreakdownItem, unit string, count float64, units *database.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+	if len(items) == 0 {
+		return nil
+	}
+
+	resp := make([]WorkoutBreakdownItemResponse, len(items))
+	for i, item := range items {
+		movingSeconds := item.Duration.Seconds()
+		pauseSeconds := item.PauseDuration.Seconds()
+		totalSeconds := item.TotalDurationSeconds
+		if totalSeconds == 0 {
+			totalSeconds = movingSeconds + pauseSeconds
+		}
+
+		avgSpeed := 0.0
+		avgSpeedNoPause := 0.0
+		if totalSeconds > 0 {
+			avgSpeed = item.Distance / totalSeconds
+		}
+		if movingSeconds > 0 {
+			avgSpeedNoPause = item.Distance / movingSeconds
+		}
+
+		convertedDistance := convertDistanceToPreferred(item.Distance, units)
+		pace := 0.0
+		if convertedDistance > 0 {
+			pace = movingSeconds / convertedDistance
+		}
+
+		resp[i] = WorkoutBreakdownItemResponse{
+			StartIndex:          item.StartIndex,
+			EndIndex:            item.EndIndex,
+			Distance:            convertedDistance,
+			Duration:            movingSeconds,
+			AveragePace:         pace,
+			MinElevation:        convertElevationToPreferred(item.MinElevation, units),
+			MaxElevation:        convertElevationToPreferred(item.MaxElevation, units),
+			TotalUp:             convertElevationToPreferred(item.TotalUp, units),
+			TotalDown:           convertElevationToPreferred(item.TotalDown, units),
+			AverageSpeed:        convertSpeedToPreferred(avgSpeed, units),
+			AverageSpeedNoPause: convertSpeedToPreferred(avgSpeedNoPause, units),
+			MaxSpeed:            convertSpeedToPreferred(item.MaxSpeed, units),
+			AverageCadence:      item.AverageCadence,
+			MaxCadence:          item.MaxCadence,
+			AverageHeartRate:    item.AverageHeartRate,
+			MaxHeartRate:        item.MaxHeartRate,
+			AveragePower:        item.AveragePower,
+			MaxPower:            item.MaxPower,
+			IsBest:              item.IsBest,
+			IsWorst:             item.IsWorst,
+		}
+	}
+
+	return resp
+}
+
+func convertDistanceToPreferred(distanceMeters float64, units *database.UserPreferredUnits) float64 {
+	if units == nil {
+		return distanceMeters
+	}
+
+	switch units.Distance() {
+	case "mi":
+		return distanceMeters / templatehelpers.MeterPerMile
+	case "km":
+		return distanceMeters / templatehelpers.MeterPerKM
+	case "m":
+		return distanceMeters
+	default:
+		return distanceMeters / templatehelpers.MeterPerKM
+	}
+}
+
+func convertElevationToPreferred(elevationMeters float64, units *database.UserPreferredUnits) float64 {
+	if units == nil {
+		return elevationMeters
+	}
+
+	switch units.Elevation() {
+	case "ft":
+		return elevationMeters * templatehelpers.FeetPerMeter
+	default:
+		return elevationMeters
+	}
+}
+
+func convertSpeedToPreferred(speedMS float64, units *database.UserPreferredUnits) float64 {
+	if units == nil {
+		return speedMS * 3.6
+	}
+
+	switch units.Speed() {
+	case "mph":
+		return speedMS * 3.6 * templatehelpers.MilesPerKM
+	default:
+		return speedMS * 3.6
+	}
+}
+
+func findClosestPointIndex(points []database.MapPoint, t time.Time) int {
+	if len(points) == 0 || t.IsZero() {
+		return -1
+	}
+
+	bestIdx := -1
+	bestDiff := time.Duration(math.MaxInt64)
+
+	for i := range points {
+		diff := points[i].Time.Sub(t)
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff < bestDiff {
+			bestDiff = diff
+			bestIdx = i
+		}
+	}
+
+	return bestIdx
 }
 
 func workoutResponseMapData(w *database.Workout) *MapDataResponse {
