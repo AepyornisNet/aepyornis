@@ -101,6 +101,7 @@ func ParseFit(content []byte) ([]*Workout, error) {
 
 	session := act.Sessions[0]
 	laps := parseLaps(act)
+	stats := parseWorkoutStats(act)
 
 	w := &Workout{
 		GPX:      gpxFile,
@@ -110,18 +111,7 @@ func ParseFit(content []byte) ([]*Workout, error) {
 			SubType:       session.SubSport.String(),
 			TotalDistance: session.TotalDistanceScaled(),
 			Laps:          laps,
-			WorkoutStats: WorkoutStats{
-				AverageCadence:   float64(session.AvgCadence),
-				MaxCadence:       float64(session.MaxCadence),
-				AverageHeartRate: float64(session.AvgHeartRate),
-				MaxHeartRate:     float64(session.MaxHeartRate),
-				AverageSpeed:     session.EnhancedAvgSpeedScaled(),
-				MaxSpeed:         session.MaxSpeedScaled(),
-				AveragePower:     float64(session.AvgPower),
-				MaxPower:         cast.ToFloat64(session.MaxPower),
-				TotalUp:          float64(session.TotalAscent),
-				TotalDown:        float64(session.TotalDescent),
-			},
+			WorkoutStats:  stats,
 		},
 		NativeParsed: true,
 	}
@@ -255,4 +245,65 @@ func parseLaps(act *filedef.Activity) []WorkoutLap {
 	}
 
 	return laps
+}
+
+func parseWorkoutStats(act *filedef.Activity) WorkoutStats {
+	session := act.Sessions[0]
+	stats := WorkoutStats{}
+
+	if session.AvgCadence != math.MaxUint8 {
+		stats.AverageCadence = float64(session.AvgCadence)
+	}
+
+	if session.MaxCadence != math.MaxUint8 {
+		stats.MaxCadence = float64(session.MaxCadence)
+	}
+
+	if session.AvgHeartRate != math.MaxUint8 {
+		stats.AverageHeartRate = float64(session.AvgHeartRate)
+	}
+
+	if session.MaxHeartRate != math.MaxUint8 {
+		stats.MaxHeartRate = float64(session.MaxHeartRate)
+	}
+
+	if session.EnhancedAvgSpeed != math.MaxUint32 {
+		stats.AverageSpeed = session.EnhancedAvgSpeedScaled()
+	} else if session.AvgSpeed != math.MaxUint16 {
+		stats.AverageSpeed = session.AvgSpeedScaled()
+	}
+
+	if session.MaxSpeed != math.MaxUint16 {
+		stats.MaxSpeed = session.MaxSpeedScaled()
+	}
+
+	if session.EnhancedMinAltitude != math.MaxUint32 {
+		stats.MinElevation = session.EnhancedMinAltitudeScaled()
+	} else if session.MinAltitude != math.MaxUint16 {
+		stats.MinElevation = session.MinAltitudeScaled()
+	}
+
+	if session.EnhancedMaxAltitude != math.MaxUint32 {
+		stats.MaxElevation = session.EnhancedMaxAltitudeScaled()
+	} else if session.MaxAltitude != math.MaxUint16 {
+		stats.MaxElevation = session.MaxAltitudeScaled()
+	}
+
+	if session.AvgPower != math.MaxUint16 {
+		stats.AveragePower = float64(session.AvgPower)
+	}
+
+	if session.MaxPower != math.MaxUint16 {
+		stats.MaxPower = float64(session.MaxPower)
+	}
+
+	if session.TotalAscent != math.MaxUint16 {
+		stats.TotalUp = float64(session.TotalAscent)
+	}
+
+	if session.TotalDescent != math.MaxUint16 {
+		stats.TotalDown = float64(session.TotalDescent)
+	}
+
+	return stats
 }
