@@ -445,7 +445,7 @@ func NewWorkoutBreakdownItemsFromUnit(items []database.BreakdownItem, unit strin
 	for i, item := range items {
 		movingSeconds := item.Duration.Seconds()
 		pauseSeconds := item.PauseDuration.Seconds()
-		totalSeconds := item.TotalDurationSeconds
+		totalSeconds := item.TotalDuration.Seconds()
 		if totalSeconds == 0 {
 			totalSeconds = movingSeconds + pauseSeconds
 		}

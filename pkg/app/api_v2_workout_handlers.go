@@ -171,11 +171,6 @@ func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
 		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
 	}
 
-	units := user.PreferredUnits()
-	for i := range breakdown.Items {
-		breakdown.Items[i].Localize(units)
-	}
-
 	resp.Results = api.WorkoutBreakdownResponse{
 		Mode:  "unit",
 		Items: api.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, user.PreferredUnits()),

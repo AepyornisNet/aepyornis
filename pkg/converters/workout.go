@@ -66,6 +66,7 @@ type (
 	}
 )
 
+//gocyclo:ignore
 func (d *WorkoutData) MergeNonZero(from WorkoutData) {
 	if d == nil {
 		return

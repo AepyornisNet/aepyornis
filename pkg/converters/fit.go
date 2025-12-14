@@ -100,42 +100,70 @@ func ParseFit(content []byte) ([]*Workout, error) {
 	}
 
 	session := act.Sessions[0]
+	laps := parseLaps(act)
+
+	w := &Workout{
+		GPX:      gpxFile,
+		FileType: "fit",
+		Content:  content,
+		Data: WorkoutData{
+			SubType:       session.SubSport.String(),
+			TotalDistance: session.TotalDistanceScaled(),
+			Laps:          laps,
+			WorkoutStats: WorkoutStats{
+				AverageCadence:   float64(session.AvgCadence),
+				MaxCadence:       float64(session.MaxCadence),
+				AverageHeartRate: float64(session.AvgHeartRate),
+				MaxHeartRate:     float64(session.MaxHeartRate),
+				AverageSpeed:     session.EnhancedAvgSpeedScaled(),
+				MaxSpeed:         session.MaxSpeedScaled(),
+				AveragePower:     float64(session.AvgPower),
+				MaxPower:         cast.ToFloat64(session.MaxPower),
+				TotalUp:          float64(session.TotalAscent),
+				TotalDown:        float64(session.TotalDescent),
+			},
+		},
+		NativeParsed: true,
+	}
+
+	return []*Workout{w}, nil
+}
+
+//gocyclo:ignore
+func parseLaps(act *filedef.Activity) []WorkoutLap {
 	laps := make([]WorkoutLap, 0, len(act.Laps))
-
 	for _, lap := range act.Laps {
-		lapStart := lap.StartTime.Local()
 		elapsed := time.Duration(0)
-		timer := time.Duration(0)
-		totalDistance := 0.0
-
 		if lap.TotalElapsedTime != math.MaxUint32 {
 			elapsed = time.Duration(lap.TotalElapsedTimeScaled() * float64(time.Second))
 		}
 
+		timer := time.Duration(0)
 		if lap.TotalTimerTime != math.MaxUint32 {
 			timer = time.Duration(lap.TotalTimerTimeScaled() * float64(time.Second))
 		}
 
+		totalDistance := 0.0
 		if lap.TotalDistance != math.MaxUint32 {
 			totalDistance = lap.TotalDistanceScaled()
 		}
 
+		lapStart := lap.StartTime.Local()
 		lapStop := lapStart
 		if !lapStart.IsZero() && elapsed > 0 {
 			lapStop = lapStart.Add(elapsed)
 		}
 
-		pause := max(elapsed - timer, 0)
+		pause := max(elapsed-timer, 0)
 
 		minElevation := 0.0
-		maxElevation := 0.0
-
 		if lap.EnhancedMinAltitude != math.MaxUint32 {
 			minElevation = lap.EnhancedMinAltitudeScaled()
 		} else if lap.MinAltitude != math.MaxUint16 {
 			minElevation = lap.MinAltitudeScaled()
 		}
 
+		maxElevation := 0.0
 		if lap.EnhancedMaxAltitude != math.MaxUint32 {
 			maxElevation = lap.EnhancedMaxAltitudeScaled()
 		} else if lap.MaxAltitude != math.MaxUint16 {
@@ -225,29 +253,6 @@ func ParseFit(content []byte) ([]*Workout, error) {
 			},
 		})
 	}
-	w := &Workout{
-		GPX:      gpxFile,
-		FileType: "fit",
-		Content:  content,
-		Data: WorkoutData{
-			SubType:       session.SubSport.String(),
-			TotalDistance: session.TotalDistanceScaled(),
-			Laps:          laps,
-			WorkoutStats: WorkoutStats{
-				AverageCadence:   float64(session.AvgCadence),
-				MaxCadence:       float64(session.MaxCadence),
-				AverageHeartRate: float64(session.AvgHeartRate),
-				MaxHeartRate:     float64(session.MaxHeartRate),
-				AverageSpeed:     session.EnhancedAvgSpeedScaled(),
-				MaxSpeed:         session.MaxSpeedScaled(),
-				AveragePower:     float64(session.AvgPower),
-				MaxPower:         cast.ToFloat64(session.MaxPower),
-				TotalUp:          float64(session.TotalAscent),
-				TotalDown:        float64(session.TotalDescent),
-			},
-		},
-		NativeParsed: true,
-	}
 
-	return []*Workout{w}, nil
+	return laps
 }

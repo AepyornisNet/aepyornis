@@ -41,29 +41,6 @@ type BreakdownItem struct {
 	MaxPower     float64 `json:"maxPower"`
 	IsBest       bool    `json:"isBest"`  // Whether this item is the best of the list
 	IsWorst      bool    `json:"isWorst"` // Whether this item is the worst of the list
-
-	LocalTotalDistance string `json:"localTotalDistance,omitempty"` // Total distance in all items up to and including this item
-	LocalDistance      string `json:"localDistance,omitempty"`      // The total distance in the bucket, localized
-	LocalAverageSpeed  string `json:"localAverageSpeed,omitempty"`  // The average speed in the bucket, localized
-	LocalElevation     string `json:"localElevation,omitempty"`     // The starting elevation in the bucket, localized
-	LocalHeartRate     string `json:"localHeartRate,omitempty"`     // The starting heart rate in the bucket, localized
-	LocalCadence       string `json:"localCadence,omitempty"`       // The starting cadence in the bucket, localized
-
-	DurationSeconds      float64 `json:"durationSeconds,omitempty"`      // Moving duration in the bucket, in seconds
-	TotalDurationSeconds float64 `json:"totalDurationSeconds,omitempty"` // The total duration in the bucket, in seconds
-}
-
-func (bi *BreakdownItem) Localize(units *UserPreferredUnits) {
-	bi.LocalTotalDistance = templatehelpers.HumanDistanceFor(units.Distance())(bi.TotalDistance)
-	bi.DurationSeconds = bi.Duration.Seconds()
-	bi.TotalDurationSeconds = bi.TotalDuration.Seconds()
-
-	bi.LocalDistance = templatehelpers.HumanDistanceFor(units.Distance())(bi.Distance)
-	bi.LocalAverageSpeed = templatehelpers.HumanSpeedFor(units.Distance())(bi.Speed)
-
-	bi.LocalElevation = templatehelpers.HumanElevationFor(units.Elevation())(bi.FirstPoint.ExtraMetrics.Get("elevation"))
-	bi.LocalHeartRate = fmt.Sprintf("%.0f", bi.FirstPoint.ExtraMetrics.Get("heart-rate"))
-	bi.LocalCadence = fmt.Sprintf("%.0f", bi.FirstPoint.ExtraMetrics.Get("cadence"))
 }
 
 func (bi *BreakdownItem) createNext(fp *MapPoint) BreakdownItem {
@@ -106,6 +83,7 @@ func (bi *BreakdownItem) CalcultateSpeed() {
 	bi.Speed = bi.Distance / bi.Duration.Seconds()
 }
 
+//gocyclo:ignore
 func (bi *BreakdownItem) enrichStats(points []MapPoint, startIdx, endIdx int) {
 	if len(points) == 0 || startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
 		return
@@ -181,13 +159,6 @@ func (bi *BreakdownItem) enrichStats(points []MapPoint, startIdx, endIdx int) {
 		bi.AverageSpeedNoPause = bi.Distance / bi.Duration.Seconds()
 	}
 
-	totalDurationSeconds := bi.Duration.Seconds() + bi.PauseDuration.Seconds()
-	if totalDurationSeconds > 0 {
-		bi.Speed = bi.Distance / totalDurationSeconds
-	}
-
-	bi.TotalDurationSeconds = totalDurationSeconds
-
 	if cadenceCount > 0 {
 		bi.AverageCadence = sumCadence / float64(cadenceCount)
 		bi.MaxCadence = maxCadence
@@ -244,7 +215,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 		StartIndex: 0,
 	}
 
-	for i := 0; i < len(points); i++ {
+	for i := range points {
 		p := points[i]
 
 		if !nextItem.canHave(count, unit, &points[i]) {
