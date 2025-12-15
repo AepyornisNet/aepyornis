@@ -75,6 +75,18 @@ export type MapDataDetails = {
   elevation: number[];
 
   extra_metrics?: Record<string, (number | null)[]>;
+  zone_ranges?: ZoneRangeMap;
+};
+
+export type ZoneRangeDefinition = {
+  zone: number;
+  min: number | null;
+  max?: number | null;
+};
+
+export type ZoneRangeMap = {
+  'heart-rate'?: ZoneRangeDefinition[];
+  power?: ZoneRangeDefinition[];
 };
 
 export type WorkoutLap = {

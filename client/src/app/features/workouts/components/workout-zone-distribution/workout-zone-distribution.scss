@@ -34,6 +34,12 @@
   gap: 0.5rem;
 }
 
+.zone-row__label-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
 .zone-dot {
   width: 12px;
   height: 12px;
@@ -50,4 +56,8 @@
 
 .zone-time {
   font-weight: 500;
+}
+
+.zone-range {
+  font-size: 0.8125rem;
 }

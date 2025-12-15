@@ -19,9 +19,14 @@
         <div class="zone-row">
           <div class="zone-row__label">
             <span class="zone-dot" [style.backgroundColor]="segment.color"></span>
-            <span class="fw-semibold">
-              {{ 'workout.zone_label' | translate: { value: segment.zone } }}
-            </span>
+            <div class="zone-row__label-text">
+              <span class="fw-semibold">
+                {{ 'workout.zone_label' | translate: { value: segment.zone } }}
+              </span>
+              @if (formatRange(segment); as rangeLabel) {
+                <small class="zone-range text-muted">{{ rangeLabel }}</small>
+              }
+            </div>
           </div>
           <div class="zone-row__values">
             <span class="zone-time">{{ formatDuration(segment.seconds) }}</span>

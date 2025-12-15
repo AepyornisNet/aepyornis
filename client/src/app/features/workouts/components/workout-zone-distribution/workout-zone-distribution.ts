@@ -24,6 +24,8 @@ type ZoneSummary = {
   percent: number;
   samples: number;
   color: string;
+  rangeMin: number | null;
+  rangeMax: number | null;
 };
 
 @Component({
@@ -56,6 +58,7 @@ export class WorkoutZoneDistributionComponent {
     const { startIndex, endIndex } = this.resolveRange(selection, metricValues.length);
     const totals: Record<number, ZoneSummary> = {};
     const durations = details.duration || [];
+    const rangeLookup = this.zoneRangeLookup(details, type);
 
     for (let i = startIndex; i <= endIndex; i++) {
       const zone = metricValues[i];
@@ -74,6 +77,8 @@ export class WorkoutZoneDistributionComponent {
           percent: 0,
           samples: 0,
           color: this.paletteFor(type)[zone] ?? this.defaultColor(type),
+          rangeMin: null,
+          rangeMax: null,
         };
       }
 
@@ -92,6 +97,7 @@ export class WorkoutZoneDistributionComponent {
       const samples = data?.samples ?? 0;
       const basis = useSamplesForPercent ? samples : seconds;
       const percent = percentBase > 0 ? (basis / percentBase) * 100 : 0;
+      const range = rangeLookup[zone];
 
       return {
         zone,
@@ -99,6 +105,8 @@ export class WorkoutZoneDistributionComponent {
         samples,
         percent,
         color: this.paletteFor(type)[zone] ?? this.defaultColor(type),
+        rangeMin: range?.min ?? null,
+        rangeMax: range?.max ?? null,
       };
     });
   });
@@ -139,6 +147,8 @@ export class WorkoutZoneDistributionComponent {
       samples: 0,
       percent: 0,
       color: this.paletteFor(type)[zone] ?? this.defaultColor(type),
+      rangeMin: null,
+      rangeMax: null,
     }));
   }
 
@@ -159,6 +169,27 @@ export class WorkoutZoneDistributionComponent {
     return { startIndex: start, endIndex: end };
   }
 
+  private zoneRangeLookup(
+    details: MapDataDetails | undefined,
+    type: ZoneType,
+  ): Record<number, { min: number | null; max: number | null }> {
+    const ranges = details?.zone_ranges?.[type];
+    if (!ranges) {
+      return {};
+    }
+
+    return ranges.reduce<Record<number, { min: number | null; max: number | null }>>(
+      (acc, range) => {
+        acc[range.zone] = {
+          min: typeof range.min === 'number' ? range.min : null,
+          max: typeof range.max === 'number' ? range.max : null,
+        };
+        return acc;
+      },
+      {},
+    );
+  }
+
   private paletteFor(type: ZoneType): Record<number, string> {
     return type === 'heart-rate' ? HR_ZONE_COLORS : FTP_ZONE_COLORS;
   }
@@ -170,4 +201,35 @@ export class WorkoutZoneDistributionComponent {
   private isZoneValue(value: unknown): value is number {
     return typeof value === 'number' && Number.isFinite(value) && value > 0;
   }
+
+  public formatRange(segment: ZoneSummary): string | null {
+    const type = this.type();
+    const minText =
+      segment.rangeMin !== null ? this.formatMetricValue(type, segment.rangeMin) : null;
+    const maxText =
+      segment.rangeMax !== null ? this.formatMetricValue(type, segment.rangeMax) : null;
+
+    if (minText && maxText) {
+      if (segment.rangeMin === segment.rangeMax) {
+        return minText;
+      }
+      return `${minText} - ${maxText}`;
+    }
+
+    if (minText) {
+      return `> ${minText}`;
+    }
+
+    if (maxText) {
+      return `< ${maxText}`;
+    }
+
+    return null;
+  }
+
+  private formatMetricValue(type: ZoneType, value: number): string {
+    const rounded = Math.round(value);
+    return type === 'heart-rate' ? `${rounded} bpm` : `${rounded} W`;
+  }
+
 }

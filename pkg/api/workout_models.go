@@ -133,14 +133,22 @@ type MapCenterResponse struct {
 
 // MapDataDetailsResponse represents detailed map points in compact format
 type MapDataDetailsResponse struct {
-	Position     [][]float64      `json:"position"` // [[lat, lng], ...]
-	Time         []time.Time      `json:"time"`
-	Distance     []float64        `json:"distance"` // in km
-	Duration     []float64        `json:"duration"` // in seconds
-	Speed        []float64        `json:"speed"`    // in m/s
-	Slope        []float64        `json:"slope"`
-	Elevation    []float64        `json:"elevation"`
-	ExtraMetrics map[string][]any `json:"extra_metrics,omitempty"` // Additional metrics like heart-rate, cadence, temperature
+	Position     [][]float64                    `json:"position"` // [[lat, lng], ...]
+	Time         []time.Time                    `json:"time"`
+	Distance     []float64                      `json:"distance"` // in km
+	Duration     []float64                      `json:"duration"` // in seconds
+	Speed        []float64                      `json:"speed"`    // in m/s
+	Slope        []float64                      `json:"slope"`
+	Elevation    []float64                      `json:"elevation"`
+	ExtraMetrics map[string][]any               `json:"extra_metrics,omitempty"` // Additional metrics like heart-rate, cadence, temperature
+	ZoneRanges   map[string][]ZoneRangeResponse `json:"zone_ranges,omitempty"`
+}
+
+// ZoneRangeResponse describes the absolute bounds of a training zone for display purposes.
+type ZoneRangeResponse struct {
+	Zone int      `json:"zone"`
+	Min  float64  `json:"min"`
+	Max  *float64 `json:"max,omitempty"`
 }
 
 // ClimbSegmentResponse represents a climb or descent segment
@@ -624,6 +632,8 @@ func workoutResponseMapData(w *database.Workout) *MapDataResponse {
 
 			zoneMetrics.setForPoint(i, point.ExtraMetrics)
 		}
+
+		mapData.Details.ZoneRanges = zoneMetrics.zoneRanges()
 	}
 
 	return mapData
@@ -671,16 +681,7 @@ func (z *zoneMetricsBuilder) ensureBuffers(extra map[string][]any, length int) {
 		return
 	}
 
-	// Cache user-dependent metrics once
-	if z.maxHR == 0 {
-		z.maxHR = z.user.MaxHeartRateAt(z.date)
-	}
-	if z.restHR == 0 {
-		z.restHR = z.user.RestingHeartRateAt(z.date)
-	}
-	if z.ftp == 0 {
-		z.ftp = z.user.FTPAt(z.date)
-	}
+	z.populateUserMetrics()
 
 	if z.hasHR {
 		hrBuf := make([]any, length)
@@ -715,6 +716,105 @@ func (z *zoneMetricsBuilder) setForPoint(idx int, metrics database.ExtraMetrics)
 			z.ftpZones[idx] = nil
 		}
 	}
+}
+
+func buildHeartRateZoneRanges(maxHR float64, restHR float64) []ZoneRangeResponse {
+	if maxHR <= 0 {
+		maxHR = 200
+	}
+
+	if restHR <= 0 {
+		restHR = 60
+	}
+
+	reserve := maxHR - restHR
+	if reserve <= 0 {
+		reserve = maxHR
+	}
+
+	upperBounds := []float64{
+		restHR + 0.6*reserve,
+		restHR + 0.7*reserve,
+		restHR + 0.8*reserve,
+		restHR + 0.9*reserve,
+	}
+
+	return []ZoneRangeResponse{
+		{Zone: 1, Min: restHR, Max: float64Ptr(upperBounds[0])},
+		{Zone: 2, Min: upperBounds[0], Max: float64Ptr(upperBounds[1])},
+		{Zone: 3, Min: upperBounds[1], Max: float64Ptr(upperBounds[2])},
+		{Zone: 4, Min: upperBounds[2], Max: float64Ptr(upperBounds[3])},
+		{Zone: 5, Min: upperBounds[3]},
+	}
+}
+
+func buildFTPZoneRanges(ftp float64) []ZoneRangeResponse {
+	if ftp <= 0 {
+		ftp = 200
+	}
+
+	thresholds := []float64{
+		0.55 * ftp,
+		0.75 * ftp,
+		0.9 * ftp,
+		1.05 * ftp,
+		1.2 * ftp,
+		1.5 * ftp,
+	}
+
+	return []ZoneRangeResponse{
+		{Zone: 1, Min: 0, Max: float64Ptr(thresholds[0])},
+		{Zone: 2, Min: thresholds[0], Max: float64Ptr(thresholds[1])},
+		{Zone: 3, Min: thresholds[1], Max: float64Ptr(thresholds[2])},
+		{Zone: 4, Min: thresholds[2], Max: float64Ptr(thresholds[3])},
+		{Zone: 5, Min: thresholds[3], Max: float64Ptr(thresholds[4])},
+		{Zone: 6, Min: thresholds[4], Max: float64Ptr(thresholds[5])},
+		{Zone: 7, Min: thresholds[5]},
+	}
+}
+
+func float64Ptr(val float64) *float64 {
+	v := val
+	return &v
+}
+
+func (z *zoneMetricsBuilder) populateUserMetrics() {
+	if z.user == nil {
+		return
+	}
+
+	if z.maxHR == 0 {
+		z.maxHR = z.user.MaxHeartRateAt(z.date)
+	}
+	if z.restHR == 0 {
+		z.restHR = z.user.RestingHeartRateAt(z.date)
+	}
+	if z.ftp == 0 {
+		z.ftp = z.user.FTPAt(z.date)
+	}
+}
+
+func (z *zoneMetricsBuilder) zoneRanges() map[string][]ZoneRangeResponse {
+	if !z.shouldBuild() {
+		return nil
+	}
+
+	z.populateUserMetrics()
+	ranges := make(map[string][]ZoneRangeResponse)
+
+	if z.hasHR {
+		ranges["heart-rate"] = buildHeartRateZoneRanges(z.maxHR, z.restHR)
+	}
+
+	if z.hasPower {
+		ranges["power"] = buildFTPZoneRanges(z.ftp)
+	}
+
+	if len(ranges) == 0 {
+		return nil
+	}
+
+	return ranges
 }
 
 func calculateHeartRateZone(hr float64, maxHR float64, restHR float64) int {
