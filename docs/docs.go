@@ -9,211 +9,540 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {
-            "url": "https://github.com/jovandeginste/workout-tracker/issues"
-        },
-        "license": {
-            "name": "MIT",
-            "url": "https://github.com/jovandeginste/workout-tracker?tab=License-1-ov-file"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/daily": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "List the daily measurements of the current user",
-                "parameters": [
+        "/admin/config": {
+            "put": {
+                "security": [
                     {
-                        "type": "integer",
-                        "description": "Number of measurements to return; default 50; -1 is no limit",
-                        "name": "limit",
-                        "in": "query"
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/database.Measurement"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Update the daily measurement of the current user",
-                "parameters": [
-                    {
-                        "description": "Measurement data",
-                        "name": "measurement",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/app.Measurement"
-                        }
-                    }
+                "tags": [
+                    "admin"
                 ],
+                "summary": "Update config (admin)",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.Measurement"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.Response-api_AppInfoResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
             }
         },
-        "/import/{program}": {
-            "post": {
+        "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Import a workout",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List users (admin)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-array_api_UserProfileResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get user (admin)",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Program that generates the workout file",
-                        "name": "program",
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Name of the imported workout",
-                        "name": "name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Type of the imported workout",
-                        "name": "type",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.Workout"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update user (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete user (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
             }
         },
-        "/records": {
+        "/app-info": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
-                "summary": "List all records of the current user for the specified workout type",
+                "tags": [
+                    "meta"
+                ],
+                "summary": "Get application info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_AppInfoResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/equipment": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "equipment"
+                ],
+                "summary": "List equipment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PaginatedResponse-api_EquipmentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "equipment"
+                ],
+                "summary": "Create equipment",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_EquipmentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/equipment/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "equipment"
+                ],
+                "summary": "Get equipment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Equipment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_EquipmentResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "equipment"
+                ],
+                "summary": "Update equipment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Equipment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_EquipmentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "tags": [
+                    "equipment"
+                ],
+                "summary": "Delete equipment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Equipment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/lookup-address": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lookup"
+                ],
+                "summary": "Lookup address",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Workout type",
-                        "name": "type",
+                        "description": "Free text address",
+                        "name": "location",
                         "in": "query",
                         "required": true
                     }
@@ -222,37 +551,793 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.WorkoutRecord"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.Response-array_string"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/measurements": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "measurements"
+                ],
+                "summary": "List measurements",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PaginatedResponse-api_MeasurementResponse"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "measurements"
+                ],
+                "summary": "Create or update measurement",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_MeasurementResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/measurements/{date}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "measurements"
+                ],
+                "summary": "Delete measurement by date",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Get profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Update profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/refresh-workouts": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Refresh all workouts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/reset-api-key": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Reset API key",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/update-version": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Update app version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/records": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get workout records",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-array_api_WorkoutRecordResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/route-segments": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "List route segments",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PaginatedResponse-api_RouteSegmentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Create route segment",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "GPX file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Notes",
+                        "name": "notes",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_RouteSegmentsDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/route-segments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Get route segment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Route segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_RouteSegmentDetailResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Update route segment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Route segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_RouteSegmentDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Delete route segment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Route segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/route-segments/{id}/download": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Download route segment file",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Route segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "binary GPX content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/route-segments/{id}/matches": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Find matching workouts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Route segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/route-segments/{id}/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Refresh route segment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Route segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
@@ -260,20 +1345,34 @@ const docTemplate = `{
         },
         "/statistics": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "List all statistics of the current user",
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "Get workout statistics",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Start of time range",
+                        "description": "Relative start (e.g. '1 year')",
                         "name": "since",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Bucket size",
+                        "description": "Aggregation period (day|week|month|year)",
                         "name": "per",
                         "in": "query"
                     }
@@ -282,37 +1381,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.Statistics"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.Response-api_StatisticsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
@@ -320,53 +1401,35 @@ const docTemplate = `{
         },
         "/totals": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "List all totals of the current user for the specified workout type",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Workout type",
-                        "name": "type",
-                        "in": "query"
-                    }
+                "tags": [
+                    "user"
                 ],
+                "summary": "Get workout totals",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.Bucket"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-api_TotalsResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
@@ -374,45 +1437,35 @@ const docTemplate = `{
         },
         "/whoami": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Show the information of the owner of the API key",
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get current user profile",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.User"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
@@ -420,177 +1473,35 @@ const docTemplate = `{
         },
         "/workouts": {
             "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "List all workouts of the current user",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/database.Workout"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Create a new workout",
-                "parameters": [
+                "security": [
                     {
-                        "description": "Workout data",
-                        "name": "workout",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/app.ManualWorkout"
-                        }
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/app.ManualWorkout"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/coordinates": {
-            "get": {
                 "produces": [
                     "application/json"
                 ],
-                "summary": "List all coordinates of all workouts of the current user",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/geojson.FeatureCollection"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/{id}": {
-            "get": {
-                "produces": [
-                    "application/json"
+                "tags": [
+                    "workouts"
                 ],
-                "summary": "Get all information about a workout",
+                "summary": "List workouts",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Workout ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
                     },
                     {
-                        "type": "boolean",
-                        "description": "Include details",
-                        "name": "details",
+                        "type": "integer",
+                        "description": "Per page",
+                        "name": "per_page",
                         "in": "query"
                     }
                 ],
@@ -598,37 +1509,408 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.Workout"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.PaginatedResponse-api_WorkoutResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data",
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Create workout",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_WorkoutResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/calendar": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get workout calendar events",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-array_api_CalendarEventResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/centers": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "heatmap"
+                ],
+                "summary": "Get workout centers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-geojson_FeatureCollection"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/coordinates": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "heatmap"
+                ],
+                "summary": "Get workout coordinates",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-geojson_FeatureCollection"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/public/{uuid}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get public workout",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_WorkoutDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/recent": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "List recent workouts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-array_api_WorkoutResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get workout by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_WorkoutDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Update workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_WorkoutResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Delete workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
@@ -636,10 +1918,24 @@ const docTemplate = `{
         },
         "/workouts/{id}/breakdown": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Break down a workdown per units",
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get workout breakdown",
                 "parameters": [
                     {
                         "type": "integer",
@@ -655,7 +1951,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
+                        "type": "number",
                         "description": "Count",
                         "name": "count",
                         "in": "query"
@@ -665,37 +1961,353 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/app.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "$ref": "#/definitions/database.WorkoutBreakdown"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.Response-api_WorkoutBreakdownResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/download": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Download workout file",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "binary workout file",
+                        "schema": {
+                            "type": "string"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/app.APIResponse"
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Refresh workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/route-segment": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Create route segment from workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_RouteSegmentDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/share": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Create or regenerate share link",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Delete workout share link",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-map_string_string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/toggle-lock": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Toggle workout lock",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_WorkoutResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get user profile by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-array_api_WorkoutRecordResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
                         }
                     }
                 }
@@ -703,19 +2315,24 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "app.APIResponse": {
+        "api.AppInfoResponse": {
             "type": "object",
             "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "registration_disabled": {
+                    "type": "boolean"
                 },
-                "results": {}
+                "socials_disabled": {
+                    "type": "boolean"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "version_sha": {
+                    "type": "string"
+                }
             }
         },
-        "app.Event": {
+        "api.CalendarEventResponse": {
             "type": "object",
             "properties": {
                 "end": {
@@ -732,26 +2349,52 @@ const docTemplate = `{
                 }
             }
         },
-        "app.ManualWorkout": {
+        "api.ClimbSegmentResponse": {
             "type": "object",
             "properties": {
-                "date": {
-                    "type": "string"
-                },
-                "distance": {
+                "avg_slope": {
                     "type": "number"
                 },
-                "duration_hours": {
-                    "type": "integer"
-                },
-                "duration_minutes": {
-                    "type": "integer"
-                },
-                "duration_seconds": {
-                    "type": "integer"
-                },
-                "location": {
+                "category": {
                     "type": "string"
+                },
+                "elevation": {
+                    "type": "number"
+                },
+                "index": {
+                    "type": "integer"
+                },
+                "length": {
+                    "type": "number"
+                },
+                "start_distance": {
+                    "type": "number"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.EquipmentResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "default_for": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -759,867 +2402,1325 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
-                "repetitions": {
-                    "type": "integer"
-                },
-                "timezone": {
+                "updated_at": {
                     "type": "string"
                 },
-                "type": {
-                    "$ref": "#/definitions/database.WorkoutType"
-                },
-                "weight": {
-                    "type": "number"
-                }
-            }
-        },
-        "app.Measurement": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "description": "The date of the measurement",
-                    "type": "string"
-                },
-                "height": {
-                    "description": "The height of the user, in centimeter",
-                    "type": "number"
-                },
-                "height_unit": {
-                    "description": "The unit of the height (or the user's preferred unit)",
-                    "type": "string"
-                },
-                "steps": {
-                    "description": "The number of steps taken",
-                    "type": "number"
-                },
-                "weight": {
-                    "description": "The weight of the user, in kilograms",
-                    "type": "number"
-                },
-                "weight_unit": {
-                    "description": "The unit of the weight (or the user's preferred unit)",
-                    "type": "string"
-                }
-            }
-        },
-        "database.BreakdownItem": {
-            "type": "object",
-            "properties": {
-                "counter": {
-                    "description": "Counter of this item in the list of items",
-                    "type": "integer"
-                },
-                "distance": {
-                    "description": "Distance in this item",
-                    "type": "number"
-                },
-                "duration": {
-                    "description": "Duration in this item",
-                    "type": "integer"
-                },
-                "firstPoint": {
-                    "description": "First GPS point in this item",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.MapPoint"
-                        }
-                    ]
-                },
-                "isBest": {
-                    "description": "Whether this item is the best of the list",
-                    "type": "boolean"
-                },
-                "isWorst": {
-                    "description": "Whether this item is the worst of the list",
-                    "type": "boolean"
-                },
-                "lastPoint": {
-                    "description": "Last GPS point in this item",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.MapPoint"
-                        }
-                    ]
-                },
-                "localAverageSpeed": {
-                    "description": "The average speed in the bucket, localized",
-                    "type": "string"
-                },
-                "localCadence": {
-                    "description": "The starting cadence in the bucket, localized",
-                    "type": "string"
-                },
-                "localDistance": {
-                    "description": "The total distance in the bucket, localized",
-                    "type": "string"
-                },
-                "localElevation": {
-                    "description": "The starting elevation in the bucket, localized",
-                    "type": "string"
-                },
-                "localHeartRate": {
-                    "description": "The starting heart rate in the bucket, localized",
-                    "type": "string"
-                },
-                "localTotalDistance": {
-                    "description": "Total distance in all items up to and including this item",
-                    "type": "string"
-                },
-                "speed": {
-                    "description": "Speed in this item",
-                    "type": "number"
-                },
-                "totalDistance": {
-                    "description": "Total distance in all items up to and including this item",
-                    "type": "number"
-                },
-                "totalDuration": {
-                    "description": "Total duration in all items up to and including this item",
-                    "type": "integer"
-                },
-                "totalDurationSeconds": {
-                    "description": "The total duration in the bucket, in seconds",
-                    "type": "number"
-                },
-                "unitCount": {
-                    "description": "Count of the unit per item",
-                    "type": "number"
-                },
-                "unitName": {
-                    "description": "Unit name",
-                    "type": "string"
-                }
-            }
-        },
-        "database.Bucket": {
-            "type": "object",
-            "properties": {
-                "averageSpeed": {
-                    "description": "The average speed in the bucket",
-                    "type": "number"
-                },
-                "averageSpeedNoPause": {
-                    "description": "The average speed without pause in the bucket",
-                    "type": "number"
-                },
-                "bucket": {
-                    "description": "The name of the bucket",
-                    "type": "string"
-                },
-                "distance": {
-                    "description": "The total distance in the bucket",
-                    "type": "number"
-                },
-                "duration": {
-                    "description": "The total duration in the bucket",
-                    "type": "integer"
-                },
-                "durationSeconds": {
-                    "description": "The total duration in the bucket, in seconds",
-                    "type": "number"
-                },
-                "localAverageSpeed": {
-                    "description": "The average speed in the bucket, localized",
-                    "type": "string"
-                },
-                "localAverageSpeedNoPause": {
-                    "description": "The average speed without pause in the bucket, localized",
-                    "type": "string"
-                },
-                "localDistance": {
-                    "description": "The total distance in the bucket, localized",
-                    "type": "string"
-                },
-                "localDuration": {
-                    "description": "The total duration in the bucket, localized",
-                    "type": "string"
-                },
-                "localMaxSpeed": {
-                    "description": "The max speed in the bucket, localized",
-                    "type": "string"
-                },
-                "localUp": {
-                    "description": "The total up elevation in the bucket, localized",
-                    "type": "string"
-                },
-                "maxSpeed": {
-                    "description": "The max speed in the bucket",
-                    "type": "number"
-                },
-                "raw_bucket": {
-                    "description": "One day in the bucket (for statistic rendering)",
-                    "type": "string"
-                },
-                "up": {
-                    "description": "The total up elevation in the bucket",
-                    "type": "number"
-                },
-                "workoutType": {
-                    "description": "The type of the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.WorkoutType"
-                        }
-                    ]
-                },
-                "workouts": {
-                    "description": "The number of workouts in the bucket",
+                "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "database.Buckets": {
-            "type": "object",
-            "properties": {
-                "buckets": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/database.Bucket"
-                    }
-                },
-                "localWorkoutType": {
-                    "type": "string"
-                },
-                "workoutType": {
-                    "$ref": "#/definitions/database.WorkoutType"
-                }
-            }
-        },
-        "database.DurationRecord": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "description": "The timestamp of the record",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "The workout ID of the record",
-                    "type": "integer"
-                },
-                "value": {
-                    "description": "The value of the record",
-                    "type": "integer"
-                }
-            }
-        },
-        "database.Equipment": {
-            "type": "object",
-            "properties": {
-                "active": {
-                    "description": "Whether this equipment is active",
-                    "type": "boolean"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "default_for": {
-                    "description": "Which workout types to add this equipment by default",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/database.WorkoutType"
-                    }
-                },
-                "description": {
-                    "description": "More information about the equipment",
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "description": "The name of the gear",
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/database.User"
-                },
-                "userID": {
-                    "description": "The ID of the user who owns the workout",
-                    "type": "integer"
-                },
-                "workouts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/database.Workout"
-                    }
-                }
-            }
-        },
-        "database.ExtraMetrics": {
-            "type": "object",
-            "additionalProperties": {
-                "type": "number",
-                "format": "float64"
-            }
-        },
-        "database.Float64Record": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "description": "The timestamp of the record",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "The workout ID of the record",
-                    "type": "integer"
-                },
-                "value": {
-                    "description": "The value of the record",
-                    "type": "number"
-                }
-            }
-        },
-        "database.GPXData": {
-            "type": "object",
-            "properties": {
-                "checksum": {
-                    "description": "The checksum of the content",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "content": {
-                    "description": "The file content",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "filename": {
-                    "description": "The filename of the file",
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "workoutID": {
-                    "description": "The ID of the workout",
-                    "type": "integer"
-                }
-            }
-        },
-        "database.MapCenter": {
+        "api.MapCenterResponse": {
             "type": "object",
             "properties": {
                 "lat": {
-                    "description": "Latitude",
                     "type": "number"
                 },
                 "lng": {
-                    "description": "Longitude",
                     "type": "number"
                 },
                 "tz": {
-                    "description": "Timezone",
                     "type": "string"
                 }
             }
         },
-        "database.MapData": {
+        "api.MapDataDetailsResponse": {
             "type": "object",
             "properties": {
-                "address": {
-                    "description": "The address of the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/geo.Address"
+                "distance": {
+                    "description": "in km",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "duration": {
+                    "description": "in seconds",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "elevation": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "extra_metrics": {
+                    "description": "Additional metrics like heart-rate, cadence, temperature",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "position": {
+                    "description": "[[lat, lng], ...]",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "float64"
                         }
-                    ]
+                    }
                 },
-                "addressString": {
-                    "description": "The generic location of the workout",
-                    "type": "string"
+                "slope": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
                 },
-                "averageCadence": {
-                    "description": "The average cadence of the workout",
-                    "type": "number"
+                "speed": {
+                    "description": "in m/s",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
                 },
-                "averageSpeed": {
-                    "description": "The average speed of the workout",
-                    "type": "number"
-                },
-                "averageSpeedNoPause": {
-                    "description": "The average speed of the workout without pausing",
-                    "type": "number"
-                },
+                "time": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.MapDataResponse": {
+            "type": "object",
+            "properties": {
                 "center": {
-                    "description": "The center of the workout (in coordinates)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.MapCenter"
-                        }
-                    ]
-                },
-                "createdAt": {
-                    "type": "string"
+                    "$ref": "#/definitions/api.MapCenterResponse"
                 },
                 "creator": {
-                    "description": "The tool that created this workout",
                     "type": "string"
                 },
                 "details": {
-                    "description": "The details of the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.MapDataDetails"
-                        }
-                    ]
+                    "$ref": "#/definitions/api.MapDataDetailsResponse"
                 },
-                "extraMetrics": {
-                    "description": "Extra metrics available",
+                "extra_metrics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.MapPoint": {
+            "type": "object",
+            "properties": {
+                "elevation": {
+                    "type": "number"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
+                },
+                "total_distance": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.MeasurementResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "ftp": {
+                    "type": "number"
+                },
+                "height": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "max_heart_rate": {
+                    "type": "number"
+                },
+                "resting_heart_rate": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.PaginatedResponse-api_EquipmentResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "id": {
+                "page": {
                     "type": "integer"
                 },
-                "maxCadence": {
-                    "description": "The maximum cadence of the workout",
-                    "type": "number"
-                },
-                "maxElevation": {
-                    "description": "The maximum elevation of the workout",
-                    "type": "number"
-                },
-                "maxSpeed": {
-                    "description": "The maximum speed of the workout",
-                    "type": "number"
-                },
-                "minElevation": {
-                    "description": "The minimum elevation of the workout",
-                    "type": "number"
-                },
-                "name": {
-                    "description": "The name of the workout",
-                    "type": "string"
-                },
-                "pauseDuration": {
-                    "description": "The total pause duration of the workout",
+                "per_page": {
                     "type": "integer"
                 },
-                "start": {
-                    "description": "The start time of the workout",
-                    "type": "string"
-                },
-                "stop": {
-                    "description": "The stop time of the workout",
-                    "type": "string"
-                },
-                "totalDistance": {
-                    "description": "The total distance of the workout",
-                    "type": "number"
-                },
-                "totalDown": {
-                    "description": "The total distance down of the workout",
-                    "type": "number"
-                },
-                "totalDuration": {
-                    "description": "The total duration of the workout",
-                    "type": "integer"
-                },
-                "totalRepetitions": {
-                    "description": "The number of repetitions of the workout",
-                    "type": "integer"
-                },
-                "totalUp": {
-                    "description": "The total distance up of the workout",
-                    "type": "number"
-                },
-                "totalWeight": {
-                    "description": "The weight of the workout",
-                    "type": "number"
-                },
-                "type": {
-                    "description": "The type of the workout",
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "workoutID": {
-                    "description": "The workout this data belongs to",
-                    "type": "integer"
-                }
-            }
-        },
-        "database.MapDataDetails": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "mapDataID": {
-                    "description": "The ID of the map data these details belong to",
-                    "type": "integer"
-                },
-                "points": {
-                    "description": "The GPS points of the workout",
+                "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/database.MapPoint"
+                        "$ref": "#/definitions/api.EquipmentResponse"
                     }
                 },
-                "updatedAt": {
-                    "type": "string"
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
-        "database.MapPoint": {
+        "api.PaginatedResponse-api_MeasurementResponse": {
             "type": "object",
             "properties": {
-                "distance": {
-                    "description": "The distance from the previous point",
-                    "type": "number"
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
-                "duration": {
-                    "description": "The duration from the previous point",
+                "page": {
                     "type": "integer"
                 },
-                "elevation": {
-                    "description": "The elevation of the point",
-                    "type": "number"
+                "per_page": {
+                    "type": "integer"
                 },
-                "extraMetrics": {
-                    "description": "Extra metrics at this point",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.ExtraMetrics"
-                        }
-                    ]
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.MeasurementResponse"
+                    }
                 },
-                "lat": {
-                    "description": "The latitude of the point",
-                    "type": "number"
+                "total_count": {
+                    "type": "integer"
                 },
-                "lng": {
-                    "description": "The longitude of the point",
-                    "type": "number"
-                },
-                "time": {
-                    "description": "The time the point was recorded",
-                    "type": "string"
-                },
-                "totalDistance": {
-                    "description": "The total distance of the workout up to this point",
-                    "type": "number"
-                },
-                "totalDuration": {
-                    "description": "The total duration of the workout up to this point",
+                "total_pages": {
                     "type": "integer"
                 }
             }
         },
-        "database.Measurement": {
+        "api.PaginatedResponse-api_RouteSegmentResponse": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
-                "date": {
-                    "description": "The date of the measurement",
-                    "type": "string"
-                },
-                "height": {
-                    "description": "The height of the user, in centimeter",
-                    "type": "number"
-                },
-                "id": {
+                "page": {
                     "type": "integer"
                 },
-                "steps": {
-                    "description": "The number of steps taken",
-                    "type": "number"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "userID": {
-                    "description": "The ID of the user who owns the workout",
+                "per_page": {
                     "type": "integer"
                 },
-                "weight": {
-                    "description": "The weight of the user, in kilograms",
-                    "type": "number"
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RouteSegmentResponse"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
-        "database.Profile": {
+        "api.PaginatedResponse-api_WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.WorkoutResponse"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ProfileSettings": {
             "type": "object",
             "properties": {
                 "api_active": {
-                    "description": "Whether the user's API key is active",
                     "type": "boolean"
                 },
-                "auto_import_directory": {
-                    "description": "The user's preferred directory for auto-import",
+                "api_key": {
                     "type": "string"
                 },
-                "createdAt": {
+                "auto_import_directory": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "prefer_full_date": {
+                    "type": "boolean"
+                },
+                "preferred_units": {
+                    "$ref": "#/definitions/database.UserPreferredUnits"
+                },
+                "socials_disabled": {
+                    "type": "boolean"
+                },
+                "theme": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "totals_show": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.RecordResponse": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                },
+                "workout_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.Response-any": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {}
+            }
+        },
+        "api.Response-api_AppInfoResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.AppInfoResponse"
+                }
+            }
+        },
+        "api.Response-api_EquipmentResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.EquipmentResponse"
+                }
+            }
+        },
+        "api.Response-api_MeasurementResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.MeasurementResponse"
+                }
+            }
+        },
+        "api.Response-api_RouteSegmentDetailResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.RouteSegmentDetailResponse"
+                }
+            }
+        },
+        "api.Response-api_RouteSegmentsDetailResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RouteSegmentResponse"
+                    }
+                }
+            }
+        },
+        "api.Response-api_StatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.StatisticsResponse"
+                }
+            }
+        },
+        "api.Response-api_TotalsResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.TotalsResponse"
+                }
+            }
+        },
+        "api.Response-api_UserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.UserProfileResponse"
+                }
+            }
+        },
+        "api.Response-api_WorkoutBreakdownResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.WorkoutBreakdownResponse"
+                }
+            }
+        },
+        "api.Response-api_WorkoutDetailResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.WorkoutDetailResponse"
+                }
+            }
+        },
+        "api.Response-api_WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.WorkoutResponse"
+                }
+            }
+        },
+        "api.Response-array_api_CalendarEventResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.CalendarEventResponse"
+                    }
+                }
+            }
+        },
+        "api.Response-array_api_UserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.UserProfileResponse"
+                    }
+                }
+            }
+        },
+        "api.Response-array_api_WorkoutRecordResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.WorkoutRecordResponse"
+                    }
+                }
+            }
+        },
+        "api.Response-array_api_WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.WorkoutResponse"
+                    }
+                }
+            }
+        },
+        "api.Response-array_string": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.Response-geojson_FeatureCollection": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/geojson.FeatureCollection"
+                }
+            }
+        },
+        "api.Response-map_string_string": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/map_string_string"
+                }
+            }
+        },
+        "api.RouteSegmentDetailResponse": {
+            "type": "object",
+            "properties": {
+                "address_string": {
+                    "type": "string"
+                },
+                "bidirectional": {
+                    "type": "boolean"
+                },
+                "center": {
+                    "type": "object",
+                    "properties": {
+                        "lat": {
+                            "type": "number"
+                        },
+                        "lng": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "circular": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "match_count": {
+                    "type": "integer"
+                },
+                "matches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RouteSegmentMatch"
+                    }
+                },
+                "max_elevation": {
+                    "type": "number"
+                },
+                "min_elevation": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.MapPoint"
+                    }
+                },
+                "total_distance": {
+                    "type": "number"
+                },
+                "total_down": {
+                    "type": "number"
+                },
+                "total_up": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.RouteSegmentMatch": {
+            "type": "object",
+            "properties": {
+                "average_speed": {
+                    "type": "number"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
+                },
+                "workout_id": {
+                    "type": "integer"
+                },
+                "workout_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.RouteSegmentMatchResponse": {
+            "type": "object",
+            "properties": {
+                "route_segment": {
+                    "$ref": "#/definitions/api.RouteSegmentResponse"
+                },
+                "route_segment_id": {
+                    "type": "integer"
+                },
+                "workout_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.RouteSegmentResponse": {
+            "type": "object",
+            "properties": {
+                "bidirectional": {
+                    "type": "boolean"
+                },
+                "circular": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "match_count": {
+                    "type": "integer"
+                },
+                "max_elevation": {
+                    "type": "number"
+                },
+                "min_elevation": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "total_distance": {
+                    "type": "number"
+                },
+                "total_down": {
+                    "type": "number"
+                },
+                "total_up": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.StatisticBuckets": {
+            "type": "object",
+            "properties": {
+                "buckets": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.StatisticData"
+                    }
+                },
+                "local_workout_type": {
+                    "type": "string"
+                },
+                "workout_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.StatisticData": {
+            "type": "object",
+            "properties": {
+                "average_speed": {
+                    "type": "number"
+                },
+                "average_speed_no_pause": {
+                    "type": "number"
+                },
+                "bucket": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "duration_seconds": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "number"
+                },
+                "workouts": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.StatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "bucket_format": {
+                    "type": "string"
+                },
+                "buckets": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.StatisticBuckets"
+                    }
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.TotalsResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "down": {
+                    "type": "number"
+                },
+                "duration": {
+                    "description": "Duration in seconds",
+                    "type": "integer"
+                },
+                "up": {
+                    "type": "number"
+                },
+                "workouts": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.UserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "admin": {
+                    "type": "boolean"
+                },
+                "birthdate": {
+                    "type": "string"
+                },
+                "created_at": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
                 "language": {
-                    "description": "The user's preferred language",
+                    "type": "string"
+                },
+                "last_version": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "prefer_full_date": {
-                    "description": "Whether to show full dates in the workout details",
                     "type": "boolean"
                 },
-                "preferredUnits": {
-                    "description": "The user's preferred units",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.UserPreferredUnits"
-                        }
-                    ]
+                "preferred_units": {
+                    "$ref": "#/definitions/database.UserPreferredUnits"
+                },
+                "profile": {
+                    "$ref": "#/definitions/api.ProfileSettings"
                 },
                 "socials_disabled": {
-                    "description": "Whether social sharing buttons are disabled when viewing a workout",
                     "type": "boolean"
                 },
                 "theme": {
-                    "description": "The user's preferred color scheme",
                     "type": "string"
                 },
                 "timezone": {
-                    "description": "The user's preferred timezone",
                     "type": "string"
                 },
-                "totals_show": {
-                    "description": "What workout type of totals to show",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.WorkoutType"
-                        }
-                    ]
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "userID": {
-                    "description": "The ID of the user who owns this profile",
-                    "type": "integer"
-                }
-            }
-        },
-        "database.RouteSegment": {
-            "type": "object",
-            "properties": {
-                "addressString": {
-                    "description": "The generic location of the workout",
-                    "type": "string"
-                },
-                "bidirectional": {
-                    "description": "Whether the route segment is bidirectional",
-                    "type": "boolean"
-                },
-                "center": {
-                    "description": "The center of the workout (in coordinates)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.MapCenter"
-                        }
-                    ]
-                },
-                "checksum": {
-                    "description": "The checksum of the content",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "circular": {
-                    "description": "Whether the route segment is circular",
-                    "type": "boolean"
-                },
-                "content": {
-                    "description": "The file content",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "dirty": {
-                    "description": "Whether the route segment should be recalculated",
-                    "type": "boolean"
-                },
-                "filename": {
-                    "description": "The filename of the file",
-                    "type": "string"
-                },
-                "geoAddress": {
-                    "description": "The address of the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/geo.Address"
-                        }
-                    ]
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "maxElevation": {
-                    "description": "The maximum elevation of the workout",
-                    "type": "number"
-                },
-                "minElevation": {
-                    "description": "The minimum elevation of the workout",
-                    "type": "number"
-                },
-                "name": {
-                    "description": "The name of the workout",
-                    "type": "string"
-                },
-                "notes": {
-                    "description": "The notes associated with the workout, in markdown",
-                    "type": "string"
-                },
-                "points": {
-                    "description": "The GPS points of the workout",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/database.MapPoint"
-                    }
-                },
-                "routeSegmentMatches": {
-                    "description": "The matches of the route segment",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/database.RouteSegmentMatch"
-                    }
-                },
-                "totalDistance": {
-                    "description": "The total distance of the workout",
-                    "type": "number"
-                },
-                "totalDown": {
-                    "description": "The total distance down of the workout",
-                    "type": "number"
-                },
-                "totalUp": {
-                    "description": "The total distance up of the workout",
-                    "type": "number"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "database.RouteSegmentMatch": {
-            "type": "object",
-            "properties": {
-                "distance": {
-                    "description": "The total distance of the route segment for this workout",
-                    "type": "number"
-                },
-                "duration": {
-                    "description": "The total duration of the route segment for this workout",
-                    "type": "integer"
-                },
-                "firstID": {
-                    "description": "The index of the first point of the route",
-                    "type": "integer"
-                },
-                "lastID": {
-                    "description": "The index of the last point of the route",
-                    "type": "integer"
-                },
-                "routeSegment": {
-                    "$ref": "#/definitions/database.RouteSegment"
-                },
-                "routeSegmentID": {
-                    "description": "The ID of the route segment",
-                    "type": "integer"
-                },
-                "workout": {
-                    "$ref": "#/definitions/database.Workout"
-                },
-                "workoutID": {
-                    "description": "The ID of the workout",
-                    "type": "integer"
-                }
-            }
-        },
-        "database.Statistics": {
-            "type": "object",
-            "properties": {
-                "bucketFormat": {
-                    "description": "The bucket format in strftime format",
-                    "type": "string"
-                },
-                "buckets": {
-                    "description": "The statistics buckets",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/database.Buckets"
-                    }
-                },
-                "userID": {
-                    "description": "The user ID",
-                    "type": "integer"
-                }
-            }
-        },
-        "database.User": {
-            "type": "object",
-            "properties": {
-                "active": {
-                    "description": "Whether the user is active",
-                    "type": "boolean"
-                },
-                "admin": {
-                    "description": "Whether the user is an admin",
-                    "type": "boolean"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "lastVersion": {
-                    "description": "Which version of the app the user has last seen and acknowledged",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "The user's name",
-                    "type": "string"
-                },
-                "profile": {
-                    "description": "The user's profile settings",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.Profile"
-                        }
-                    ]
-                },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 },
                 "username": {
-                    "description": "The user's username",
                     "type": "string"
+                }
+            }
+        },
+        "api.WorkoutBreakdownItemResponse": {
+            "type": "object",
+            "properties": {
+                "average_cadence": {
+                    "type": "number"
+                },
+                "average_heart_rate": {
+                    "type": "number"
+                },
+                "average_pace": {
+                    "description": "seconds per preferred unit",
+                    "type": "number"
+                },
+                "average_power": {
+                    "type": "number"
+                },
+                "average_speed": {
+                    "type": "number"
+                },
+                "average_speed_no_pause": {
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "meters",
+                    "type": "number"
+                },
+                "duration": {
+                    "description": "moving duration in seconds",
+                    "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
+                },
+                "is_best": {
+                    "type": "boolean"
+                },
+                "is_worst": {
+                    "type": "boolean"
+                },
+                "max_cadence": {
+                    "type": "number"
+                },
+                "max_elevation": {
+                    "type": "number"
+                },
+                "max_heart_rate": {
+                    "type": "number"
+                },
+                "max_power": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "number"
+                },
+                "min_elevation": {
+                    "type": "number"
+                },
+                "start_index": {
+                    "type": "integer"
+                },
+                "total_down": {
+                    "type": "number"
+                },
+                "total_up": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.WorkoutBreakdownResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.WorkoutBreakdownItemResponse"
+                    }
+                },
+                "mode": {
+                    "description": "\"laps\" or \"unit\"",
+                    "type": "string"
+                }
+            }
+        },
+        "api.WorkoutDetailResponse": {
+            "type": "object",
+            "properties": {
+                "address_string": {
+                    "description": "MapData fields (when available)",
+                    "type": "string"
+                },
+                "average_cadence": {
+                    "type": "number"
+                },
+                "average_heart_rate": {
+                    "type": "number"
+                },
+                "average_power": {
+                    "type": "number"
+                },
+                "average_speed": {
+                    "type": "number"
+                },
+                "average_speed_no_pause": {
+                    "type": "number"
+                },
+                "climbs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClimbSegmentResponse"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "custom_type": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "equipment": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.EquipmentResponse"
+                    }
+                },
+                "has_file": {
+                    "type": "boolean"
+                },
+                "has_tracks": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "laps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.WorkoutLapResponse"
+                    }
+                },
+                "locked": {
+                    "type": "boolean"
+                },
+                "map_data": {
+                    "$ref": "#/definitions/api.MapDataResponse"
+                },
+                "max_cadence": {
+                    "type": "number"
+                },
+                "max_elevation": {
+                    "type": "number"
+                },
+                "max_heart_rate": {
+                    "type": "number"
+                },
+                "max_power": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "number"
+                },
+                "min_elevation": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "pause_duration": {
+                    "description": "Duration in seconds",
+                    "type": "integer"
+                },
+                "public_uuid": {
+                    "type": "string"
+                },
+                "route_segment_matches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RouteSegmentMatchResponse"
+                    }
+                },
+                "sub_type": {
+                    "type": "string"
+                },
+                "total_distance": {
+                    "type": "number"
+                },
+                "total_down": {
+                    "type": "number"
+                },
+                "total_duration": {
+                    "description": "Duration in seconds",
+                    "type": "integer"
+                },
+                "total_repetitions": {
+                    "type": "integer"
+                },
+                "total_up": {
+                    "type": "number"
+                },
+                "total_weight": {
+                    "type": "number"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/api.UserProfileResponse"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.WorkoutLapResponse": {
+            "type": "object",
+            "properties": {
+                "average_cadence": {
+                    "type": "number"
+                },
+                "average_heart_rate": {
+                    "type": "number"
+                },
+                "average_power": {
+                    "type": "number"
+                },
+                "average_speed": {
+                    "type": "number"
+                },
+                "average_speed_no_pause": {
+                    "type": "number"
+                },
+                "max_cadence": {
+                    "type": "number"
+                },
+                "max_elevation": {
+                    "type": "number"
+                },
+                "max_heart_rate": {
+                    "type": "number"
+                },
+                "max_power": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "number"
+                },
+                "min_elevation": {
+                    "type": "number"
+                },
+                "pause_duration": {
+                    "type": "integer"
+                },
+                "start": {
+                    "type": "string"
+                },
+                "stop": {
+                    "type": "string"
+                },
+                "total_distance": {
+                    "type": "number"
+                },
+                "total_down": {
+                    "type": "number"
+                },
+                "total_duration": {
+                    "type": "integer"
+                },
+                "total_up": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.WorkoutRecordResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "average_speed": {
+                    "$ref": "#/definitions/api.RecordResponse"
+                },
+                "average_speed_no_pause": {
+                    "$ref": "#/definitions/api.RecordResponse"
+                },
+                "distance": {
+                    "$ref": "#/definitions/api.RecordResponse"
+                },
+                "duration": {
+                    "$ref": "#/definitions/api.RecordResponse"
+                },
+                "max_speed": {
+                    "$ref": "#/definitions/api.RecordResponse"
+                },
+                "total_up": {
+                    "$ref": "#/definitions/api.RecordResponse"
+                },
+                "workout_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "address_string": {
+                    "description": "MapData fields (when available)",
+                    "type": "string"
+                },
+                "average_cadence": {
+                    "type": "number"
+                },
+                "average_heart_rate": {
+                    "type": "number"
+                },
+                "average_power": {
+                    "type": "number"
+                },
+                "average_speed": {
+                    "type": "number"
+                },
+                "average_speed_no_pause": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "custom_type": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "has_file": {
+                    "type": "boolean"
+                },
+                "has_tracks": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "locked": {
+                    "type": "boolean"
+                },
+                "max_cadence": {
+                    "type": "number"
+                },
+                "max_elevation": {
+                    "type": "number"
+                },
+                "max_heart_rate": {
+                    "type": "number"
+                },
+                "max_power": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "number"
+                },
+                "min_elevation": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "pause_duration": {
+                    "description": "Duration in seconds",
+                    "type": "integer"
+                },
+                "public_uuid": {
+                    "type": "string"
+                },
+                "sub_type": {
+                    "type": "string"
+                },
+                "total_distance": {
+                    "type": "number"
+                },
+                "total_down": {
+                    "type": "number"
+                },
+                "total_duration": {
+                    "description": "Duration in seconds",
+                    "type": "integer"
+                },
+                "total_repetitions": {
+                    "type": "integer"
+                },
+                "total_up": {
+                    "type": "number"
+                },
+                "total_weight": {
+                    "type": "number"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/api.UserProfileResponse"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1644,253 +3745,6 @@ const docTemplate = `{
                 },
                 "weight": {
                     "description": "The user's preferred weight unit",
-                    "type": "string"
-                }
-            }
-        },
-        "database.Workout": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "data": {
-                    "description": "The map data associated with the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.MapData"
-                        }
-                    ]
-                },
-                "date": {
-                    "description": "The timestamp the workout was recorded",
-                    "type": "string"
-                },
-                "dirty": {
-                    "description": "Whether the workout has been modified and the details should be re-rendered",
-                    "type": "boolean"
-                },
-                "equipment": {
-                    "description": "Which equipment is used for this workout",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/database.Equipment"
-                    }
-                },
-                "gpx": {
-                    "description": "The file data associated with the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.GPXData"
-                        }
-                    ]
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "description": "The name of the workout",
-                    "type": "string"
-                },
-                "notes": {
-                    "description": "The notes associated with the workout, in markdown",
-                    "type": "string"
-                },
-                "publicUUID": {
-                    "description": "UUID to publicly share a workout - this UUID can be rotated",
-                    "type": "string"
-                },
-                "routeSegmentMatches": {
-                    "description": "Which route segments match",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/database.RouteSegmentMatch"
-                    }
-                },
-                "type": {
-                    "description": "The type of the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.WorkoutType"
-                        }
-                    ]
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "user": {
-                    "description": "The user who owns the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.User"
-                        }
-                    ]
-                },
-                "userID": {
-                    "description": "The ID of the user who owns the workout",
-                    "type": "integer"
-                }
-            }
-        },
-        "database.WorkoutBreakdown": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/database.BreakdownItem"
-                    }
-                },
-                "unit": {
-                    "type": "string"
-                }
-            }
-        },
-        "database.WorkoutRecord": {
-            "type": "object",
-            "properties": {
-                "active": {
-                    "description": "Whether there is any data in the record",
-                    "type": "boolean"
-                },
-                "averageSpeed": {
-                    "description": "The record with the maximum average speed",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.Float64Record"
-                        }
-                    ]
-                },
-                "averageSpeedNoPause": {
-                    "description": "The record with the maximum average speed without pause",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.Float64Record"
-                        }
-                    ]
-                },
-                "distance": {
-                    "description": "The record with the maximum distance",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.Float64Record"
-                        }
-                    ]
-                },
-                "duration": {
-                    "description": "The record with the maximum duration",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.DurationRecord"
-                        }
-                    ]
-                },
-                "maxSpeed": {
-                    "description": "The record with the maximum max speed",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.Float64Record"
-                        }
-                    ]
-                },
-                "totalUp": {
-                    "description": "The record with the maximum up elevation",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.Float64Record"
-                        }
-                    ]
-                },
-                "workoutType": {
-                    "description": "The type of the workout",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/database.WorkoutType"
-                        }
-                    ]
-                }
-            }
-        },
-        "database.WorkoutType": {
-            "type": "string",
-            "enum": [
-                "unknown",
-                "auto",
-                "running",
-                "cycling",
-                "e-cycling",
-                "horse-riding",
-                "inline-skating",
-                "walking",
-                "skiing",
-                "snowboarding",
-                "swimming",
-                "kayaking",
-                "golfing",
-                "hiking",
-                "push-ups",
-                "weight-lifting",
-                "rowing",
-                "other"
-            ],
-            "x-enum-varnames": [
-                "WorkoutTypeUnknown",
-                "WorkoutTypeAutoDetect",
-                "WorkoutTypeRunning",
-                "WorkoutTypeCycling",
-                "WorkoutTypeECycling",
-                "WorkoutTypeHorseRiding",
-                "WorkoutTypeInlineSkating",
-                "WorkoutTypeWalking",
-                "WorkoutTypeSkiing",
-                "WorkoutTypeSnowboarding",
-                "WorkoutTypeSwimming",
-                "WorkoutTypeKayaking",
-                "WorkoutTypeGolfing",
-                "WorkoutTypeHiking",
-                "WorkoutTypePushups",
-                "WorkoutTypeWeightLifting",
-                "WorkoutTypeRowing",
-                "WorkoutTypeOther"
-            ]
-        },
-        "geo.Address": {
-            "type": "object",
-            "properties": {
-                "city": {
-                    "type": "string"
-                },
-                "country": {
-                    "type": "string"
-                },
-                "countryCode": {
-                    "type": "string"
-                },
-                "county": {
-                    "type": "string"
-                },
-                "formattedAddress": {
-                    "type": "string"
-                },
-                "houseNumber": {
-                    "type": "string"
-                },
-                "postcode": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string"
-                },
-                "stateCode": {
-                    "type": "string"
-                },
-                "stateDistrict": {
-                    "type": "string"
-                },
-                "street": {
-                    "type": "string"
-                },
-                "suburb": {
                     "type": "string"
                 }
             }
@@ -1937,18 +3791,41 @@ const docTemplate = `{
         "geojson.Properties": {
             "type": "object",
             "additionalProperties": true
+        },
+        "map_string_string": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+        "ApiKeyQuery": {
+            "type": "apiKey",
+            "name": "api-key",
+            "in": "query"
+        },
+        "CookieAuth": {
+            "type": "apiKey",
+            "name": "Cookie",
+            "in": "header"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "2.0",
 	Host:             "",
-	BasePath:         "/api/v1",
+	BasePath:         "/api/v2",
 	Schemes:          []string{},
-	Title:            "Workout Tracker",
-	Description:      "A workout tracking web application for personal use (or family, friends), geared towards running and other GPX-based activities",
+	Title:            "Workout Tracker API",
+	Description:      "Workout Tracker HTTP API (v2).",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

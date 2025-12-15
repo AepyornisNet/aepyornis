@@ -72,7 +72,6 @@ func (a *App) ConfigureWebserver() error {
 	})
 
 	publicGroup := e.Group(a.WebRoot())
-	a.apiRoutes(publicGroup)
 	a.apiV2Routes(publicGroup)
 
 	authGroup := publicGroup.Group("/auth")
@@ -152,6 +151,19 @@ func (a *App) ContextValueMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// @title           Workout Tracker API
+// @version         2.0
+// @description     Workout Tracker HTTP API (v2).
+// @BasePath        /api/v2
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// @securityDefinitions.apikey ApiKeyQuery
+// @in query
+// @name api-key
+// @securityDefinitions.apikey CookieAuth
+// @in header
+// @name Cookie
 func (a *App) apiV2Routes(e *echo.Group) {
 	// Public routes
 	apiGroupPublic := e.Group("/api/v2")
@@ -216,6 +228,17 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	apiGroup.POST("/lookup-address", a.apiV2LookupAddressHandler).Name = "lookup-address"
 }
 
+// apiV2LookupAddressHandler searches an address
+// @Summary      Lookup address
+// @Tags         lookup
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Param        location  query  string true "Free text address"
+// @Success      200  {object}  api.Response[[]string]
+// @Failure      400  {object}  api.Response[any]
+// @Router       /lookup-address [post]
 func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 	q := c.Param("location")
 
@@ -230,6 +253,11 @@ func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 }
 
 // apiV2AppInfoHandler returns application information
+// @Summary      Get application info
+// @Tags         meta
+// @Produce      json
+// @Success      200  {object}  api.Response[api.AppInfoResponse]
+// @Router       /app-info [get]
 func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 	resp := api.Response[api.AppInfoResponse]{
 		Results: api.AppInfoResponse{

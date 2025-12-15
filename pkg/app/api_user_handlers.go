@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// registerAPIV2UserRoutes wires user routes.
 func (a *App) registerAPIV2UserRoutes(e *echo.Group) {
 	e.GET("/whoami", a.apiV2WhoamiHandler).Name = "api-v2-whoami"
 	e.GET("/totals", a.apiV2TotalsHandler).Name = "api-v2-totals"
@@ -15,6 +16,15 @@ func (a *App) registerAPIV2UserRoutes(e *echo.Group) {
 }
 
 // apiV2WhoamiHandler returns current user information
+// @Summary      Get current user profile
+// @Tags         user
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Failure      401  {object}  api.Response[any]
+// @Router       /whoami [get]
 func (a *App) apiV2WhoamiHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
@@ -26,6 +36,15 @@ func (a *App) apiV2WhoamiHandler(c echo.Context) error {
 }
 
 // apiV2TotalsHandler returns user's workout totals
+// @Summary      Get workout totals
+// @Tags         user
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[api.TotalsResponse]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /totals [get]
 func (a *App) apiV2TotalsHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
@@ -42,6 +61,15 @@ func (a *App) apiV2TotalsHandler(c echo.Context) error {
 }
 
 // apiV2RecordsHandler returns user's workout records
+// @Summary      Get workout records
+// @Tags         user
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[[]api.WorkoutRecordResponse]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /records [get]
 func (a *App) apiV2RecordsHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
@@ -58,6 +86,17 @@ func (a *App) apiV2RecordsHandler(c echo.Context) error {
 }
 
 // apiV2UserShowHandler returns a specific user's workout records
+// @Summary      Get user profile by ID
+// @Tags         user
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path      int  true  "User ID"
+// @Produce      json
+// @Success      200  {object}  api.Response[[]api.WorkoutRecordResponse]
+// @Failure      403  {object}  api.Response[any]
+// @Failure      404  {object}  api.Response[any]
+// @Router       /{id} [get]
 // TODO: Add more data. This will be used for public profiles.
 func (a *App) apiV2UserShowHandler(c echo.Context) error {
 	u, err := a.getUser(c)

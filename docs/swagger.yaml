@@ -1,14 +1,17 @@
-basePath: /api/v1
+basePath: /api/v2
 definitions:
-  app.APIResponse:
+  api.AppInfoResponse:
     properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results: {}
+      registration_disabled:
+        type: boolean
+      socials_disabled:
+        type: boolean
+      version:
+        type: string
+      version_sha:
+        type: string
     type: object
-  app.Event:
+  api.CalendarEventResponse:
     properties:
       end:
         type: string
@@ -19,621 +22,912 @@ definitions:
       url:
         type: string
     type: object
-  app.ManualWorkout:
+  api.ClimbSegmentResponse:
     properties:
-      date:
-        type: string
-      distance:
+      avg_slope:
         type: number
-      duration_hours:
-        type: integer
-      duration_minutes:
-        type: integer
-      duration_seconds:
-        type: integer
-      location:
+      category:
         type: string
+      elevation:
+        type: number
+      index:
+        type: integer
+      length:
+        type: number
+      start_distance:
+        type: number
+      type:
+        type: string
+    type: object
+  api.EquipmentResponse:
+    properties:
+      active:
+        type: boolean
+      created_at:
+        type: string
+      default_for:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      id:
+        type: integer
       name:
         type: string
       notes:
         type: string
-      repetitions:
-        type: integer
-      timezone:
+      updated_at:
         type: string
-      type:
-        $ref: '#/definitions/database.WorkoutType'
-      weight:
-        type: number
-    type: object
-  app.Measurement:
-    properties:
-      date:
-        description: The date of the measurement
-        type: string
-      height:
-        description: The height of the user, in centimeter
-        type: number
-      height_unit:
-        description: The unit of the height (or the user's preferred unit)
-        type: string
-      steps:
-        description: The number of steps taken
-        type: number
-      weight:
-        description: The weight of the user, in kilograms
-        type: number
-      weight_unit:
-        description: The unit of the weight (or the user's preferred unit)
-        type: string
-    type: object
-  database.BreakdownItem:
-    properties:
-      counter:
-        description: Counter of this item in the list of items
-        type: integer
-      distance:
-        description: Distance in this item
-        type: number
-      duration:
-        description: Duration in this item
-        type: integer
-      firstPoint:
-        allOf:
-        - $ref: '#/definitions/database.MapPoint'
-        description: First GPS point in this item
-      isBest:
-        description: Whether this item is the best of the list
-        type: boolean
-      isWorst:
-        description: Whether this item is the worst of the list
-        type: boolean
-      lastPoint:
-        allOf:
-        - $ref: '#/definitions/database.MapPoint'
-        description: Last GPS point in this item
-      localAverageSpeed:
-        description: The average speed in the bucket, localized
-        type: string
-      localCadence:
-        description: The starting cadence in the bucket, localized
-        type: string
-      localDistance:
-        description: The total distance in the bucket, localized
-        type: string
-      localElevation:
-        description: The starting elevation in the bucket, localized
-        type: string
-      localHeartRate:
-        description: The starting heart rate in the bucket, localized
-        type: string
-      localTotalDistance:
-        description: Total distance in all items up to and including this item
-        type: string
-      speed:
-        description: Speed in this item
-        type: number
-      totalDistance:
-        description: Total distance in all items up to and including this item
-        type: number
-      totalDuration:
-        description: Total duration in all items up to and including this item
-        type: integer
-      totalDurationSeconds:
-        description: The total duration in the bucket, in seconds
-        type: number
-      unitCount:
-        description: Count of the unit per item
-        type: number
-      unitName:
-        description: Unit name
-        type: string
-    type: object
-  database.Bucket:
-    properties:
-      averageSpeed:
-        description: The average speed in the bucket
-        type: number
-      averageSpeedNoPause:
-        description: The average speed without pause in the bucket
-        type: number
-      bucket:
-        description: The name of the bucket
-        type: string
-      distance:
-        description: The total distance in the bucket
-        type: number
-      duration:
-        description: The total duration in the bucket
-        type: integer
-      durationSeconds:
-        description: The total duration in the bucket, in seconds
-        type: number
-      localAverageSpeed:
-        description: The average speed in the bucket, localized
-        type: string
-      localAverageSpeedNoPause:
-        description: The average speed without pause in the bucket, localized
-        type: string
-      localDistance:
-        description: The total distance in the bucket, localized
-        type: string
-      localDuration:
-        description: The total duration in the bucket, localized
-        type: string
-      localMaxSpeed:
-        description: The max speed in the bucket, localized
-        type: string
-      localUp:
-        description: The total up elevation in the bucket, localized
-        type: string
-      maxSpeed:
-        description: The max speed in the bucket
-        type: number
-      raw_bucket:
-        description: One day in the bucket (for statistic rendering)
-        type: string
-      up:
-        description: The total up elevation in the bucket
-        type: number
-      workoutType:
-        allOf:
-        - $ref: '#/definitions/database.WorkoutType'
-        description: The type of the workout
-      workouts:
-        description: The number of workouts in the bucket
+      user_id:
         type: integer
     type: object
-  database.Buckets:
-    properties:
-      buckets:
-        additionalProperties:
-          $ref: '#/definitions/database.Bucket'
-        type: object
-      localWorkoutType:
-        type: string
-      workoutType:
-        $ref: '#/definitions/database.WorkoutType'
-    type: object
-  database.DurationRecord:
-    properties:
-      date:
-        description: The timestamp of the record
-        type: string
-      id:
-        description: The workout ID of the record
-        type: integer
-      value:
-        description: The value of the record
-        type: integer
-    type: object
-  database.Equipment:
-    properties:
-      active:
-        description: Whether this equipment is active
-        type: boolean
-      createdAt:
-        type: string
-      default_for:
-        description: Which workout types to add this equipment by default
-        items:
-          $ref: '#/definitions/database.WorkoutType'
-        type: array
-      description:
-        description: More information about the equipment
-        type: string
-      id:
-        type: integer
-      name:
-        description: The name of the gear
-        type: string
-      updatedAt:
-        type: string
-      user:
-        $ref: '#/definitions/database.User'
-      userID:
-        description: The ID of the user who owns the workout
-        type: integer
-      workouts:
-        items:
-          $ref: '#/definitions/database.Workout'
-        type: array
-    type: object
-  database.ExtraMetrics:
-    additionalProperties:
-      format: float64
-      type: number
-    type: object
-  database.Float64Record:
-    properties:
-      date:
-        description: The timestamp of the record
-        type: string
-      id:
-        description: The workout ID of the record
-        type: integer
-      value:
-        description: The value of the record
-        type: number
-    type: object
-  database.GPXData:
-    properties:
-      checksum:
-        description: The checksum of the content
-        items:
-          type: integer
-        type: array
-      content:
-        description: The file content
-        items:
-          type: integer
-        type: array
-      createdAt:
-        type: string
-      filename:
-        description: The filename of the file
-        type: string
-      id:
-        type: integer
-      updatedAt:
-        type: string
-      workoutID:
-        description: The ID of the workout
-        type: integer
-    type: object
-  database.MapCenter:
+  api.MapCenterResponse:
     properties:
       lat:
-        description: Latitude
         type: number
       lng:
-        description: Longitude
         type: number
       tz:
-        description: Timezone
         type: string
     type: object
-  database.MapData:
+  api.MapDataDetailsResponse:
     properties:
-      address:
-        allOf:
-        - $ref: '#/definitions/geo.Address'
-        description: The address of the workout
-      addressString:
-        description: The generic location of the workout
-        type: string
-      averageCadence:
-        description: The average cadence of the workout
-        type: number
-      averageSpeed:
-        description: The average speed of the workout
-        type: number
-      averageSpeedNoPause:
-        description: The average speed of the workout without pausing
-        type: number
-      center:
-        allOf:
-        - $ref: '#/definitions/database.MapCenter'
-        description: The center of the workout (in coordinates)
-      createdAt:
-        type: string
-      creator:
-        description: The tool that created this workout
-        type: string
-      details:
-        allOf:
-        - $ref: '#/definitions/database.MapDataDetails'
-        description: The details of the workout
-      extraMetrics:
-        description: Extra metrics available
+      distance:
+        description: in km
+        items:
+          type: number
+        type: array
+      duration:
+        description: in seconds
+        items:
+          type: number
+        type: array
+      elevation:
+        items:
+          type: number
+        type: array
+      extra_metrics:
+        additionalProperties:
+          items: {}
+          type: array
+        description: Additional metrics like heart-rate, cadence, temperature
+        type: object
+      position:
+        description: '[[lat, lng], ...]'
+        items:
+          items:
+            format: float64
+            type: number
+          type: array
+        type: array
+      slope:
+        items:
+          type: number
+        type: array
+      speed:
+        description: in m/s
+        items:
+          type: number
+        type: array
+      time:
         items:
           type: string
         type: array
-      id:
-        type: integer
-      maxCadence:
-        description: The maximum cadence of the workout
-        type: number
-      maxElevation:
-        description: The maximum elevation of the workout
-        type: number
-      maxSpeed:
-        description: The maximum speed of the workout
-        type: number
-      minElevation:
-        description: The minimum elevation of the workout
-        type: number
-      name:
-        description: The name of the workout
-        type: string
-      pauseDuration:
-        description: The total pause duration of the workout
-        type: integer
-      start:
-        description: The start time of the workout
-        type: string
-      stop:
-        description: The stop time of the workout
-        type: string
-      totalDistance:
-        description: The total distance of the workout
-        type: number
-      totalDown:
-        description: The total distance down of the workout
-        type: number
-      totalDuration:
-        description: The total duration of the workout
-        type: integer
-      totalRepetitions:
-        description: The number of repetitions of the workout
-        type: integer
-      totalUp:
-        description: The total distance up of the workout
-        type: number
-      totalWeight:
-        description: The weight of the workout
-        type: number
-      type:
-        description: The type of the workout
-        type: string
-      updatedAt:
-        type: string
-      workoutID:
-        description: The workout this data belongs to
-        type: integer
     type: object
-  database.MapDataDetails:
+  api.MapDataResponse:
     properties:
-      createdAt:
+      center:
+        $ref: '#/definitions/api.MapCenterResponse'
+      creator:
         type: string
-      id:
-        type: integer
-      mapDataID:
-        description: The ID of the map data these details belong to
-        type: integer
-      points:
-        description: The GPS points of the workout
+      details:
+        $ref: '#/definitions/api.MapDataDetailsResponse'
+      extra_metrics:
         items:
-          $ref: '#/definitions/database.MapPoint'
+          type: string
         type: array
-      updatedAt:
-        type: string
     type: object
-  database.MapPoint:
+  api.MapPoint:
     properties:
-      distance:
-        description: The distance from the previous point
-        type: number
-      duration:
-        description: The duration from the previous point
-        type: integer
       elevation:
-        description: The elevation of the point
         type: number
-      extraMetrics:
-        allOf:
-        - $ref: '#/definitions/database.ExtraMetrics'
-        description: Extra metrics at this point
       lat:
-        description: The latitude of the point
         type: number
       lng:
-        description: The longitude of the point
         type: number
-      time:
-        description: The time the point was recorded
-        type: string
-      totalDistance:
-        description: The total distance of the workout up to this point
+      total_distance:
         type: number
-      totalDuration:
-        description: The total duration of the workout up to this point
-        type: integer
     type: object
-  database.Measurement:
+  api.MeasurementResponse:
     properties:
-      createdAt:
+      created_at:
         type: string
       date:
-        description: The date of the measurement
         type: string
+      ftp:
+        type: number
       height:
-        description: The height of the user, in centimeter
         type: number
       id:
         type: integer
-      steps:
-        description: The number of steps taken
+      max_heart_rate:
         type: number
-      updatedAt:
+      resting_heart_rate:
+        type: number
+      steps:
+        type: integer
+      updated_at:
         type: string
-      userID:
-        description: The ID of the user who owns the workout
+      user_id:
         type: integer
       weight:
-        description: The weight of the user, in kilograms
         type: number
     type: object
-  database.Profile:
+  api.PaginatedResponse-api_EquipmentResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/api.EquipmentResponse'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  api.PaginatedResponse-api_MeasurementResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/api.MeasurementResponse'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  api.PaginatedResponse-api_RouteSegmentResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/api.RouteSegmentResponse'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  api.PaginatedResponse-api_WorkoutResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/api.WorkoutResponse'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  api.ProfileSettings:
     properties:
       api_active:
-        description: Whether the user's API key is active
         type: boolean
-      auto_import_directory:
-        description: The user's preferred directory for auto-import
+      api_key:
         type: string
-      createdAt:
+      auto_import_directory:
+        type: string
+      language:
+        type: string
+      prefer_full_date:
+        type: boolean
+      preferred_units:
+        $ref: '#/definitions/database.UserPreferredUnits'
+      socials_disabled:
+        type: boolean
+      theme:
+        type: string
+      timezone:
+        type: string
+      totals_show:
+        type: string
+    type: object
+  api.RecordResponse:
+    properties:
+      date:
+        type: string
+      value:
+        type: number
+      workout_id:
+        type: integer
+    type: object
+  api.Response-any:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results: {}
+    type: object
+  api.Response-api_AppInfoResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.AppInfoResponse'
+    type: object
+  api.Response-api_EquipmentResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.EquipmentResponse'
+    type: object
+  api.Response-api_MeasurementResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.MeasurementResponse'
+    type: object
+  api.Response-api_RouteSegmentDetailResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.RouteSegmentDetailResponse'
+    type: object
+  api.Response-api_RouteSegmentsDetailResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/api.RouteSegmentResponse'
+        type: array
+    type: object
+  api.Response-api_StatisticsResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.StatisticsResponse'
+    type: object
+  api.Response-api_TotalsResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.TotalsResponse'
+    type: object
+  api.Response-api_UserProfileResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.UserProfileResponse'
+    type: object
+  api.Response-api_WorkoutBreakdownResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.WorkoutBreakdownResponse'
+    type: object
+  api.Response-api_WorkoutDetailResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.WorkoutDetailResponse'
+    type: object
+  api.Response-api_WorkoutResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.WorkoutResponse'
+    type: object
+  api.Response-array_api_CalendarEventResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/api.CalendarEventResponse'
+        type: array
+    type: object
+  api.Response-array_api_UserProfileResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/api.UserProfileResponse'
+        type: array
+    type: object
+  api.Response-array_api_WorkoutRecordResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/api.WorkoutRecordResponse'
+        type: array
+    type: object
+  api.Response-array_api_WorkoutResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/api.WorkoutResponse'
+        type: array
+    type: object
+  api.Response-array_string:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          type: string
+        type: array
+    type: object
+  api.Response-geojson_FeatureCollection:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/geojson.FeatureCollection'
+    type: object
+  api.Response-map_string_string:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/map_string_string'
+    type: object
+  api.RouteSegmentDetailResponse:
+    properties:
+      address_string:
+        type: string
+      bidirectional:
+        type: boolean
+      center:
+        properties:
+          lat:
+            type: number
+          lng:
+            type: number
+        type: object
+      circular:
+        type: boolean
+      created_at:
+        type: string
+      filename:
+        type: string
+      id:
+        type: integer
+      match_count:
+        type: integer
+      matches:
+        items:
+          $ref: '#/definitions/api.RouteSegmentMatch'
+        type: array
+      max_elevation:
+        type: number
+      min_elevation:
+        type: number
+      name:
+        type: string
+      notes:
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/api.MapPoint'
+        type: array
+      total_distance:
+        type: number
+      total_down:
+        type: number
+      total_up:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  api.RouteSegmentMatch:
+    properties:
+      average_speed:
+        type: number
+      distance:
+        type: number
+      duration:
+        type: integer
+      user_id:
+        type: integer
+      user_name:
+        type: string
+      workout_id:
+        type: integer
+      workout_name:
+        type: string
+    type: object
+  api.RouteSegmentMatchResponse:
+    properties:
+      route_segment:
+        $ref: '#/definitions/api.RouteSegmentResponse'
+      route_segment_id:
+        type: integer
+      workout_id:
+        type: integer
+    type: object
+  api.RouteSegmentResponse:
+    properties:
+      bidirectional:
+        type: boolean
+      circular:
+        type: boolean
+      created_at:
+        type: string
+      filename:
+        type: string
+      id:
+        type: integer
+      match_count:
+        type: integer
+      max_elevation:
+        type: number
+      min_elevation:
+        type: number
+      name:
+        type: string
+      notes:
+        type: string
+      total_distance:
+        type: number
+      total_down:
+        type: number
+      total_up:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  api.StatisticBuckets:
+    properties:
+      buckets:
+        additionalProperties:
+          $ref: '#/definitions/api.StatisticData'
+        type: object
+      local_workout_type:
+        type: string
+      workout_type:
+        type: string
+    type: object
+  api.StatisticData:
+    properties:
+      average_speed:
+        type: number
+      average_speed_no_pause:
+        type: number
+      bucket:
+        type: string
+      distance:
+        type: number
+      duration:
+        type: number
+      duration_seconds:
+        type: number
+      max_speed:
+        type: number
+      workouts:
+        type: integer
+    type: object
+  api.StatisticsResponse:
+    properties:
+      bucket_format:
+        type: string
+      buckets:
+        additionalProperties:
+          $ref: '#/definitions/api.StatisticBuckets'
+        type: object
+      user_id:
+        type: integer
+    type: object
+  api.TotalsResponse:
+    properties:
+      distance:
+        type: number
+      down:
+        type: number
+      duration:
+        description: Duration in seconds
+        type: integer
+      up:
+        type: number
+      workouts:
+        type: integer
+    type: object
+  api.UserProfileResponse:
+    properties:
+      active:
+        type: boolean
+      admin:
+        type: boolean
+      birthdate:
+        type: string
+      created_at:
         type: string
       id:
         type: integer
       language:
-        description: The user's preferred language
+        type: string
+      last_version:
+        type: string
+      name:
         type: string
       prefer_full_date:
-        description: Whether to show full dates in the workout details
         type: boolean
-      preferredUnits:
-        allOf:
-        - $ref: '#/definitions/database.UserPreferredUnits'
-        description: The user's preferred units
+      preferred_units:
+        $ref: '#/definitions/database.UserPreferredUnits'
+      profile:
+        $ref: '#/definitions/api.ProfileSettings'
       socials_disabled:
-        description: Whether social sharing buttons are disabled when viewing a workout
         type: boolean
       theme:
-        description: The user's preferred color scheme
         type: string
       timezone:
-        description: The user's preferred timezone
         type: string
-      totals_show:
-        allOf:
-        - $ref: '#/definitions/database.WorkoutType'
-        description: What workout type of totals to show
-      updatedAt:
-        type: string
-      userID:
-        description: The ID of the user who owns this profile
-        type: integer
-    type: object
-  database.RouteSegment:
-    properties:
-      addressString:
-        description: The generic location of the workout
-        type: string
-      bidirectional:
-        description: Whether the route segment is bidirectional
-        type: boolean
-      center:
-        allOf:
-        - $ref: '#/definitions/database.MapCenter'
-        description: The center of the workout (in coordinates)
-      checksum:
-        description: The checksum of the content
-        items:
-          type: integer
-        type: array
-      circular:
-        description: Whether the route segment is circular
-        type: boolean
-      content:
-        description: The file content
-        items:
-          type: integer
-        type: array
-      createdAt:
-        type: string
-      dirty:
-        description: Whether the route segment should be recalculated
-        type: boolean
-      filename:
-        description: The filename of the file
-        type: string
-      geoAddress:
-        allOf:
-        - $ref: '#/definitions/geo.Address'
-        description: The address of the workout
-      id:
-        type: integer
-      maxElevation:
-        description: The maximum elevation of the workout
-        type: number
-      minElevation:
-        description: The minimum elevation of the workout
-        type: number
-      name:
-        description: The name of the workout
-        type: string
-      notes:
-        description: The notes associated with the workout, in markdown
-        type: string
-      points:
-        description: The GPS points of the workout
-        items:
-          $ref: '#/definitions/database.MapPoint'
-        type: array
-      routeSegmentMatches:
-        description: The matches of the route segment
-        items:
-          $ref: '#/definitions/database.RouteSegmentMatch'
-        type: array
-      totalDistance:
-        description: The total distance of the workout
-        type: number
-      totalDown:
-        description: The total distance down of the workout
-        type: number
-      totalUp:
-        description: The total distance up of the workout
-        type: number
-      updatedAt:
-        type: string
-    type: object
-  database.RouteSegmentMatch:
-    properties:
-      distance:
-        description: The total distance of the route segment for this workout
-        type: number
-      duration:
-        description: The total duration of the route segment for this workout
-        type: integer
-      firstID:
-        description: The index of the first point of the route
-        type: integer
-      lastID:
-        description: The index of the last point of the route
-        type: integer
-      routeSegment:
-        $ref: '#/definitions/database.RouteSegment'
-      routeSegmentID:
-        description: The ID of the route segment
-        type: integer
-      workout:
-        $ref: '#/definitions/database.Workout'
-      workoutID:
-        description: The ID of the workout
-        type: integer
-    type: object
-  database.Statistics:
-    properties:
-      bucketFormat:
-        description: The bucket format in strftime format
-        type: string
-      buckets:
-        additionalProperties:
-          $ref: '#/definitions/database.Buckets'
-        description: The statistics buckets
-        type: object
-      userID:
-        description: The user ID
-        type: integer
-    type: object
-  database.User:
-    properties:
-      active:
-        description: Whether the user is active
-        type: boolean
-      admin:
-        description: Whether the user is an admin
-        type: boolean
-      createdAt:
-        type: string
-      id:
-        type: integer
-      lastVersion:
-        description: Which version of the app the user has last seen and acknowledged
-        type: string
-      name:
-        description: The user's name
-        type: string
-      profile:
-        allOf:
-        - $ref: '#/definitions/database.Profile'
-        description: The user's profile settings
-      updatedAt:
+      updated_at:
         type: string
       username:
-        description: The user's username
         type: string
+    type: object
+  api.WorkoutBreakdownItemResponse:
+    properties:
+      average_cadence:
+        type: number
+      average_heart_rate:
+        type: number
+      average_pace:
+        description: seconds per preferred unit
+        type: number
+      average_power:
+        type: number
+      average_speed:
+        type: number
+      average_speed_no_pause:
+        type: number
+      distance:
+        description: meters
+        type: number
+      duration:
+        description: moving duration in seconds
+        type: number
+      end_index:
+        type: integer
+      is_best:
+        type: boolean
+      is_worst:
+        type: boolean
+      max_cadence:
+        type: number
+      max_elevation:
+        type: number
+      max_heart_rate:
+        type: number
+      max_power:
+        type: number
+      max_speed:
+        type: number
+      min_elevation:
+        type: number
+      start_index:
+        type: integer
+      total_down:
+        type: number
+      total_up:
+        type: number
+    type: object
+  api.WorkoutBreakdownResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/api.WorkoutBreakdownItemResponse'
+        type: array
+      mode:
+        description: '"laps" or "unit"'
+        type: string
+    type: object
+  api.WorkoutDetailResponse:
+    properties:
+      address_string:
+        description: MapData fields (when available)
+        type: string
+      average_cadence:
+        type: number
+      average_heart_rate:
+        type: number
+      average_power:
+        type: number
+      average_speed:
+        type: number
+      average_speed_no_pause:
+        type: number
+      climbs:
+        items:
+          $ref: '#/definitions/api.ClimbSegmentResponse'
+        type: array
+      created_at:
+        type: string
+      custom_type:
+        type: string
+      date:
+        type: string
+      equipment:
+        items:
+          $ref: '#/definitions/api.EquipmentResponse'
+        type: array
+      has_file:
+        type: boolean
+      has_tracks:
+        type: boolean
+      id:
+        type: integer
+      laps:
+        items:
+          $ref: '#/definitions/api.WorkoutLapResponse'
+        type: array
+      locked:
+        type: boolean
+      map_data:
+        $ref: '#/definitions/api.MapDataResponse'
+      max_cadence:
+        type: number
+      max_elevation:
+        type: number
+      max_heart_rate:
+        type: number
+      max_power:
+        type: number
+      max_speed:
+        type: number
+      min_elevation:
+        type: number
+      name:
+        type: string
+      notes:
+        type: string
+      pause_duration:
+        description: Duration in seconds
+        type: integer
+      public_uuid:
+        type: string
+      route_segment_matches:
+        items:
+          $ref: '#/definitions/api.RouteSegmentMatchResponse'
+        type: array
+      sub_type:
+        type: string
+      total_distance:
+        type: number
+      total_down:
+        type: number
+      total_duration:
+        description: Duration in seconds
+        type: integer
+      total_repetitions:
+        type: integer
+      total_up:
+        type: number
+      total_weight:
+        type: number
+      type:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/api.UserProfileResponse'
+      user_id:
+        type: integer
+    type: object
+  api.WorkoutLapResponse:
+    properties:
+      average_cadence:
+        type: number
+      average_heart_rate:
+        type: number
+      average_power:
+        type: number
+      average_speed:
+        type: number
+      average_speed_no_pause:
+        type: number
+      max_cadence:
+        type: number
+      max_elevation:
+        type: number
+      max_heart_rate:
+        type: number
+      max_power:
+        type: number
+      max_speed:
+        type: number
+      min_elevation:
+        type: number
+      pause_duration:
+        type: integer
+      start:
+        type: string
+      stop:
+        type: string
+      total_distance:
+        type: number
+      total_down:
+        type: number
+      total_duration:
+        type: integer
+      total_up:
+        type: number
+    type: object
+  api.WorkoutRecordResponse:
+    properties:
+      active:
+        type: boolean
+      average_speed:
+        $ref: '#/definitions/api.RecordResponse'
+      average_speed_no_pause:
+        $ref: '#/definitions/api.RecordResponse'
+      distance:
+        $ref: '#/definitions/api.RecordResponse'
+      duration:
+        $ref: '#/definitions/api.RecordResponse'
+      max_speed:
+        $ref: '#/definitions/api.RecordResponse'
+      total_up:
+        $ref: '#/definitions/api.RecordResponse'
+      workout_type:
+        type: string
+    type: object
+  api.WorkoutResponse:
+    properties:
+      address_string:
+        description: MapData fields (when available)
+        type: string
+      average_cadence:
+        type: number
+      average_heart_rate:
+        type: number
+      average_power:
+        type: number
+      average_speed:
+        type: number
+      average_speed_no_pause:
+        type: number
+      created_at:
+        type: string
+      custom_type:
+        type: string
+      date:
+        type: string
+      has_file:
+        type: boolean
+      has_tracks:
+        type: boolean
+      id:
+        type: integer
+      locked:
+        type: boolean
+      max_cadence:
+        type: number
+      max_elevation:
+        type: number
+      max_heart_rate:
+        type: number
+      max_power:
+        type: number
+      max_speed:
+        type: number
+      min_elevation:
+        type: number
+      name:
+        type: string
+      notes:
+        type: string
+      pause_duration:
+        description: Duration in seconds
+        type: integer
+      public_uuid:
+        type: string
+      sub_type:
+        type: string
+      total_distance:
+        type: number
+      total_down:
+        type: number
+      total_duration:
+        description: Duration in seconds
+        type: integer
+      total_repetitions:
+        type: integer
+      total_up:
+        type: number
+      total_weight:
+        type: number
+      type:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/api.UserProfileResponse'
+      user_id:
+        type: integer
     type: object
   database.UserPreferredUnits:
     properties:
@@ -651,170 +945,6 @@ definitions:
         type: string
       weight:
         description: The user's preferred weight unit
-        type: string
-    type: object
-  database.Workout:
-    properties:
-      createdAt:
-        type: string
-      data:
-        allOf:
-        - $ref: '#/definitions/database.MapData'
-        description: The map data associated with the workout
-      date:
-        description: The timestamp the workout was recorded
-        type: string
-      dirty:
-        description: Whether the workout has been modified and the details should
-          be re-rendered
-        type: boolean
-      equipment:
-        description: Which equipment is used for this workout
-        items:
-          $ref: '#/definitions/database.Equipment'
-        type: array
-      gpx:
-        allOf:
-        - $ref: '#/definitions/database.GPXData'
-        description: The file data associated with the workout
-      id:
-        type: integer
-      name:
-        description: The name of the workout
-        type: string
-      notes:
-        description: The notes associated with the workout, in markdown
-        type: string
-      publicUUID:
-        description: UUID to publicly share a workout - this UUID can be rotated
-        type: string
-      routeSegmentMatches:
-        description: Which route segments match
-        items:
-          $ref: '#/definitions/database.RouteSegmentMatch'
-        type: array
-      type:
-        allOf:
-        - $ref: '#/definitions/database.WorkoutType'
-        description: The type of the workout
-      updatedAt:
-        type: string
-      user:
-        allOf:
-        - $ref: '#/definitions/database.User'
-        description: The user who owns the workout
-      userID:
-        description: The ID of the user who owns the workout
-        type: integer
-    type: object
-  database.WorkoutBreakdown:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/database.BreakdownItem'
-        type: array
-      unit:
-        type: string
-    type: object
-  database.WorkoutRecord:
-    properties:
-      active:
-        description: Whether there is any data in the record
-        type: boolean
-      averageSpeed:
-        allOf:
-        - $ref: '#/definitions/database.Float64Record'
-        description: The record with the maximum average speed
-      averageSpeedNoPause:
-        allOf:
-        - $ref: '#/definitions/database.Float64Record'
-        description: The record with the maximum average speed without pause
-      distance:
-        allOf:
-        - $ref: '#/definitions/database.Float64Record'
-        description: The record with the maximum distance
-      duration:
-        allOf:
-        - $ref: '#/definitions/database.DurationRecord'
-        description: The record with the maximum duration
-      maxSpeed:
-        allOf:
-        - $ref: '#/definitions/database.Float64Record'
-        description: The record with the maximum max speed
-      totalUp:
-        allOf:
-        - $ref: '#/definitions/database.Float64Record'
-        description: The record with the maximum up elevation
-      workoutType:
-        allOf:
-        - $ref: '#/definitions/database.WorkoutType'
-        description: The type of the workout
-    type: object
-  database.WorkoutType:
-    enum:
-    - unknown
-    - auto
-    - running
-    - cycling
-    - e-cycling
-    - horse-riding
-    - inline-skating
-    - walking
-    - skiing
-    - snowboarding
-    - swimming
-    - kayaking
-    - golfing
-    - hiking
-    - push-ups
-    - weight-lifting
-    - rowing
-    - other
-    type: string
-    x-enum-varnames:
-    - WorkoutTypeUnknown
-    - WorkoutTypeAutoDetect
-    - WorkoutTypeRunning
-    - WorkoutTypeCycling
-    - WorkoutTypeECycling
-    - WorkoutTypeHorseRiding
-    - WorkoutTypeInlineSkating
-    - WorkoutTypeWalking
-    - WorkoutTypeSkiing
-    - WorkoutTypeSnowboarding
-    - WorkoutTypeSwimming
-    - WorkoutTypeKayaking
-    - WorkoutTypeGolfing
-    - WorkoutTypeHiking
-    - WorkoutTypePushups
-    - WorkoutTypeWeightLifting
-    - WorkoutTypeRowing
-    - WorkoutTypeOther
-  geo.Address:
-    properties:
-      city:
-        type: string
-      country:
-        type: string
-      countryCode:
-        type: string
-      county:
-        type: string
-      formattedAddress:
-        type: string
-      houseNumber:
-        type: string
-      postcode:
-        type: string
-      state:
-        type: string
-      stateCode:
-        type: string
-      stateDistrict:
-        type: string
-      street:
-        type: string
-      suburb:
         type: string
     type: object
   geojson.Feature:
@@ -846,23 +976,23 @@ definitions:
   geojson.Properties:
     additionalProperties: true
     type: object
+  map_string_string:
+    additionalProperties:
+      type: string
+    type: object
 info:
-  contact:
-    url: https://github.com/jovandeginste/workout-tracker/issues
-  description: A workout tracking web application for personal use (or family, friends),
-    geared towards running and other GPX-based activities
-  license:
-    name: MIT
-    url: https://github.com/jovandeginste/workout-tracker?tab=License-1-ov-file
-  title: Workout Tracker
-  version: "1.0"
+  contact: {}
+  description: Workout Tracker HTTP API (v2).
+  title: Workout Tracker API
+  version: "2.0"
 paths:
-  /daily:
+  /{id}:
     get:
       parameters:
-      - description: Number of measurements to return; default 50; -1 is no limit
-        in: query
-        name: limit
+      - description: User ID
+        in: path
+        name: id
+        required: true
         type: integer
       produces:
       - application/json
@@ -870,109 +1000,324 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  items:
-                    $ref: '#/definitions/database.Measurement'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
+            $ref: '#/definitions/api.Response-array_api_WorkoutRecordResponse'
+        "403":
+          description: Forbidden
           schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get user profile by ID
+      tags:
+      - user
+  /admin/config:
+    put:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_AppInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: List the daily measurements of the current user
-    post:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Update config (admin)
+      tags:
+      - admin
+  /admin/users:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-array_api_UserProfileResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: List users (admin)
+      tags:
+      - admin
+  /admin/users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Delete user (admin)
+      tags:
+      - admin
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get user (admin)
+      tags:
+      - admin
+    put:
       consumes:
       - application/json
       parameters:
-      - description: Measurement data
-        in: body
-        name: measurement
-        required: true
-        schema:
-          $ref: '#/definitions/app.Measurement'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.Measurement'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/app.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/app.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: Update the daily measurement of the current user
-  /import/{program}:
-    post:
-      parameters:
-      - description: Program that generates the workout file
+      - description: User ID
         in: path
-        name: program
+        name: id
         required: true
-        type: string
-      - description: Name of the imported workout
-        in: query
-        name: name
-        type: string
-      - description: Type of the imported workout
-        in: query
-        name: type
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.Workout'
-              type: object
+            $ref: '#/definitions/api.Response-api_UserProfileResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/app.APIResponse'
-        "500":
-          description: Internal Server Error
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Update user (admin)
+      tags:
+      - admin
+  /app-info:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: Import a workout
-  /records:
+            $ref: '#/definitions/api.Response-api_AppInfoResponse'
+      summary: Get application info
+      tags:
+      - meta
+  /equipment:
     get:
       parameters:
-      - description: Workout type
+      - description: Page
         in: query
-        name: type
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.PaginatedResponse-api_EquipmentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: List equipment
+      tags:
+      - equipment
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response-api_EquipmentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Create equipment
+      tags:
+      - equipment
+  /equipment/{id}:
+    delete:
+      parameters:
+      - description: Equipment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Delete equipment
+      tags:
+      - equipment
+    get:
+      parameters:
+      - description: Equipment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_EquipmentResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get equipment
+      tags:
+      - equipment
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Equipment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_EquipmentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Update equipment
+      tags:
+      - equipment
+  /lookup-address:
+    post:
+      parameters:
+      - description: Free text address
+        in: query
+        name: location
         required: true
         type: string
       produces:
@@ -981,33 +1326,479 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.WorkoutRecord'
-              type: object
+            $ref: '#/definitions/api.Response-array_string'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/app.APIResponse'
-        "404":
-          description: Not Found
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Lookup address
+      tags:
+      - lookup
+  /measurements:
+    get:
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.PaginatedResponse-api_MeasurementResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: List all records of the current user for the specified workout type
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: List measurements
+      tags:
+      - measurements
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_MeasurementResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Create or update measurement
+      tags:
+      - measurements
+  /measurements/{date}:
+    delete:
+      parameters:
+      - description: Date (YYYY-MM-DD)
+        in: path
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Delete measurement by date
+      tags:
+      - measurements
+  /profile:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get profile
+      tags:
+      - profile
+    put:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Update profile
+      tags:
+      - profile
+  /profile/refresh-workouts:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-map_string_string'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Refresh all workouts
+      tags:
+      - profile
+  /profile/reset-api-key:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-map_string_string'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Reset API key
+      tags:
+      - profile
+  /profile/update-version:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Update app version
+      tags:
+      - profile
+  /records:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-array_api_WorkoutRecordResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout records
+      tags:
+      - user
+  /route-segments:
+    get:
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.PaginatedResponse-api_RouteSegmentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: List route segments
+      tags:
+      - route-segments
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: GPX file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Notes
+        in: formData
+        name: notes
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response-api_RouteSegmentsDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Create route segment
+      tags:
+      - route-segments
+  /route-segments/{id}:
+    delete:
+      parameters:
+      - description: Route segment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-map_string_string'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Delete route segment
+      tags:
+      - route-segments
+    get:
+      parameters:
+      - description: Route segment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_RouteSegmentDetailResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get route segment
+      tags:
+      - route-segments
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Route segment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_RouteSegmentDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Update route segment
+      tags:
+      - route-segments
+  /route-segments/{id}/download:
+    get:
+      parameters:
+      - description: Route segment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: binary GPX content
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Download route segment file
+      tags:
+      - route-segments
+  /route-segments/{id}/matches:
+    post:
+      parameters:
+      - description: Route segment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-map_string_string'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Find matching workouts
+      tags:
+      - route-segments
+  /route-segments/{id}/refresh:
+    post:
+      parameters:
+      - description: Route segment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-map_string_string'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Refresh route segment
+      tags:
+      - route-segments
   /statistics:
     get:
       parameters:
-      - description: Start of time range
+      - description: Relative start (e.g. '1 year')
         in: query
         name: since
         type: string
-      - description: Bucket size
+      - description: Aggregation period (day|week|month|year)
         in: query
         name: per
         type: string
@@ -1017,57 +1808,42 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.Statistics'
-              type: object
+            $ref: '#/definitions/api.Response-api_StatisticsResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/app.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: List all statistics of the current user
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout statistics
+      tags:
+      - statistics
   /totals:
     get:
-      parameters:
-      - description: Workout type
-        in: query
-        name: type
-        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.Bucket'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/app.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-api_TotalsResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: List all totals of the current user for the specified workout type
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout totals
+      tags:
+      - user
   /whoami:
     get:
       produces:
@@ -1076,91 +1852,107 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.User'
-              type: object
-        "400":
-          description: Bad Request
+            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/app.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/app.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: Show the information of the owner of the API key
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get current user profile
+      tags:
+      - user
   /workouts:
     get:
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Per page
+        in: query
+        name: per_page
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  items:
-                    $ref: '#/definitions/database.Workout'
-                  type: array
-              type: object
+            $ref: '#/definitions/api.PaginatedResponse-api_WorkoutResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/app.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: List all workouts of the current user
-  /workouts/:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: List workouts
+      tags:
+      - workouts
     post:
       consumes:
+      - multipart/form-data
       - application/json
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response-api_WorkoutResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Create workout
+      tags:
+      - workouts
+  /workouts/{id}:
+    delete:
       parameters:
-      - description: Workout data
-        in: body
-        name: workout
+      - description: Workout ID
+        in: path
+        name: id
         required: true
-        schema:
-          $ref: '#/definitions/app.ManualWorkout'
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/app.ManualWorkout'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: Create a new workout
-  /workouts/{id}:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Delete workout
+      tags:
+      - workouts
     get:
       parameters:
       - description: Workout ID
@@ -1168,35 +1960,59 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Include details
-        in: query
-        name: details
-        type: boolean
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.Workout'
-              type: object
+            $ref: '#/definitions/api.Response-api_WorkoutDetailResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/app.APIResponse'
-        "500":
-          description: Internal Server Error
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout by ID
+      tags:
+      - workouts
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: Get all information about a workout
+            $ref: '#/definitions/api.Response-api_WorkoutResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Update workout
+      tags:
+      - workouts
   /workouts/{id}/breakdown:
     get:
       parameters:
@@ -1212,6 +2028,62 @@ paths:
       - description: Count
         in: query
         name: count
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_WorkoutBreakdownResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout breakdown
+      tags:
+      - workouts
+  /workouts/{id}/download:
+    get:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: binary workout file
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Download workout file
+      tags:
+      - workouts
+  /workouts/{id}/refresh:
+    post:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
         type: integer
       produces:
       - application/json
@@ -1219,25 +2091,175 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/database.WorkoutBreakdown'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Refresh workout
+      tags:
+      - workouts
+  /workouts/{id}/route-segment:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response-api_RouteSegmentDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Create route segment from workout
+      tags:
+      - route-segments
+  /workouts/{id}/share:
+    delete:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-map_string_string'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Delete workout share link
+      tags:
+      - workouts
+    post:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-map_string_string'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Create or regenerate share link
+      tags:
+      - workouts
+  /workouts/{id}/toggle-lock:
+    post:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_WorkoutResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Toggle workout lock
+      tags:
+      - workouts
+  /workouts/calendar:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-array_api_CalendarEventResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: Break down a workdown per units
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout calendar events
+      tags:
+      - workouts
+  /workouts/centers:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-geojson_FeatureCollection'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout centers
+      tags:
+      - heatmap
   /workouts/coordinates:
     get:
       produces:
@@ -1246,23 +2268,80 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/app.APIResponse'
-            - properties:
-                results:
-                  $ref: '#/definitions/geojson.FeatureCollection'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/app.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/app.APIResponse'
+            $ref: '#/definitions/api.Response-geojson_FeatureCollection'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/app.APIResponse'
-      summary: List all coordinates of all workouts of the current user
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout coordinates
+      tags:
+      - heatmap
+  /workouts/public/{uuid}:
+    get:
+      parameters:
+      - description: Public UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_WorkoutDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      summary: Get public workout
+      tags:
+      - workouts
+  /workouts/recent:
+    get:
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-array_api_WorkoutResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      summary: List recent workouts
+      tags:
+      - workouts
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+  ApiKeyQuery:
+    in: query
+    name: api-key
+    type: apiKey
+  CookieAuth:
+    in: header
+    name: Cookie
+    type: apiKey
 swagger: "2.0"

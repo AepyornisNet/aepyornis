@@ -14,6 +14,15 @@ func (a *App) registerAPIV2HeatmapRoutes(apiGroup *echo.Group) {
 }
 
 // apiV2WorkoutsCoordinatesHandler returns all coordinates of all workouts of the current user
+// @Summary      Get workout coordinates
+// @Tags         heatmap
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[geojson.FeatureCollection]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /workouts/coordinates [get]
 func (a *App) apiV2WorkoutsCoordinatesHandler(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()
 
@@ -44,6 +53,15 @@ func (a *App) apiV2WorkoutsCoordinatesHandler(c echo.Context) error {
 }
 
 // apiV2WorkoutsCentersHandler returns the center of all workouts of the current user
+// @Summary      Get workout centers
+// @Tags         heatmap
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[geojson.FeatureCollection]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /workouts/centers [get]
 func (a *App) apiV2WorkoutsCentersHandler(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()
 	u := a.getCurrentUser(c)

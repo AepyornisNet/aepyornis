@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,13 +10,14 @@ import (
 	"time"
 
 	"github.com/anyappinc/fitbit"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/app"
 	"resty.dev/v3"
 )
 
 func (fs *fitbitSync) initRESTClient() {
 	client := resty.New()
-	client.SetBaseURL(fs.WorkoutConfig.URL + "/api/v1/")
+	client.SetBaseURL(strings.TrimRight(fs.WorkoutConfig.URL, "/") + "/api/v2")
 	client.SetAuthToken(fs.WorkoutConfig.APIKey)
 
 	fs.restClient = client
@@ -96,7 +98,7 @@ func (fs *fitbitSync) buildMeasurement(date string, final bool, units *fitbit.Un
 func (fs *fitbitSync) postMeasurement(m *app.Measurement) error {
 	res, err := fs.restClient.R().
 		SetBody(m).
-		Post("/daily")
+		Post("/measurements")
 	if err != nil {
 		return err
 	}
@@ -117,14 +119,13 @@ func (fs *fitbitSync) uploadActivity(a fitbit.Activity) error {
 	name := fmt.Sprintf("%d.tcx", a.LogID)
 
 	res, err := fs.restClient.R().
-		SetBody(tcx).
-		SetQueryParam("name", name).
-		Post("/import/generic")
+		SetFileReader("file", name, bytes.NewReader(tcx)).
+		Post("/workouts")
 	if err != nil {
 		return err
 	}
 
-	var response app.APIResponse
+	var response api.Response[[]api.WorkoutResponse]
 
 	if err := json.Unmarshal(res.Bytes(), &response); err != nil {
 		return err
@@ -132,6 +133,10 @@ func (fs *fitbitSync) uploadActivity(a fitbit.Activity) error {
 
 	if !res.IsSuccess() {
 		return errors.New(res.Status() + ": " + strings.Join(response.Errors, ","))
+	}
+
+	if len(response.Errors) > 0 {
+		return errors.New(strings.Join(response.Errors, ","))
 	}
 
 	return nil

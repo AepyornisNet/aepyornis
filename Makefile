@@ -112,7 +112,7 @@ swagger:
 	go run github.com/swaggo/swag/cmd/swag@latest init \
 			--parseDependency \
 			--dir ./pkg/app/,./pkg/database/,./vendor/gorm.io/gorm/,./vendor/github.com/codingsince1985/geo-golang/ \
-			--generalInfo api_handlers.go
+			--generalInfo routes.go
 	git commit docs/ -m "Update swagger" -m "changelog: ignore" || echo "No changes to commit"
 
 generate-workout-types:

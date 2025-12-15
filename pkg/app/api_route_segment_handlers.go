@@ -25,6 +25,18 @@ func (a *App) registerAPIV2RouteSegmentRoutes(apiGroup *echo.Group) {
 }
 
 // apiV2RouteSegmentsHandler returns a paginated list of route segments
+// @Summary      List route segments
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Param        page      query  int false "Page"
+// @Param        per_page  query  int false "Items per page"
+// @Success      200  {object}  api.PaginatedResponse[api.RouteSegmentResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /route-segments [get]
 func (a *App) apiV2RouteSegmentsHandler(c echo.Context) error {
 	// Parse pagination parameters
 	var pagination api.PaginationParams
@@ -65,6 +77,16 @@ func (a *App) apiV2RouteSegmentsHandler(c echo.Context) error {
 }
 
 // apiV2RouteSegmentGetHandler returns a single route segment by ID with full details
+// @Summary      Get route segment
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Route segment ID"
+// @Produce      json
+// @Success      200  {object}  api.Response[api.RouteSegmentDetailResponse]
+// @Failure      404  {object}  api.Response[any]
+// @Router       /route-segments/{id} [get]
 func (a *App) apiV2RouteSegmentGetHandler(c echo.Context) error {
 	rs, err := a.getRouteSegment(c)
 	if err != nil {
@@ -78,6 +100,20 @@ func (a *App) apiV2RouteSegmentGetHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+// apiV2RouteSegmentCreateHandler uploads one or more route segment files
+// @Summary      Create route segment
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file   formData  file   true  "GPX file"
+// @Param        notes  formData  string false "Notes"
+// @Success      201  {object}  api.Response[api.RouteSegmentsDetailResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /route-segments [post]
 func (a *App) apiV2RouteSegmentCreateHandler(c echo.Context) error {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -117,6 +153,18 @@ func (a *App) apiV2RouteSegmentCreateHandler(c echo.Context) error {
 }
 
 // apiV2RouteSegmentCreateFromWorkoutHandler creates a route segment from a workout
+// @Summary      Create route segment from workout
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Workout ID"
+// @Accept       json
+// @Produce      json
+// @Success      201  {object}  api.Response[api.RouteSegmentDetailResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      404  {object}  api.Response[any]
+// @Router       /workouts/{id}/route-segment [post]
 func (a *App) apiV2RouteSegmentCreateFromWorkoutHandler(c echo.Context) error {
 	workoutID, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
@@ -151,6 +199,17 @@ func (a *App) apiV2RouteSegmentCreateFromWorkoutHandler(c echo.Context) error {
 }
 
 // apiV2RouteSegmentDeleteHandler deletes a route segment
+// @Summary      Delete route segment
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Route segment ID"
+// @Produce      json
+// @Success      200  {object}  api.Response[map[string]string]
+// @Failure      404  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /route-segments/{id} [delete]
 func (a *App) apiV2RouteSegmentDeleteHandler(c echo.Context) error {
 	rs, err := a.getRouteSegment(c)
 	if err != nil {
@@ -169,6 +228,17 @@ func (a *App) apiV2RouteSegmentDeleteHandler(c echo.Context) error {
 }
 
 // apiV2RouteSegmentRefreshHandler marks a route segment for refresh
+// @Summary      Refresh route segment
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Route segment ID"
+// @Produce      json
+// @Success      200  {object}  api.Response[map[string]string]
+// @Failure      404  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /route-segments/{id}/refresh [post]
 func (a *App) apiV2RouteSegmentRefreshHandler(c echo.Context) error {
 	rs, err := a.getRouteSegment(c)
 	if err != nil {
@@ -191,6 +261,19 @@ func (a *App) apiV2RouteSegmentRefreshHandler(c echo.Context) error {
 }
 
 // apiV2RouteSegmentUpdateHandler updates a route segment
+// @Summary      Update route segment
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Route segment ID"
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  api.Response[api.RouteSegmentDetailResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      404  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /route-segments/{id} [put]
 func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
 	rs, err := a.getRouteSegment(c)
 	if err != nil {
@@ -227,6 +310,16 @@ func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
 }
 
 // apiV2RouteSegmentDownloadHandler downloads the original route segment file
+// @Summary      Download route segment file
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Route segment ID"
+// @Produce      octet-stream
+// @Success      200  {string}  string  "binary GPX content"
+// @Failure      404  {object}  api.Response[any]
+// @Router       /route-segments/{id}/download [get]
 func (a *App) apiV2RouteSegmentDownloadHandler(c echo.Context) error {
 	rs, err := a.getRouteSegment(c)
 	if err != nil {
@@ -241,6 +334,17 @@ func (a *App) apiV2RouteSegmentDownloadHandler(c echo.Context) error {
 }
 
 // apiV2RouteSegmentFindMatchesHandler finds matching workouts for a route segment
+// @Summary      Find matching workouts
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Route segment ID"
+// @Produce      json
+// @Success      200  {object}  api.Response[map[string]string]
+// @Failure      404  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /route-segments/{id}/matches [post]
 func (a *App) apiV2RouteSegmentFindMatchesHandler(c echo.Context) error {
 	rs, err := a.getRouteSegment(c)
 	if err != nil {

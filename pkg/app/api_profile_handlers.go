@@ -20,6 +20,14 @@ func (a *App) registerAPIV2ProfileRoutes(apiGroup *echo.Group) {
 }
 
 // apiV2ProfileHandler returns current user's full profile with settings
+// @Summary      Get profile
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Router       /profile [get]
 func (a *App) apiV2ProfileHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
@@ -36,6 +44,17 @@ func (a *App) apiV2ProfileHandler(c echo.Context) error {
 }
 
 // apiV2ProfileUpdateHandler updates current user's profile
+// @Summary      Update profile
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /profile [put]
 func (a *App) apiV2ProfileUpdateHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
@@ -102,6 +121,15 @@ func (a *App) apiV2ProfileUpdateHandler(c echo.Context) error {
 }
 
 // apiV2ProfileResetAPIKeyHandler resets current user's API key
+// @Summary      Reset API key
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[map[string]string]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /profile/reset-api-key [post]
 func (a *App) apiV2ProfileResetAPIKeyHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
@@ -122,6 +150,15 @@ func (a *App) apiV2ProfileResetAPIKeyHandler(c echo.Context) error {
 }
 
 // apiV2ProfileRefreshWorkoutsHandler marks all workouts for refresh
+// @Summary      Refresh all workouts
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[map[string]string]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /profile/refresh-workouts [post]
 func (a *App) apiV2ProfileRefreshWorkoutsHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
@@ -139,6 +176,15 @@ func (a *App) apiV2ProfileRefreshWorkoutsHandler(c echo.Context) error {
 }
 
 // apiV2UserUpdateVersion updates the user's last known app version
+// @Summary      Update app version
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {string}  string
+// @Failure      500  {string}  string
+// @Router       /profile/update-version [post]
 func (a *App) apiV2UserUpdateVersion(c echo.Context) error {
 	u := a.getCurrentUser(c)
 

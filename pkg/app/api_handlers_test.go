@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,24 +29,20 @@ func validateAPIUser(t *testing.T, u *database.User, b []byte) {
 
 	assert.NotContains(t, string(b), "password")
 
-	var resp struct {
-		Results database.User
-	}
+	var resp api.Response[api.UserProfileResponse]
 
 	err := json.Unmarshal(b, &resp)
 	require.NoError(t, err)
 
 	assert.Equal(t, u.Username, resp.Results.Username)
-	assert.Empty(t, resp.Results.Password)
-	assert.Empty(t, resp.Results.APIKey)
-	assert.Empty(t, resp.Results.Salt)
+	assert.Empty(t, resp.Results.Profile.APIKey)
 }
 
-func TestAPI_WhoAmI(t *testing.T) { //nolint:funlen
+func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 	a := configuredApp(t)
 	e := a.echo
 	ts := httptest.NewServer(e)
-	url := ts.URL + e.Reverse("api-whoami")
+	url := ts.URL + e.Reverse("api-v2-whoami")
 	u := defaultAPIUser(a.db)
 
 	t.Run("with valid authorization header", func(t *testing.T) {

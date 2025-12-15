@@ -13,6 +13,18 @@ func (a *App) registerAPIV2StatisticsRoutes(apiGroup *echo.Group) {
 }
 
 // apiV2StatisticsHandler returns user's workout statistics
+// @Summary      Get workout statistics
+// @Tags         statistics
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Param        since  query  string false "Relative start (e.g. '1 year')"
+// @Param        per    query  string false "Aggregation period (day|week|month|year)"
+// @Success      200  {object}  api.Response[api.StatisticsResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /statistics [get]
 func (a *App) apiV2StatisticsHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
