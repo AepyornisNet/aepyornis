@@ -35,27 +35,12 @@ import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { User } from '../../../../core/services/user';
-
-const HR_ZONE_COLORS: Record<number, string> = {
-  1: '#3b82f6',
-  2: '#22d3ee',
-  3: '#22c55e',
-  4: '#f59e0b',
-  5: '#ef4444',
-};
-
-const FTP_ZONE_COLORS: Record<number, string> = {
-  1: '#9ca3af',
-  2: '#2563eb',
-  3: '#22c55e',
-  4: '#fcd34d',
-  5: '#f97316',
-  6: '#dc2626',
-  7: '#7f1d1d',
-};
-
-const DEFAULT_HEART_RATE_COLOR = '#3b82f6';
-const DEFAULT_POWER_COLOR = '#9ca3af';
+import {
+  DEFAULT_HEART_RATE_COLOR,
+  DEFAULT_POWER_COLOR,
+  FTP_ZONE_COLORS,
+  HR_ZONE_COLORS,
+} from '../zone-colors';
 
 Chart.register(
   TimeScale,

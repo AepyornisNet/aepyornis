@@ -15,9 +15,11 @@ import { WorkoutBreakdownComponent } from '../../components/workout-breakdown/wo
 import { WorkoutActions } from '../../components/workout-actions/workout-actions';
 import { RouteSegmentMatchesComponent } from '../../components/route-segment-matches/route-segment-matches';
 import { WorkoutClimbsComponent } from '../../components/workout-climbs/workout-climbs';
+import { WorkoutZoneDistributionComponent } from '../../components/workout-zone-distribution/workout-zone-distribution';
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
+import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-workout-detail',
@@ -29,6 +31,12 @@ import { Workout } from '../../../../core/types/workout';
     WorkoutActions,
     RouteSegmentMatchesComponent,
     WorkoutClimbsComponent,
+    WorkoutZoneDistributionComponent,
+    NgbNav,
+    NgbNavOutlet,
+    NgbNavItem,
+    NgbNavLinkButton,
+    NgbNavContent,
     TranslatePipe
 ],
   templateUrl: './workout-detail.html',

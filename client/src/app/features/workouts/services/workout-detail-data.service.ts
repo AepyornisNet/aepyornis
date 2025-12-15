@@ -37,6 +37,20 @@ export class WorkoutDetailDataService {
     return w?.map_data?.extra_metrics || [];
   });
 
+  public readonly hasHeartRateDistribution = computed(() => {
+    const metrics = this.workout()?.map_data?.details?.extra_metrics?.['hr-zone'];
+    return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
+  });
+
+  public readonly hasPowerDistribution = computed(() => {
+    const metrics = this.workout()?.map_data?.details?.extra_metrics?.['zone'];
+    return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
+  });
+
+  public readonly hasZoneCharts = computed(() =>
+    this.hasHeartRateDistribution() || this.hasPowerDistribution(),
+  );
+
   public async loadWorkout(id: number): Promise<void> {
     this.loading.set(true);
     this.error.set(null);

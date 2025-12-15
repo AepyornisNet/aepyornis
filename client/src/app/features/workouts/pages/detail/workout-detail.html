@@ -126,7 +126,49 @@
         }
 
         <!-- Chart -->
-        @if (dataService.hasMapData()) {
+        @if (dataService.hasZoneCharts()) {
+          <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="card-title">{{ 'shared.statistics' | translate }}</h5>
+              <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
+                <li ngbNavItem>
+                  <button ngbNavLink>{{ 'workout.timeseries' | translate }}</button>
+                  <ng-template ngbNavContent>
+                    <div class="chart-container">
+                      <app-workout-chart
+                        [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+                        [mapData]="dataService.workout()!.map_data!.details"
+                      />
+                    </div>
+                  </ng-template>
+                </li>
+                @if (dataService.hasHeartRateDistribution()) {
+                  <li ngbNavItem>
+                    <button ngbNavLink>{{ 'workout.hr-distribution' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <app-workout-zone-distribution
+                        type="heart-rate"
+                        [mapData]="dataService.workout()!.map_data!.details"
+                      />
+                    </ng-template>
+                  </li>
+                }
+                @if (dataService.hasPowerDistribution()) {
+                  <li ngbNavItem>
+                    <button ngbNavLink>{{ 'workout.power-distribution' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <app-workout-zone-distribution
+                        type="power"
+                        [mapData]="dataService.workout()!.map_data!.details"
+                      />
+                    </ng-template>
+                  </li>
+                }
+              </ul>
+            </div>
+            <div class="card-body tab-content" [ngbNavOutlet]="statistics"></div>
+          </div>
+        } @else if (dataService.hasMapData()) {
           <div class="card shadow-sm mb-4">
             <div class="card-header">
               <h5 class="mb-0">{{ 'shared.statistics' | translate }}</h5>

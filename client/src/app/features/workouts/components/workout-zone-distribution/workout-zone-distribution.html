@@ -1,0 +1,34 @@
+<div class="zone-distribution">
+  @if (!hasData()) {
+    <p class="text-muted mb-0">{{ 'workout.no_zone_data' | translate }}</p>
+  } @else {
+    <div aria-hidden="true" class="zone-bar">
+      @for (segment of distribution(); track segment.zone) {
+        @if (segment.percent > 0) {
+          <span
+            class="zone-bar__segment"
+            [style.backgroundColor]="segment.color"
+            [style.width.%]="segment.percent"
+          ></span>
+        }
+      }
+    </div>
+
+    <div class="zone-rows mt-3">
+      @for (segment of distribution(); track segment.zone) {
+        <div class="zone-row">
+          <div class="zone-row__label">
+            <span class="zone-dot" [style.backgroundColor]="segment.color"></span>
+            <span class="fw-semibold">
+              {{ 'workout.zone_label' | translate: { value: segment.zone } }}
+            </span>
+          </div>
+          <div class="zone-row__values">
+            <span class="zone-time">{{ formatDuration(segment.seconds) }}</span>
+            <small class="text-muted">{{ formatPercent(segment.percent) }}</small>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
