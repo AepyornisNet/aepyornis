@@ -81,6 +81,23 @@ export class WorkoutBreakdownComponent {
 
       this.loadBreakdown({ mode: 'auto' });
     });
+
+    effect(() => {
+      const selection = this.coordinatorService.selectedInterval();
+      const items = this.breakdown()?.items;
+
+      if (!selection || !items || items.length === 0) {
+        this.selectedIntervalIndex = null;
+        return;
+      }
+
+      const idx = items.findIndex(
+        (item) =>
+          item.start_index === selection.startIndex && item.end_index === selection.endIndex,
+      );
+
+      this.selectedIntervalIndex = idx >= 0 ? idx : null;
+    });
   }
 
   private loadBreakdown(params: {

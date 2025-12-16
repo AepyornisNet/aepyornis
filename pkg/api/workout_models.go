@@ -160,12 +160,19 @@ type ClimbSegmentResponse struct {
 	Elevation     float64 `json:"elevation"`
 	AvgSlope      float64 `json:"avg_slope"`
 	Category      string  `json:"category"`
+	StartIndex    int     `json:"start_index"`
+	EndIndex      int     `json:"end_index"`
+	Duration      float64 `json:"duration"`
 }
 
 // RouteSegmentMatchResponse represents a matched route segment
 type RouteSegmentMatchResponse struct {
 	RouteSegmentID uint64               `json:"route_segment_id"`
 	WorkoutID      uint64               `json:"workout_id"`
+	Distance       float64              `json:"distance"`
+	Duration       float64              `json:"duration"`
+	StartIndex     int                  `json:"start_index"`
+	EndIndex       int                  `json:"end_index"`
 	RouteSegment   RouteSegmentResponse `json:"route_segment"`
 }
 
@@ -319,7 +326,15 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 		// Add climbs
 		if len(w.Data.Climbs) > 0 {
 			wr.Climbs = make([]ClimbSegmentResponse, len(w.Data.Climbs))
+			var points []database.MapPoint
+			if w.Data.Details != nil {
+				points = w.Data.Details.Points
+			}
 			for i, climb := range w.Data.Climbs {
+				duration := 0.0
+				if len(points) > 0 && climb.StartIdx >= 0 && climb.EndIdx >= climb.StartIdx && climb.EndIdx < len(points) {
+					duration = (points[climb.EndIdx].TotalDuration - points[climb.StartIdx].TotalDuration).Seconds()
+				}
 				wr.Climbs[i] = ClimbSegmentResponse{
 					Index:         climb.Index,
 					Type:          climb.Type,
@@ -328,6 +343,9 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 					Elevation:     climb.Elevation,
 					AvgSlope:      climb.AvgSlope,
 					Category:      climb.Category,
+					StartIndex:    climb.StartIdx,
+					EndIndex:      climb.EndIdx,
+					Duration:      duration,
 				}
 			}
 		}
@@ -342,6 +360,10 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 			wr.RouteSegmentMatches[i] = RouteSegmentMatchResponse{
 				RouteSegmentID: match.RouteSegmentID,
 				WorkoutID:      match.WorkoutID,
+				Distance:       match.Distance,
+				Duration:       match.Duration.Seconds(),
+				StartIndex:     match.FirstID,
+				EndIndex:       match.LastID,
 				RouteSegment:   NewRouteSegmentResponse(match.RouteSegment),
 			}
 		}

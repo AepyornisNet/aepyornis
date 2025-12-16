@@ -147,11 +147,18 @@ export type ClimbSegment = {
   elevation: number;
   avg_slope: number;
   category: string;
+  start_index: number;
+  end_index: number;
+  duration: number;
 };
 
 export type RouteSegmentMatch = {
   route_segment_id: number;
   workout_id: number;
+  distance: number;
+  duration: number;
+  start_index: number;
+  end_index: number;
   route_segment: RouteSegmentInfo;
 };
 

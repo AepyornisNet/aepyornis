@@ -1,10 +1,36 @@
-<div class="list-group">
-  @for (match of matches(); track match.route_segment_id) {
-    <div class="list-group-item">
-      <h6 class="mb-1">{{ match.route_segment.name }}</h6>
-      <p class="mb-1 text-muted">
-        {{ formatDistance(match.route_segment.total_distance) }} km
-      </p>
-    </div>
-  }
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle route-matches-table">
+    <thead>
+      <tr>
+        <th>{{ 'route_segment.route_segment' | translate }}</th>
+        <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
+        <th class="text-end">{{ 'workout.time' | translate }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (match of matches(); track match.route_segment_id) {
+        <tr
+          class="interval-row"
+          [class.table-active]="isSelected(match)"
+          (click)="selectMatch(match)"
+        >
+          <td>
+            <a
+              class="segment-link"
+              [routerLink]="['/route-segments', match.route_segment_id]"
+              (click)="$event.stopPropagation()"
+            >
+              {{ match.route_segment.name }}
+            </a>
+          </td>
+          <td class="text-end font-monospace">
+            {{ formatDistance(match.distance) }} km
+          </td>
+          <td class="text-end font-monospace">
+            {{ formatDuration(match.duration) }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
 </div>

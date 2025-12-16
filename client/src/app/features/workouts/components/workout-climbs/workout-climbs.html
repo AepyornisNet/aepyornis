@@ -1,5 +1,5 @@
 <div class="table-responsive">
-  <table class="table table-sm">
+  <table class="table table-sm table-hover align-middle climbs-table">
     <thead>
       <tr>
         <th>{{ 'workout.type' | translate }}</th>
@@ -12,7 +12,7 @@
     </thead>
     <tbody>
       @for (climb of climbs(); track climb.index) {
-        <tr>
+        <tr class="interval-row" [class.table-active]="isSelected(climb)" (click)="selectClimb(climb)">
           <td>
             @if (climb.type === 'climb') {
               <span class="text-success">↑ Climb {{ climb.index }}</span>

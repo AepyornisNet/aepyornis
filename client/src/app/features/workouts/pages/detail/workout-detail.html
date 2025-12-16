@@ -125,7 +125,7 @@
           <div class="card shadow-sm mb-4">
             <div class="card-header">
               <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
-                <li ngbNavItem>
+                <li ngbNavItem [destroyOnHide]="false">
                   <button ngbNavLink>{{ 'workout.time_chart' | translate }}</button>
                   <ng-template ngbNavContent>
                     <div class="chart-container">
@@ -136,7 +136,7 @@
                     </div>
                   </ng-template>
                 </li>
-                <li ngbNavItem>
+                <li ngbNavItem [destroyOnHide]="false">
                   <button ngbNavLink>{{ 'workout.distance_chart' | translate }}</button>
                   <ng-template ngbNavContent>
                     <div class="chart-container">

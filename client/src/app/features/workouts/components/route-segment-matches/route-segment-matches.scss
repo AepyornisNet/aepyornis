@@ -1,0 +1,18 @@
+:host {
+	.route-matches-table {
+		font-size: 0.875rem;
+	}
+
+	.interval-row {
+		cursor: pointer;
+	}
+
+	.segment-link {
+		font-weight: 600;
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+}
