@@ -1,0 +1,44 @@
+:host {
+  display: block;
+}
+
+.workout-statistics-grid {
+  column-width: 260px;
+  column-gap: 1rem;
+}
+
+.workout-statistics-card {
+  padding: 1rem;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.375rem;
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 1rem;
+  break-inside: avoid;
+  box-sizing: border-box;
+}
+
+.workout-statistics-label {
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.workout-statistics-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.workout-statistics-row + .workout-statistics-row {
+  border-top: 1px solid var(--bs-border-color);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.workout-statistics-value {
+  font-weight: 600;
+}

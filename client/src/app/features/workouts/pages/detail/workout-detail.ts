@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   OnInit,
@@ -20,6 +21,7 @@ import { WorkoutDetailDataService } from '../../services/workout-detail-data.ser
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
 import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } from '@ng-bootstrap/ng-bootstrap';
+import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
 
 @Component({
   selector: 'app-workout-detail',
@@ -33,6 +35,7 @@ import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } fro
     RouterLink,
     WorkoutClimbsComponent,
     WorkoutZoneDistributionComponent,
+    WorkoutStatisticsComponent,
     NgbNav,
     NgbNavOutlet,
     NgbNavItem,
@@ -51,6 +54,9 @@ export class WorkoutDetailPage implements OnInit {
   // Inject services
   public dataService = inject(WorkoutDetailDataService);
   public coordinatorService = inject(WorkoutDetailCoordinatorService);
+  public readonly hasWorkoutStatisticsTab = computed(() =>
+    hasWorkoutStatistics(this.dataService.workout()),
+  );
 
   public constructor() {
     // React to interval selection changes

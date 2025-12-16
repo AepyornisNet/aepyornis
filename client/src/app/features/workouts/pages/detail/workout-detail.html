@@ -148,6 +148,14 @@
                     </div>
                   </ng-template>
                 </li>
+                @if (hasWorkoutStatisticsTab() && dataService.workout()) {
+                  <li ngbNavItem>
+                    <button ngbNavLink>{{ 'shared.statistics' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <app-workout-statistics [workout]="dataService.workout()!" />
+                    </ng-template>
+                  </li>
+                }
                 @if (dataService.hasHeartRateDistribution()) {
                   <li ngbNavItem>
                     <button ngbNavLink>{{ 'workout.hr-distribution' | translate }}</button>
@@ -183,14 +191,7 @@
         ) {
           <div class="card shadow-sm mb-4">
             <div class="card-header">
-              <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
-                <!-- TODO: Statistics Tab
-                <li ngbNavItem>
-                  <button ngbNavLink>{{ 'shared.statistics' | translate }}</button>
-                  <ng-template ngbNavContent>
-                  </ng-template>
-                </li> -->
-
+              <ul #intervalsNav="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
                 <!-- Workout Breakdown (Laps + Intervals) -->
                 <li ngbNavItem>
                   <button ngbNavLink>{{ 'workout.breakdown' | translate }}</button>
@@ -226,7 +227,7 @@
                 }
               </ul>
             </div>
-            <div class="card-body tab-content" [ngbNavOutlet]="statistics"></div>
+            <div class="card-body tab-content" [ngbNavOutlet]="intervalsNav"></div>
           </div>
         }
       </div>

@@ -1,0 +1,19 @@
+@if (!cards().length) {
+  <p class="text-muted small mb-0">{{ 'shared.no_items' | translate }}</p>
+} @else {
+  <div class="workout-statistics-grid">
+    @for (card of cards(); track card.key) {
+      <section class="workout-statistics-card">
+        <h6 class="workout-statistics-label mb-3">
+          {{ card.labelKey | translate }}
+        </h6>
+        @for (row of card.rows; track $index) {
+          <div class="workout-statistics-row">
+            <span class="text-muted">{{ row.labelKey | translate }}</span>
+            <span class="workout-statistics-value">{{ row.value || '-' }}</span>
+          </div>
+        }
+      </section>
+    }
+  </div>
+}
