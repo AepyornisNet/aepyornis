@@ -41,11 +41,6 @@
 
         <!-- Workout Stats -->
         <div class="workout-stats">
-          <div class="stat-card">
-            <div class="stat-label">{{ 'workout.date' | translate }}</div>
-            <div class="stat-value">{{ dataService.formatDate(dataService.workout()!.date) }}</div>
-          </div>
-
           @if (dataService.workout()!.total_distance) {
             <div class="stat-card">
               <div class="stat-label">{{ 'dashboard.distance' | translate }}</div>
@@ -126,18 +121,29 @@
         }
 
         <!-- Chart -->
-        @if (dataService.hasZoneCharts()) {
+        @if (dataService.hasMapData()) {
           <div class="card shadow-sm mb-4">
             <div class="card-header">
-              <h5 class="card-title">{{ 'shared.statistics' | translate }}</h5>
               <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
                 <li ngbNavItem>
-                  <button ngbNavLink>{{ 'workout.timeseries' | translate }}</button>
+                  <button ngbNavLink>{{ 'workout.time_chart' | translate }}</button>
                   <ng-template ngbNavContent>
                     <div class="chart-container">
                       <app-workout-chart
                         [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
                         [mapData]="dataService.workout()!.map_data!.details"
+                      />
+                    </div>
+                  </ng-template>
+                </li>
+                <li ngbNavItem>
+                  <button ngbNavLink>{{ 'workout.distance_chart' | translate }}</button>
+                  <ng-template ngbNavContent>
+                    <div class="chart-container">
+                      <app-workout-chart
+                        [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+                        [mapData]="dataService.workout()!.map_data!.details"
+                        [viewMode]="'distance'"
                       />
                     </div>
                   </ng-template>
@@ -168,62 +174,59 @@
             </div>
             <div class="card-body tab-content" [ngbNavOutlet]="statistics"></div>
           </div>
-        } @else if (dataService.hasMapData()) {
-          <div class="card shadow-sm mb-4">
-            <div class="card-header">
-              <h5 class="mb-0">{{ 'shared.statistics' | translate }}</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <app-workout-chart
-                  [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                  [mapData]="dataService.workout()!.map_data!.details"
-                />
-              </div>
-            </div>
-          </div>
         }
 
-        <!-- Breakdown -->
         @if (
           dataService.hasMapData() &&
           dataService.workout()!.total_distance &&
           dataService.workout()!.total_distance! > 1000
         ) {
           <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <app-workout-breakdown
-                [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                [totalDistance]="dataService.workout()!.total_distance"
-                [workoutId]="dataService.workout()!.id"
-              />
-            </div>
-          </div>
-        }
-
-        <!-- Route Segment Matches -->
-        @if (dataService.hasRouteSegmentMatches()) {
-          <div class="card shadow-sm mb-4">
             <div class="card-header">
-              <h5 class="mb-0">{{ 'shared.matching_route_segments' | translate }}</h5>
-            </div>
-            <div class="card-body">
-              <app-route-segment-matches
-                [matches]="dataService.workout()!.route_segment_matches!"
-              />
-            </div>
-          </div>
-        }
+              <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
+                <!-- TODO: Statistics Tab
+                <li ngbNavItem>
+                  <button ngbNavLink>{{ 'shared.statistics' | translate }}</button>
+                  <ng-template ngbNavContent>
+                  </ng-template>
+                </li> -->
 
-        <!-- Climbs -->
-        @if (dataService.hasClimbs()) {
-          <div class="card shadow-sm mb-4">
-            <div class="card-header">
-              <h5 class="mb-0">{{ 'shared.climbs_and_descents' | translate }}</h5>
+                <!-- Workout Breakdown (Laps + Intervals) -->
+                <li ngbNavItem>
+                  <button ngbNavLink>{{ 'workout.breakdown' | translate }}</button>
+                  <ng-template ngbNavContent>
+                    <app-workout-breakdown
+                      [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+                      [totalDistance]="dataService.workout()!.total_distance"
+                      [workoutId]="dataService.workout()!.id"
+                    />
+                  </ng-template>
+                </li>
+
+                <!-- Route Segment Matches -->
+                @if (dataService.hasRouteSegmentMatches()) {
+                  <li ngbNavItem>
+                    <button ngbNavLink>{{ 'shared.matching_route_segments' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <app-route-segment-matches
+                        [matches]="dataService.workout()!.route_segment_matches!"
+                      />
+                    </ng-template>
+                  </li>
+                }
+
+                <!-- Climbs -->
+                @if (dataService.hasClimbs()) {
+                  <li ngbNavItem>
+                    <button ngbNavLink>{{ 'shared.climbs_and_descents' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <app-workout-climbs [climbs]="dataService.workout()!.climbs!" />
+                    </ng-template>
+                  </li>
+                }
+              </ul>
             </div>
-            <div class="card-body">
-              <app-workout-climbs [climbs]="dataService.workout()!.climbs!" />
-            </div>
+            <div class="card-body tab-content" [ngbNavOutlet]="statistics"></div>
           </div>
         }
       </div>
@@ -238,11 +241,19 @@
               <dt class="col-sm-3">{{ 'workout.type' | translate }}</dt>
               <dd class="col-sm-9">
                 <app-icon size="20" [name]="dataService.workout()!.type" />
-                {{ dataService.workout()!.type }}
+                {{ `sports.${dataService.workout()!.type}` | translate }}
                 @if (dataService.workout()!.custom_type) {
                   <em>({{ dataService.workout()!.custom_type }})</em>
                 }
               </dd>
+
+              @if (dataService.workout()!.sub_type) {
+                <dt class="col-sm-3">{{ 'workout.sub_type' | translate }}</dt>
+                <dd class="col-sm-9">{{ `sports_subtypes.${dataService.workout()!.sub_type}` | translate }}</dd>
+              }
+
+              <dt class="col-sm-3">{{ 'workout.date' | translate }}</dt>
+              <dd class="col-sm-9">{{ dataService.formatDate(dataService.workout()!.date) }}</dd>
 
               @if (dataService.workout()!.address_string) {
                 <dt class="col-sm-3">{{ 'route_segment.location' | translate }}</dt>
@@ -253,16 +264,6 @@
                 <dt class="col-sm-3">{{ 'shared.source' | translate }}</dt>
                 <dd class="col-sm-9">{{ dataService.workout()!.map_data!.creator }}</dd>
               }
-
-              <dt class="col-sm-3">{{ 'equipment.created' | translate }}</dt>
-              <dd class="col-sm-9">
-                {{ dataService.formatDate(dataService.workout()!.created_at) }}
-              </dd>
-
-              <dt class="col-sm-3">{{ 'route_segment.updated' | translate }}</dt>
-              <dd class="col-sm-9">
-                {{ dataService.formatDate(dataService.workout()!.updated_at) }}
-              </dd>
 
               @if (dataService.workout()!.locked) {
                 <dt class="col-sm-3">{{ 'shared.status' | translate }}</dt>
@@ -295,12 +296,12 @@
             <div class="card-body">
               <div class="list-group">
                 @for (equip of dataService.workout()!.equipment; track equip.id) {
-                  <div class="list-group-item">
+                  <a class="list-group-item" [routerLink]="['/equipment', equip.id]">
                     <h6 class="mb-1">{{ equip.name }}</h6>
                     @if (equip.description) {
                       <p class="mb-0 text-muted">{{ equip.description }}</p>
                     }
-                  </div>
+                  </a>
                 }
               </div>
             </div>

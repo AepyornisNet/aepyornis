@@ -33,7 +33,6 @@ import 'chartjs-adapter-date-fns';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
-import { TranslatePipe } from '@ngx-translate/core';
 import { User } from '../../../../core/services/user';
 import {
   DEFAULT_HEART_RATE_COLOR,
@@ -67,7 +66,6 @@ type MetricConfig = {
 
 @Component({
   selector: 'app-workout-chart',
-  imports: [TranslatePipe],
   templateUrl: './workout-chart.html',
   styleUrl: './workout-chart.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,13 +75,13 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
   public readonly mapData = input<MapDataDetails | undefined>();
   public readonly extraMetrics = input<string[]>([]);
+  public readonly viewMode = input<'time' | 'distance'>('time');
 
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private userService = inject(User);
   private chart?: Chart;
   private timeLabels: number[] = [];
   private isUpdatingFromZoom = false; // Flag to prevent infinite loops
-  public viewMode: 'time' | 'distance' = 'time';
 
   private readonly speedUnit = computed(() =>
     this.userService.getUserInfo()()?.profile?.preferred_units?.speed || 'km/h',
@@ -148,11 +146,6 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  public toggleViewMode(): void {
-    this.viewMode = this.viewMode === 'time' ? 'distance' : 'time';
-    this.updateChart();
-  }
-
   public zoomToRange(startTime: number, endTime: number): void {
     const mapData = this.mapDataValue;
     if (!this.chart || !mapData) {
@@ -162,7 +155,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     let min = startTime;
     let max = endTime;
 
-    if (this.viewMode === 'distance') {
+    if (this.viewMode() === 'distance') {
       // Convert time to distance
       const startIndex = this.timeLabels.indexOf(startTime);
       const endIndex = this.timeLabels.indexOf(endTime);
@@ -203,9 +196,9 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     // Check if we're at full zoom (original bounds)
     const originalMin =
-      this.viewMode === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0];
+      this.viewMode() === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0];
     const originalMax =
-      this.viewMode === 'time'
+      this.viewMode() === 'time'
         ? new Date(mapData.time[mapData.time.length - 1]).valueOf()
         : mapData.distance[mapData.distance.length - 1];
 
@@ -221,7 +214,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     let startIndex = 0;
     let endIndex = mapData.time.length - 1;
 
-    if (this.viewMode === 'time') {
+    if (this.viewMode() === 'time') {
       // Find indices based on time
       for (let i = 0; i < mapData.time.length; i++) {
         const time = new Date(mapData.time[i]).valueOf();
@@ -304,7 +297,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     this.timeLabels = mapData.time.map((timestamp: string) => new Date(timestamp).valueOf());
 
-    if (this.viewMode === 'time') {
+    if (this.viewMode() === 'time') {
       return this.timeLabels;
     } else {
       return mapData.distance;
@@ -424,16 +417,16 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
       animation: false,
       scales: {
         x: {
-          type: this.viewMode === 'time' ? 'time' : 'linear',
-          time: this.viewMode === 'time' ? { unit: 'minute' } : undefined,
-          min: this.viewMode === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0],
+          type: this.viewMode() === 'time' ? 'time' : 'linear',
+          time: this.viewMode() === 'time' ? { unit: 'minute' } : undefined,
+          min: this.viewMode() === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0],
           max:
-            this.viewMode === 'time'
+            this.viewMode() === 'time'
               ? new Date(mapData.time[mapData.time.length - 1]).valueOf()
               : mapData.distance[mapData.distance.length - 1],
           ticks: {
             callback: (val: string | number): string => {
-              if (this.viewMode === 'distance') {
+              if (this.viewMode() === 'distance') {
                 const numVal = val as number;
                 return `${numVal % 1 ? numVal.toFixed(1) : numVal} km`;
               }
@@ -484,7 +477,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
                 return '';
               }
               const x = items[0].parsed.x as number;
-              if (this.viewMode === 'distance') {
+              if (this.viewMode() === 'distance') {
                 return `${x.toFixed(2)} km`;
               }
               return new Date(x).toTimeString().substr(0, 5);

@@ -59,6 +59,9 @@
     "rowing": "rowing",
     "other": "other"
   },
+  "sports_subtypes": {
+    "virtual_activity": "virtual activity"
+  },
   "menu": {
     "measurements": "Measurements",
     "heatmap": "Heatmap",
@@ -258,11 +261,14 @@
     "resources": "Resources",
     "select": "Select...",
     "share": "Share",
+    "sub_type": "Sub type",
     "Share_workout": "Share Workout",
     "speed": "Speed",
-    "timeseries": "Time series",
-    "hr-distribution": "Heart rate",
-    "power-distribution": "Power",
+    "charts": "Charts",
+    "time_chart": "Time chart",
+    "distance_chart": "Distance chart",
+    "hr-distribution": "Heart rate zones",
+    "power-distribution": "Power zones",
     "split_files_with_multiple_tracks": "Split Files With Multiple Tracks",
     "start": "Start",
     "temp": "Temp",
@@ -274,8 +280,6 @@
     "unlock": "Unlock",
     "Unlock_workout": "Unlock Workout",
     "use_a_file": "Use a file",
-    "view_by_distance": "View By Distance",
-    "view_by_time": "View By Time",
     "zone_label": "Zone {{value}}",
     "no_zone_data": "No zone data available",
     "Workout_type": "Workout type",

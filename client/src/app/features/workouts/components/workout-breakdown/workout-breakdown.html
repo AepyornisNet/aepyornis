@@ -1,8 +1,7 @@
 <div class="workout-breakdown">
   @if (breakdown() || loading()) {
     <div class="breakdown-header mb-3">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">{{ 'workout.breakdown' | translate }}</h5>
+      <div class="d-flex justify-content-end align-items-center">
         <div class="btn-group btn-group-sm" role="group">
           @if (workoutHasLaps()) {
             <button

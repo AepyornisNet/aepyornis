@@ -1,12 +1,3 @@
-<div class="chart-controls mb-3">
-  <button class="btn btn-sm btn-outline-primary" (click)="toggleViewMode()">
-    @if (viewMode === 'time') {
-      <span>{{ 'workout.view_by_distance' | translate }}</span>
-    } @else {
-      <span>{{ 'workout.view_by_time' | translate }}</span>
-    }
-  </button>
-</div>
 <div class="chart-wrapper">
   <canvas #chartCanvas></canvas>
 </div>

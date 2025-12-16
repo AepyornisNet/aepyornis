@@ -6,7 +6,7 @@ import {
   OnInit,
 } from '@angular/core';
 
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { WorkoutMapComponent } from '../../components/workout-map/workout-map';
@@ -30,6 +30,7 @@ import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } fro
     WorkoutBreakdownComponent,
     WorkoutActions,
     RouteSegmentMatchesComponent,
+    RouterLink,
     WorkoutClimbsComponent,
     WorkoutZoneDistributionComponent,
     NgbNav,
