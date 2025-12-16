@@ -347,7 +347,7 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 		}
 	}
 
-	if w.Data != nil && len(w.Data.Laps) > 0 {
+	if w.Data != nil && len(w.Data.Laps) > 1 {
 		wr.Laps = NewWorkoutLapResponses(w.Data.Laps)
 	}
 
