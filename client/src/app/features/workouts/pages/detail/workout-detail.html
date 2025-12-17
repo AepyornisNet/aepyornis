@@ -68,39 +68,20 @@
             </div>
           }
 
-          @if (dataService.workout()!.max_speed) {
+          @if (dataService.workout()!.total_repetitions) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'dashboard.max_speed' | translate }}</div>
+              <div class="stat-label">{{ 'workout.repetitions' | translate }}</div>
               <div class="stat-value">
-                {{ dataService.formatSpeed(dataService.workout()!.max_speed!) }} km/h
+                {{ dataService.workout()!.total_repetitions! }}
               </div>
             </div>
           }
 
-          @if (dataService.workout()!.total_up) {
+          @if (dataService.workout()!.total_weight) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'dashboard.elevation' | translate }}</div>
+              <div class="stat-label">{{ 'measurements.weight' | translate }}</div>
               <div class="stat-value">
-                {{ dataService.formatElevation(dataService.workout()!.total_up!) }} m
-              </div>
-            </div>
-          }
-
-          @if (dataService.workout()!.total_down) {
-            <div class="stat-card">
-              <div class="stat-label">{{ 'route_segment.total_down' | translate }}</div>
-              <div class="stat-value">
-                {{ dataService.formatElevation(dataService.workout()!.total_down!) }} m
-              </div>
-            </div>
-          }
-
-          @if (dataService.workout()!.min_elevation || dataService.workout()!.max_elevation) {
-            <div class="stat-card">
-              <div class="stat-label">{{ 'dashboard.elevation_range' | translate }}</div>
-              <div class="stat-value">
-                {{ dataService.formatElevation(dataService.workout()!.min_elevation || 0) }} -
-                {{ dataService.formatElevation(dataService.workout()!.max_elevation || 0) }} m
+                {{ dataService.workout()!.total_weight! }}
               </div>
             </div>
           }
