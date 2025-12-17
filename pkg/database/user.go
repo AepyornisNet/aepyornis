@@ -523,7 +523,7 @@ func (u *User) measurementAt(key string, d time.Time) float64 {
 		Model(&Measurement{}).
 		Where(&Measurement{UserID: u.ID}).
 		Where("date <= ?", datatypes.Date(d)).
-		Where(fmt.Sprintf("%s > ?", key), 0).
+		Where(key+" > ?", 0).
 		Order("date DESC").
 		Pluck(key, &w)
 
