@@ -83,98 +83,27 @@ func (bi *BreakdownItem) CalcultateSpeed() {
 	bi.Speed = bi.Distance / bi.Duration.Seconds()
 }
 
-//gocyclo:ignore
-func (bi *BreakdownItem) enrichStats(points []MapPoint, startIdx, endIdx int) {
-	if len(points) == 0 || startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
-		return
-	}
+func (bi *BreakdownItem) applyRangeStats(stats MapDataRangeStats) {
+	bi.MinElevation = stats.MinElevation
+	bi.MaxElevation = stats.MaxElevation
+	bi.TotalUp = stats.TotalUp
+	bi.TotalDown = stats.TotalDown
 
-	bi.MinElevation = points[startIdx].Elevation
-	bi.MaxElevation = points[startIdx].Elevation
-	bi.TotalUp = 0
-	bi.TotalDown = 0
+	bi.AverageSpeedNoPause = stats.AverageSpeedNoPause
+	bi.Speed = stats.AverageSpeedNoPause
+	bi.MaxSpeed = stats.MaxSpeed
 
-	var maxSpeed float64
-	var sumCadence float64
-	var cadenceCount int
-	var maxCadence float64
-	var sumHR float64
-	var hrCount int
-	var maxHR float64
-	var sumPower float64
-	var powerCount int
-	var maxPower float64
+	bi.AverageCadence = stats.AverageCadence
+	bi.MaxCadence = stats.MaxCadence
 
-	for i := startIdx; i <= endIdx; i++ {
-		p := points[i]
+	bi.AverageHeartRate = stats.AverageHeartRate
+	bi.MaxHeartRate = stats.MaxHeartRate
 
-		if p.Elevation < bi.MinElevation {
-			bi.MinElevation = p.Elevation
-		}
-		if p.Elevation > bi.MaxElevation {
-			bi.MaxElevation = p.Elevation
-		}
-
-		if i > startIdx {
-			diff := p.Elevation - points[i-1].Elevation
-			if diff > 0 {
-				bi.TotalUp += diff
-			} else {
-				bi.TotalDown += -diff
-			}
-		}
-
-		sp := p.AverageSpeed()
-		if sp > maxSpeed {
-			maxSpeed = sp
-		}
-
-		if cad, ok := p.ExtraMetrics["cadence"]; ok && cad > 0 {
-			sumCadence += cad
-			cadenceCount++
-			if cad > maxCadence {
-				maxCadence = cad
-			}
-		}
-
-		if hr, ok := p.ExtraMetrics["heart-rate"]; ok && hr > 0 {
-			sumHR += hr
-			hrCount++
-			if hr > maxHR {
-				maxHR = hr
-			}
-		}
-
-		if power, ok := p.ExtraMetrics["power"]; ok && power > 0 {
-			sumPower += power
-			powerCount++
-			if power > maxPower {
-				maxPower = power
-			}
-		}
-	}
-
-	bi.MaxSpeed = maxSpeed
-	if bi.Duration.Seconds() > 0 {
-		bi.AverageSpeedNoPause = bi.Distance / bi.Duration.Seconds()
-	}
-
-	if cadenceCount > 0 {
-		bi.AverageCadence = sumCadence / float64(cadenceCount)
-		bi.MaxCadence = maxCadence
-	}
-
-	if hrCount > 0 {
-		bi.AverageHeartRate = sumHR / float64(hrCount)
-		bi.MaxHeartRate = maxHR
-	}
-
-	if powerCount > 0 {
-		bi.AveragePower = sumPower / float64(powerCount)
-		bi.MaxPower = maxPower
-	}
+	bi.AveragePower = stats.AveragePower
+	bi.MaxPower = stats.MaxPower
 }
 
+//gocyclo:ignore
 func calculateBestAndWorst(items []BreakdownItem) {
 	if len(items) == 0 {
 		return
@@ -222,7 +151,9 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 			nextItem.EndIndex = i
 			nextItem.LastPoint = &points[i]
 			nextItem.CalcultateSpeed()
-			nextItem.enrichStats(points, nextItem.StartIndex, i)
+			if stats, ok := w.Data.Details.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
+				nextItem.applyRangeStats(stats)
+			}
 			items = append(items, nextItem)
 			nextItem = nextItem.createNext(&points[i])
 			nextItem.StartIndex = i
@@ -245,7 +176,9 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 
 	if nextItem.FirstPoint != nil {
 		nextItem.CalcultateSpeed()
-		nextItem.enrichStats(points, nextItem.StartIndex, nextItem.EndIndex)
+		if stats, ok := w.Data.Details.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
+			nextItem.applyRangeStats(stats)
+		}
 		items = append(items, nextItem)
 	}
 

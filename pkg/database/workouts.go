@@ -663,8 +663,54 @@ func (w *Workout) UpdateAverages() {
 		return
 	}
 
+	if stats, ok := w.aggregateDetailsStats(); ok {
+		w.applyRangeStats(stats)
+		return
+	}
+
 	w.calculateAverageSpeeds()
-	w.calculateCadence()
+}
+
+func (w *Workout) aggregateDetailsStats() (MapDataRangeStats, bool) {
+	if w.Data == nil || w.Data.Details == nil {
+		return MapDataRangeStats{}, false
+	}
+
+	if len(w.Data.Details.Points) < 2 {
+		return MapDataRangeStats{}, false
+	}
+
+	return w.Data.Details.StatsForRange(0, len(w.Data.Details.Points)-1)
+}
+
+func (w *Workout) applyRangeStats(stats MapDataRangeStats) {
+	w.Data.AverageSpeed = stats.AverageSpeed
+	w.Data.AverageSpeedNoPause = stats.AverageSpeedNoPause
+	w.Data.MaxSpeed = stats.MaxSpeed
+	w.Data.MinSpeed = stats.MinSpeed
+
+	w.Data.AverageCadence = stats.AverageCadence
+	w.Data.MinCadence = stats.MinCadence
+	w.Data.MaxCadence = stats.MaxCadence
+	w.Data.AverageHeartRate = stats.AverageHeartRate
+	w.Data.MinHeartRate = stats.MinHeartRate
+	w.Data.MaxHeartRate = stats.MaxHeartRate
+	w.Data.AveragePower = stats.AveragePower
+	w.Data.MinPower = stats.MinPower
+	w.Data.MaxPower = stats.MaxPower
+
+	w.Data.AverageTemperature = stats.AverageTemperature
+	w.Data.MinTemperature = stats.MinTemperature
+	w.Data.MaxTemperature = stats.MaxTemperature
+
+	w.Data.AverageSlope = stats.AverageSlope
+	w.Data.MinSlope = stats.MinSlope
+	w.Data.MaxSlope = stats.MaxSlope
+
+	w.Data.MinElevation = stats.MinElevation
+	w.Data.MaxElevation = stats.MaxElevation
+	w.Data.TotalUp = stats.TotalUp
+	w.Data.TotalDown = stats.TotalDown
 }
 
 func (w *Workout) calculateAverageSpeeds() {
@@ -683,35 +729,6 @@ func (w *Workout) calculateAverageSpeeds() {
 	}
 
 	w.Data.AverageSpeedNoPause = w.Data.TotalDistance / (w.Data.TotalDuration - w.Data.PauseDuration).Seconds()
-}
-
-func (w *Workout) calculateCadence() {
-	w.Data.MaxCadence = 0
-	w.Data.AverageCadence = 0
-
-	if !w.HasCadence() {
-		return
-	}
-
-	trackedFor := time.Duration(0)
-	avgCadence := 0.0
-
-	for _, p := range w.Data.Details.Points {
-		c, ok := p.ExtraMetrics["cadence"]
-		if !ok {
-			continue
-		}
-
-		w.Data.MaxCadence = max(w.Data.MaxCadence, c)
-		avgCadence += c * p.Duration.Seconds()
-		trackedFor += p.Duration
-	}
-
-	if trackedFor.Seconds() == 0 {
-		return
-	}
-
-	w.Data.AverageCadence = avgCadence / trackedFor.Seconds()
 }
 
 func (w *Workout) UpdateData(db *gorm.DB) error {
