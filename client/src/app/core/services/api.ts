@@ -20,6 +20,7 @@ import {
   Workout,
   WorkoutBreakdown,
   WorkoutDetail,
+  WorkoutRangeStats,
   WorkoutListParams,
   WorkoutRecord,
 } from '../../core/types/workout';
@@ -96,6 +97,26 @@ export class Api {
 
     return this.http.get<APIResponse<WorkoutBreakdown>>(
       `${this.baseUrl}/workouts/${id}/breakdown`,
+      { params: httpParams },
+    );
+  }
+
+  public getWorkoutRangeStats(
+    id: number,
+    params?: { start_index?: number; end_index?: number },
+  ): Observable<APIResponse<WorkoutRangeStats>> {
+    let httpParams = new HttpParams();
+
+    if (params?.start_index !== undefined) {
+      httpParams = httpParams.set('start_index', params.start_index.toString());
+    }
+
+    if (params?.end_index !== undefined) {
+      httpParams = httpParams.set('end_index', params.end_index.toString());
+    }
+
+    return this.http.get<APIResponse<WorkoutRangeStats>>(
+      `${this.baseUrl}/workouts/${id}/stats-range`,
       { params: httpParams },
     );
   }

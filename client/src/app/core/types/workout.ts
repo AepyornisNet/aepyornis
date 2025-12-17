@@ -139,6 +139,55 @@ export type WorkoutBreakdown = {
   items?: WorkoutBreakdownItem[];
 };
 
+export type WorkoutRangeStatsUnits = {
+  distance: string;
+  speed: string;
+  elevation: string;
+  temperature: string;
+};
+
+export type WorkoutRangeStats = {
+  start_index: number;
+  end_index: number;
+
+  distance: number;
+  duration: number;
+  moving_duration: number;
+  pause_duration: number;
+
+  min_elevation: number;
+  max_elevation: number;
+  total_up: number;
+  total_down: number;
+
+  average_slope: number;
+  min_slope: number;
+  max_slope: number;
+
+  average_speed: number;
+  average_speed_no_pause: number;
+  min_speed: number;
+  max_speed: number;
+
+  average_cadence?: number;
+  min_cadence?: number;
+  max_cadence?: number;
+
+  average_heart_rate?: number;
+  min_heart_rate?: number;
+  max_heart_rate?: number;
+
+  average_power?: number;
+  min_power?: number;
+  max_power?: number;
+
+  average_temperature?: number;
+  min_temperature?: number;
+  max_temperature?: number;
+
+  units: WorkoutRangeStatsUnits;
+};
+
 export type ClimbSegment = {
   index: number;
   type: string;

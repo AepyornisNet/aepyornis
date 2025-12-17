@@ -395,9 +395,14 @@ func (r *rangeAggregator) handleTemperature(p MapPoint) {
 	r.sumTemp += temp
 	r.tempCnt++
 
-	if !r.foundTemp || temp < r.minTemp {
-		r.minTemp = temp
+	if !r.foundTemp {
 		r.foundTemp = true
+		r.minTemp = temp
+		r.maxTemp = temp
+	}
+
+	if temp < r.minTemp {
+		r.minTemp = temp
 	}
 
 	r.maxTemp = max(r.maxTemp, temp)

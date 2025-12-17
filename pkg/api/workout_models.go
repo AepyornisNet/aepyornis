@@ -76,6 +76,55 @@ type WorkoutBreakdownResponse struct {
 	Items []WorkoutBreakdownItemResponse `json:"items,omitempty"`
 }
 
+type WorkoutRangeStatsUnitsResponse struct {
+	Distance    string `json:"distance"`
+	Speed       string `json:"speed"`
+	Elevation   string `json:"elevation"`
+	Temperature string `json:"temperature"`
+}
+
+type WorkoutRangeStatsResponse struct {
+	StartIndex int `json:"start_index"`
+	EndIndex   int `json:"end_index"`
+
+	Distance       float64 `json:"distance"`
+	Duration       float64 `json:"duration"`
+	MovingDuration float64 `json:"moving_duration"`
+	PauseDuration  float64 `json:"pause_duration"`
+
+	MinElevation float64 `json:"min_elevation"`
+	MaxElevation float64 `json:"max_elevation"`
+	TotalUp      float64 `json:"total_up"`
+	TotalDown    float64 `json:"total_down"`
+
+	AverageSlope float64 `json:"average_slope"`
+	MinSlope     float64 `json:"min_slope"`
+	MaxSlope     float64 `json:"max_slope"`
+
+	AverageSpeed        float64 `json:"average_speed"`
+	AverageSpeedNoPause float64 `json:"average_speed_no_pause"`
+	MinSpeed            float64 `json:"min_speed"`
+	MaxSpeed            float64 `json:"max_speed"`
+
+	AverageCadence *float64 `json:"average_cadence,omitempty"`
+	MinCadence     *float64 `json:"min_cadence,omitempty"`
+	MaxCadence     *float64 `json:"max_cadence,omitempty"`
+
+	AverageHeartRate *float64 `json:"average_heart_rate,omitempty"`
+	MinHeartRate     *float64 `json:"min_heart_rate,omitempty"`
+	MaxHeartRate     *float64 `json:"max_heart_rate,omitempty"`
+
+	AveragePower *float64 `json:"average_power,omitempty"`
+	MinPower     *float64 `json:"min_power,omitempty"`
+	MaxPower     *float64 `json:"max_power,omitempty"`
+
+	AverageTemperature *float64 `json:"average_temperature,omitempty"`
+	MinTemperature     *float64 `json:"min_temperature,omitempty"`
+	MaxTemperature     *float64 `json:"max_temperature,omitempty"`
+
+	Units WorkoutRangeStatsUnitsResponse `json:"units"`
+}
+
 type WorkoutBreakdownItemResponse struct {
 	StartIndex int `json:"start_index"`
 	EndIndex   int `json:"end_index"`
@@ -539,6 +588,71 @@ func convertSpeedToPreferred(speedMS float64, units *database.UserPreferredUnits
 	default:
 		return speedMS * 3.6
 	}
+}
+
+func optionalMetric(value float64) *float64 {
+	if value == 0 {
+		return nil
+	}
+
+	v := value
+	return &v
+}
+
+func NewWorkoutRangeStatsResponse(stats database.MapDataRangeStats, startIdx, endIdx int, units *database.UserPreferredUnits) WorkoutRangeStatsResponse {
+	resp := WorkoutRangeStatsResponse{
+		StartIndex: startIdx,
+		EndIndex:   endIdx,
+		Distance:   convertDistanceToPreferred(stats.Distance, units),
+		Duration:   stats.Duration.Seconds(),
+		// MovingDuration and PauseDuration are already split in the aggregator
+		MovingDuration:      stats.MovingDuration.Seconds(),
+		PauseDuration:       stats.PauseDuration.Seconds(),
+		MinElevation:        convertElevationToPreferred(stats.MinElevation, units),
+		MaxElevation:        convertElevationToPreferred(stats.MaxElevation, units),
+		TotalUp:             convertElevationToPreferred(stats.TotalUp, units),
+		TotalDown:           convertElevationToPreferred(stats.TotalDown, units),
+		AverageSlope:        stats.AverageSlope,
+		MinSlope:            stats.MinSlope,
+		MaxSlope:            stats.MaxSlope,
+		AverageSpeed:        convertSpeedToPreferred(stats.AverageSpeed, units),
+		AverageSpeedNoPause: convertSpeedToPreferred(stats.AverageSpeedNoPause, units),
+		MinSpeed:            convertSpeedToPreferred(stats.MinSpeed, units),
+		MaxSpeed:            convertSpeedToPreferred(stats.MaxSpeed, units),
+		Units: WorkoutRangeStatsUnitsResponse{
+			Distance:    "km",
+			Speed:       "km/h",
+			Elevation:   "m",
+			Temperature: "°C",
+		},
+	}
+
+	if units != nil {
+		resp.Units.Distance = units.Distance()
+		resp.Units.Speed = units.Speed()
+		resp.Units.Elevation = units.Elevation()
+		resp.Units.Temperature = units.Temperature()
+	}
+
+	resp.AverageCadence = optionalMetric(stats.AverageCadence)
+	resp.MinCadence = optionalMetric(stats.MinCadence)
+	resp.MaxCadence = optionalMetric(stats.MaxCadence)
+
+	resp.AverageHeartRate = optionalMetric(stats.AverageHeartRate)
+	resp.MinHeartRate = optionalMetric(stats.MinHeartRate)
+	resp.MaxHeartRate = optionalMetric(stats.MaxHeartRate)
+
+	resp.AveragePower = optionalMetric(stats.AveragePower)
+	resp.MinPower = optionalMetric(stats.MinPower)
+	resp.MaxPower = optionalMetric(stats.MaxPower)
+
+	if stats.AverageTemperature != 0 || stats.MinTemperature != 0 || stats.MaxTemperature != 0 {
+		resp.AverageTemperature = &stats.AverageTemperature
+		resp.MinTemperature = &stats.MinTemperature
+		resp.MaxTemperature = &stats.MaxTemperature
+	}
+
+	return resp
 }
 
 func findClosestPointIndex(points []database.MapPoint, t time.Time) int {

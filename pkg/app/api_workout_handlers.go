@@ -21,6 +21,7 @@ func (a *App) registerAPIV2WorkoutRoutes(apiGroup *echo.Group, apiGroupPublic *e
 	workoutGroup.GET("/calendar", a.apiV2WorkoutsCalendarHandler).Name = "api-v2-workouts-calendar"
 	workoutGroup.GET("/:id", a.apiV2WorkoutHandler).Name = "api-v2-workout"
 	workoutGroup.GET("/:id/breakdown", a.apiV2WorkoutBreakdownHandler).Name = "api-v2-workout-breakdown"
+	workoutGroup.GET("/:id/stats-range", a.apiV2WorkoutRangeStatsHandler).Name = "api-v2-workout-range-stats"
 	workoutGroup.GET("/:id/download", a.apiV2WorkoutDownloadHandler).Name = "api-v2-workout-download"
 	workoutGroup.PUT("/:id", a.apiV2WorkoutUpdateHandler).Name = "api-v2-workout-update"
 	workoutGroup.POST("/:id/toggle-lock", a.apiV2WorkoutToggleLockHandler).Name = "api-v2-workout-toggle-lock"
@@ -210,6 +211,76 @@ func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
 	resp.Results = api.WorkoutBreakdownResponse{
 		Mode:  "unit",
 		Items: api.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, user.PreferredUnits()),
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2WorkoutRangeStatsHandler returns aggregate statistics for a selection of map points
+// @Summary      Get workout range statistics
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id           path   int  true  "Workout ID"
+// @Param        start_index  query  int  false "Start point index (inclusive)"
+// @Param        end_index    query  int  false "End point index (inclusive)"
+// @Produce      json
+// @Success      200  {object}  api.Response[api.WorkoutRangeStatsResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      404  {object}  api.Response[any]
+// @Router       /workouts/{id}/stats-range [get]
+func (a *App) apiV2WorkoutRangeStatsHandler(c echo.Context) error {
+	user := a.getCurrentUser(c)
+
+	// Parse workout ID
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	params := struct {
+		StartIndex *int `query:"start_index"`
+		EndIndex   *int `query:"end_index"`
+	}{}
+
+	if err := c.Bind(&params); err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	// Load workout with map details
+	var workout database.Workout
+	if err := a.db.Preload("Data").Preload("Data.Details").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+
+	if workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+	}
+
+	points := workout.Data.Details.Points
+	startIdx := 0
+	endIdx := len(points) - 1
+
+	if params.StartIndex != nil {
+		startIdx = *params.StartIndex
+	}
+
+	if params.EndIndex != nil {
+		endIdx = *params.EndIndex
+	}
+
+	if startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+	}
+
+	stats, ok := workout.Data.Details.StatsForRange(startIdx, endIdx)
+	if !ok {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+	}
+
+	resp := api.Response[api.WorkoutRangeStatsResponse]{
+		Results: api.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx, user.PreferredUnits()),
 	}
 
 	return c.JSON(http.StatusOK, resp)
