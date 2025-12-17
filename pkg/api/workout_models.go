@@ -426,15 +426,6 @@ func NewWorkoutBreakdownItemsFromLaps(laps []converters.WorkoutLap, points []dat
 			movingDuration = totalDuration
 		}
 
-		avgSpeed := 0.0
-		avgSpeedNoPause := 0.0
-		if totalDuration > 0 {
-			avgSpeed = lap.TotalDistance / totalDuration
-		}
-		if movingDuration > 0 {
-			avgSpeedNoPause = lap.TotalDistance / movingDuration
-		}
-
 		convertedDistance := convertDistanceToPreferred(lap.TotalDistance, units)
 		pace := 0.0
 		if convertedDistance > 0 {
@@ -451,8 +442,8 @@ func NewWorkoutBreakdownItemsFromLaps(laps []converters.WorkoutLap, points []dat
 			MaxElevation:        convertElevationToPreferred(lap.MaxElevation, units),
 			TotalUp:             convertElevationToPreferred(lap.TotalUp, units),
 			TotalDown:           convertElevationToPreferred(lap.TotalDown, units),
-			AverageSpeed:        convertSpeedToPreferred(avgSpeed, units),
-			AverageSpeedNoPause: convertSpeedToPreferred(avgSpeedNoPause, units),
+			AverageSpeed:        convertSpeedToPreferred(lap.AverageSpeedNoPause, units),
+			AverageSpeedNoPause: convertSpeedToPreferred(lap.AverageSpeed, units),
 			MaxSpeed:            convertSpeedToPreferred(lap.MaxSpeed, units),
 			AverageCadence:      lap.AverageCadence,
 			MaxCadence:          lap.MaxCadence,
@@ -474,21 +465,6 @@ func NewWorkoutBreakdownItemsFromUnit(items []database.BreakdownItem, unit strin
 	resp := make([]WorkoutBreakdownItemResponse, len(items))
 	for i, item := range items {
 		movingSeconds := item.Duration.Seconds()
-		pauseSeconds := item.PauseDuration.Seconds()
-		totalSeconds := item.TotalDuration.Seconds()
-		if totalSeconds == 0 {
-			totalSeconds = movingSeconds + pauseSeconds
-		}
-
-		avgSpeed := 0.0
-		avgSpeedNoPause := 0.0
-		if totalSeconds > 0 {
-			avgSpeed = item.Distance / totalSeconds
-		}
-		if movingSeconds > 0 {
-			avgSpeedNoPause = item.Distance / movingSeconds
-		}
-
 		convertedDistance := convertDistanceToPreferred(item.Distance, units)
 		pace := 0.0
 		if convertedDistance > 0 {
@@ -505,8 +481,8 @@ func NewWorkoutBreakdownItemsFromUnit(items []database.BreakdownItem, unit strin
 			MaxElevation:        convertElevationToPreferred(item.MaxElevation, units),
 			TotalUp:             convertElevationToPreferred(item.TotalUp, units),
 			TotalDown:           convertElevationToPreferred(item.TotalDown, units),
-			AverageSpeed:        convertSpeedToPreferred(avgSpeed, units),
-			AverageSpeedNoPause: convertSpeedToPreferred(avgSpeedNoPause, units),
+			AverageSpeed:        convertSpeedToPreferred(item.Speed, units),
+			AverageSpeedNoPause: convertSpeedToPreferred(item.AverageSpeedNoPause, units),
 			MaxSpeed:            convertSpeedToPreferred(item.MaxSpeed, units),
 			AverageCadence:      item.AverageCadence,
 			MaxCadence:          item.MaxCadence,
