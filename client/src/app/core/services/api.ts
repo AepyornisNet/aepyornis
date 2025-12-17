@@ -20,8 +20,8 @@ import {
   Workout,
   WorkoutBreakdown,
   WorkoutDetail,
-  WorkoutRangeStats,
   WorkoutListParams,
+  WorkoutRangeStats,
   WorkoutRecord,
 } from '../../core/types/workout';
 import { Measurement } from '../../core/types/measurement';
