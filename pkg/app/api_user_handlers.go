@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
 	"github.com/labstack/echo/v4"
@@ -41,6 +42,8 @@ func (a *App) apiV2WhoamiHandler(c echo.Context) error {
 // @Security     ApiKeyAuth
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
+// @Param        start  query     string  false  "Start date (YYYY-MM-DD)"
+// @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Produce      json
 // @Success      200  {object}  api.Response[api.TotalsResponse]
 // @Failure      500  {object}  api.Response[any]
@@ -48,7 +51,12 @@ func (a *App) apiV2WhoamiHandler(c echo.Context) error {
 func (a *App) apiV2TotalsHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
-	totals, err := user.GetDefaultTotals()
+	startDate, endDate, err := parseDateRange(c)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	totals, err := user.GetDefaultTotals(startDate, endDate)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
@@ -66,6 +74,8 @@ func (a *App) apiV2TotalsHandler(c echo.Context) error {
 // @Security     ApiKeyAuth
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
+// @Param        start  query     string  false  "Start date (YYYY-MM-DD)"
+// @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Produce      json
 // @Success      200  {object}  api.Response[[]api.WorkoutRecordResponse]
 // @Failure      500  {object}  api.Response[any]
@@ -73,7 +83,12 @@ func (a *App) apiV2TotalsHandler(c echo.Context) error {
 func (a *App) apiV2RecordsHandler(c echo.Context) error {
 	user := a.getCurrentUser(c)
 
-	records, err := user.GetAllRecords()
+	startDate, endDate, err := parseDateRange(c)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	records, err := user.GetAllRecords(startDate, endDate)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
@@ -91,6 +106,8 @@ func (a *App) apiV2RecordsHandler(c echo.Context) error {
 // @Security     ApiKeyAuth
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
+// @Param        start  query     string  false  "Start date (YYYY-MM-DD)"
+// @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Param        id   path      int  true  "User ID"
 // @Produce      json
 // @Success      200  {object}  api.Response[[]api.WorkoutRecordResponse]
@@ -108,7 +125,12 @@ func (a *App) apiV2UserShowHandler(c echo.Context) error {
 		return a.renderAPIV2Error(c, http.StatusForbidden, api.ErrNotAuthorized)
 	}
 
-	records, err := u.GetAllRecords()
+	startDate, endDate, err := parseDateRange(c)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	records, err := u.GetAllRecords(startDate, endDate)
 	if err != nil {
 		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
 	}
@@ -118,4 +140,34 @@ func (a *App) apiV2UserShowHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// parseDateRange parses optional start/end query parameters (YYYY-MM-DD) and returns pointers.
+// End date is treated as inclusive by adding 23:59:59 to the parsed date.
+func parseDateRange(c echo.Context) (*time.Time, *time.Time, error) {
+	const layout = "2006-01-02"
+	startStr := c.QueryParam("start")
+	endStr := c.QueryParam("end")
+
+	var startDate *time.Time
+	var endDate *time.Time
+
+	if startStr != "" {
+		s, err := time.Parse(layout, startStr)
+		if err != nil {
+			return nil, nil, err
+		}
+		startDate = &s
+	}
+
+	if endStr != "" {
+		e, err := time.Parse(layout, endStr)
+		if err != nil {
+			return nil, nil, err
+		}
+		end := e.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		endDate = &end
+	}
+
+	return startDate, endDate, nil
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 const postgresDialect = "postgres"
@@ -176,7 +177,7 @@ func (u *User) GetHighestWorkoutType() (*WorkoutType, error) {
 	return &wt, nil
 }
 
-func (u *User) GetDefaultTotals() (*Bucket, error) {
+func (u *User) GetDefaultTotals(startDate, endDate *time.Time) (*Bucket, error) {
 	if u.IsAnonymous() {
 		return nil, ErrAnonymousUser
 	}
@@ -191,17 +192,17 @@ func (u *User) GetDefaultTotals() (*Bucket, error) {
 		t = *ht
 	}
 
-	return u.GetTotals(t)
+	return u.GetTotals(t, startDate, endDate)
 }
 
-func (u *User) GetTotals(t WorkoutType) (*Bucket, error) {
+func (u *User) GetTotals(t WorkoutType, startDate, endDate *time.Time) (*Bucket, error) {
 	if t == "" {
 		t = WorkoutTypeRunning
 	}
 
 	r := &Bucket{}
 
-	err := u.db.
+	query := u.db.
 		Table("workouts").
 		Select(
 			"count(*) as workouts",
@@ -213,8 +214,17 @@ func (u *User) GetTotals(t WorkoutType) (*Bucket, error) {
 		).
 		Joins("join map_data on workouts.id = map_data.workout_id").
 		Where("user_id = ?", u.ID).
-		Where("workouts.type = ?", t).
-		Scan(r).Error
+		Where("workouts.type = ?", t)
+
+	if startDate != nil {
+		query = query.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		query = query.Where("workouts.date <= ?", *endDate)
+	}
+
+	err := query.Scan(r).Error
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +232,7 @@ func (u *User) GetTotals(t WorkoutType) (*Bucket, error) {
 	return r, nil
 }
 
-func (u *User) GetAllRecords() ([]*WorkoutRecord, error) {
+func (u *User) GetAllRecords(startDate, endDate *time.Time) ([]*WorkoutRecord, error) {
 	if u.IsAnonymous() {
 		return nil, ErrAnonymousUser
 	}
@@ -230,7 +240,7 @@ func (u *User) GetAllRecords() ([]*WorkoutRecord, error) {
 	rs := []*WorkoutRecord{}
 
 	for _, w := range DistanceWorkoutTypes() {
-		r, err := u.GetRecords(w)
+		r, err := u.GetRecords(w, startDate, endDate)
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +253,7 @@ func (u *User) GetAllRecords() ([]*WorkoutRecord, error) {
 	return rs, nil
 }
 
-func (u *User) GetRecords(t WorkoutType) (*WorkoutRecord, error) {
+func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*WorkoutRecord, error) {
 	if t == "" {
 		t = u.Profile.TotalsShow
 	}
@@ -259,7 +269,7 @@ func (u *User) GetRecords(t WorkoutType) (*WorkoutRecord, error) {
 	}
 
 	for k, v := range mapping {
-		err := u.db.
+		query := u.db.
 			Table("workouts").
 			Joins("join map_data on workouts.id = map_data.workout_id").
 			Where("user_id = ?", u.ID).
@@ -267,14 +277,23 @@ func (u *User) GetRecords(t WorkoutType) (*WorkoutRecord, error) {
 			Select("workouts.id as id", v+" as value", "workouts.date as date").
 			Order(v + " DESC").
 			Group("workouts.id").
-			Limit(1).
-			Scan(k).Error
+			Limit(1)
+
+		if startDate != nil {
+			query = query.Where("workouts.date >= ?", *startDate)
+		}
+
+		if endDate != nil {
+			query = query.Where("workouts.date <= ?", *endDate)
+		}
+
+		err := query.Scan(k).Error
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err := u.db.
+	query := u.db.
 		Table("workouts").
 		Joins("join map_data on workouts.id = map_data.workout_id").
 		Where("user_id = ?", u.ID).
@@ -282,8 +301,17 @@ func (u *User) GetRecords(t WorkoutType) (*WorkoutRecord, error) {
 		Select("workouts.id as id", "max(total_duration) as value", "workouts.date as date").
 		Order("max(total_duration) DESC").
 		Group("workouts.id").
-		Limit(1).
-		Scan(&r.Duration).Error
+		Limit(1)
+
+	if startDate != nil {
+		query = query.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		query = query.Where("workouts.date <= ?", *endDate)
+	}
+
+	err := query.Scan(&r.Duration).Error
 	if err != nil {
 		return nil, err
 	}
