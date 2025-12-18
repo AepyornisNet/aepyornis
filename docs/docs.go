@@ -914,6 +914,20 @@ const docTemplate = `{
                     "user"
                 ],
                 "summary": "Get workout records",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD, inclusive)",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1419,6 +1433,20 @@ const docTemplate = `{
                     "user"
                 ],
                 "summary": "Get workout totals",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD, inclusive)",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2211,6 +2239,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/workouts/{id}/stats-range": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get workout range statistics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Start point index (inclusive)",
+                        "name": "start_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End point index (inclusive)",
+                        "name": "end_index",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-api_WorkoutRangeStatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/workouts/{id}/toggle-lock": {
             "post": {
                 "security": [
@@ -2283,6 +2374,18 @@ const docTemplate = `{
                 ],
                 "summary": "Get user profile by ID",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD, inclusive)",
+                        "name": "end",
+                        "in": "query"
+                    },
                     {
                         "type": "integer",
                         "description": "User ID",
@@ -2358,8 +2461,14 @@ const docTemplate = `{
                 "category": {
                     "type": "string"
                 },
+                "duration": {
+                    "type": "number"
+                },
                 "elevation": {
                     "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
                 },
                 "index": {
                     "type": "integer"
@@ -2369,6 +2478,9 @@ const docTemplate = `{
                 },
                 "start_distance": {
                     "type": "number"
+                },
+                "start_index": {
+                    "type": "integer"
                 },
                 "type": {
                     "type": "string"
@@ -2483,6 +2595,15 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "zone_ranges": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/api.ZoneRangeResponse"
+                        }
                     }
                 }
             }
@@ -2882,6 +3003,20 @@ const docTemplate = `{
                 }
             }
         },
+        "api.Response-api_WorkoutRangeStatsResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/api.WorkoutRangeStatsResponse"
+                }
+            }
+        },
         "api.Response-api_WorkoutResponse": {
             "type": "object",
             "properties": {
@@ -3111,10 +3246,22 @@ const docTemplate = `{
         "api.RouteSegmentMatchResponse": {
             "type": "object",
             "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
+                },
                 "route_segment": {
                     "$ref": "#/definitions/api.RouteSegmentResponse"
                 },
                 "route_segment_id": {
+                    "type": "integer"
+                },
+                "start_index": {
                     "type": "integer"
                 },
                 "workout_id": {
@@ -3585,6 +3732,118 @@ const docTemplate = `{
                 }
             }
         },
+        "api.WorkoutRangeStatsResponse": {
+            "type": "object",
+            "properties": {
+                "average_cadence": {
+                    "type": "number"
+                },
+                "average_heart_rate": {
+                    "type": "number"
+                },
+                "average_power": {
+                    "type": "number"
+                },
+                "average_slope": {
+                    "type": "number"
+                },
+                "average_speed": {
+                    "type": "number"
+                },
+                "average_speed_no_pause": {
+                    "type": "number"
+                },
+                "average_temperature": {
+                    "type": "number"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
+                },
+                "max_cadence": {
+                    "type": "number"
+                },
+                "max_elevation": {
+                    "type": "number"
+                },
+                "max_heart_rate": {
+                    "type": "number"
+                },
+                "max_power": {
+                    "type": "number"
+                },
+                "max_slope": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "number"
+                },
+                "max_temperature": {
+                    "type": "number"
+                },
+                "min_cadence": {
+                    "type": "number"
+                },
+                "min_elevation": {
+                    "type": "number"
+                },
+                "min_heart_rate": {
+                    "type": "number"
+                },
+                "min_power": {
+                    "type": "number"
+                },
+                "min_slope": {
+                    "type": "number"
+                },
+                "min_speed": {
+                    "type": "number"
+                },
+                "min_temperature": {
+                    "type": "number"
+                },
+                "moving_duration": {
+                    "type": "number"
+                },
+                "pause_duration": {
+                    "type": "number"
+                },
+                "start_index": {
+                    "type": "integer"
+                },
+                "total_down": {
+                    "type": "number"
+                },
+                "total_up": {
+                    "type": "number"
+                },
+                "units": {
+                    "$ref": "#/definitions/api.WorkoutRangeStatsUnitsResponse"
+                }
+            }
+        },
+        "api.WorkoutRangeStatsUnitsResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "string"
+                },
+                "elevation": {
+                    "type": "string"
+                },
+                "speed": {
+                    "type": "string"
+                },
+                "temperature": {
+                    "type": "string"
+                }
+            }
+        },
         "api.WorkoutRecordResponse": {
             "type": "object",
             "properties": {
@@ -3720,6 +3979,20 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.UserProfileResponse"
                 },
                 "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ZoneRangeResponse": {
+            "type": "object",
+            "properties": {
+                "max": {
+                    "type": "number"
+                },
+                "min": {
+                    "type": "number"
+                },
+                "zone": {
                     "type": "integer"
                 }
             }

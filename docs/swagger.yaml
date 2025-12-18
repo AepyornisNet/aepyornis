@@ -28,14 +28,20 @@ definitions:
         type: number
       category:
         type: string
+      duration:
+        type: number
       elevation:
         type: number
+      end_index:
+        type: integer
       index:
         type: integer
       length:
         type: number
       start_distance:
         type: number
+      start_index:
+        type: integer
       type:
         type: string
     type: object
@@ -114,6 +120,12 @@ definitions:
         items:
           type: string
         type: array
+      zone_ranges:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/api.ZoneRangeResponse'
+          type: array
+        type: object
     type: object
   api.MapDataResponse:
     properties:
@@ -372,6 +384,15 @@ definitions:
       results:
         $ref: '#/definitions/api.WorkoutDetailResponse'
     type: object
+  api.Response-api_WorkoutRangeStatsResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/api.WorkoutRangeStatsResponse'
+    type: object
   api.Response-api_WorkoutResponse:
     properties:
       errors:
@@ -521,9 +542,17 @@ definitions:
     type: object
   api.RouteSegmentMatchResponse:
     properties:
+      distance:
+        type: number
+      duration:
+        type: number
+      end_index:
+        type: integer
       route_segment:
         $ref: '#/definitions/api.RouteSegmentResponse'
       route_segment_id:
+        type: integer
+      start_index:
         type: integer
       workout_id:
         type: integer
@@ -836,6 +865,80 @@ definitions:
       total_up:
         type: number
     type: object
+  api.WorkoutRangeStatsResponse:
+    properties:
+      average_cadence:
+        type: number
+      average_heart_rate:
+        type: number
+      average_power:
+        type: number
+      average_slope:
+        type: number
+      average_speed:
+        type: number
+      average_speed_no_pause:
+        type: number
+      average_temperature:
+        type: number
+      distance:
+        type: number
+      duration:
+        type: number
+      end_index:
+        type: integer
+      max_cadence:
+        type: number
+      max_elevation:
+        type: number
+      max_heart_rate:
+        type: number
+      max_power:
+        type: number
+      max_slope:
+        type: number
+      max_speed:
+        type: number
+      max_temperature:
+        type: number
+      min_cadence:
+        type: number
+      min_elevation:
+        type: number
+      min_heart_rate:
+        type: number
+      min_power:
+        type: number
+      min_slope:
+        type: number
+      min_speed:
+        type: number
+      min_temperature:
+        type: number
+      moving_duration:
+        type: number
+      pause_duration:
+        type: number
+      start_index:
+        type: integer
+      total_down:
+        type: number
+      total_up:
+        type: number
+      units:
+        $ref: '#/definitions/api.WorkoutRangeStatsUnitsResponse'
+    type: object
+  api.WorkoutRangeStatsUnitsResponse:
+    properties:
+      distance:
+        type: string
+      elevation:
+        type: string
+      speed:
+        type: string
+      temperature:
+        type: string
+    type: object
   api.WorkoutRecordResponse:
     properties:
       active:
@@ -929,6 +1032,15 @@ definitions:
       user_id:
         type: integer
     type: object
+  api.ZoneRangeResponse:
+    properties:
+      max:
+        type: number
+      min:
+        type: number
+      zone:
+        type: integer
+    type: object
   database.UserPreferredUnits:
     properties:
       distance:
@@ -989,6 +1101,14 @@ paths:
   /{id}:
     get:
       parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start
+        type: string
+      - description: End date (YYYY-MM-DD, inclusive)
+        in: query
+        name: end
+        type: string
       - description: User ID
         in: path
         name: id
@@ -1529,6 +1649,15 @@ paths:
       - profile
   /records:
     get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start
+        type: string
+      - description: End date (YYYY-MM-DD, inclusive)
+        in: query
+        name: end
+        type: string
       produces:
       - application/json
       responses:
@@ -1826,6 +1955,15 @@ paths:
       - statistics
   /totals:
     get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start
+        type: string
+      - description: End date (YYYY-MM-DD, inclusive)
+        in: query
+        name: end
+        type: string
       produces:
       - application/json
       responses:
@@ -2184,6 +2322,44 @@ paths:
       - ApiKeyQuery: []
       - CookieAuth: []
       summary: Create or regenerate share link
+      tags:
+      - workouts
+  /workouts/{id}/stats-range:
+    get:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Start point index (inclusive)
+        in: query
+        name: start_index
+        type: integer
+      - description: End point index (inclusive)
+        in: query
+        name: end_index
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response-api_WorkoutRangeStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get workout range statistics
       tags:
       - workouts
   /workouts/{id}/toggle-lock:
