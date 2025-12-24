@@ -38,6 +38,7 @@ export const ICON_MAP: Record<string, string> = {
   steps: 'ionFootsteps',
   scale: 'ionScale',
   height: 'faSolidRulerVertical', // Using FA icon as mdi-human-male-height not available
+  trophy: 'faSolidTyrophy',
 
   // Misc Icons
   welcome: 'faSolidChevronRight',

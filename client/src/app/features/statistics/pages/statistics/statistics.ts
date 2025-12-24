@@ -7,6 +7,7 @@ import { Statistics as StatisticsData } from '../../../../core/types/statistics'
 import { UserPreferredUnits } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { StatisticChartComponent } from '../../components/statistic-chart/statistic-chart';
+import { StatisticsNav } from '../../components/statistics-nav/statistics-nav';
 
 type StatisticOption = {
   key: string;
@@ -15,7 +16,7 @@ type StatisticOption = {
 
 @Component({
   selector: 'app-statistics',
-  imports: [ReactiveFormsModule, AppIcon, StatisticChartComponent],
+  imports: [ReactiveFormsModule, AppIcon, StatisticChartComponent, StatisticsNav],
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

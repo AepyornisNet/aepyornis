@@ -1,0 +1,129 @@
+<div class="container my-5 statistics-records">
+  <h1 class="display-4 mb-3">
+    <app-icon name="best" size="32" />
+    Records
+  </h1>
+
+  <app-statistics-nav />
+
+  @if (loading()) {
+    <div class="text-center my-5">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && records().length === 0) {
+    <div class="alert alert-secondary">No records found yet. Start logging workouts to see your records.</div>
+  }
+
+  @for (record of records(); track record.workout_type) {
+    @if (record.active) {
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <h3 class="mb-1">{{ ('sports.' + record.workout_type) | translate }}</h3>
+              <p class="text-muted mb-0">{{ record.workout_type }}</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2 stats-pills">
+              <div class="stat-pill" title="Longest distance">
+                <app-icon name="distance" size="16" />
+                <div>
+                  <div class="label">Longest</div>
+                  <div class="value">
+                    @if (record.distance) {
+                      {{ formatDistance(record.distance.value) }}
+                      <span class="text-muted ms-2">{{ formatDate(record.distance.date) }}</span>
+                    } @else {
+                      —
+                    }
+                  </div>
+                </div>
+              </div>
+              <div class="stat-pill" title="Total elevation gain record">
+                <app-icon name="elevation" size="16" />
+                <div>
+                  <div class="label">Elevation Gain</div>
+                  <div class="value">
+                    @if (record.total_up) {
+                      {{ formatElevation(record.total_up.value) }}
+                      <span class="text-muted ms-2">{{ formatDate(record.total_up.date) }}</span>
+                    } @else {
+                      —
+                    }
+                  </div>
+                </div>
+              </div>
+              @if (record.biggest_climb) {
+                <div class="stat-pill" title="Biggest single climb">
+                  <app-icon name="up" size="16" />
+                  <div>
+                    <div class="label">Biggest Climb</div>
+                    <div class="value">
+                      {{ formatElevation(record.biggest_climb.elevation_gain) }}
+                      <span class="text-muted ms-2">
+                        {{ formatDistance(record.biggest_climb.distance) }}
+                        ·
+                        {{ record.biggest_climb.average_slope.toFixed(1) }}%
+                      </span>
+                      <a
+                        class="ms-2"
+                        [routerLink]="['/workouts', record.biggest_climb.workout_id]"
+                        >{{ formatDate(record.biggest_climb.date) }}</a
+                      >
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            @if (hasDistanceRecords(record)) {
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Distance</th>
+                    <th>Time</th>
+                    <th>Avg Speed</th>
+                    <th>Covered</th>
+                    <th class="text-end">Workout</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (dr of record.distance_records || []; track dr.label) {
+                    <tr>
+                      <td class="fw-semibold">
+                        <a
+                          class="text-decoration-none"
+                          [routerLink]="['/statistics/records', record.workout_type, dr.label]"
+                          >{{ dr.label }}</a
+                        >
+                      </td>
+                      <td>{{ formatDuration(dr.duration_seconds) }}</td>
+                      <td>{{ formatSpeed(dr.average_speed) }}</td>
+                      <td>{{ formatDistance(dr.distance) }}</td>
+                      <td class="text-end">
+                        <a [routerLink]="['/workouts', dr.workout_id]">{{ formatDate(dr.date) }}</a>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <div class="text-muted small">No distance-based records yet.</div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

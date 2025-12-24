@@ -182,7 +182,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
       ]);
 
       if (coordinatesResponse?.results) {
-        this.heatMapData = this.geoJson2heat(coordinatesResponse.results);
+        this.heatMapData = coordinatesResponse.results;
       }
 
       if (centersResponse?.results && this.map) {

@@ -1,0 +1,70 @@
+<div class="container my-5 records-ranking">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+      <a class="text-decoration-none" routerLink="/statistics/records">← Back to records</a>
+      <h1 class="display-5 mb-1">{{ label }} · {{ ('sports.' + workoutType) | translate }}</h1>
+      <p class="text-muted mb-0">Fastest workouts for {{ label }} (best first)</p>
+    </div>
+    <app-icon name="trophy" size="48" />
+  </div>
+
+  @if (loading()) {
+    <div class="text-center my-5">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger" role="alert">{{ error() }}</div>
+  }
+
+  @if (!loading() && records().length === 0) {
+    <div class="alert alert-secondary">No efforts recorded yet for this distance.</div>
+  }
+
+  @if (!loading() && records().length > 0) {
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th style="width: 80px">Rank</th>
+            <th>Distance</th>
+            <th>Time</th>
+            <th>Avg Speed</th>
+            <th class="text-end">Workout</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (dr of records(); track dr.workout_id; let idx = $index) {
+            <tr>
+              <td class="fw-semibold">#{{ rankNumber(idx) }}</td>
+              <td>{{ formatDistance(dr.distance) }}</td>
+              <td>{{ formatDuration(dr.duration_seconds) }}</td>
+              <td>{{ formatSpeed(dr.average_speed) }}</td>
+              <td class="text-end">
+                <a [routerLink]="['/workouts', dr.workout_id]">{{ formatDate(dr.date) }}</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted small">Page {{ page() }} of {{ totalPages() }}</div>
+        <div class="btn-group" role="group">
+          <button class="btn btn-outline-secondary" [disabled]="page() <= 1" (click)="changePage(-1)">
+            Previous
+          </button>
+          <button
+            class="btn btn-outline-secondary"
+            [disabled]="page() >= totalPages()"
+            (click)="changePage(1)"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

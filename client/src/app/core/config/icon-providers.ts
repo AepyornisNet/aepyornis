@@ -71,6 +71,7 @@ import {
   faSolidTag,
   faSolidTemperatureHigh,
   faSolidTrash,
+  faSolidTrophy,
   faSolidUser,
   faSolidUserLock,
   faSolidUserPlus,
@@ -172,6 +173,7 @@ export const iconProviders = provideIcons({
   faSolidGlobe,
   faSolidWater,
   faSolidBan,
+  faSolidTrophy,
 
   // Font Awesome Regular
   faClock,

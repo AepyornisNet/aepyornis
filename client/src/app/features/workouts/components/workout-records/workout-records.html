@@ -1,0 +1,27 @@
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle records-table">
+    <thead>
+      <tr>
+        <th>{{ 'dashboard.distance' | translate }}</th>
+        <th class="text-end">{{ 'workout.time' | translate }}</th>
+        <th class="text-end">{{ 'workout.speed' | translate }}</th>
+        <th class="text-end">#</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (record of records(); track record.target_distance) {
+        <tr class="interval-row" [class.table-active]="isSelected(record)" (click)="selectRecord(record)">
+          <td>
+            <div class="fw-semibold">{{ record.label }}</div>
+            <div class="text-muted small">
+              {{ formatDistance(record.distance || record.target_distance) }} km
+            </div>
+          </td>
+          <td class="text-end font-monospace">{{ formatDuration(record.duration_seconds) }}</td>
+          <td class="text-end font-monospace">{{ formatSpeed(record.average_speed) }}</td>
+          <td class="text-end fw-semibold">#{{ record.rank }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

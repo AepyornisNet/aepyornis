@@ -20,11 +20,11 @@ func (a *App) registerAPIV2HeatmapRoutes(apiGroup *echo.Group) {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[geojson.FeatureCollection]
+// @Success      200  {object}  api.Response[[][]float64]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts/coordinates [get]
 func (a *App) apiV2WorkoutsCoordinatesHandler(c echo.Context) error {
-	coords := geojson.NewFeatureCollection()
+	coords := [][]float64{}
 
 	db := a.db.Preload("Data").Preload("Data.Details")
 	u := a.getCurrentUser(c)
@@ -40,12 +40,11 @@ func (a *App) apiV2WorkoutsCoordinatesHandler(c echo.Context) error {
 		}
 
 		for _, p := range w.Data.Details.Points {
-			f := geojson.NewFeature(p.ToOrbPoint())
-			coords.Append(f)
+			coords = append(coords, []float64{p.Lat, p.Lng, 1})
 		}
 	}
 
-	resp := api.Response[*geojson.FeatureCollection]{
+	resp := api.Response[[][]float64]{
 		Results: coords,
 	}
 

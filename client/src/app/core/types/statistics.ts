@@ -44,6 +44,8 @@ export type GeoJsonFeatureCollection = {
   features: GeoJsonFeature[];
 };
 
+export type HeatmapCoordinateList = [number, number, number][];
+
 export type WorkoutPopupData = {
   id: number;
   name: string;

@@ -16,6 +16,7 @@ import {
 } from '../../core/types/user';
 import {
   CalendarEvent,
+  DistanceRecordEntry,
   Totals,
   Workout,
   WorkoutBreakdown,
@@ -29,6 +30,7 @@ import { Equipment } from '../../core/types/equipment';
 import { RouteSegment, RouteSegmentDetail } from '../../core/types/route-segment';
 import {
   GeoJsonFeatureCollection,
+  HeatmapCoordinateList,
   Statistics,
   StatisticsParams,
 } from '../../core/types/statistics';
@@ -367,6 +369,40 @@ export class Api {
     return this.http.get<APIResponse<WorkoutRecord[]>>(`${this.baseUrl}/records`);
   }
 
+  public getDistanceRecordRanking(params: {
+    workout_type: string;
+    label: string;
+    start?: string;
+    end?: string;
+    page?: number;
+    per_page?: number;
+  }): Observable<PaginatedAPIResponse<DistanceRecordEntry>> {
+    let httpParams = new HttpParams()
+      .set('workout_type', params.workout_type)
+      .set('label', params.label);
+
+    if (params.start) {
+      httpParams = httpParams.set('start', params.start);
+    }
+
+    if (params.end) {
+      httpParams = httpParams.set('end', params.end);
+    }
+
+    if (params.page) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+
+    if (params.per_page) {
+      httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+
+    return this.http.get<PaginatedAPIResponse<DistanceRecordEntry>>(
+      `${this.baseUrl}/records/ranking`,
+      { params: httpParams },
+    );
+  }
+
   // Profile endpoints
   public getProfile(): Observable<APIResponse<FullUserProfile>> {
     return this.http.get<APIResponse<FullUserProfile>>(`${this.baseUrl}/profile`);
@@ -426,8 +462,8 @@ export class Api {
   }
 
   // Heatmap endpoints
-  public getWorkoutsCoordinates(): Observable<APIResponse<GeoJsonFeatureCollection>> {
-    return this.http.get<APIResponse<GeoJsonFeatureCollection>>(
+  public getWorkoutsCoordinates(): Observable<APIResponse<HeatmapCoordinateList>> {
+    return this.http.get<APIResponse<HeatmapCoordinateList>>(
       `${this.baseUrl}/workouts/coordinates`,
     );
   }

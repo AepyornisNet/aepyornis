@@ -1,10 +1,12 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
 )
 
@@ -13,6 +15,7 @@ func (a *App) registerAPIV2UserRoutes(e *echo.Group) {
 	e.GET("/whoami", a.apiV2WhoamiHandler).Name = "api-v2-whoami"
 	e.GET("/totals", a.apiV2TotalsHandler).Name = "api-v2-totals"
 	e.GET("/records", a.apiV2RecordsHandler).Name = "api-v2-records"
+	e.GET("/records/ranking", a.apiV2RecordsRankingHandler).Name = "api-v2-records-ranking"
 	e.GET("/:id", a.apiV2UserShowHandler).Name = "api-v2-user-show"
 }
 
@@ -95,6 +98,62 @@ func (a *App) apiV2RecordsHandler(c echo.Context) error {
 
 	resp := api.Response[[]api.WorkoutRecordResponse]{
 		Results: api.NewWorkoutRecordsResponse(records),
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2RecordsRankingHandler returns ranked workouts for a given distance label
+// @Summary      Get ranked distance records
+// @Tags         user
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        workout_type  query     string  true   "Workout type (e.g. running)"
+// @Param        label         query     string  true   "Distance label (e.g. 10 km)"
+// @Param        start         query     string  false  "Start date (YYYY-MM-DD)"
+// @Param        end           query     string  false  "End date (YYYY-MM-DD, inclusive)"
+// @Param        page          query     int     false  "Page"
+// @Param        per_page      query     int     false  "Per page"
+// @Produce      json
+// @Success      200  {object}  api.PaginatedResponse[api.DistanceRecordResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /records/ranking [get]
+func (a *App) apiV2RecordsRankingHandler(c echo.Context) error {
+	user := a.getCurrentUser(c)
+
+	workoutType := c.QueryParam("workout_type")
+	label := c.QueryParam("label")
+
+	if workoutType == "" || label == "" {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, fmt.Errorf("workout_type and label are required"))
+	}
+
+	wt := database.AsWorkoutType(workoutType)
+
+	var pagination api.PaginationParams
+	if err := c.Bind(&pagination); err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+	pagination.SetDefaults()
+
+	startDate, endDate, err := parseDateRange(c)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	records, totalCount, err := user.GetDistanceRecordRanking(wt, label, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
+	resp := api.PaginatedResponse[api.DistanceRecordResponse]{
+		Results:    api.NewDistanceRecordResponses(records),
+		Page:       pagination.Page,
+		PerPage:    pagination.PerPage,
+		TotalPages: pagination.CalculateTotalPages(totalCount),
+		TotalCount: totalCount,
 	}
 
 	return c.JSON(http.StatusOK, resp)

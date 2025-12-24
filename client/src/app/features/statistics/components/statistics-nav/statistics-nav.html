@@ -1,0 +1,15 @@
+<nav class="nav nav-pills gap-2 mb-4 statistics-nav">
+  <a
+    class="nav-link"
+    routerLink="/statistics"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: true }"
+  >
+    <app-icon name="statistics" size="16" />
+    Overview
+  </a>
+  <a class="nav-link" routerLink="/statistics/records" routerLinkActive="active">
+    <app-icon name="best" size="16" />
+    Records
+  </a>
+</nav>

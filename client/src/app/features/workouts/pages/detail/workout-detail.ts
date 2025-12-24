@@ -20,6 +20,7 @@ import { WorkoutZoneDistributionComponent } from '../../components/workout-zone-
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
+import { WorkoutRecordsComponent } from '../../components/workout-records/workout-records';
 import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } from '@ng-bootstrap/ng-bootstrap';
 import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
 
@@ -35,6 +36,7 @@ import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../componen
     RouterLink,
     WorkoutClimbsComponent,
     WorkoutZoneDistributionComponent,
+    WorkoutRecordsComponent,
     WorkoutStatisticsComponent,
     NgbNav,
     NgbNavOutlet,

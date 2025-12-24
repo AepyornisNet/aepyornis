@@ -49,6 +49,7 @@ export type WorkoutDetail = {
   map_data?: MapData;
   climbs?: ClimbSegment[];
   route_segment_matches?: RouteSegmentMatch[];
+  records?: WorkoutIntervalRecord[];
   laps?: WorkoutLap[];
 } & Workout;
 
@@ -228,6 +229,17 @@ export type RouteSegmentInfo = {
   updated_at: string;
 };
 
+export type WorkoutIntervalRecord = {
+  label: string;
+  target_distance: number;
+  distance: number;
+  duration_seconds: number;
+  average_speed: number;
+  start_index?: number;
+  end_index?: number;
+  rank: number;
+};
+
 export type Equipment = {
   id: number;
   name: string;
@@ -254,6 +266,28 @@ export type RecordEntry = {
   date: string;
 };
 
+export type DistanceRecordEntry = {
+  label: string;
+  target_distance: number;
+  distance: number;
+  duration_seconds: number;
+  average_speed: number;
+  workout_id: number;
+  date: string;
+  start_index?: number;
+  end_index?: number;
+};
+
+export type ClimbRecordEntry = {
+  elevation_gain: number;
+  distance: number;
+  average_slope: number;
+  workout_id: number;
+  date: string;
+  start_index?: number;
+  end_index?: number;
+};
+
 export type WorkoutRecord = {
   workout_type: string;
   active: boolean;
@@ -263,6 +297,8 @@ export type WorkoutRecord = {
   max_speed?: RecordEntry;
   duration?: RecordEntry;
   total_up?: RecordEntry;
+  distance_records?: DistanceRecordEntry[];
+  biggest_climb?: ClimbRecordEntry;
 };
 
 export type CalendarEvent = {

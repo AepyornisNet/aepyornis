@@ -760,6 +760,9 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 
 	w.UpdateAverages()
 	w.UpdateExtraMetrics()
+	if err := w.UpdateRecords(db); err != nil {
+		return err
+	}
 	w.Dirty = false
 
 	return w.Save(db)
@@ -834,6 +837,46 @@ func (w *Workout) UpdateExtraMetrics() {
 	}
 
 	w.Data.UpdateExtraMetrics()
+}
+
+// UpdateRecords recalculates and persists best distance intervals for this workout.
+func (w *Workout) UpdateRecords(db *gorm.DB) error {
+	if db == nil {
+		return errors.New("nil db")
+	}
+
+	targets := distanceRecordTargetsFor(w.Type)
+
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutIntervalRecord{}).Error; err != nil {
+			return err
+		}
+
+		if len(targets) == 0 || w.Data == nil || w.Data.Details == nil || len(w.Data.Details.Points) < 2 {
+			return nil
+		}
+
+		records := fastestDistancesForWorkout(w, targets)
+		if len(records) == 0 {
+			return nil
+		}
+
+		rows := make([]*WorkoutIntervalRecord, 0, len(records))
+		for _, r := range records {
+			rows = append(rows, &WorkoutIntervalRecord{
+				WorkoutID:       w.ID,
+				Label:           r.Label,
+				TargetDistance:  r.TargetDistance,
+				Distance:        r.Distance,
+				DurationSeconds: r.Duration.Seconds(),
+				AverageSpeed:    r.AverageSpeed,
+				StartIndex:      r.StartIndex,
+				EndIndex:        r.EndIndex,
+			})
+		}
+
+		return tx.Create(&rows).Error
+	})
 }
 
 func (w *Workout) HasExtraMetrics() bool {

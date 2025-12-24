@@ -32,6 +32,11 @@ export class WorkoutDetailDataService {
     return w?.route_segment_matches && w.route_segment_matches.length > 0;
   });
 
+  public readonly hasRecords = computed(() => {
+    const w = this.workout();
+    return w?.records && w.records.length > 0;
+  });
+
   public readonly extraMetrics = computed(() => {
     const w = this.workout();
     return w?.map_data?.extra_metrics || [];

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 const postgresDialect = "postgres"
@@ -13,6 +15,26 @@ var ErrAnonymousUser = errors.New("no statistics available for anonymous user")
 type StatConfig struct {
 	Since string `query:"since"`
 	Per   string `query:"per"`
+}
+
+func loadWorkoutsForRecords(db *gorm.DB, userID uint64, t WorkoutType, startDate, endDate *time.Time) ([]*Workout, error) {
+	var workouts []*Workout
+
+	query := db.Preload("Data").Where("user_id = ?", userID).Where("workouts.type = ?", t)
+
+	if startDate != nil {
+		query = query.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		query = query.Where("workouts.date <= ?", *endDate)
+	}
+
+	if err := query.Find(&workouts).Error; err != nil {
+		return nil, err
+	}
+
+	return workouts, nil
 }
 
 func (sc *StatConfig) GetBucketString(sqlDialect string) string {
@@ -253,6 +275,157 @@ func (u *User) GetAllRecords(startDate, endDate *time.Time) ([]*WorkoutRecord, e
 	return rs, nil
 }
 
+func (u *User) getStoredDistanceRecords(t WorkoutType, startDate, endDate *time.Time) ([]DistanceRecord, error) {
+	targets := distanceRecordTargetsFor(t)
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	validLabels := make(map[string]struct{}, len(targets))
+	for _, target := range targets {
+		validLabels[target.Label] = struct{}{}
+	}
+
+	rows := []struct {
+		WorkoutIntervalRecord
+		Date time.Time
+	}{}
+
+	q := u.db.Table("workout_interval_records").
+		Select("workout_interval_records.*, workouts.date as date").
+		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
+		Where("workouts.user_id = ?", u.ID).
+		Where("workouts.type = ?", t)
+
+	if startDate != nil {
+		q = q.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		q = q.Where("workouts.date <= ?", *endDate)
+	}
+
+	q = q.Order("workout_interval_records.label asc, workout_interval_records.target_distance asc, workout_interval_records.duration_seconds asc, workout_interval_records.distance desc")
+
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	best := map[string]DistanceRecord{}
+
+	for _, r := range rows {
+		if _, ok := validLabels[r.Label]; !ok {
+			continue
+		}
+
+		candidate := DistanceRecord{
+			Label:          r.Label,
+			TargetDistance: r.TargetDistance,
+			Distance:       r.Distance,
+			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
+			AverageSpeed:   r.AverageSpeed,
+			WorkoutID:      r.WorkoutID,
+			Date:           r.Date,
+			StartIndex:     r.StartIndex,
+			EndIndex:       r.EndIndex,
+			Active:         true,
+		}
+
+		current, ok := best[candidate.Label]
+		if !ok || betterDistanceRecord(candidate, current) {
+			best[candidate.Label] = candidate
+		}
+	}
+
+	result := make([]DistanceRecord, 0, len(targets))
+	for _, target := range targets {
+		if rec, ok := best[target.Label]; ok {
+			result = append(result, rec)
+		}
+	}
+
+	return result, nil
+}
+
+// GetDistanceRecordRanking returns stored interval efforts for a distance label ordered best-first with pagination.
+func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, endDate *time.Time, limit, offset int) ([]DistanceRecord, int64, error) {
+	targets := distanceRecordTargetsFor(t)
+	if len(targets) == 0 {
+		return nil, 0, nil
+	}
+
+	valid := false
+	for _, target := range targets {
+		if target.Label == label {
+			valid = true
+			break
+		}
+	}
+
+	if !valid {
+		return nil, 0, fmt.Errorf("unknown distance label %q for workout type %s", label, t)
+	}
+
+	rows := []struct {
+		WorkoutIntervalRecord
+		Date time.Time
+	}{}
+
+	base := u.db.Table("workout_interval_records").
+		Select("workout_interval_records.*, workouts.date as date").
+		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
+		Where("workouts.user_id = ?", u.ID).
+		Where("workouts.type = ?", t).
+		Where("workout_interval_records.label = ?", label)
+
+	if startDate != nil {
+		base = base.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		base = base.Where("workouts.date <= ?", *endDate)
+	}
+
+	var totalCount int64
+	if err := base.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+
+	q := base
+
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+
+	if offset > 0 {
+		q = q.Offset(offset)
+	}
+
+	q = q.Order("workout_interval_records.duration_seconds asc, workout_interval_records.distance desc, workouts.date asc, workout_interval_records.workout_id asc")
+
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]DistanceRecord, 0, len(rows))
+	for _, r := range rows {
+		result = append(result, DistanceRecord{
+			Label:          r.Label,
+			TargetDistance: r.TargetDistance,
+			Distance:       r.Distance,
+			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
+			AverageSpeed:   r.AverageSpeed,
+			WorkoutID:      r.WorkoutID,
+			Date:           r.Date,
+			StartIndex:     r.StartIndex,
+			EndIndex:       r.EndIndex,
+			Active:         true,
+		})
+	}
+
+	return result, totalCount, nil
+}
+
 func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*WorkoutRecord, error) {
 	if t == "" {
 		t = u.Profile.TotalsShow
@@ -316,7 +489,33 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 		return nil, err
 	}
 
-	r.Active = r.Distance.Value > 0
+	targets := distanceRecordTargetsFor(t)
+
+	if len(targets) > 0 {
+		dr, derr := u.getStoredDistanceRecords(t, startDate, endDate)
+		if derr != nil {
+			return nil, derr
+		}
+		r.DistanceRecords = dr
+	}
+
+	if t.IsDistance() {
+		workouts, werr := loadWorkoutsForRecords(u.db, u.ID, t, startDate, endDate)
+		if werr != nil {
+			return nil, werr
+		}
+
+		if climb := biggestClimbRecord(workouts); climb != nil && climb.Active {
+			r.BiggestClimb = climb
+		}
+	}
+
+	r.Active = r.Distance.Value > 0 ||
+		r.MaxSpeed.Value > 0 ||
+		r.TotalUp.Value > 0 ||
+		r.Duration.Value > 0 ||
+		len(r.DistanceRecords) > 0 ||
+		(r.BiggestClimb != nil && r.BiggestClimb.Active)
 
 	return r, nil
 }

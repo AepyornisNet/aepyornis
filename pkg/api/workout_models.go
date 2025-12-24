@@ -158,11 +158,12 @@ type WorkoutBreakdownItemResponse struct {
 // WorkoutDetailResponse represents a detailed workout in API v2 responses
 type WorkoutDetailResponse struct {
 	WorkoutResponse
-	Equipment           []EquipmentResponse         `json:"equipment,omitempty"`
-	MapData             *MapDataResponse            `json:"map_data,omitempty"`
-	Climbs              []ClimbSegmentResponse      `json:"climbs,omitempty"`
-	RouteSegmentMatches []RouteSegmentMatchResponse `json:"route_segment_matches,omitempty"`
-	Laps                []WorkoutLapResponse        `json:"laps,omitempty"`
+	Equipment           []EquipmentResponse             `json:"equipment,omitempty"`
+	MapData             *MapDataResponse                `json:"map_data,omitempty"`
+	Climbs              []ClimbSegmentResponse          `json:"climbs,omitempty"`
+	RouteSegmentMatches []RouteSegmentMatchResponse     `json:"route_segment_matches,omitempty"`
+	Records             []WorkoutIntervalRecordResponse `json:"records,omitempty"`
+	Laps                []WorkoutLapResponse            `json:"laps,omitempty"`
 }
 
 // MapDataResponse represents workout map data in API v2 responses
@@ -223,6 +224,18 @@ type RouteSegmentMatchResponse struct {
 	StartIndex     int                  `json:"start_index"`
 	EndIndex       int                  `json:"end_index"`
 	RouteSegment   RouteSegmentResponse `json:"route_segment"`
+}
+
+// WorkoutIntervalRecordResponse represents a stored interval with its rank.
+type WorkoutIntervalRecordResponse struct {
+	Label           string  `json:"label"`
+	TargetDistance  float64 `json:"target_distance"`
+	Distance        float64 `json:"distance"`
+	DurationSeconds float64 `json:"duration_seconds"`
+	AverageSpeed    float64 `json:"average_speed"`
+	StartIndex      int     `json:"start_index"`
+	EndIndex        int     `json:"end_index"`
+	Rank            int64   `json:"rank"`
 }
 
 // WorkoutPopupData represents data for the heatmap popup
@@ -357,7 +370,7 @@ func NewWorkoutPopupData(w *database.Workout) WorkoutPopupData {
 }
 
 // NewWorkoutDetailResponse converts a database workout to a detailed API response
-func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
+func NewWorkoutDetailResponse(w *database.Workout, records []database.WorkoutIntervalRecordWithRank) WorkoutDetailResponse {
 	wr := WorkoutDetailResponse{
 		WorkoutResponse: NewWorkoutResponse(w),
 	}
@@ -420,6 +433,22 @@ func NewWorkoutDetailResponse(w *database.Workout) WorkoutDetailResponse {
 
 	if w.Data != nil && len(w.Data.Laps) > 1 {
 		wr.Laps = NewWorkoutLapResponses(w.Data.Laps)
+	}
+
+	if len(records) > 0 {
+		wr.Records = make([]WorkoutIntervalRecordResponse, len(records))
+		for i, r := range records {
+			wr.Records[i] = WorkoutIntervalRecordResponse{
+				Label:           r.Label,
+				TargetDistance:  r.TargetDistance,
+				Distance:        r.Distance,
+				DurationSeconds: r.DurationSeconds,
+				AverageSpeed:    r.AverageSpeed,
+				StartIndex:      r.StartIndex,
+				EndIndex:        r.EndIndex,
+				Rank:            r.Rank,
+			}
+		}
 	}
 
 	return wr

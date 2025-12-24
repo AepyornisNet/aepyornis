@@ -50,6 +50,32 @@ type (
 		ID    uint64    `json:"id"`    // The workout ID of the record
 	}
 
+	// DistanceRecord captures the fastest effort for a target distance
+	DistanceRecord struct {
+		Label          string        `json:"label"`          // Human label (e.g. "10 km")
+		TargetDistance float64       `json:"targetDistance"` // Target distance in meters
+		Distance       float64       `json:"distance"`       // Actual distance covered in meters
+		Duration       time.Duration `json:"duration"`       // Moving duration for the effort
+		AverageSpeed   float64       `json:"averageSpeed"`   // Average speed (m/s) for the effort
+		WorkoutID      uint64        `json:"workoutID"`      // Workout ID where the record was set
+		Date           time.Time     `json:"date"`           // Workout date
+		StartIndex     int           `json:"startIndex"`     // Start point index in the workout map
+		EndIndex       int           `json:"endIndex"`       // End point index in the workout map
+		Active         bool          `json:"active"`         // Whether the record exists
+	}
+
+	// ClimbRecord captures the biggest single climb in a workout
+	ClimbRecord struct {
+		ElevationGain float64   `json:"elevationGain"` // Elevation gain in meters
+		Distance      float64   `json:"distance"`      // Climb distance in meters
+		AverageSlope  float64   `json:"averageSlope"`  // Average slope percentage
+		WorkoutID     uint64    `json:"workoutID"`     // Workout ID where the record was set
+		Date          time.Time `json:"date"`          // Workout date
+		StartIndex    int       `json:"startIndex"`    // Start point index
+		EndIndex      int       `json:"endIndex"`      // End point index
+		Active        bool      `json:"active"`        // Whether the record exists
+	}
+
 	// DurationRecord is a single record if the value is a time.Duration
 	DurationRecord struct {
 		Date  time.Time     `json:"date"`  // The timestamp of the record
@@ -66,7 +92,9 @@ type (
 		Distance            Float64Record  `json:"distance"`            // The record with the maximum distance
 		TotalUp             Float64Record  `json:"totalUp"`             // The record with the maximum up elevation
 		Duration            DurationRecord `json:"duration"`            // The record with the maximum duration
-		Active              bool           `json:"active"`              // Whether there is any data in the record
+		DistanceRecords     []DistanceRecord
+		BiggestClimb        *ClimbRecord `json:"biggestClimb"`
+		Active              bool         `json:"active"` // Whether there is any data in the record
 	}
 )
 

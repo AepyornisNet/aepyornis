@@ -128,9 +128,13 @@ func (a *App) apiV2WorkoutHandler(c echo.Context) error {
 	}
 
 	workout.User = user
+	records, err := database.GetWorkoutIntervalRecordsWithRank(a.db, user.ID, workout.Type, workout.ID)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
 
 	// Convert to API response
-	result := api.NewWorkoutDetailResponse(&workout)
+	result := api.NewWorkoutDetailResponse(&workout, records)
 
 	resp := api.Response[api.WorkoutDetailResponse]{
 		Results: result,
@@ -850,8 +854,13 @@ func (a *App) apiV2WorkoutPublicHandler(c echo.Context) error {
 		return a.renderAPIV2Error(c, http.StatusNotFound, err)
 	}
 
+	records, err := database.GetWorkoutIntervalRecordsWithRank(a.db, workout.UserID, workout.Type, workout.ID)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
 	// Convert to API response
-	result := api.NewWorkoutDetailResponse(workout)
+	result := api.NewWorkoutDetailResponse(workout, records)
 
 	resp := api.Response[api.WorkoutDetailResponse]{
 		Results: result,
