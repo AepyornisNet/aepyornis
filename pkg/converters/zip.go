@@ -4,15 +4,17 @@ import (
 	"archive/zip"
 	"bytes"
 	"io"
+
+	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 )
 
-func ParseZip(content []byte) ([]*Workout, error) {
+func ParseZip(content []byte) ([]*database.Workout, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(content), int64(len(content)))
 	if err != nil {
 		return nil, err
 	}
 
-	result := []*Workout{}
+	result := []*database.Workout{}
 
 	// Read all the files from zip archive
 	for _, zipFile := range zipReader.File {

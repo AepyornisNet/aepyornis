@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"github.com/spf13/cobra"
@@ -34,7 +33,7 @@ func (c *cli) workoutsParseCmd() *cobra.Command {
 				return err
 			}
 
-			wo, err := converters.ParseCollection(filename, content)
+			wo, err := database.WorkoutParser(filename, content)
 			if err != nil {
 				return err
 			}
@@ -42,16 +41,16 @@ func (c *cli) workoutsParseCmd() *cobra.Command {
 			fmt.Println("Parsing was successful!")
 
 			for _, f := range wo {
-				fmt.Printf("- name: %s\n", f.Data.Name)
+				fmt.Printf("- name: %s\n", f.Name)
 
-				if f.IsGPXBAsed() {
-					fmt.Printf("  number of tracks: %d\n", len(f.GPX.Tracks))
+				if f.HasTracks() {
+					fmt.Printf("  points: %d\n", len(f.Data.Details.Points))
 					continue
 				}
 
-				fmt.Printf("  repetitions: %d\n", f.Data.TotalRepetitions)
-				fmt.Printf("  duration: %s\n", f.Data.TotalDuration)
-				fmt.Printf("  start: %s\n", f.Data.Start)
+				fmt.Printf("  repetitions: %d\n", f.TotalRepetitions())
+				fmt.Printf("  duration: %s\n", f.TotalDuration())
+				fmt.Printf("  start: %s\n", f.Date)
 			}
 
 			return nil

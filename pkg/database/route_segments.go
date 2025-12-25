@@ -2,12 +2,12 @@ package database
 
 import (
 	"crypto/sha256"
+	"errors"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/codingsince1985/geo-golang"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/tkrajina/gpxgo/gpx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -115,14 +115,20 @@ func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams)
 }
 
 func (rs *RouteSegment) UpdateFromContent() error {
-	gpxContent, err := converters.Parse(rs.Filename, rs.Content)
+	if WorkoutParser == nil {
+		return ErrWorkoutParserMissing
+	}
+
+	parsed, err := WorkoutParser(rs.Filename, rs.Content)
 	if err != nil {
 		return err
 	}
 
-	gpxContent.GPX.SimplifyTracks(MaxDeltaMeter / 2)
+	if len(parsed) == 0 || parsed[0] == nil || parsed[0].Data == nil {
+		return errors.New("route segment parse returned no data")
+	}
 
-	data := gpxAsMapData(gpxContent.GPX)
+	data := parsed[0].Data
 
 	if !data.Center.IsZero() {
 		data.Address = data.Center.Address()
@@ -138,6 +144,13 @@ func (rs *RouteSegment) UpdateFromContent() error {
 	rs.TotalUp = data.TotalUp
 	rs.TotalDown = data.TotalDown
 	rs.Points = data.Details.Points
+
+	// Detect whether the route is circular so matching can wrap around the end of the track.
+	if len(rs.Points) > 1 {
+		first := rs.Points[0]
+		last := rs.Points[len(rs.Points)-1]
+		rs.Circular = first.DistanceTo(&last) <= MaxDeltaMeter
+	}
 
 	return nil
 }

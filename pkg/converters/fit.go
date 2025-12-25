@@ -8,6 +8,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/muktihari/fit/decoder"
 	"github.com/muktihari/fit/kit/semicircles"
 	"github.com/muktihari/fit/profile/filedef"
@@ -15,8 +16,7 @@ import (
 	"github.com/tkrajina/gpxgo/gpx"
 )
 
-func ParseFit(content []byte) ([]*Workout, error) {
-	// Decode the FIT file data
+func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 	dec := decoder.New(bytes.NewReader(content), decoder.WithIgnoreChecksum())
 
 	f, err := dec.Decode()
@@ -38,90 +38,57 @@ func ParseFit(content []byte) ([]*Workout, error) {
 		activityTime = act.FileId.TimeCreated.Local()
 	}
 
-	name := act.Sessions[0].Sport.String() + " - " + activityTime.Format(time.DateTime)
-	gpxFile := &gpx.GPX{
-		Name:    name,
-		Time:    &act.FileId.TimeCreated,
-		Creator: act.FileId.Manufacturer.String(),
-	}
-
-	gpxFile.AppendTrack(&gpx.GPXTrack{
-		Name: act.Sessions[0].SportProfileName,
-		Type: act.Sessions[0].Sport.String(),
-	})
-
-	for _, r := range act.Records {
-		p := &gpx.GPXPoint{
-			Timestamp: r.Timestamp,
-			Point: gpx.Point{
-				Latitude:  semicircles.ToDegrees(r.PositionLat),
-				Longitude: semicircles.ToDegrees(r.PositionLong),
-			},
-		}
-
-		if math.IsNaN(p.Latitude) || math.IsNaN(p.Longitude) {
-			continue
-		}
-
-		if r.EnhancedAltitude != math.MaxUint32 {
-			p.Elevation = *gpx.NewNullableFloat64(r.EnhancedAltitudeScaled())
-		}
-
-		gpxExtensionData := map[string]string{}
-		if r.Cadence != math.MaxUint8 {
-			gpxExtensionData["cadence"] = cast.ToString(r.Cadence)
-		}
-
-		if r.HeartRate != math.MaxUint8 {
-			gpxExtensionData["heart-rate"] = cast.ToString(r.HeartRate)
-		}
-
-		if r.EnhancedSpeed != math.MaxUint32 {
-			gpxExtensionData["speed"] = cast.ToString(r.EnhancedSpeedScaled())
-		} else if r.Speed != math.MaxUint16 {
-			gpxExtensionData["speed"] = cast.ToString(r.SpeedScaled())
-		}
-
-		if r.Temperature != math.MaxInt8 {
-			gpxExtensionData["temperature"] = cast.ToString(r.Temperature)
-		}
-
-		if r.Power != math.MaxUint16 {
-			gpxExtensionData["power"] = cast.ToString(r.Power)
-		}
-
-		for key, value := range gpxExtensionData {
-			p.Extensions.Nodes = append(p.Extensions.Nodes, gpx.ExtensionNode{
-				XMLName: xml.Name{Local: key}, Data: value,
-			})
-		}
-
-		gpxFile.AppendPoint(p)
-	}
-
-	session := act.Sessions[0]
+	gpxFile := buildGPXFromActivity(act)
+	data := database.MapDataFromGPX(gpxFile)
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
 
-	w := &Workout{
-		GPX:      gpxFile,
-		FileType: "fit",
-		Content:  content,
-		Data: WorkoutData{
-			SubType:       session.SubSport.String(),
-			TotalDistance: session.TotalDistanceScaled(),
-			Laps:          laps,
-			WorkoutStats:  stats,
-		},
-		NativeParsed: true,
+	workouts := make([]*database.Workout, 0, len(act.Sessions))
+
+	for _, session := range act.Sessions {
+		startTime := session.StartTime.Local()
+		if startTime.IsZero() {
+			startTime = activityTime
+		}
+
+		moveDuration := durationFromSeconds(session.TotalTimerTimeScaled())
+		elapsedDuration := durationFromSeconds(session.TotalElapsedTimeScaled())
+		pauseDuration := max(elapsedDuration-moveDuration, 0)
+
+		w := &database.Workout{
+			Data: cloneMapData(data),
+			Date: startTime,
+		}
+
+		if w.Data != nil {
+			w.Data.WorkoutData.MergeNonZero(database.WorkoutData{
+				Name:          session.Sport.String() + " - " + startTime.Format(time.DateTime),
+				Type:          session.Sport.String(),
+				SubType:       session.SubSport.String(),
+				Start:         startTime,
+				Stop:          startTime.Add(elapsedDuration),
+				TotalDistance: session.TotalDistanceScaled(),
+				TotalDuration: elapsedDuration,
+				PauseDuration: pauseDuration,
+				WorkoutStats:  stats,
+				Laps:          laps,
+			})
+		}
+
+		w.Name = w.Data.WorkoutData.Name
+		setContentAndName(w, filename, "fit", content)
+		w.UpdateAverages()
+		w.UpdateExtraMetrics()
+
+		workouts = append(workouts, w)
 	}
 
-	return []*Workout{w}, nil
+	return workouts, nil
 }
 
 //gocyclo:ignore
-func parseLaps(act *filedef.Activity) []WorkoutLap {
-	laps := make([]WorkoutLap, 0, len(act.Laps))
+func parseLaps(act *filedef.Activity) []database.WorkoutLap {
+	laps := make([]database.WorkoutLap, 0, len(act.Laps))
 	for _, lap := range act.Laps {
 		elapsed := time.Duration(0)
 		if lap.TotalElapsedTime != math.MaxUint32 {
@@ -220,13 +187,13 @@ func parseLaps(act *filedef.Activity) []WorkoutLap {
 			avgSpeedNoPause = totalDistance / movingDuration.Seconds()
 		}
 
-		laps = append(laps, WorkoutLap{
+		laps = append(laps, database.WorkoutLap{
 			Start:         lapStart,
 			Stop:          lapStop,
 			TotalDistance: totalDistance,
 			TotalDuration: elapsed,
 			PauseDuration: pause,
-			WorkoutStats: WorkoutStats{
+			WorkoutStats: database.WorkoutStats{
 				MinElevation:        minElevation,
 				MaxElevation:        maxElevation,
 				TotalUp:             totalUp,
@@ -247,9 +214,9 @@ func parseLaps(act *filedef.Activity) []WorkoutLap {
 	return laps
 }
 
-func parseWorkoutStats(act *filedef.Activity) WorkoutStats {
+func parseWorkoutStats(act *filedef.Activity) database.WorkoutStats {
 	session := act.Sessions[0]
-	stats := WorkoutStats{}
+	stats := database.WorkoutStats{}
 
 	if session.AvgCadence != math.MaxUint8 {
 		stats.AverageCadence = float64(session.AvgCadence)
@@ -306,4 +273,101 @@ func parseWorkoutStats(act *filedef.Activity) WorkoutStats {
 	}
 
 	return stats
+}
+
+func durationFromSeconds(seconds float64) time.Duration {
+	if seconds <= 0 {
+		return 0
+	}
+
+	return time.Duration(seconds * float64(time.Second))
+}
+
+func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
+	name := act.Sessions[0].Sport.String() + " - " + act.Activity.LocalTimestamp.Format(time.DateTime)
+	gpxFile := &gpx.GPX{
+		Name:    name,
+		Time:    &act.FileId.TimeCreated,
+		Creator: act.FileId.Manufacturer.String(),
+	}
+
+	if len(act.Sessions) > 0 {
+		s := act.Sessions[0]
+		gpxFile.AppendTrack(&gpx.GPXTrack{
+			Name: s.SportProfileName,
+			Type: s.Sport.String(),
+		})
+	}
+
+	for _, r := range act.Records {
+		p := &gpx.GPXPoint{
+			Timestamp: r.Timestamp,
+			Point: gpx.Point{
+				Latitude:  semicircles.ToDegrees(r.PositionLat),
+				Longitude: semicircles.ToDegrees(r.PositionLong),
+			},
+		}
+
+		if math.IsNaN(p.Latitude) || math.IsNaN(p.Longitude) {
+			continue
+		}
+
+		if r.EnhancedAltitude != math.MaxUint32 {
+			p.Elevation = *gpx.NewNullableFloat64(r.EnhancedAltitudeScaled())
+		}
+
+		gpxExtensionData := map[string]string{}
+		if r.Cadence != math.MaxUint8 {
+			gpxExtensionData["cadence"] = cast.ToString(r.Cadence)
+		}
+
+		if r.HeartRate != math.MaxUint8 {
+			gpxExtensionData["heart-rate"] = cast.ToString(r.HeartRate)
+		}
+
+		if r.EnhancedSpeed != math.MaxUint32 {
+			gpxExtensionData["speed"] = cast.ToString(r.EnhancedSpeedScaled())
+		} else if r.Speed != math.MaxUint16 {
+			gpxExtensionData["speed"] = cast.ToString(r.SpeedScaled())
+		}
+
+		if r.Temperature != math.MaxInt8 {
+			gpxExtensionData["temperature"] = cast.ToString(r.Temperature)
+		}
+
+		if r.Power != math.MaxUint16 {
+			gpxExtensionData["power"] = cast.ToString(r.Power)
+		}
+
+		for key, value := range gpxExtensionData {
+			p.Extensions.Nodes = append(p.Extensions.Nodes, gpx.ExtensionNode{
+				XMLName: xml.Name{Local: key}, Data: value,
+			})
+		}
+
+		gpxFile.AppendPoint(p)
+	}
+
+	return gpxFile
+}
+
+func cloneMapData(src *database.MapData) *database.MapData {
+	if src == nil {
+		return &database.MapData{}
+	}
+
+	clone := *src
+	if src.Details != nil {
+		clone.Details = &database.MapDataDetails{Points: src.Details.Points}
+	}
+
+	return &clone
+}
+
+func max(a, b time.Duration) time.Duration {
+	if a > b {
+		return a
+	}
+
+	return b
 }

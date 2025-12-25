@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/codingsince1985/geo-golang"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"github.com/labstack/gommon/log"
@@ -67,7 +66,7 @@ type MapData struct {
 	Center        MapCenter `gorm:"serializer:json" json:"center"`         // The center of the workout (in coordinates)
 	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"` // The workout this data belongs to
 	Climbs        []Segment `gorm:"serializer:json" json:"climbs"`         // Auto-detected climbs
-	converters.WorkoutData
+	WorkoutData
 }
 
 type MapDataDetails struct {
@@ -82,7 +81,7 @@ type MapDataDetails struct {
 // MapDataRangeStats describes aggregate statistics for a contiguous slice of map points.
 // It is intentionally rich so callers can derive per-item breakdowns as well as overall averages.
 type MapDataRangeStats struct {
-	converters.WorkoutStats
+	WorkoutStats
 
 	Distance       float64       // Distance covered in this range
 	Duration       time.Duration // Total duration in this range (including pauses)
@@ -603,7 +602,7 @@ func pointHasDistance(p gpx.GPXPoint) bool {
 }
 
 // Determines the date to use for the workout
-func gpxDate(gpxContent *gpx.GPX) *time.Time {
+func GPXDate(gpxContent *gpx.GPX) *time.Time {
 	// Use the first track's first segment's timestamp if it exists
 	// This is the best time to use as a start time, since converters shouldn't
 	// touch this timestamp
@@ -683,11 +682,11 @@ func createMapData(gpxContent *gpx.GPX) *MapData {
 	data := &MapData{
 		Creator: gpxContent.Creator,
 		Center:  mapCenter,
-		WorkoutData: converters.WorkoutData{
+		WorkoutData: WorkoutData{
 			TotalDistance: totalDistance,
 			TotalDuration: totalDuration,
 			PauseDuration: pauseDuration,
-			WorkoutStats: converters.WorkoutStats{
+			WorkoutStats: WorkoutStats{
 				MinElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, minElevation),
 				MaxElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, maxElevation),
 				MaxSpeed:            maxSpeed,
@@ -697,6 +696,18 @@ func createMapData(gpxContent *gpx.GPX) *MapData {
 				TotalDown:           downhill,
 			},
 		},
+	}
+
+	if len(gpxContent.Tracks) > 0 {
+		firstTrack := gpxContent.Tracks[0]
+		data.WorkoutData.Type = firstTrack.Type
+		if data.WorkoutData.Name == "" {
+			data.WorkoutData.Name = firstTrack.Name
+		}
+	}
+
+	if data.WorkoutData.Name == "" && gpxContent.Name != "" {
+		data.WorkoutData.Name = gpxContent.Name
 	}
 
 	data.UpdateAddress()
@@ -728,7 +739,7 @@ func (m *MapData) correctNaN() {
 	}
 }
 
-func gpxAsMapData(gpxContent *gpx.GPX) *MapData {
+func MapDataFromGPX(gpxContent *gpx.GPX) *MapData {
 	data := createMapData(gpxContent)
 
 	points := allGPXPoints(gpxContent)
@@ -775,6 +786,11 @@ func gpxAsMapData(gpxContent *gpx.GPX) *MapData {
 			TotalDuration: time.Duration(totalTime) * time.Second,
 			ExtraMetrics:  extraMetrics,
 		})
+	}
+
+	if len(data.Details.Points) > 0 {
+		data.Start = data.Details.Points[0].Time
+		data.Stop = data.Details.Points[len(data.Details.Points)-1].Time
 	}
 
 	data.correctNaN()

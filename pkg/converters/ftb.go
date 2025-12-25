@@ -4,16 +4,20 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"path"
+	"strings"
 	"time"
+
+	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 )
 
-func ParseFTB(content []byte) ([]*Workout, error) {
+func ParseFTB(content []byte) ([]*database.Workout, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(content), int64(len(content)))
 	if err != nil {
 		return nil, err
 	}
 
-	result := []*Workout{}
+	result := []*database.Workout{}
 
 	// Read all the files from zip archive
 	for _, zipFile := range zipReader.File {
@@ -32,7 +36,7 @@ func ParseFTB(content []byte) ([]*Workout, error) {
 	return result, nil
 }
 
-func readFtbXMLFile(zf *zip.File) ([]*Workout, error) {
+func readFtbXMLFile(zf *zip.File) ([]*database.Workout, error) {
 	c, err := readFileFromZip(zf)
 	if err != nil {
 		return nil, err
@@ -43,7 +47,7 @@ func readFtbXMLFile(zf *zip.File) ([]*Workout, error) {
 		return nil, err
 	}
 
-	result := []*Workout{}
+	result := []*database.Workout{}
 
 	for _, is := range data.IndoorWorkouts.IndoorWorkouts {
 		result = append(result, convertToWorkout(is))
@@ -52,8 +56,8 @@ func readFtbXMLFile(zf *zip.File) ([]*Workout, error) {
 	return result, nil
 }
 
-func convertToWorkout(iw indoorWorkout) *Workout {
-	wd := WorkoutData{
+func convertToWorkout(iw indoorWorkout) *database.Workout {
+	wd := database.WorkoutData{
 		Name:             iw.ExportFileName,
 		Type:             iw.WorkoutType,
 		Start:            iw.StartTime(),
@@ -62,9 +66,15 @@ func convertToWorkout(iw indoorWorkout) *Workout {
 		TotalRepetitions: iw.Repetitions,
 	}
 
-	return &Workout{
-		Data:     wd,
-		FileType: "xml",
-		Content:  nil,
+	name := strings.TrimSuffix(path.Base(wd.Name), path.Ext(wd.Name))
+	w := &database.Workout{
+		Data: &database.MapData{WorkoutData: wd},
+		Date: wd.Start,
+		Name: name,
 	}
+
+	w.UpdateAverages()
+	w.UpdateExtraMetrics()
+
+	return w
 }

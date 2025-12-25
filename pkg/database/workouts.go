@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/tkrajina/gpxgo/gpx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -22,9 +21,45 @@ import (
 var (
 	ErrInvalidData          = errors.New("could not convert data to a GPX structure")
 	ErrWorkoutAlreadyExists = errors.New("user already has workout with exact start time")
+	ErrWorkoutParserMissing = errors.New("workout parser is not configured")
 )
 
+func init() {
+	WorkoutParser = defaultWorkoutParser
+}
+
+func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
+	gpxContent, err := gpx.ParseBytes(content)
+	if err != nil {
+		return nil, err
+	}
+
+	data := MapDataFromGPX(gpxContent)
+	w := &Workout{
+		Data: data,
+		Name: data.WorkoutData.Name,
+	}
+
+	if date := GPXDate(gpxContent); date != nil {
+		w.Date = *date
+	}
+
+	if filename == "" {
+		filename = w.Name
+	}
+
+	w.SetContent(filename, content)
+	w.UpdateAverages()
+	w.UpdateExtraMetrics()
+
+	return []*Workout{w}, nil
+}
+
 const minEventDuration = 1 * time.Second
+
+// WorkoutParser is configured by the converters package to parse file content into Workout models.
+// It is left nil in tests that do not require parsing.
+var WorkoutParser func(filename string, content []byte) ([]*Workout, error)
 
 type Workout struct {
 	Model
@@ -332,64 +367,58 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 
 	filename = filepath.Base(filename)
 
-	gpxContent, err := converters.ParseCollection(filename, content)
+	if WorkoutParser == nil {
+		return nil, ErrWorkoutParserMissing
+	}
+
+	parsed, err := WorkoutParser(filename, content)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse workout data: %w", err)
 	}
 
-	workouts := make([]*Workout, len(gpxContent))
+	if len(parsed) == 0 {
+		return nil, nil
+	}
 
-	for i, g := range gpxContent {
-		data := &MapData{
-			WorkoutData: g.Data,
+	workouts := make([]*Workout, 0, len(parsed))
+
+	for _, parsedWorkout := range parsed {
+		if parsedWorkout == nil {
+			continue
 		}
 
-		d := &g.Data.Start
+		w := parsedWorkout
+		w.User = u
+		w.UserID = u.ID
+		w.Dirty = true
+		w.Notes = notes
 
-		if g.IsGPXBAsed() {
-			d = gpxDate(g.GPX)
-			data = gpxAsMapData(g.GPX)
-		}
-
-		if data == nil {
-			data = &MapData{}
-		}
-
-		if g.NativeParsed {
-			data.WorkoutData.MergeNonZero(g.Data)
+		if w.Data == nil {
+			w.Data = &MapData{}
 		}
 
 		if workoutType == WorkoutTypeAutoDetect {
-			workoutType = autoDetectWorkoutType(data, g.GPX, g.Data.Name)
+			w.Type = autoDetectWorkoutType(w.Data, w.Data.WorkoutData.Name)
+		} else {
+			w.Type = workoutType
 		}
 
-		w := &Workout{
-			User:   u,
-			UserID: u.ID,
-			Dirty:  true,
-			Name:   g.Data.Name,
-			Data:   data,
-			Notes:  notes,
-			Type:   workoutType,
-			Date:   *d,
+		// If multiple files are extracted (e.g., from a zip), prefer the per-file filename.
+		if w.GPX != nil && w.GPX.Filename == "" {
+			w.GPX.Filename = filename
 		}
 
-		// If multiple GPX files are extracted (e.g., from a zip), use the individual GPX filename.
-		if filename == "" || len(gpxContent) > 1 {
-			filename = g.Filename()
-		}
-
-		w.setContent(filename, g.Content)
 		w.UpdateAverages()
 		w.UpdateExtraMetrics()
 
-		workouts[i] = w
+		workouts = append(workouts, w)
 	}
 
 	return workouts, nil
 }
 
-func (w *Workout) setContent(filename string, content []byte) {
+// SetContent stores the raw workout file along with its checksum.
+func (w *Workout) SetContent(filename string, content []byte) {
 	if content == nil {
 		return
 	}
@@ -437,25 +466,17 @@ func workoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	}
 }
 
-func autoDetectWorkoutType(data *MapData, gpxContent *gpx.GPX, dataName string) WorkoutType {
-	if gpxContent == nil {
-		if workoutType, ok := workoutTypeFromData(data.Type); ok {
-			return workoutType
-		}
-
-		return WorkoutTypeAutoDetect
-	}
-
-	// If the GPX file mentions a workout type (for the first track), use it
-	if len(gpxContent.Tracks) > 0 {
-		firstTrack := &gpxContent.Tracks[0]
-
-		if workoutType, ok := workoutTypeFromData(firstTrack.Type); ok {
+func autoDetectWorkoutType(data *MapData, dataName string) WorkoutType {
+	if data != nil {
+		if workoutType, ok := workoutTypeFromData(data.WorkoutData.Type); ok {
 			return workoutType
 		}
 	}
 
-	// If the GPX file mentions a workout type in the name (Runkeeper), use it
+	if dataName == "" && data != nil {
+		dataName = data.WorkoutData.Name
+	}
+
 	if len(dataName) > 0 {
 		nameField := strings.Fields(dataName)
 		if len(nameField) > 0 {
@@ -465,12 +486,14 @@ func autoDetectWorkoutType(data *MapData, gpxContent *gpx.GPX, dataName string) 
 		}
 	}
 
-	if 3.6*data.AverageSpeedNoPause > 15.0 {
-		return WorkoutTypeCycling
-	}
+	if data != nil {
+		if 3.6*data.AverageSpeedNoPause > 15.0 {
+			return WorkoutTypeCycling
+		}
 
-	if 3.6*data.AverageSpeedNoPause > 7.0 {
-		return WorkoutTypeRunning
+		if 3.6*data.AverageSpeedNoPause > 7.0 {
+			return WorkoutTypeRunning
+		}
 	}
 
 	return WorkoutTypeWalking
@@ -610,17 +633,25 @@ func (w *Workout) save(db *gorm.DB) error {
 	return db.Save(w).Error
 }
 
-func (w *Workout) ReparseFile() (*converters.Workout, error) {
+func (w *Workout) ReparseFile() (*Workout, error) {
 	if !w.HasFile() {
 		return nil, errors.New("workout has no GPX")
 	}
 
-	wo, err := converters.Parse(w.GPX.Filename, w.GPX.Content)
+	if WorkoutParser == nil {
+		return nil, ErrWorkoutParserMissing
+	}
+
+	workouts, err := WorkoutParser(w.GPX.Filename, w.GPX.Content)
 	if err != nil {
 		return nil, err
 	}
 
-	return wo, nil
+	if len(workouts) == 0 {
+		return nil, nil
+	}
+
+	return workouts[0], nil
 }
 
 func (w *Workout) setData(data *MapData) {
@@ -744,11 +775,11 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 		return err
 	}
 
-	w.setData(gpxAsMapData(updatedWorkout.GPX))
-	if updatedWorkout.NativeParsed {
-		w.Data.WorkoutData.MergeNonZero(updatedWorkout.Data)
-		w.setData(w.Data)
+	if updatedWorkout == nil || updatedWorkout.Data == nil {
+		return errors.New("parsed workout has no map data")
 	}
+
+	w.setData(updatedWorkout.Data)
 
 	if err := w.Data.Save(db); err != nil {
 		return err

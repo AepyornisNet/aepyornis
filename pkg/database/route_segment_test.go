@@ -29,6 +29,15 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	w1, err := NewWorkout(AnonymousUser(), WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
 	assert.NoError(t, err)
 	assert.Len(t, w1, 1)
+	rp, wp := rs.Points[0], w1[0].Data.Details.Points[0]
+	minStart := rp.DistanceTo(&wp)
+	for i := range w1[0].Data.Details.Points {
+		d := rp.DistanceTo(&w1[0].Data.Details.Points[i])
+		if d < minStart {
+			minStart = d
+		}
+	}
+	t.Logf("route points=%d workout points=%d type=%s hasTracks=%v first_route=(%.5f,%.5f) first_workout=(%.5f,%.5f) min_start_distance=%.2fm", len(rs.Points), len(w1[0].Data.Details.Points), w1[0].Type, w1[0].HasTracks(), rp.Lat, rp.Lng, wp.Lat, wp.Lng, minStart)
 
 	w1_1 := w1[0]
 	assert.True(t, w1_1.Type.IsLocation())

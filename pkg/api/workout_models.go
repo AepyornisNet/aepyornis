@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 )
@@ -454,7 +453,7 @@ func NewWorkoutDetailResponse(w *database.Workout, records []database.WorkoutInt
 	return wr
 }
 
-func NewWorkoutLapResponses(laps []converters.WorkoutLap) []WorkoutLapResponse {
+func NewWorkoutLapResponses(laps []database.WorkoutLap) []WorkoutLapResponse {
 	if len(laps) == 0 {
 		return nil
 	}
@@ -486,7 +485,7 @@ func NewWorkoutLapResponses(laps []converters.WorkoutLap) []WorkoutLapResponse {
 	return resp
 }
 
-func NewWorkoutBreakdownItemsFromLaps(laps []converters.WorkoutLap, points []database.MapPoint, units *database.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+func NewWorkoutBreakdownItemsFromLaps(laps []database.WorkoutLap, points []database.MapPoint, units *database.UserPreferredUnits) []WorkoutBreakdownItemResponse {
 	if len(laps) == 0 {
 		return nil
 	}
