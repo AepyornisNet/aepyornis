@@ -84,7 +84,13 @@ export class PublicWorkout implements OnInit {
       return false;
     }
 
-    const baseLengths = [details.time?.length || 0, details.distance?.length || 0, details.duration?.length || 0, details.speed?.length || 0, details.elevation?.length || 0];
+    const baseLengths = [
+      details.time?.length || 0,
+      details.distance?.length || 0,
+      details.duration?.length || 0,
+      details.speed?.length || 0,
+      details.elevation?.length || 0,
+    ];
     const extra = details.extra_metrics && Object.values(details.extra_metrics).some((arr) => Array.isArray(arr) && arr.length > 0);
     return baseLengths.some((len) => len > 0) || !!extra;
   });

@@ -56,6 +56,8 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
   public constructor() {
     effect(() => {
       const statsData = this.stats();
+      this.preferredUnits();
+
       if (statsData && this.chart) {
         this.updateChart();
       }
@@ -109,7 +111,7 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
           x: {
             type: 'time',
             time: {
-              unit: 'month',
+              unit: this.resolveTimeUnit(this.stats()?.bucket_format),
             },
           },
           y: {
@@ -138,12 +140,18 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    const timeUnit = this.resolveTimeUnit(statsData.bucket_format);
+    const xScale = this.chart.options.scales?.['x'];
+    if (xScale && 'time' in xScale && xScale.time) {
+      xScale.time.unit = timeUnit;
+    }
+
     const datasets = Object.entries(statsData.buckets)
       .map(([, value]) => {
         const data = Object.values(value.buckets)
           .filter((e) => !this.filterNoDuration() || e.duration > 0)
           .map((e) => ({
-            x: e.bucket,
+            x: this.normalizeBucketValue(e.bucket, timeUnit),
             y: this.getValueForType(e),
           }));
 
@@ -166,7 +174,19 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
   private getValueForType(bucket: Record<string, unknown>): number {
     const typeStr = this.type();
     const value = bucket[typeStr] as unknown;
-    return typeof value === 'number' ? (value as number) : 0;
+    const numericValue = typeof value === 'number' ? (value as number) : 0;
+
+    const unitType = this.unit();
+
+    if (unitType === 'distance') {
+      return this.convertDistance(numericValue);
+    }
+
+    if (unitType === 'speed') {
+      return this.convertSpeed(numericValue);
+    }
+
+    return numericValue;
   }
 
   private formatTooltipValue(label: string, value: number): string {
@@ -193,6 +213,78 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
       return `${value} ${unitValue || ''}`;
     }
     return value.toString();
+  }
+
+  private resolveTimeUnit(bucketFormat?: string): 'day' | 'week' | 'month' | 'year' {
+    if (!bucketFormat) {
+      return 'month';
+    }
+
+    const format = bucketFormat.toLowerCase();
+
+    if (format.includes('w')) {
+      return 'week';
+    }
+
+    if (format.includes('d')) {
+      return 'day';
+    }
+
+    if (format.includes('m')) {
+      return 'month';
+    }
+
+    return 'year';
+  }
+
+  private normalizeBucketValue(bucket: string, timeUnit: 'day' | 'week' | 'month' | 'year'): Date | string {
+    const date = new Date(bucket);
+
+    if (Number.isNaN(date.getTime())) {
+      return bucket;
+    }
+
+    const normalized = new Date(date);
+
+    if (timeUnit === 'week') {
+      const day = normalized.getDay();
+      const diffToMonday = (day + 6) % 7;
+      normalized.setDate(normalized.getDate() - diffToMonday);
+    } else if (timeUnit === 'month') {
+      normalized.setDate(1);
+    } else if (timeUnit === 'year') {
+      normalized.setMonth(0, 1);
+    }
+
+    return normalized;
+  }
+
+  private convertDistance(value: number): number {
+    const preferredUnits = this.preferredUnits();
+    const distanceUnit = preferredUnits?.distance;
+
+    if (distanceUnit === 'mi') {
+      return value / 1609.344;
+    }
+
+    if (distanceUnit === 'm') {
+      return value;
+    }
+
+    // Default to kilometers
+    return value / 1000;
+  }
+
+  private convertSpeed(value: number): number {
+    const preferredUnits = this.preferredUnits();
+    const speedUnit = preferredUnits?.speed;
+
+    if (speedUnit === 'mph') {
+      return value * 2.23694;
+    }
+
+    // Default to km/h
+    return value * 3.6;
   }
 
   private formatDuration(seconds: number): string {
