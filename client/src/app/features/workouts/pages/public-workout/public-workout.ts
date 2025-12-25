@@ -73,9 +73,20 @@ export class PublicWorkout implements OnInit {
     });
   }
 
-  public readonly hasMapData = computed<boolean>(() => {
+  public readonly hasTrack = computed<boolean>(() => {
     const workout = this.workout();
-    return !!(workout?.map_data?.details?.position && workout.map_data.details.position.length > 0);
+    return !!(workout?.has_tracks && workout.map_data?.details?.position && workout.map_data.details.position.length > 0);
+  });
+
+  public readonly hasChartData = computed<boolean>(() => {
+    const details = this.workout()?.map_data?.details;
+    if (!details) {
+      return false;
+    }
+
+    const baseLengths = [details.time?.length || 0, details.distance?.length || 0, details.duration?.length || 0, details.speed?.length || 0, details.elevation?.length || 0];
+    const extra = details.extra_metrics && Object.values(details.extra_metrics).some((arr) => Array.isArray(arr) && arr.length > 0);
+    return baseLengths.some((len) => len > 0) || !!extra;
   });
 
   public readonly selectedPosition = computed<number>(() => 0);

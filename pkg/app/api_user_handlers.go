@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"time"
 
@@ -127,7 +127,7 @@ func (a *App) apiV2RecordsRankingHandler(c echo.Context) error {
 	label := c.QueryParam("label")
 
 	if workoutType == "" || label == "" {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, fmt.Errorf("workout_type and label are required"))
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout_type and label are required"))
 	}
 
 	wt := database.AsWorkoutType(workoutType)

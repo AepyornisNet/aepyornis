@@ -50,34 +50,6 @@ func GetWorkoutIntervalRecordsWithRank(db *gorm.DB, userID uint64, workoutType W
 	return rows, nil
 }
 
-// bestDistanceRecords finds the fastest efforts for the provided targets across the given workouts.
-func bestDistanceRecords(workouts []*Workout, targets []DistanceRecordTarget) []DistanceRecord {
-	if len(workouts) == 0 || len(targets) == 0 {
-		return nil
-	}
-
-	best := make(map[string]DistanceRecord, len(targets))
-
-	for _, w := range workouts {
-		records := fastestDistancesForWorkout(w, targets)
-		for _, rec := range records {
-			current, ok := best[rec.Label]
-			if !ok || betterDistanceRecord(rec, current) {
-				best[rec.Label] = rec
-			}
-		}
-	}
-
-	ordered := make([]DistanceRecord, 0, len(targets))
-	for _, target := range targets {
-		if rec, ok := best[target.Label]; ok && rec.Active {
-			ordered = append(ordered, rec)
-		}
-	}
-
-	return ordered
-}
-
 func betterDistanceRecord(a, b DistanceRecord) bool {
 	if !b.Active {
 		return true
@@ -90,6 +62,7 @@ func betterDistanceRecord(a, b DistanceRecord) bool {
 	return a.Duration < b.Duration
 }
 
+//nolint:gocyclo // sliding window search evaluates all targets in one pass
 func fastestDistancesForWorkout(w *Workout, targets []DistanceRecordTarget) []DistanceRecord {
 	if w == nil || w.Data == nil || w.Data.Details == nil || len(w.Data.Details.Points) < 2 {
 		return nil
@@ -189,28 +162,4 @@ func biggestClimbRecord(workouts []*Workout) *ClimbRecord {
 	}
 
 	return best
-}
-
-func loadWorkoutsWithDetails(db *gorm.DB, userID uint64, t WorkoutType, startDate, endDate *time.Time) ([]*Workout, error) {
-	var workouts []*Workout
-
-	query := db.
-		Preload("Data").
-		Preload("Data.Details").
-		Where("user_id = ?", userID).
-		Where("workouts.type = ?", t)
-
-	if startDate != nil {
-		query = query.Where("workouts.date >= ?", *startDate)
-	}
-
-	if endDate != nil {
-		query = query.Where("workouts.date <= ?", *endDate)
-	}
-
-	if err := query.Find(&workouts).Error; err != nil {
-		return nil, err
-	}
-
-	return workouts, nil
 }

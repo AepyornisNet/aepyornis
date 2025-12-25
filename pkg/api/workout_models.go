@@ -369,6 +369,8 @@ func NewWorkoutPopupData(w *database.Workout) WorkoutPopupData {
 }
 
 // NewWorkoutDetailResponse converts a database workout to a detailed API response
+//
+//nolint:gocyclo // assembling full workout view touches many optional fields
 func NewWorkoutDetailResponse(w *database.Workout, records []database.WorkoutIntervalRecordWithRank) WorkoutDetailResponse {
 	wr := WorkoutDetailResponse{
 		WorkoutResponse: NewWorkoutResponse(w),

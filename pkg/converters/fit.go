@@ -39,7 +39,7 @@ func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 	}
 
 	gpxFile := buildGPXFromActivity(act)
-	data := database.MapDataFromGPX(gpxFile)
+	data := mapDataFromActivity(act, gpxFile)
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
 
@@ -53,7 +53,7 @@ func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 
 		moveDuration := durationFromSeconds(session.TotalTimerTimeScaled())
 		elapsedDuration := durationFromSeconds(session.TotalElapsedTimeScaled())
-		pauseDuration := max(elapsedDuration-moveDuration, 0)
+		pauseDuration := maxDuration(elapsedDuration-moveDuration, 0)
 
 		w := &database.Workout{
 			Data: cloneMapData(data),
@@ -111,7 +111,7 @@ func parseLaps(act *filedef.Activity) []database.WorkoutLap {
 			lapStop = lapStart.Add(elapsed)
 		}
 
-		pause := max(elapsed-timer, 0)
+		pause := maxDuration(elapsed-timer, 0)
 
 		minElevation := 0.0
 		if lap.EnhancedMinAltitude != math.MaxUint32 {
@@ -351,6 +351,224 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 	return gpxFile
 }
 
+// mapDataFromActivity converts a FIT activity into MapData, falling back to
+// non-positional record data when coordinates are missing so charts and
+// breakdowns remain available even without a map.
+func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *database.MapData {
+	data := database.MapDataFromGPX(gpxFile)
+
+	if data != nil && data.Details != nil && len(data.Details.Points) > 0 {
+		return data
+	}
+
+	return buildMapDataWithoutPositions(act)
+}
+
+// buildMapDataWithoutPositions constructs minimal map data using FIT records
+// that may lack latitude/longitude. Coordinates are left at zero to avoid
+// rendering a map, while time/distance/metrics remain available for charts
+// and breakdowns.
+//
+//nolint:gocyclo // branching covers optional FIT metrics without positions
+func buildMapDataWithoutPositions(act *filedef.Activity) *database.MapData {
+	if act == nil || len(act.Records) == 0 {
+		return nil
+	}
+
+	points := make([]database.MapPoint, 0, len(act.Records))
+
+	var (
+		totalDistance float64
+		totalDuration time.Duration
+		pauseDuration time.Duration
+		maxSpeed      float64
+		minElevation  = math.MaxFloat64
+		maxElevation  = -math.MaxFloat64
+		prevTime      time.Time
+		prevDistance  float64
+	)
+
+	startTime := act.Records[0].Timestamp.Local()
+
+	for i, r := range act.Records {
+		ts := r.Timestamp.Local()
+		if ts.IsZero() {
+			continue
+		}
+
+		// Distances are scaled by 100 (meters)
+		dist := 0.0
+		if r.Distance != math.MaxUint32 {
+			dist = float64(r.Distance) / 100
+		}
+
+		deltaDist := 0.0
+		if i == 0 {
+			prevDistance = dist
+		} else if dist >= prevDistance {
+			deltaDist = dist - prevDistance
+			prevDistance = dist
+		}
+
+		dt := time.Duration(0)
+		if !prevTime.IsZero() {
+			dt = ts.Sub(prevTime)
+			if dt < 0 {
+				dt = 0
+			}
+		}
+		prevTime = ts
+
+		totalDistance = dist
+		totalDuration += dt
+
+		speed := 0.0
+		if r.EnhancedSpeed != math.MaxUint32 {
+			speed = r.EnhancedSpeedScaled()
+		} else if r.Speed != math.MaxUint16 {
+			speed = r.SpeedScaled()
+		}
+		maxSpeed = math.Max(maxSpeed, speed)
+
+		if speed*3.6 < 1.0 {
+			pauseDuration += dt
+		}
+
+		elevation := math.NaN()
+		if r.EnhancedAltitude != math.MaxUint32 {
+			elevation = r.EnhancedAltitudeScaled()
+		} else if r.Altitude != math.MaxUint16 {
+			elevation = r.AltitudeScaled()
+		}
+		if !math.IsNaN(elevation) {
+			if elevation < minElevation {
+				minElevation = elevation
+			}
+			if elevation > maxElevation {
+				maxElevation = elevation
+			}
+		}
+
+		extra := database.ExtraMetrics{}
+		if !math.IsNaN(elevation) {
+			extra.Set("elevation", elevation)
+		}
+		if r.Cadence != math.MaxUint8 {
+			extra.Set("cadence", float64(r.Cadence))
+		}
+		if r.HeartRate != math.MaxUint8 {
+			extra.Set("heart-rate", float64(r.HeartRate))
+		}
+		if r.Power != math.MaxUint16 {
+			extra.Set("power", float64(r.Power))
+		}
+		if r.Temperature != math.MaxInt8 {
+			extra.Set("temperature", float64(r.Temperature))
+		}
+		if speed > 0 {
+			extra.Set("speed", speed)
+		}
+
+		elevationValue := elevation
+		if math.IsNaN(elevationValue) {
+			elevationValue = 0
+		}
+
+		points = append(points, database.MapPoint{
+			Time:          ts,
+			Lat:           0,
+			Lng:           0,
+			Elevation:     elevationValue,
+			Distance:      deltaDist,
+			TotalDistance: dist,
+			Duration:      dt,
+			TotalDuration: totalDuration,
+			ExtraMetrics:  extra,
+		})
+	}
+
+	// If no points survived, bail out to avoid empty details
+	if len(points) == 0 {
+		return nil
+	}
+
+	// Normalize elevation bounds when none are present
+	if minElevation == math.MaxFloat64 {
+		minElevation = 0
+	}
+	if maxElevation == -math.MaxFloat64 {
+		maxElevation = 0
+	}
+
+	data := &database.MapData{
+		Creator: act.FileId.Manufacturer.String(),
+		Center:  database.MapCenter{},
+		Details: &database.MapDataDetails{Points: points},
+		WorkoutData: database.WorkoutData{
+			Start:         startTime,
+			Stop:          points[len(points)-1].Time,
+			TotalDistance: totalDistance,
+			TotalDuration: totalDuration,
+			PauseDuration: pauseDuration,
+			WorkoutStats: database.WorkoutStats{
+				MinElevation:        minElevation,
+				MaxElevation:        maxElevation,
+				AverageSpeed:        safeDivide(totalDistance, totalDuration),
+				AverageSpeedNoPause: safeDivide(totalDistance, totalDuration-pauseDuration),
+				MaxSpeed:            maxSpeed,
+			},
+		},
+	}
+
+	// Populate workout type/name from the first session when available
+	if len(act.Sessions) > 0 {
+		s := act.Sessions[0]
+		data.WorkoutData.Type = s.Sport.String()
+		data.WorkoutData.SubType = s.SubSport.String()
+		if data.WorkoutData.Name == "" {
+			data.WorkoutData.Name = s.Sport.String() + " - " + startTime.Format(time.DateTime)
+		}
+	}
+
+	data.UpdateExtraMetrics()
+	sanitizeMapData(data)
+
+	return data
+}
+
+func safeDivide(distance float64, d time.Duration) float64 {
+	if d <= 0 {
+		return 0
+	}
+	return distance / d.Seconds()
+}
+
+func sanitizeMapData(data *database.MapData) {
+	if data == nil {
+		return
+	}
+
+	if math.IsNaN(data.MinElevation) {
+		data.MinElevation = 0
+	}
+
+	if math.IsNaN(data.MaxElevation) {
+		data.MaxElevation = 0
+	}
+
+	if math.IsNaN(data.TotalDistance) {
+		data.TotalDistance = 0
+	}
+
+	if math.IsNaN(data.TotalDown) {
+		data.TotalDown = 0
+	}
+
+	if math.IsNaN(data.TotalUp) {
+		data.TotalUp = 0
+	}
+}
+
 func cloneMapData(src *database.MapData) *database.MapData {
 	if src == nil {
 		return &database.MapData{}
@@ -364,7 +582,7 @@ func cloneMapData(src *database.MapData) *database.MapData {
 	return &clone
 }
 
-func max(a, b time.Duration) time.Duration {
+func maxDuration(a, b time.Duration) time.Duration {
 	if a > b {
 		return a
 	}

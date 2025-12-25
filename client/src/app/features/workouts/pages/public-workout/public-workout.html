@@ -54,14 +54,16 @@
       </div>
     </div>
 
-    @if (hasMapData()) {
+    @if (hasTrack()) {
       <div class="mb-4">
         <app-workout-map
           [center]="workout()!.map_data!.center"
           [mapData]="workout()!.map_data!.details"
         />
       </div>
+    }
 
+    @if (hasChartData()) {
       <div class="mb-4">
         <app-workout-chart
           [extraMetrics]="workout()!.map_data!.extra_metrics || []"

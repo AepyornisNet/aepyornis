@@ -17,9 +17,21 @@ export class WorkoutDetailDataService {
   public readonly error = signal<string | null>(null);
 
   // Computed values
-  public readonly hasMapData = computed(() => {
+  public readonly hasTrack = computed(() => {
     const w = this.workout();
-    return w?.map_data?.details?.position && w.map_data.details.position.length > 0;
+    return !!(w?.has_tracks && w.map_data?.details?.position && w.map_data.details.position.length > 0);
+  });
+
+  public readonly hasChartData = computed(() => {
+    const d = this.workout()?.map_data?.details;
+    if (!d) {
+      return false;
+    }
+
+    const lengths = [d.time?.length || 0, d.distance?.length || 0, d.duration?.length || 0, d.speed?.length || 0, d.elevation?.length || 0];
+    const extraHasValues = d.extra_metrics && Object.values(d.extra_metrics).some((arr) => Array.isArray(arr) && arr.length > 0);
+
+    return lengths.some((len) => len > 0) || !!extraHasValues;
   });
 
   public readonly hasClimbs = computed(() => {

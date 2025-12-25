@@ -426,6 +426,7 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 	return result, totalCount, nil
 }
 
+//nolint:gocyclo // queries gather several aggregates in one pass
 func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*WorkoutRecord, error) {
 	if t == "" {
 		t = u.Profile.TotalsShow

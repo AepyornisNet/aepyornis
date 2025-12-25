@@ -88,7 +88,7 @@
         </div>
 
         <!-- Map -->
-        @if (dataService.hasMapData()) {
+        @if (dataService.hasTrack()) {
           <div class="card shadow-sm mb-4">
             <div class="card-body p-0">
               <div class="map-container">
@@ -102,7 +102,7 @@
         }
 
         <!-- Chart -->
-        @if (dataService.hasMapData()) {
+        @if (dataService.hasChartData()) {
           <div class="card shadow-sm mb-4">
             <div class="card-header">
               <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
@@ -166,7 +166,7 @@
         }
 
         @if (
-          dataService.hasMapData() &&
+          dataService.hasChartData() &&
           dataService.workout()!.total_distance &&
           dataService.workout()!.total_distance! > 1000
         ) {
@@ -301,7 +301,7 @@
         }
 
         <app-workout-actions
-          [hasMapData]="dataService.hasMapData()!"
+          [hasMapData]="dataService.hasTrack()!"
           [workout]="dataService.workout()!"
           (workoutDeleted)="onWorkoutDeleted()"
           (workoutUpdated)="onWorkoutUpdated($event)"

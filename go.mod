@@ -16,7 +16,6 @@ require (
 	github.com/fsouza/slognil v0.4.3
 	github.com/galeone/tcx v1.0.1-0.20230114151622-8168e1e47884
 	github.com/glebarez/sqlite v1.11.0
-	github.com/go-gorm/caches/v4 v4.0.5
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-querystring v1.1.0
 	github.com/google/uuid v1.6.0
