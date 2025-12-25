@@ -200,13 +200,21 @@ func shouldAddState(address *geo.Address) bool {
 }
 
 func (m *MapData) Save(db *gorm.DB) error {
+	if err := db.Save(m).Error; err != nil {
+		return err
+	}
+
 	if m.Details != nil {
+		if m.Details.MapDataID == 0 {
+			m.Details.MapDataID = m.ID
+		}
+
 		if err := db.Save(m.Details).Error; err != nil {
 			return err
 		}
 	}
 
-	return db.Save(m).Error
+	return nil
 }
 
 func (m *MapPoint) AverageSpeed() float64 {
