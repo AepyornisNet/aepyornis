@@ -11,6 +11,7 @@ type (
 		Start            time.Time     `json:"start"`                               // The start time of the workout
 		Stop             time.Time     `json:"stop"`                                // The stop time of the workout
 		TotalDistance    float64       `json:"totalDistance"`                       // The total distance of the workout
+		TotalDistance2D  float64       `json:"totalDistance2D"`                     // The total 2D distance of the workout
 		TotalDuration    time.Duration `json:"totalDuration"`                       // The total duration of the workout
 		PauseDuration    time.Duration `json:"pauseDuration"`                       // The total pause duration of the workout
 		TotalRepetitions int           `json:"totalRepetitions"`                    // The number of repetitions of the workout

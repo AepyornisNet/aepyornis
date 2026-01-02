@@ -21,7 +21,7 @@ jobs:
       labels: ${{ steps.meta.outputs.labels }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5

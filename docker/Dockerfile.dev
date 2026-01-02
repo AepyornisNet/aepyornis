@@ -3,8 +3,8 @@ FROM node:24-alpine AS builder-frontend
 WORKDIR /app
 
 COPY client ./client
-RUN cd client && \
-  npm ci
+RUN cd client \
+  && npm ci
 
 WORKDIR /app/client
 EXPOSE 4200
@@ -17,7 +17,7 @@ ARG GIT_REF
 ARG GIT_REF_NAME
 ARG GIT_REF_TYPE
 
-RUN apk --no-cache add make
+RUN apk --no-cache add make git
 
 WORKDIR /app
 

@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"math"
 	"slices"
+	"time"
 )
 
 // SlopeState represents the type of slope detected.
@@ -20,8 +21,8 @@ const (
 	StateEndDescent      = "END_DESCENT"
 
 	// Thresholds from Python code
-	StartClimbThreshold   float64 = 2.0
-	EndClimbThreshold     float64 = 1.0
+	StartClimbThreshold   float64 = 0.02
+	EndClimbThreshold     float64 = 0.01
 	MaxPauseLengthMeters  float64 = 200.0
 	MaxPauseDescentMeters float64 = 10.0
 	MinGain               float64 = 20.0
@@ -30,17 +31,18 @@ const (
 
 // Segment represents a detected climb or descent.
 type Segment struct {
-	Index         int     `json:"index"`
-	Type          string  `json:"type"`
-	StartDistance float64 `json:"start_km"`
-	EndDistance   float64 `json:"end_km"`
-	Elevation     float64 `json:"elev_gain,omitempty"`
-	ElevLoss      float64 `json:"elev_loss,omitempty"`
-	Length        float64 `json:"length_m"`
-	AvgSlope      float64 `json:"avg_slope"`
-	StartIdx      int     `json:"start_idx"`
-	EndIdx        int     `json:"end_idx"`
-	Category      string  `json:"category"`
+	Index         int           `json:"index"`
+	Type          string        `json:"type"`
+	StartDistance float64       `json:"start_km"`
+	EndDistance   float64       `json:"end_km"`
+	Elevation     float64       `json:"elev_gain,omitempty"`
+	ElevLoss      float64       `json:"elev_loss,omitempty"`
+	Length        float64       `json:"length_m"`
+	AvgSlope      float64       `json:"avg_slope"`
+	Duration      time.Duration `json:"duration"`
+	StartIdx      int           `json:"start_idx"`
+	EndIdx        int           `json:"end_idx"`
+	Category      string        `json:"category"`
 }
 
 // Detector holds the state for the segment detection process.
@@ -86,21 +88,20 @@ func NewDetector(kind string) *Detector {
 }
 
 // SmoothSlopeGrades computes a weighted average slope at each point.
-func SmoothSlopeGrades(points []MapPoint, windowMeters, minDist float64) {
-	n := len(points)
-
-	for i := range n {
-		centerDist := points[i].TotalDistance
+func SmoothSlopeGrades(points []MapPoint, windowMeters float64) {
+	for i := range points {
+		centerDist := points[i].TotalDistance2D
 		var weightedSlopeSum, totalWeight float64
 
-		for j := range n {
-			distFromCenter := math.Abs(points[j].TotalDistance - centerDist)
-			if distFromCenter > windowMeters/2 || distFromCenter == 0 || distFromCenter < minDist {
+		for j := range points {
+			distDiff := points[j].TotalDistance2D - centerDist
+			distFromCenter := math.Abs(distDiff)
+			if distFromCenter > windowMeters/2 || distFromCenter < MaxDeltaMeter/2 {
 				continue
 			}
 
 			elevDiff := points[j].Elevation - points[i].Elevation
-			slope := (elevDiff / distFromCenter) * 100.0
+			slope := elevDiff / distDiff
 
 			weight := 1.0 / distFromCenter
 			weightedSlopeSum += slope * weight
@@ -123,7 +124,7 @@ func DetectSignificantSegments(points []MapPoint, kind string) []Segment {
 		return nil
 	}
 
-	SmoothSlopeGrades(points, 300.0, 20.0)
+	SmoothSlopeGrades(points, 300.0)
 
 	// Start with the first point.
 	detector.currentSegmentPoints = append(detector.currentSegmentPoints, &points[0])
@@ -132,7 +133,7 @@ func DetectSignificantSegments(points []MapPoint, kind string) []Segment {
 		prevPoint := &points[i-1]
 		currentPoint := &points[i]
 
-		distDiff := currentPoint.TotalDistance - prevPoint.TotalDistance
+		distDiff := currentPoint.TotalDistance2D - prevPoint.TotalDistance2D
 		elevDiff := (currentPoint.Elevation - prevPoint.Elevation)
 
 		slope := currentPoint.SlopeGrade
@@ -199,7 +200,7 @@ func (d *Detector) validateAndAppendSegment(segmentPoints []*MapPoint) {
 		return
 	}
 
-	length := segmentPoints[len(segmentPoints)-1].TotalDistance - segmentPoints[0].TotalDistance
+	length := segmentPoints[len(segmentPoints)-1].TotalDistance2D - segmentPoints[0].TotalDistance2D
 
 	var gain float64
 	for i := 1; i < len(segmentPoints); i++ {
@@ -212,7 +213,7 @@ func (d *Detector) validateAndAppendSegment(segmentPoints []*MapPoint) {
 	if length > MinLength && gain > MinGain {
 		avgSlope := 0.0
 		if length > 0 {
-			avgSlope = (gain / length) * 100
+			avgSlope = gain / length
 		}
 
 		endIdx := d.startIdx + len(segmentPoints) - 1
@@ -220,9 +221,10 @@ func (d *Detector) validateAndAppendSegment(segmentPoints []*MapPoint) {
 
 		segment := Segment{
 			Type:          d.kind,
-			StartDistance: segmentPoints[0].TotalDistance,
-			EndDistance:   segmentPoints[len(segmentPoints)-1].TotalDistance,
+			StartDistance: segmentPoints[0].TotalDistance2D,
+			EndDistance:   segmentPoints[len(segmentPoints)-1].TotalDistance2D,
 			Length:        length,
+			Duration:      segmentPoints[len(segmentPoints)-1].TotalDuration - segmentPoints[0].TotalDuration,
 			StartIdx:      d.startIdx,
 			EndIdx:        endIdx,
 			Category:      category,
@@ -243,19 +245,19 @@ func (d *Detector) validateAndAppendSegment(segmentPoints []*MapPoint) {
 
 func ClassifyClimbCategory(length, slope float64) string {
 	switch {
-	case length >= 10000 && slope >= 6:
+	case length >= 10000 && slope >= 0.06:
 		return "Hors Catégorie"
-	case length >= 8000 && slope >= 5:
+	case length >= 8000 && slope >= 0.05:
 		return "Category 1"
-	case length >= 5000 && slope >= 4:
+	case length >= 5000 && slope >= 0.04:
 		return "Category 2"
-	case length >= 3000 && slope >= 3:
+	case length >= 3000 && slope >= 0.03:
 		return "Category 3"
-	case length >= 2000 && slope >= 3:
+	case length >= 2000 && slope >= 0.03:
 		return "Category 4"
-	case length >= 1000 && slope >= 2:
+	case length >= 1000 && slope >= 0.02:
 		return "Category 5"
-	case length >= 5000 && slope >= 1:
+	case length >= 500 && slope >= 0.01:
 		return "Category 6"
 	default:
 		return "Uncategorized"

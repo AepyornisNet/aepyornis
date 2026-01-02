@@ -1,6 +1,3 @@
-export GOBIN := $(shell pwd)/tmp/bin
-export PATH := $(GOBIN):$(PATH)
-
 GIT_REF ?= $(shell git symbolic-ref HEAD)
 GIT_REF_NAME ?= $(shell git branch --show-current)
 GIT_REF_TYPE ?= branch
@@ -12,7 +9,7 @@ WT_DEBUG_OUTPUT_FILE ?= tmp/wt-debug
 THEME_SCREENSHOT_WIDTH ?= 1200
 THEME_SCREENSHOT_HEIGHT ?= 900
 
-GO_TEST=go test -short -count 1 -mod vendor -covermode=atomic
+GO_TEST = go test -short -count 1 -mod vendor -covermode=atomic
 
 BRANCH_NAME_DEPS ?= update-deps
 
@@ -36,7 +33,6 @@ clean:
 	rm -fv ./assets/output.css ./workout-tracker
 	rm -rf ./tmp/ ./node_modules/ ./assets/dist/
 
-
 watch/server:
 	go run github.com/air-verse/air@latest \
 			--build.full_bin           "APP_ENV=development $(WT_OUTPUT_FILE)" \
@@ -47,7 +43,7 @@ watch/server:
 			--build.exclude_unchanged  false \
 			--build.include_ext        "go,html,json,yaml" \
 			--build.stop_on_error      true \
-			--screen.clear_on_rebuild  false 
+			--screen.clear_on_rebuild  false
 
 watch/client: install-deps
 	cd client && npm run start
@@ -55,7 +51,7 @@ watch/client: install-deps
 dev-backend:
 	$(MAKE) watch/server
 
-dev: 
+dev:
 	echo "DEPRECATED: Use 'make dev-docker' instead"
 	$(MAKE) watch/server &
 	$(MAKE) watch/client &
@@ -99,13 +95,13 @@ build-client: install-deps
 
 build-docker:
 	docker build \
-			-f ./docker/Dockerfile \
-			-t workout-tracker --pull \
+			--tag workout-tracker --pull \
 			--build-arg BUILD_TIME="$(BUILD_TIME)" \
 			--build-arg GIT_COMMIT="$(GIT_COMMIT)" \
 			--build-arg GIT_REF="$(GIT_REF)" \
 			--build-arg GIT_REF_NAME="$(GIT_REF_NAME)" \
 			--build-arg GIT_REF_TYPE="$(GIT_REF_TYPE)" \
+			--file ./docker/Dockerfile \
 			.
 
 swagger:

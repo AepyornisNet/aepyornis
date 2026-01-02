@@ -157,7 +157,6 @@ func (m *ManualWorkout) Update(w *database.Workout) {
 		}
 
 		w.Data.Address = a
-		w.Data.UpdateAddress()
 	}
 
 	w.Data.UpdateExtraMetrics()

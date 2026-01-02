@@ -196,6 +196,14 @@ func (w *Workout) TotalDistance() float64 {
 	return w.Data.TotalDistance
 }
 
+func (w *Workout) TotalDistance2D() float64 {
+	if w.Data == nil {
+		return 0
+	}
+
+	return w.Data.TotalDistance2D
+}
+
 func (w *Workout) Repetitions() int {
 	if w.Data == nil {
 		return 0
@@ -334,7 +342,7 @@ func (w *Workout) Timezone() string {
 
 func (w *Workout) Address() string {
 	if w.Data == nil {
-		return ""
+		return UnknownLocation
 	}
 
 	if w.Data.AddressString != "" {
@@ -407,9 +415,6 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 		if w.GPX != nil && w.GPX.Filename == "" {
 			w.GPX.Filename = filename
 		}
-
-		w.UpdateAverages()
-		w.UpdateExtraMetrics()
 
 		workouts = append(workouts, w)
 	}
@@ -609,10 +614,6 @@ func (w *Workout) save(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
-	if w.HasFile() {
-		w.UpdateAverages()
-	}
-
 	if w.ID == 0 {
 		if err := db.Save(w).Error; err != nil {
 			return err
@@ -677,14 +678,10 @@ func (w *Workout) setData(data *MapData) {
 
 	if w.Locked {
 		data.TotalDistance = w.Data.TotalDistance
+		data.TotalDistance2D = w.Data.TotalDistance2D
 		data.TotalDuration = w.Data.TotalDuration
 		data.Address = w.Data.Address
 	}
-
-	data.UpdateAddress()
-	data.UpdateExtraMetrics()
-	data.CalculateSlopes()
-	data.correctNaN()
 
 	w.Data = data
 }
@@ -794,6 +791,9 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 	if err := w.UpdateRecords(db); err != nil {
 		return err
 	}
+	w.Data.UpdateAddress()
+	w.Data.CalculateSlopes()
+
 	w.Dirty = false
 
 	return w.Save(db)

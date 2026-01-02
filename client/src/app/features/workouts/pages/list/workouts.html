@@ -115,15 +115,18 @@
           }
           <div class="cell-content">
             <strong>{{ workout.name }}</strong>
-            <br />
-            <small class="text-muted">{{ 'sports.' + workout.type | translate }}</small>
             @if (workout.locked) {
-              <br />
               <span class="badge bg-warning text-dark">
                 <app-icon name="locked" size="12" />
-                {{ 'shared.locked' | translate }}
               </span>
             }
+            @if (workout.dirty) {
+              <span class="badge bg-info text-dark">
+                <app-icon name="refresh" size="12" />
+              </span>
+            }
+            <br />
+            <small class="text-muted">{{ 'sports.' + workout.type | translate }}</small>
           </div>
         </td>
         <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">

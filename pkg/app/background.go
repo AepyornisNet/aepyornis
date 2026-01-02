@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alitto/pond/v2"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"gorm.io/gorm"
@@ -22,12 +23,14 @@ var (
 )
 
 const (
-	FileAddDelay                 = -1 * time.Minute
-	workerRouteSegmentsBatchSize = 10
-	workerWorkoutsBatchSize      = 10
+	FileAddDelay            = -1 * time.Minute
+	workerWorkoutsBatchSize = 10
 )
 
 func (a *App) BackgroundWorker() {
+	a.workerPool = pond.NewPool(10)
+	a.workerPoolGeo = pond.NewPool(1)
+
 	a.Logger().Info("Background worker loop initialized", "delay_seconds", a.Config.WorkerDelaySeconds)
 	for {
 		a.bgLoop()
@@ -47,9 +50,19 @@ func (a *App) bgLoop() {
 
 	l.Info("Worker started...")
 
-	a.updateWorkout(l)
-	a.updateRouteSegments(l)
-	a.autoImports(l)
+	if a.workerPool.WaitingTasks() > 0 {
+		l.With("size", a.workerPool.WaitingTasks()).Warn("Waiting for current updater to finish")
+	} else {
+		a.updateWorkouts(l.With("update", "workouts"))
+		a.updateRouteSegments(l.With("update", "route_segments"))
+		a.autoImports(l.With("update", "imports"))
+	}
+
+	if a.workerPoolGeo.WaitingTasks() > 0 {
+		l.With("size", a.workerPoolGeo.WaitingTasks()).Warn("Waiting for current updater to finish")
+	} else {
+		a.updateAddresses(l.With("update", "addresses"))
+	}
 
 	l.Info("Worker finished...")
 }
@@ -62,10 +75,12 @@ func (a *App) autoImports(l *slog.Logger) {
 		l.Error(ErrWorker.Error() + ": " + err.Error())
 	}
 
-	for _, i := range uID {
-		if err := a.autoImportForUser(l, i); err != nil {
-			l.Error(ErrWorker.Error() + ": " + err.Error())
-		}
+	for i := range uID {
+		a.workerPool.Go(func() {
+			if err := a.autoImportForUser(l, uID[i]); err != nil {
+				l.Error(ErrWorker.Error() + ": " + err.Error())
+			}
+		})
 	}
 }
 
@@ -74,8 +89,6 @@ func (a *App) autoImportForUser(l *slog.Logger, userID uint64) error {
 	if err != nil {
 		return err
 	}
-
-	userLogger := l.With("user", u.Username)
 
 	ok, err := u.Profile.CanImportFromDirectory()
 	if err != nil {
@@ -86,6 +99,7 @@ func (a *App) autoImportForUser(l *slog.Logger, userID uint64) error {
 		return nil
 	}
 
+	userLogger := l.With("user_id", userID).With("user", u.Username)
 	userLogger.Info("Importing from '" + u.Profile.AutoImportDirectory + "'")
 
 	// parse all files in the directory, non-recusive
@@ -127,7 +141,8 @@ func (a *App) importForUser(logger *slog.Logger, u *database.User, path string) 
 func moveImportFile(logger *slog.Logger, dir, path, statusDir string) error {
 	destDir := filepath.Join(dir, statusDir)
 
-	logger.Info("Moving to '" + destDir + "'")
+	destPath := filepath.Join(destDir, filepath.Base(path))
+	logger.Info("Moving file", "src", path, "dst", destPath)
 
 	// If destDir does not exist, create it
 	if _, err := os.Stat(destDir); errors.Is(err, os.ErrNotExist) {
@@ -136,11 +151,11 @@ func moveImportFile(logger *slog.Logger, dir, path, statusDir string) error {
 		}
 	}
 
-	if err := os.Rename(path, filepath.Join(destDir, filepath.Base(path))); err != nil {
+	if err := os.Rename(path, destPath); err != nil {
 		return err
 	}
 
-	logger.Info("Moved to '" + destDir + "'")
+	logger.Info("Files moved", "destination", destDir)
 
 	return nil
 }
@@ -180,93 +195,120 @@ func fileCanBeImported(p string, i os.FileInfo) bool {
 	return slices.Contains(converters.SupportedFileTypes, strings.ToLower(filepath.Ext(p)))
 }
 
-// For the given set of route segments, re-match against all workouts, marking the segments as clean after matching.
-func (a *App) rematchRouteSegmentsToWorkouts(routeSegments []*database.RouteSegment, l *slog.Logger) error {
-	if len(routeSegments) == 0 {
-		l.Debug("rematchRouteSegmentsToWorkouts: no segments provided")
-		return nil
-	}
-
-	// Reset matches for each segment
-	for _, rs := range routeSegments {
-		rs.RouteSegmentMatches = []*database.RouteSegmentMatch{}
-	}
+// For the route segment, re-match against all workouts, marking the segments as clean after matching.
+func (a *App) rematchRouteSegmentToWorkouts(rs *database.RouteSegment, l *slog.Logger) error {
+	rs.RouteSegmentMatches = []*database.RouteSegmentMatch{}
 
 	var workoutsBatch []*database.Workout
-	qw := a.db.Preload("Data.Details").Preload("User").Model(&database.Workout{}).FindInBatches(&workoutsBatch, workerRouteSegmentsBatchSize, func(wtx *gorm.DB, batchNo int) error {
-		l.Debug(fmt.Sprintf("rematchRouteSegmentsToWorkouts %d matching %d route segments against %d workouts", batchNo, len(routeSegments), len(workoutsBatch)))
+	qw := a.db.Preload("Data.Details").Preload("User").Model(&database.Workout{}).
+		FindInBatches(&workoutsBatch, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
+			l.With("batch_no", batchNo).
+				With("workouts_batch_size", len(workoutsBatch)).
+				Debug("rematchRouteSegmentsToWorkouts start")
 
-		// Match this batch of workouts against the current batch of route segments
-		for _, rs := range routeSegments {
+				// Match this batch of workouts against the current route segment
 			newMatches := rs.FindMatches(workoutsBatch)
 			rs.RouteSegmentMatches = append(rs.RouteSegmentMatches, newMatches...)
-			l.Debug(fmt.Sprintf("Updating route segment %d with %d matches, now total %d", rs.ID, len(newMatches), len(rs.RouteSegmentMatches)))
-		}
+			l.With("route_segment_id", rs.ID).
+				With("new_matches", len(newMatches)).
+				With("total_matches", len(rs.RouteSegmentMatches)).
+				Debug("Updating route segments")
 
-		l.Debug(fmt.Sprintf("rematchRouteSegmentsToWorkouts %d matching %d route segments against %d workouts OK", batchNo, len(routeSegments), len(workoutsBatch)))
+			l.With("batch_no", batchNo).
+				With("workouts_batch_size", len(workoutsBatch)).
+				Debug("rematchRouteSegmentsToWorkouts done")
 
-		return nil
-	})
+			return nil
+		})
 
 	if qw.Error != nil {
-		l.Error("Worker error fetching workouts: " + qw.Error.Error())
+		return qw.Error
 	}
 
-	// Mark all route segments as non-dirty and save matches
-	var errs error
+	// Mark route segment as non-dirty and save matches
+	rs.Dirty = false
 
-	for _, rs := range routeSegments {
-		rs.Dirty = false
-		if err := rs.Save(a.db); err != nil {
-			errs = errors.Join(errs, err)
-			l.Error("Worker error saving route segment: " + err.Error())
-		}
-	}
-
-	return errs
+	return rs.Save(a.db)
 }
 
 func (a *App) updateRouteSegments(l *slog.Logger) {
-	var routeSegmentsBatch []*database.RouteSegment
+	var rss []*database.RouteSegment
 
-	// Fetch next batch of dirty segments
-	q := a.db.Preload("RouteSegmentMatches").Model(&database.RouteSegment{}).Where(&database.RouteSegment{Dirty: true}).Limit(workerRouteSegmentsBatchSize).Find(&routeSegmentsBatch)
-	l.Info(fmt.Sprintf("updateRouteSegments batch %d", len(routeSegmentsBatch)))
+	r := a.db.Preload("RouteSegmentMatches").Model(&database.RouteSegment{}).
+		Where(&database.RouteSegment{Dirty: true}).
+		FindInBatches(&rss, workerWorkoutsBatchSize, func(rtx *gorm.DB, batchNo int) error {
+			for i := range rss {
+				rs := rss[i]
 
-	if err := q.Error; err != nil {
-		l.Error("Worker error: " + err.Error())
-	}
+				a.workerPool.Go(func() {
+					rl := l.With("route_segment_id", rs.ID)
+					rl.Info("Updating route segment")
 
-	err := a.rematchRouteSegmentsToWorkouts(routeSegmentsBatch, l)
-	if err != nil {
-		l.Error("Worker errors during matching: " + err.Error())
-	}
-}
+					if err := a.rematchRouteSegmentToWorkouts(rs, rl); err != nil {
+						rl.Error("Error during matching", "error", err)
+					}
+				})
+			}
 
-func (a *App) updateWorkout(l *slog.Logger) {
-	var wID []uint64
+			return nil
+		})
 
-	db := a.db.Preload("Data.Details").Preload("User")
-
-	q := db.Model(&database.Workout{}).Where(&database.Workout{Dirty: true}).Limit(workerWorkoutsBatchSize).Pluck("ID", &wID)
-	if err := q.Error; err != nil {
-		l.Error("Worker error: " + err.Error())
-	}
-
-	for _, i := range wID {
-		l.Info(fmt.Sprintf("Updating workout %d", i))
-
-		if err := a.UpdateWorkout(i); err != nil {
-			l.Error("Worker error: " + err.Error())
-		}
+	if r.Error != nil {
+		l.Error("Error during batch query", "error", r.Error)
 	}
 }
 
-func (a *App) UpdateWorkout(i uint64) error {
-	w, err := database.GetWorkoutDetails(a.db, i)
-	if err != nil {
-		return err
-	}
+func (a *App) updateWorkouts(l *slog.Logger) {
+	var ws []*database.Workout
 
-	return w.UpdateData(a.db)
+	r := a.db.Preload("GPX").Preload("Data.Details").Preload("User").Model(&database.Workout{}).
+		Where(&database.Workout{Dirty: true}).
+		FindInBatches(&ws, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
+			for i := range ws {
+				w := ws[i]
+
+				a.workerPool.Go(func() {
+					wl := l.With("workout_id", w.ID)
+					wl.Info("Updating workout")
+
+					if err := w.UpdateData(a.db); err != nil {
+						wl.Error("Error during data update", "error", err)
+					}
+				})
+			}
+
+			return nil
+		})
+
+	if r.Error != nil {
+		l.Error("Error during batch query", "error", r.Error)
+	}
+}
+
+func (a *App) updateAddresses(l *slog.Logger) {
+	var mds []*database.MapData
+
+	r := a.db.Model(&database.MapData{}).
+		Where("center IS NOT NULL").Where("address_string", "").
+		FindInBatches(&mds, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
+			for i := range mds {
+				md := mds[i]
+
+				a.workerPoolGeo.Go(func() {
+					wl := l.With("workout_id", md.WorkoutID).With("map_data_id", md.ID)
+					wl.Info("Updating address")
+
+					md.UpdateAddress()
+					if err := md.Save(a.db); err != nil {
+						wl.Error("Error during address update", "error", err)
+					}
+				})
+			}
+
+			return nil
+		})
+
+	if r.Error != nil {
+		l.Error("Error during batch query", "error", r.Error)
+	}
 }

@@ -8,6 +8,7 @@ import { UserProfile } from './user';
 export type Workout = {
   id: number;
   date: string;
+  dirty: boolean;
   name: string;
   notes: string;
   type: string;

@@ -28,7 +28,13 @@
             @if (dataService.workout()!.locked) {
               <span class="badge bg-warning">
                 <app-icon name="locked" size="16" />
-                Locked
+                {{ 'workout.locked' | translate }}
+              </span>
+            }
+            @if (dataService.workout()!.dirty) {
+              <span class="badge bg-info">
+                <app-icon name="refresh" size="16" />
+                {{ 'workout.updating' | translate }}
               </span>
             }
           </div>
