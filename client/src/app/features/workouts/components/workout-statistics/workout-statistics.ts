@@ -47,7 +47,7 @@ type WorkoutStatCard = {
 const RANGE_CONFIGS: RangeStatConfig[] = [
 	{
 		key: 'speed',
-		labelKey: 'shared.Speed',
+		labelKey: 'workout.speed',
 		unit: (units) => units.speed,
 		decimals: 1,
 		averageField: 'average_speed',
@@ -58,7 +58,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'cadence',
-		labelKey: 'shared.Cadence',
+		labelKey: 'workout.cadence',
 		unit: () => 'rpm',
 		decimals: 0,
 		averageField: 'average_cadence',
@@ -68,7 +68,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'heart-rate',
-		labelKey: 'shared.Heart_rate',
+		labelKey: 'workout.heart_rate',
 		unit: () => 'bpm',
 		decimals: 0,
 		averageField: 'average_heart_rate',
@@ -78,7 +78,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'power',
-		labelKey: 'shared.Power',
+		labelKey: 'workout.power',
 		unit: () => 'W',
 		decimals: 0,
 		averageField: 'average_power',
@@ -88,7 +88,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'slope',
-		labelKey: 'shared.Slope',
+		labelKey: 'workout.slope',
 		unit: () => '%',
 		decimals: 1,
 		averageField: 'average_slope',
@@ -98,7 +98,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'temperature',
-		labelKey: 'shared.temperature',
+		labelKey: 'workout.temperature',
 		unit: (units) => units.temperature,
 		decimals: 1,
 		ignoreZero: false,
@@ -223,13 +223,13 @@ export class WorkoutStatisticsComponent {
 
 		if (stats.distance > 0) {
 			rows.push({
-				labelKey: selectionActive ? 'shared.Distance' : 'shared.Total_distance',
+				labelKey: selectionActive ? 'dashboard.distance' : 'workout.total_distance',
 				value: this.formatDistance(stats.distance, units.distance),
 			});
 		}
 
 		if (stats.duration > 0) {
-			rows.push({ labelKey: 'shared.Duration', value: this.formatDurationValue(stats.duration) });
+			rows.push({ labelKey: 'dashboard.duration', value: this.formatDurationValue(stats.duration) });
 		}
 
 		if (Number.isFinite(stats.pause_duration) && stats.pause_duration >= 0) {
@@ -243,7 +243,7 @@ export class WorkoutStatisticsComponent {
 		return rows.length
 			? {
 					key: 'distance-summary',
-					labelKey: 'shared.Distance',
+					labelKey: 'dashboard.distance',
 					rows,
 			  }
 			: null;
@@ -278,7 +278,7 @@ export class WorkoutStatisticsComponent {
 		return rows.length
 			? {
 					key: 'elevation-summary',
-					labelKey: 'shared.Elevation',
+					labelKey: 'dashboard.elevation',
 					rows,
 			  }
 			: null;
@@ -302,7 +302,7 @@ export class WorkoutStatisticsComponent {
 		const unitLabel = config.unit(units);
 
 		if (average !== undefined) {
-			rows.push({ labelKey: 'shared.average', value: this.formatRangeValue(average, unitLabel, config.decimals) });
+			rows.push({ labelKey: 'misc.average', value: this.formatRangeValue(average, unitLabel, config.decimals) });
 		}
 
 		if (moving !== undefined && config.movingField) {
@@ -313,11 +313,11 @@ export class WorkoutStatisticsComponent {
 		}
 
 		if (min !== undefined) {
-			rows.push({ labelKey: 'shared.minimum', value: this.formatRangeValue(min, unitLabel, config.decimals) });
+			rows.push({ labelKey: 'misc.minimum', value: this.formatRangeValue(min, unitLabel, config.decimals) });
 		}
 
 		if (max !== undefined) {
-			rows.push({ labelKey: 'shared.maximum', value: this.formatRangeValue(max, unitLabel, config.decimals) });
+			rows.push({ labelKey: 'misc.maximum', value: this.formatRangeValue(max, unitLabel, config.decimals) });
 		}
 
 		return rows.length

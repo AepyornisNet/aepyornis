@@ -11,7 +11,7 @@
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th>{{ 'workout.date' | translate }}</th>
+          <th>{{ 'misc.date' | translate }}</th>
           <th class="text-end">{{ 'measurements.weight' | translate }} (kg)</th>
           <th class="text-end d-none d-md-table-cell">
             {{ 'measurements.height' | translate }} (cm)
@@ -24,7 +24,7 @@
           <th class="text-end d-none d-xl-table-cell">
             {{ 'measurements.max_hr' | translate }} (bpm)
           </th>
-          <th class="text-center">{{ 'equipment.actions' | translate }}</th>
+          <th class="text-center">{{ 'misc.actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -79,14 +79,14 @@
               <div class="btn-group btn-group-sm" role="group">
                 <button
                   class="btn btn-outline-secondary"
-                  [attr.title]="'equipment.edit' | translate"
+                  [attr.title]="'misc.edit' | translate"
                   (click)="openEditModal(measurement)"
                 >
                   <app-icon name="edit" size="16" />
                 </button>
                 <button
                   class="btn btn-outline-danger"
-                  [attr.title]="'equipment.delete' | translate"
+                  [attr.title]="'misc.delete' | translate"
                   (click)="openDeleteModal(measurement)"
                 >
                   <app-icon name="delete" size="16" />
@@ -106,7 +106,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'measurements.add_workout' | translate }}</h5>
+          <h5 class="modal-title">{{ 'measurements.add_measurement' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -116,7 +116,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="create-date">{{ 'workout.date' | translate }}</label>
+            <label class="form-label" for="create-date">{{ 'misc.date' | translate }}</label>
             <input
               class="form-control"
               id="create-date"
@@ -205,10 +205,10 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
-            {{ 'equipment.cancel' | translate }}
+            {{ 'misc.cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="createMeasurement()">
-            {{ 'equipment.create' | translate }}
+            {{ 'misc.create' | translate }}
           </button>
         </div>
       </div>
@@ -232,7 +232,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="edit-date">{{ 'workout.date' | translate }}</label>
+            <label class="form-label" for="edit-date">{{ 'misc.date' | translate }}</label>
             <input
               class="form-control"
               id="edit-date"
@@ -319,10 +319,10 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'equipment.cancel' | translate }}
+            {{ 'misc.cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="updateMeasurement()">
-            {{ 'equipment.update' | translate }}
+            {{ 'misc.update' | translate }}
           </button>
         </div>
       </div>
@@ -336,7 +336,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'equipment.delete' | translate }}</h5>
+          <h5 class="modal-title">{{ 'misc.delete' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -345,17 +345,17 @@
           ></button>
         </div>
         <div class="modal-body">
-          <p>{{ 'equipment.are_you_sure' | translate }}</p>
+          <p>{{ 'misc.are_you_sure' | translate }}</p>
           <p>
             <strong>{{ formatDate(selectedMeasurement()!.date) }}</strong>
           </p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'equipment.cancel' | translate }}
+            {{ 'misc.cancel' | translate }}
           </button>
           <button class="btn btn-danger" type="button" (click)="deleteMeasurement()">
-            {{ 'equipment.delete' | translate }}
+            {{ 'misc.delete' | translate }}
           </button>
         </div>
       </div>

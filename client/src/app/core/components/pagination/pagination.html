@@ -3,7 +3,7 @@
     <ul class="pagination justify-content-center">
       <li class="page-item" [class.disabled]="!getHasPrevious()">
         <button class="page-link" [disabled]="!getHasPrevious()" (click)="onPrevious()">
-          {{ 'dashboard.last' | translate }}
+          {{ 'pagination.last' | translate }}
         </button>
       </li>
 
@@ -23,13 +23,16 @@
 
       <li class="page-item" [class.disabled]="!getHasNext()">
         <button class="page-link" [disabled]="!getHasNext()" (click)="onNext()">
-          {{ 'equipment.next' | translate }}
+          {{ 'pagination.next' | translate }}
         </button>
       </li>
     </ul>
   </nav>
 
   <div class="text-center text-muted">
-    <small> Page {{ getCurrent() }} of {{ getTotal() }} • {{ getTotalCount() }} items </small>
+    @let currentPage = getCurrent();
+    @let totalPages = getTotal();
+    @let totalEntries = getTotalCount();
+    <small>{{ 'pagination.info' | translate:{currentPage, totalPages, totalEntries} }}</small>
   </div>
 }

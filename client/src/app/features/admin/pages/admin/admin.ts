@@ -6,10 +6,11 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { AppConfig, UserProfile } from '../../../../core/types/user';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-admin',
-  imports: [RouterLink, AppIcon, ReactiveFormsModule],
+  imports: [RouterLink, AppIcon, ReactiveFormsModule, TranslatePipe],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

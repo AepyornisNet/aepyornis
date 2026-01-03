@@ -29,7 +29,7 @@
     >
       <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
       <span class="ms-1">{{
-        workout().locked ? ('workout.unlock' | translate) : ('shared.lock' | translate)
+  		workout().locked ? ('workout.unlock' | translate) : ('workout.lock' | translate)
       }}</span>
     </button>
 
@@ -42,7 +42,7 @@
         (click)="download()"
       >
         <app-icon name="download" size="16" />
-        <span class="ms-1">{{ 'route_segment.download' | translate }}</span>
+        <span class="ms-1">{{ 'misc.download' | translate }}</span>
       </button>
     }
 
@@ -54,7 +54,7 @@
       (click)="edit()"
     >
       <app-icon name="edit" size="16" />
-      <span class="ms-1">{{ 'equipment.edit' | translate }}</span>
+      <span class="ms-1">{{ 'misc.edit' | translate }}</span>
     </button>
 
     <!-- Refresh -->
@@ -66,7 +66,7 @@
         (click)="refresh()"
       >
         <app-icon name="refresh" size="16" />
-        <span class="ms-1">{{ 'route_segment.refresh' | translate }}</span>
+        <span class="ms-1">{{ 'misc.refresh' | translate }}</span>
       </button>
     }
 
@@ -123,7 +123,7 @@
           "
         >
           <app-icon name="share" size="20" />
-          <span class="visually-hidden">Strava</span>
+          <span class="visually-hidden">{{ 'misc.strava' | translate }}</span>
         </button>
         <button
           class="btn btn-outline-secondary"
@@ -133,7 +133,7 @@
           "
         >
           <app-icon name="share" size="20" />
-          <span class="visually-hidden">Facebook</span>
+          <span class="visually-hidden">{{ 'misc.facebook' | translate }}</span>
         </button>
         <button
           class="btn btn-outline-secondary"
@@ -143,7 +143,7 @@
           "
         >
           <app-icon name="share" size="20" />
-          <span class="visually-hidden">Twitter</span>
+          <span class="visually-hidden">{{ 'misc.twitter' | translate }}</span>
         </button>
       </div>
     }
@@ -156,7 +156,7 @@
       (click)="confirmDelete()"
     >
       <app-icon name="delete" size="16" />
-      <span class="ms-1">{{ 'equipment.delete' | translate }}</span>
+      <span class="ms-1">{{ 'misc.delete' | translate }}</span>
     </button>
   </div>
 
@@ -168,7 +168,7 @@
           <div class="modal-header">
             <h5 class="modal-title">{{ 'workout.confirm_delete' | translate }}</h5>
             <button class="btn-close" type="button" (click)="cancelDelete()">
-              <span class="visually-hidden">{{ 'workout.close' | translate }}</span>
+              <span class="visually-hidden">{{ 'misc.close' | translate }}</span>
             </button>
           </div>
           <div class="modal-body">
@@ -176,14 +176,14 @@
             <p>
               <strong>{{ workout().name }}</strong>
             </p>
-            <p class="text-muted">This action cannot be undone.</p>
+            <p class="text-muted">{{ 'misc.action_cannot_be_undone' | translate }}</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
-              {{ 'equipment.cancel' | translate }}
+              {{ 'misc.cancel' | translate }}
             </button>
             <button class="btn btn-danger" type="button" (click)="delete()">
-              {{ 'equipment.delete' | translate }}
+              {{ 'misc.delete' | translate }}
             </button>
           </div>
         </div>

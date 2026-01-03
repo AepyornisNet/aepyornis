@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -22,7 +22,7 @@
         </button>
         <h1 class="display-4 mb-0">
           <app-icon name="route-segment" size="48" />
-          {{ routeSegment()!.name || '(no name)' }}
+		  {{ routeSegment()!.name || ('misc.no_name' | translate) }}
         </h1>
         <div class="d-flex gap-2 mt-2">
           @if (routeSegment()!.bidirectional) {
@@ -66,14 +66,14 @@
       <div class="col-lg-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'equipment.details' | translate }}</h5>
+            <h5 class="card-title mb-3">{{ 'misc.details' | translate }}</h5>
             <table class="table table-sm">
               <tbody>
                 @if (routeSegment()!.filename) {
                   <tr>
                     <th style="width: 40%">
                       <app-icon name="file" size="16" />
-                      <span>{{ 'route_segment.file' | translate }}</span>
+                      <span>{{ 'misc.file' | translate }}</span>
                     </th>
                     <td>{{ routeSegment()!.filename }}</td>
                   </tr>
@@ -81,7 +81,7 @@
                 <tr>
                   <th>
                     <app-icon name="date" size="16" />
-                    <span>{{ 'equipment.created' | translate }}</span>
+                    <span>{{ 'misc.created' | translate }}</span>
                   </th>
                   <td>{{ formatDate(routeSegment()!.created_at) }}</td>
                 </tr>
@@ -96,7 +96,7 @@
                   <tr>
                     <th>
                       <app-icon name="location" size="16" />
-                      <span>{{ 'route_segment.location' | translate }}</span>
+                      <span>{{ 'misc.location' | translate }}</span>
                     </th>
                     <td>{{ routeSegment()!.address_string }}</td>
                   </tr>
@@ -153,7 +153,7 @@
             <div class="card-body">
               <h5 class="card-title mb-3">
                 <app-icon name="note" size="20" />
-                <span>{{ 'equipment.notes' | translate }}</span>
+                <span>{{ 'misc.notes' | translate }}</span>
               </h5>
               <div style="white-space: pre-wrap">{{ routeSegment()!.notes }}</div>
             </div>
@@ -186,7 +186,7 @@
                         {{ 'dashboard.average_speed' | translate }}
                       </th>
                         <th class="text-end d-none d-lg-table-cell">
-                          {{ 'shared.tempo' | translate }}
+						  {{ 'route_segment.tempo' | translate }}
                         </th>
                     </tr>
                   </thead>

@@ -1,22 +1,25 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Statistics as StatisticsData } from '../../../../core/types/statistics';
 import { UserPreferredUnits } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { StatisticChartComponent } from '../../components/statistic-chart/statistic-chart';
 import { StatisticsNav } from '../../components/statistics-nav/statistics-nav';
+import { TranslateService, Translation } from '@ngx-translate/core';
+import { AsyncPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 
 type StatisticOption = {
   key: string;
-  label: string;
+  label: Observable<Translation>;
 };
 
 @Component({
   selector: 'app-statistics',
-  imports: [ReactiveFormsModule, AppIcon, StatisticChartComponent, StatisticsNav],
+  imports: [ReactiveFormsModule, AppIcon, StatisticChartComponent, StatisticsNav, AsyncPipe, TranslatePipe],
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,6 +27,7 @@ type StatisticOption = {
 export class Statistics implements OnInit {
   private api = inject(Api);
   private fb = inject(FormBuilder);
+  private translate = inject(TranslateService);
 
   public readonly statistics = signal<StatisticsData | null>(null);
   public readonly preferredUnits = signal<UserPreferredUnits | null>(null);
@@ -34,21 +38,22 @@ export class Statistics implements OnInit {
   public filterForm!: FormGroup;
 
   public sinceOptions: StatisticOption[] = [
-    { key: '7 day', label: '7 days' },
-    { key: '1 month', label: '1 month' },
-    { key: '3 months', label: '3 months' },
-    { key: '6 months', label: '6 months' },
-    { key: '1 year', label: '1 year' },
-    { key: '2 years', label: '2 years' },
-    { key: '5 years', label: '5 years' },
-    { key: '10 years', label: '10 years' },
-    { key: 'forever', label: 'Forever' },
+    { key: '7 days', label: this.translate.stream('filters.n_days', { num : 7 }) },
+    { key: '1 month', label: this.translate.stream('filters.1_month') },
+    { key: '3 months', label: this.translate.stream('filters.n_months', { num: 3 }) },
+    { key: '6 months', label: this.translate.stream('filters.n_months', { num: 6 }) },
+    { key: '1 year', label: this.translate.stream('filters.1_year') },
+    { key: '2 years', label: this.translate.stream('filters.n_years', { num: 2 }) },
+    { key: '5 years', label: this.translate.stream('filters.n_years', { num: 5 }) },
+    { key: '10 years', label: this.translate.stream('filters.n_years', { num: 10 }) },
+    { key: 'forever', label: this.translate.stream('filters.forever') },
   ];
 
   public perOptions: StatisticOption[] = [
-    { key: 'day', label: 'Day' },
-    { key: 'week', label: 'Week' },
-    { key: 'month', label: 'Month' },
+    { key: 'day', label: this.translate.stream('filters.day') },
+    { key: 'week', label: this.translate.stream('filters.week') },
+    { key: 'month', label: this.translate.stream('filters.month') },
+    { key: 'year', label: this.translate.stream('filters.year') },
   ];
 
   public ngOnInit(): void {

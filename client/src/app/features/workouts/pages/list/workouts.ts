@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Workout } from '../../../../core/types/workout';
 import { WorkoutListParams } from '../../../../core/types/workout';
@@ -16,9 +16,10 @@ import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { WorkoutListActions } from '../../components/workout-list-actions/workout-list-actions';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService, Translation } from '@ngx-translate/core';
 import { BaseList, BaseListConfig } from '../../../../core/components/base-list/base-list';
 import { BaseTable } from '../../../../core/components/base-table/base-table';
+import { AsyncPipe } from '@angular/common';
 
 type WorkoutListFilterState = {
   type: string;
@@ -29,17 +30,18 @@ type WorkoutListFilterState = {
 
 type FilterOption = {
   value: string;
-  label: string;
+  label: Observable<Translation>;
 };
 
 @Component({
   selector: 'app-workouts',
-  imports: [RouterLink, AppIcon, WorkoutListActions, TranslatePipe, BaseList, BaseTable],
+  imports: [RouterLink, AppIcon, WorkoutListActions, TranslatePipe, BaseList, BaseTable, AsyncPipe],
   templateUrl: './workouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Workouts extends PaginatedListView<Workout> {
   private api = inject(Api);
+  private translate = inject(TranslateService);
 
   public readonly baseList = viewChild.required(BaseList);
 
@@ -49,7 +51,7 @@ export class Workouts extends PaginatedListView<Workout> {
 
   public readonly listConfig: BaseListConfig = {
     title: 'menu.workouts',
-    addButtonText: 'measurements.add_workout',
+    addButtonText: 'workout.add_workout',
     enableSearch: false,
     enableFilters: true,
     enableMultiSelect: true,
@@ -58,33 +60,33 @@ export class Workouts extends PaginatedListView<Workout> {
   public readonly workoutTypes = WORKOUT_TYPES;
 
   public readonly sinceOptions: FilterOption[] = [
-    { value: 'forever', label: 'misc.forever' },
-    { value: '7 days', label: 'misc.day_7' },
-    { value: '15 days', label: 'misc.day_15' },
-    { value: '1 month', label: 'misc.month_1' },
-    { value: '3 months', label: 'misc.month_3' },
-    { value: '6 months', label: 'misc.month_6' },
-    { value: '1 year', label: 'misc.years_1' },
-    { value: '2 years', label: 'misc.years_2' },
-    { value: '5 years', label: 'misc.years_5' },
-    { value: '10 years', label: 'misc.years_10' },
+    { value: 'forever', label: this.translate.stream('filters.forever') },
+    { value: '7 days', label: this.translate.stream('filters.n_days', { num : 7 }) },
+    { value: '15 days', label: this.translate.stream('filters.n_days', { num: 15 }) },
+    { value: '1 month', label: this.translate.stream('filters.1_month') },
+    { value: '3 months', label: this.translate.stream('filters.n_months', { num: 3 }) },
+    { value: '6 months', label: this.translate.stream('filters.n_months', { num: 6 }) },
+    { value: '1 year', label: this.translate.stream('filters.1_year') },
+    { value: '2 years', label: this.translate.stream('filters.n_years', { num: 2 }) },
+    { value: '5 years', label: this.translate.stream('filters.n_years', { num: 5 }) },
+    { value: '10 years', label: this.translate.stream('filters.n_years', { num: 10 }) },
   ];
 
   public readonly orderByOptions: FilterOption[] = [
-    { value: 'date', label: 'shared.Date' },
-    { value: 'total_distance', label: 'shared.Distance' },
-    { value: 'total_duration', label: 'shared.Duration' },
-    { value: 'total_weight', label: 'measurements.weight' },
-    { value: 'total_repetitions', label: 'workout.repetitions' },
-    { value: 'total_up', label: 'workout.elev_up' },
-    { value: 'total_down', label: 'workout.elev_down' },
-    { value: 'average_speed_no_pause', label: 'shared.Average_speed_no_pause' },
-    { value: 'max_speed', label: 'shared.Max_speed' },
+    { value: 'date', label: this.translate.stream('misc.date') },
+    { value: 'total_distance', label: this.translate.stream('workout.distance') },
+    { value: 'total_duration', label: this.translate.stream('workout.duration') },
+    { value: 'total_weight', label: this.translate.stream('workout.weight') },
+    { value: 'total_repetitions', label: this.translate.stream('workout.repetitions') },
+    { value: 'total_up', label: this.translate.stream('workout.elev_up') },
+    { value: 'total_down', label: this.translate.stream('workout.elev_down') },
+    { value: 'average_speed_no_pause', label: this.translate.stream('workout.average_speed_no_pause') },
+    { value: 'max_speed', label: this.translate.stream('workout.max_speed') },
   ];
 
   public readonly orderDirOptions: FilterOption[] = [
-    { value: 'desc', label: 'shared.descending' },
-    { value: 'asc', label: 'shared.ascending' },
+    { value: 'desc', label: this.translate.stream('filters.descending') },
+    { value: 'asc', label: this.translate.stream('filters.ascending') },
   ];
 
   private readonly _filters = signal<WorkoutListFilterState>({

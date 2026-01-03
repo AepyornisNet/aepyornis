@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -22,17 +22,17 @@
         </button>
         <h1 class="display-4 mb-0">{{ equipment()!.name }}</h1>
         @if (equipment()!.active) {
-          <span class="badge bg-success">{{ 'equipment.active' | translate }}</span>
+          <span class="badge bg-success">{{ 'misc.active' | translate }}</span>
         } @else {
           <span class="badge bg-secondary">{{ 'equipment.inactive' | translate }}</span>
         }
       </div>
       <div class="btn-group" role="group">
         <button class="btn btn-outline-secondary" (click)="openEditModal()">
-          {{ 'equipment.edit' | translate }}
+          {{ 'misc.edit' | translate }}
         </button>
         <button class="btn btn-outline-danger" (click)="openDeleteModal()">
-          {{ 'equipment.delete' | translate }}
+          {{ 'misc.delete' | translate }}
         </button>
       </div>
     </div>
@@ -42,28 +42,28 @@
         <!-- Equipment Details Card -->
         <div class="card shadow-sm mb-4">
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'equipment.details' | translate }}</h5>
+            <h5 class="card-title mb-3">{{ 'misc.details' | translate }}</h5>
             <table class="table table-sm">
               <tbody>
                 <tr>
-                  <th style="width: 40%">{{ 'equipment.name' | translate }}</th>
+                  <th style="width: 40%">{{ 'misc.name' | translate }}</th>
                   <td>{{ equipment()!.name }}</td>
                 </tr>
                 <tr>
-                  <th>{{ 'equipment.created' | translate }}</th>
+                  <th>{{ 'misc.created' | translate }}</th>
                   <td>{{ formatDate(equipment()!.created_at) }}</td>
                 </tr>
                 <tr>
-                  <th>{{ 'dashboard.last_updated' | translate }}</th>
+                  <th>{{ 'misc.last_updated' | translate }}</th>
                   <td>{{ formatDate(equipment()!.updated_at) }}</td>
                 </tr>
                 <tr>
-                  <th>{{ 'equipment.active' | translate }}</th>
+                  <th>{{ 'misc.active' | translate }}</th>
                   <td>
                     @if (equipment()!.active) {
-                      <span class="text-success">{{ 'equipment.yes' | translate }}</span>
+                      <span class="text-success">{{ 'misc.yes' | translate }}</span>
                     } @else {
-                      <span class="text-secondary">{{ 'equipment.no' | translate }}</span>
+                      <span class="text-secondary">{{ 'misc.no' | translate }}</span>
                     }
                   </td>
                 </tr>
@@ -86,7 +86,7 @@
         @if (equipment()!.notes) {
           <div class="card shadow-sm mb-4">
             <div class="card-body">
-              <h5 class="card-title mb-3">{{ 'equipment.notes' | translate }}</h5>
+              <h5 class="card-title mb-3">{{ 'misc.notes' | translate }}</h5>
               <div class="card-text" style="white-space: pre-wrap">{{ equipment()!.notes }}</div>
             </div>
           </div>
@@ -143,7 +143,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="edit-name">{{ 'equipment.name' | translate }}</label>
+            <label class="form-label" for="edit-name">{{ 'misc.name' | translate }}</label>
             <input
               class="form-control"
               id="edit-name"
@@ -165,7 +165,7 @@
             ></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="edit-notes">{{ 'equipment.notes' | translate }}</label>
+            <label class="form-label" for="edit-notes">{{ 'misc.notes' | translate }}</label>
             <textarea
               class="form-control"
               id="edit-notes"
@@ -183,16 +183,16 @@
               (change)="updateFormActive($any($event.target).checked)"
             />
             <label class="form-check-label" for="edit-active">
-              {{ 'equipment.active' | translate }}
+              {{ 'misc.active' | translate }}
             </label>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'equipment.cancel' | translate }}
+            {{ 'misc.cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="updateEquipment()">
-            {{ 'equipment.update' | translate }}
+            {{ 'misc.update' | translate }}
           </button>
         </div>
       </div>
@@ -223,10 +223,10 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'equipment.cancel' | translate }}
+            {{ 'misc.cancel' | translate }}
           </button>
           <button class="btn btn-danger" type="button" (click)="deleteEquipment()">
-            {{ 'equipment.delete' | translate }}
+            {{ 'misc.delete' | translate }}
           </button>
         </div>
       </div>

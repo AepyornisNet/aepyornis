@@ -15,7 +15,7 @@
       (click)="bulkDelete()"
     >
       <app-icon name="delete" size="16" />
-      <span class="d-none d-sm-inline ms-1">{{ 'equipment.delete' | translate }}</span>
+      <span class="d-none d-sm-inline ms-1">{{ 'misc.delete' | translate }}</span>
     </button>
   </div>
 
@@ -28,14 +28,14 @@
         [value]="filterState().type"
         (change)="onWorkoutTypeFilterChange($any($event.target).value)"
       >
-        <option value="">{{ 'shared.All' | translate }}</option>
+        <option value="">{{ 'filters.all' | translate }}</option>
         @for (type of workoutTypes; track type.value) {
           <option [value]="type.value">{{ ('sports.' + type.value) | translate }}</option>
         }
       </select>
     </div>
     <div class="col">
-      <label class="form-label small text-muted" for="filter-since">{{ 'shared.Since' | translate }}</label>
+      <label class="form-label small text-muted" for="filter-since">{{ 'filters.since' | translate }}</label>
       <select
         class="form-select form-select-sm"
         id="filter-since"
@@ -43,12 +43,12 @@
         (change)="onWorkoutSinceFilterChange($any($event.target).value)"
       >
         @for (option of sinceOptions; track option.value) {
-          <option [value]="option.value">{{ option.label | translate }}</option>
+          <option [value]="option.value">{{ option.label | async }}</option>
         }
       </select>
     </div>
     <div class="col">
-      <label class="form-label small text-muted" for="filter-sort-by">{{ 'shared.Sort_by' | translate }}</label>
+      <label class="form-label small text-muted" for="filter-sort-by">{{ 'filters.sort_by' | translate }}</label>
       <div class="d-flex gap-2">
         <select
           class="form-select form-select-sm flex-grow-1"
@@ -57,17 +57,17 @@
           (change)="onWorkoutOrderByChange($any($event.target).value)"
         >
           @for (option of orderByOptions; track option.value) {
-            <option [value]="option.value">{{ option.label | translate }}</option>
+            <option [value]="option.value">{{ option.label | async }}</option>
           }
         </select>
         <select
-          aria-label="{{ 'shared.Sort_by' | translate }}"
+          aria-label="{{ 'filters.sort_by' | translate }}"
           class="form-select form-select-sm"
           [value]="filterState().orderDir"
           (change)="onWorkoutOrderDirChange($any($event.target).value)"
         >
           @for (option of orderDirOptions; track option.value) {
-            <option [value]="option.value">{{ option.label | translate }}</option>
+            <option [value]="option.value">{{ option.label | async }}</option>
           }
         </select>
       </div>
@@ -86,15 +86,15 @@
       <!-- Table header -->
       <ng-template #tableHeader>
         <th>{{ 'workout.type' | translate }}</th>
-        <th>{{ 'equipment.name' | translate }}</th>
-        <th>{{ 'workout.date' | translate }}</th>
+        <th>{{ 'misc.name' | translate }}</th>
+        <th>{{ 'misc.date' | translate }}</th>
         <th>{{ 'dashboard.distance' | translate }}</th>
         <th>{{ 'dashboard.duration' | translate }}</th>
         @if (sortedColumnMeta()) {
-          <th class="text-end">{{ sortedColumnMeta()?.label | translate }}</th>
+          <th class="text-end">{{ sortedColumnMeta()?.label | async }}</th>
         }
         <th class="d-none d-md-table-cell">{{ 'dashboard.average_speed' | translate }}</th>
-        <th class="text-end d-none d-lg-table-cell">{{ 'equipment.actions' | translate }}</th>
+        <th class="text-end d-none d-lg-table-cell">{{ 'misc.actions' | translate }}</th>
       </ng-template>
 
       <!-- Table row -->

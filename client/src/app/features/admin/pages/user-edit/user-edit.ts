@@ -6,10 +6,11 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Api } from '../../../../core/services/api';
 import { UserProfile } from '../../../../core/types/user';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-user-edit',
-  imports: [RouterLink, AppIcon, ReactiveFormsModule],
+  imports: [RouterLink, AppIcon, ReactiveFormsModule, TranslatePipe],
   templateUrl: './user-edit.html',
   styleUrl: './user-edit.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

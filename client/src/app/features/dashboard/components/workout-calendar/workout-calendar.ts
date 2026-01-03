@@ -14,7 +14,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Api } from '../../../../core/services/api';
 import { Router } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-calendar',
@@ -28,6 +28,7 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
 
   private api = inject(Api);
   private router = inject(Router);
+  private translate = inject(TranslateService);
 
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
@@ -95,7 +96,7 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
           },
           error: (err) => {
             this.loading.set(false);
-            this.error.set('Failed to load calendar events');
+            this.error.set(this.translate.instant('alerts.load_failed', { page: this.translate.instant('dashboard.calendar_events') }));
             console.error('Failed to load calendar events:', err);
             failureCallback(err);
           },

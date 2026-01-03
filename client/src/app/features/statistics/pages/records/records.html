@@ -1,7 +1,7 @@
 <div class="container my-5 statistics-records">
   <h1 class="display-4 mb-3">
     <app-icon name="best" size="32" />
-    Records
+    {{ 'statistics.records_title' | translate }}
   </h1>
 
   <app-statistics-nav />
@@ -9,7 +9,7 @@
   @if (loading()) {
     <div class="text-center my-5">
       <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
+        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -21,7 +21,9 @@
   }
 
   @if (!loading() && records().length === 0) {
-    <div class="alert alert-secondary">No records found yet. Start logging workouts to see your records.</div>
+    <div class="alert alert-secondary">
+      {{ 'statistics.no_records' | translate }}
+    </div>
   }
 
   @for (record of records(); track record.workout_type) {
@@ -34,10 +36,10 @@
               <p class="text-muted mb-0">{{ record.workout_type }}</p>
             </div>
             <div class="d-flex flex-wrap gap-2 stats-pills">
-              <div class="stat-pill" title="Longest distance">
+              <div class="stat-pill" [attr.title]="'statistics.longest_distance' | translate">
                 <app-icon name="distance" size="16" />
                 <div>
-                  <div class="label">Longest</div>
+                  <div class="label">{{ 'statistics.longest' | translate }}</div>
                   <div class="value">
                     @if (record.distance) {
                       {{ formatDistance(record.distance.value) }}
@@ -48,10 +50,10 @@
                   </div>
                 </div>
               </div>
-              <div class="stat-pill" title="Total elevation gain record">
+              <div class="stat-pill" [attr.title]="'statistics.elevation_gain_record' | translate">
                 <app-icon name="elevation" size="16" />
                 <div>
-                  <div class="label">Elevation Gain</div>
+                  <div class="label">{{ 'statistics.elevation_gain' | translate }}</div>
                   <div class="value">
                     @if (record.total_up) {
                       {{ formatElevation(record.total_up.value) }}
@@ -63,10 +65,10 @@
                 </div>
               </div>
               @if (record.biggest_climb) {
-                <div class="stat-pill" title="Biggest single climb">
+                <div class="stat-pill" [attr.title]="'statistics.biggest_climb_record' | translate">
                   <app-icon name="up" size="16" />
                   <div>
-                    <div class="label">Biggest Climb</div>
+                    <div class="label">{{ 'statistics.biggest_climb' | translate }}</div>
                     <div class="value">
                       {{ formatElevation(record.biggest_climb.elevation_gain) }}
                       <span class="text-muted ms-2">
@@ -91,11 +93,11 @@
               <table class="table table-sm align-middle mb-0">
                 <thead>
                   <tr>
-                    <th>Distance</th>
-                    <th>Time</th>
-                    <th>Avg Speed</th>
-                    <th>Covered</th>
-                    <th class="text-end">Workout</th>
+                    <th>{{ 'dashboard.distance' | translate }}</th>
+                    <th>{{ 'dashboard.duration' | translate }}</th>
+                    <th>{{ 'dashboard.average_speed' | translate }}</th>
+                    <th>{{ 'statistics.covered' | translate }}</th>
+                    <th class="text-end">{{ 'statistics.workout' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -119,7 +121,7 @@
                 </tbody>
               </table>
             } @else {
-              <div class="text-muted small">No distance-based records yet.</div>
+              <div class="text-muted small">{{ 'statistics.no_distance_records' | translate }}</div>
             }
           </div>
         </div>

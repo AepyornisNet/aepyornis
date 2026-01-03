@@ -1,7 +1,7 @@
 <div class="container my-5">
   <h1 class="display-4 mb-4">
     <app-icon name="statistics" size="32" />
-    Statistics
+    {{ 'menu.statistics' | translate }}
   </h1>
 
   <app-statistics-nav />
@@ -10,7 +10,7 @@
     <div class="card-body">
       <form class="row g-3" [formGroup]="filterForm" (ngSubmit)="onFilterChange()">
         <div class="col-md-4">
-          <label class="form-label" for="since">Since</label>
+          <label class="form-label" for="since">{{ 'filters.since' | translate }}</label>
           <select
             class="form-select"
             formControlName="since"
@@ -18,21 +18,21 @@
             (change)="onFilterChange()"
           >
             @for (option of sinceOptions; track option.key) {
-              <option [value]="option.key">{{ option.label }}</option>
+              <option [value]="option.key">{{ option.label | async }}</option>
             }
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label" for="per">Per</label>
+          <label class="form-label" for="per">{{ 'filters.per' | translate }}</label>
           <select class="form-select" formControlName="per" id="per" (change)="onFilterChange()">
             @for (option of perOptions; track option.key) {
-              <option [value]="option.key">{{ option.label }}</option>
+              <option [value]="option.key">{{ option.label | async }}</option>
             }
           </select>
         </div>
         <div class="col-md-4 d-flex align-items-end">
           <button class="btn btn-primary" type="submit" [disabled]="filterForm.invalid">
-            Refresh
+            {{ 'misc.refresh' | translate }}
           </button>
         </div>
       </form>
@@ -42,7 +42,7 @@
   @if (loading()) {
     <div class="text-center my-5">
       <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
+        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -60,7 +60,7 @@
           <div class="card-body">
             <h3 class="card-title">
               <app-icon name="workout" />
-              Workouts
+              {{ 'dashboard.workouts' | translate }}
             </h3>
             <app-statistic-chart
               [preferredUnits]="preferredUnits() || undefined"
@@ -76,7 +76,7 @@
           <div class="card-body">
             <h3 class="card-title">
               <app-icon name="duration" />
-              Duration
+              {{ 'dashboard.duration' | translate }}
             </h3>
             <app-statistic-chart
               [filterNoDuration]="true"
@@ -94,7 +94,7 @@
           <div class="card-body">
             <h3 class="card-title">
               <app-icon name="distance" />
-              Distance
+              {{ 'dashboard.distance' | translate }}
             </h3>
             <app-statistic-chart
               [filterNoDuration]="true"
@@ -112,7 +112,7 @@
           <div class="card-body">
             <h3 class="card-title">
               <app-icon name="speed" />
-              Average Speed
+              {{ 'dashboard.average_speed' | translate }}
             </h3>
             <app-statistic-chart
               [filterNoDuration]="true"

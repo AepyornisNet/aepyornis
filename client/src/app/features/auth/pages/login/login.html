@@ -121,20 +121,22 @@
                         class="form-control"
                         formControlName="confirmPassword"
                         id="confirmPassword"
-                        placeholder="Confirm Password"
                         required
                         type="password"
                         [class.is-invalid]="
                           registerForm.get('confirmPassword')?.touched &&
                           registerForm.hasError('passwordMismatch')
                         "
+                        [placeholder]="'auth.confirm_password' | translate"
                       />
-                      <label for="confirmPassword">Confirm Password</label>
+                      <label for="confirmPassword">{{ 'auth.confirm_password' | translate }}</label>
                       @if (
                         registerForm.get('confirmPassword')?.touched &&
                         registerForm.hasError('passwordMismatch')
                       ) {
-                        <div class="invalid-feedback d-block">Passwords do not match</div>
+                        <div class="invalid-feedback d-block">
+                          {{ 'auth.passwords_do_not_match' | translate }}
+                        </div>
                       }
                     </div>
 

@@ -17,39 +17,39 @@
     <!-- Download -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'route_segment.download' | translate"
+      [attr.title]="'misc.download' | translate"
       [disabled]="isProcessing"
       (click)="download()"
     >
       <app-icon name="download" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'route_segment.download' | translate }}</span>
+        <span class="ms-1">{{ 'misc.download' | translate }}</span>
       }
     </button>
 
     <!-- Edit -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'equipment.edit' | translate"
+      [attr.title]="'misc.edit' | translate"
       [disabled]="isProcessing"
       (click)="edit()"
     >
       <app-icon name="edit" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'equipment.edit' | translate }}</span>
+        <span class="ms-1">{{ 'misc.edit' | translate }}</span>
       }
     </button>
 
     <!-- Refresh -->
     <button
       class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'route_segment.refresh' | translate"
+      [attr.title]="'misc.refresh' | translate"
       [disabled]="isProcessing"
       (click)="refresh()"
     >
       <app-icon name="refresh" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'route_segment.refresh' | translate }}</span>
+        <span class="ms-1">{{ 'misc.refresh' | translate }}</span>
       }
     </button>
 
@@ -69,13 +69,13 @@
     <!-- Delete -->
     <button
       class="btn btn-sm btn-outline-danger"
-      [attr.title]="'equipment.delete' | translate"
+      [attr.title]="'misc.delete' | translate"
       [disabled]="isProcessing"
       (click)="confirmDelete()"
     >
       <app-icon name="delete" size="16" />
       @if (!compact()) {
-        <span class="ms-1">{{ 'equipment.delete' | translate }}</span>
+        <span class="ms-1">{{ 'misc.delete' | translate }}</span>
       }
     </button>
   </div>
@@ -86,7 +86,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ 'equipment.are_you_sure' | translate }}</h5>
+            <h5 class="modal-title">{{ 'misc.are_you_sure' | translate }}</h5>
             <button
               aria-label="Close"
               class="btn-close"
@@ -95,7 +95,7 @@
             ></button>
           </div>
           <div class="modal-body">
-            <p>{{ 'equipment.are_you_sure' | translate }}</p>
+            <p>{{ 'misc.are_you_sure' | translate }}</p>
             <p>
               <strong>{{ routeSegment().name }}</strong>
             </p>
@@ -105,10 +105,10 @@
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
-              {{ 'equipment.cancel' | translate }}
+              {{ 'misc.cancel' | translate }}
             </button>
             <button class="btn btn-danger" type="button" (click)="delete()">
-              {{ 'equipment.delete' | translate }}
+              {{ 'misc.delete' | translate }}
             </button>
           </div>
         </div>

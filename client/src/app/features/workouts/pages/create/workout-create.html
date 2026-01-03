@@ -32,7 +32,7 @@
           <div class="card-body">
             <form #fileForm="ngForm" [formGroup]="fileUploadForm" (ngSubmit)="submitFileUpload()">
               <div class="mb-3">
-                <label class="form-label" for="file">{{ 'route_segment.file' | translate }}</label>
+                <label class="form-label" for="file">{{ 'misc.file' | translate }}</label>
                 <input
                   accept=".fit,.ftb,.gpx,.tcx,.zip"
                   class="form-control"
@@ -75,7 +75,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="file-notes">{{
-                  'equipment.notes' | translate
+                  'misc.notes' | translate
                 }}</label>
                 <textarea
                   class="form-control"
@@ -150,7 +150,7 @@
         <div class="card-header">
           <h5 class="mb-0">
             {{
-              editMode() ? ('equipment.details' | translate) : ('shared.manual' | translate)
+				editMode() ? ('misc.details' | translate) : ('workout.manual' | translate)
             }}
           </h5>
         </div>
@@ -198,7 +198,7 @@
               }
 
               <div class="mb-3">
-                <label class="form-label" for="name">{{ 'equipment.name' | translate }}</label>
+                <label class="form-label" for="name">{{ 'misc.name' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="name"
@@ -210,7 +210,7 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="date">{{ 'workout.date' | translate }}</label>
+                <label class="form-label" for="date">{{ 'misc.date' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="date"
@@ -224,7 +224,7 @@
               @if (showLocation()) {
                 <div class="mb-3">
                   <label class="form-label" for="location">{{
-                    'route_segment.location' | translate
+                    'misc.location' | translate
                   }}</label>
                   <input
                     class="form-control"
@@ -278,7 +278,7 @@
                       type="number"
                       [disabled]="loading()"
                     />
-                    <span class="text-muted small">(hhh:mm:ss)</span>
+                    <span class="text-muted small">{{ 'misc.duration_hms_hint' | translate }}</span>
                   </div>
                 </div>
               }
@@ -298,7 +298,9 @@
                       type="number"
                       [disabled]="loading()"
                     />
-                    <span class="input-group-text">km</span>
+                    <span class="input-group-text">
+                      {{ 'units.kilometers_short' | translate }}
+                    </span>
                   </div>
                 </div>
               }
@@ -335,14 +337,16 @@
                       type="number"
                       [disabled]="loading()"
                     />
-                    <span class="input-group-text">kg</span>
+                    <span class="input-group-text">
+                      {{ 'units.kilograms_short' | translate }}
+                    </span>
                   </div>
                 </div>
               }
 
               <div class="mb-3">
                 <label class="form-label" for="manual-notes">{{
-                  'equipment.notes' | translate
+                  'misc.notes' | translate
                 }}</label>
                 <textarea
                   class="form-control"
@@ -391,8 +395,8 @@
                   }
                   <span>{{
                     editMode()
-                      ? ('workout.The_workout_s_has_been_updated' | translate)
-                      : ('workout.Add_Workout' | translate)
+                      ? ('workout.update_workout' | translate)
+                      : ('workout.add_workout' | translate)
                   }}</span>
                 </button>
               </div>

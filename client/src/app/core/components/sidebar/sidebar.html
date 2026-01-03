@@ -5,7 +5,7 @@
 >
   <div class="d-flex flex-row align-items-center justify-content-center py-3 bg-white text-dark">
     <img alt="Logo" height="24" src="dumbbell.png" />
-    <span class="ps-3" [class.visually-hidden]="!isOpen()"> Workout Tracker </span>
+    <span class="ps-3" [class.visually-hidden]="!isOpen()">{{ 'app.title' | translate }}</span>
   </div>
 
   <div class="overflow-y-auto" [class.p-3]="isOpen()">

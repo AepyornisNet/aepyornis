@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "migrate:translations": "node ./scripts/migrate-translations.js"
+    "check-translations": "ngx-translate-lint --zk disable"
   },
   "prettier": {
     "printWidth": 100,
@@ -55,6 +55,7 @@
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
     "leaflet.markercluster": "^1.5.3",
+    "ngx-translate-lint": "^1.26.5",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

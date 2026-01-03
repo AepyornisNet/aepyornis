@@ -4,7 +4,8 @@
       <div class="col-lg-6 mb-3">
         <div class="card shadow-sm">
           <div class="card-header">
-            <h5 class="mb-0">{{ record.workout_type }} Records</h5>
+            @let sport = 'sports.' + record.workout_type | translate;
+            <h5 class="mb-0">{{ 'dashboard.record_title' | translate:{sport} }}</h5>
           </div>
           <div class="card-body">
             <table class="table table-sm">

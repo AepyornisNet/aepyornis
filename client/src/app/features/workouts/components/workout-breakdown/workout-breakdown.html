@@ -31,7 +31,7 @@
     </div>
 
     @if (loading()) {
-      <div class="text-center text-muted small mb-2">{{ 'statistics.loading' | translate }}</div>
+      <div class="text-center text-muted small mb-2">{{ 'misc.loading' | translate }}</div>
     }
 
     @if (breakdown()?.items?.length) {
@@ -113,7 +113,7 @@
         </table>
       </div>
     } @else if (!loading()) {
-      <div class="text-muted small">{{ 'shared.no_items' | translate }}</div>
+      <div class="text-muted small">{{ 'misc.no_items' | translate }}</div>
     }
   }
 </div>

@@ -14,7 +14,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
       </div>
     </div>
   } @else if (profile()) {
@@ -23,7 +23,7 @@
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
           <app-icon name="person" size="24" />
-          Your settings
+          {{ 'user.profile.your_settings' | translate }}
         </h3>
 
         <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
@@ -37,7 +37,7 @@
                 type="checkbox"
               />
               <label class="form-check-label" for="api_active">
-                Enable API access
+                {{ 'user.profile.enable_api_access' | translate }}
                 <a
                   class="link-primary ms-1"
                   href="https://github.com/jovandeginste/workout-tracker?tab=readme-ov-file#api-usage"
@@ -57,24 +57,24 @@
                 />
                 <button
                   class="btn btn-sm btn-outline-secondary"
-                  title="Show/Hide"
                   type="button"
+                  [title]="'user.profile.show_hide' | translate"
                   (click)="toggleAPIKeyVisibility()"
                 >
                   <app-icon size="20" [name]="apiKeyVisible() ? 'visibility-off' : 'visibility'" />
                 </button>
                 <button
                   class="btn btn-sm btn-outline-secondary"
-                  title="Copy to clipboard"
                   type="button"
+                  [title]="'user.profile.copy_to_clipboard' | translate"
                   (click)="copyToClipboard(profile()!.profile.api_key!)"
                 >
                   <app-icon name="content-copy" size="20" />
                 </button>
                 <button
                   class="btn btn-sm btn-outline-danger"
-                  title="Generate a new API key"
                   type="button"
+                  [title]="'user.profile.generate_a_new_api_key' | translate"
                   (click)="resetAPIKey()"
                 >
                   <app-icon name="refresh" size="20" />
@@ -85,18 +85,22 @@
 
           <!-- Totals Show -->
           <div class="mb-3">
-            <label class="form-label" for="totals_show"> Totals to show on dashboard </label>
+            <label class="form-label" for="totals_show">
+              {{ 'user.profile.totals_to_show_on_dashboard' | translate }}
+            </label>
             <select class="form-select" formControlName="totals_show" id="totals_show">
-              <option value="all">All</option>
-              <option value="running">Running</option>
-              <option value="cycling">Cycling</option>
-              <option value="walking">Walking</option>
+              <option value="all">{{ 'filters.all' | translate }}</option>
+              <option value="running">{{ 'sports.running' | translate }}</option>
+              <option value="cycling">{{ 'sports.cycling' | translate }}</option>
+              <option value="walking">{{ 'sports.walking' | translate }}</option>
             </select>
           </div>
 
           <!-- Timezone -->
           <div class="mb-3">
-            <label class="form-label" for="timezone"> Time zone </label>
+            <label class="form-label" for="timezone">
+              {{ 'user.profile.time_zone' | translate }}
+            </label>
             <input
               class="form-control"
               formControlName="timezone"
@@ -109,8 +113,8 @@
           <!-- Birthdate -->
           <div class="mb-3">
             <label class="form-label" for="birthdate">
-              Birthdate
-              <small class="text-muted">(used to estimate max heart rate)</small>
+              {{ 'user.profile.birthdate' | translate }}
+              <small class="text-muted">{{ 'user.profile.birthdate_hint' | translate }}</small>
             </label>
             <input
               class="form-control"
@@ -123,37 +127,39 @@
           <!-- Language -->
           <div class="mb-3">
             <label class="form-label" for="language">
-              Language
+              {{ 'user.profile.language' | translate }}
               <a
                 class="link-primary ms-1"
                 href="https://hosted.weblate.org/projects/workout-tracker/"
                 target="_blank"
-                title="Please help translate via Weblate"
+                [title]="'user.profile.weblate_help' | translate"
               >
                 <app-icon name="translate" size="16" />
               </a>
             </label>
             <select class="form-select" formControlName="language" id="language">
-              <option value="browser">Browser / System</option>
-              <option value="en">English</option>
-              <option value="de">German</option>
-              <option value="fr">French</option>
+              <option value="browser">{{ 'languages.browser' | translate }}</option>
+              <option value="en">{{ 'languages.english' | translate }}</option>
+              <option value="de">{{ 'languages.german' | translate }}</option>
+              <option value="fr">{{ 'languages.french' | translate }}</option>
             </select>
           </div>
 
           <!-- Theme -->
           <div class="mb-3">
-            <label class="form-label" for="theme"> Theme </label>
+            <label class="form-label" for="theme"> {{ 'user.profile.theme' | translate }} </label>
             <select class="form-select" formControlName="theme" id="theme">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="browser">Browser / System</option>
+              <option value="light">{{ 'user.profile.light' | translate }}</option>
+              <option value="dark">{{ 'user.profile.dark' | translate }}</option>
+              <option value="browser">{{ 'user.profile.browser_system' | translate }}</option>
             </select>
           </div>
 
           <!-- Auto Import Directory -->
           <div class="mb-3">
-            <label class="form-label" for="auto_import_directory"> Auto-import directory </label>
+            <label class="form-label" for="auto_import_directory">
+              {{ 'user.profile.auto_import_directory' | translate }}
+            </label>
             <input
               class="form-control"
               formControlName="auto_import_directory"
@@ -172,7 +178,7 @@
               type="checkbox"
             />
             <label class="form-check-label" for="prefer_full_date">
-              Show full date by default
+              {{ 'user.profile.show_full_date_by_default' | translate }}
             </label>
           </div>
 
@@ -185,7 +191,7 @@
               type="checkbox"
             />
             <label class="form-check-label" for="socials_disabled">
-              Disable social sharing buttons
+              {{ 'user.profile.disable_social_sharing_buttons' | translate }}
             </label>
           </div>
 
@@ -202,9 +208,9 @@
                   class="spinner-border spinner-border-sm me-2"
                   role="status"
                 ></span>
-                Saving...
+                {{ 'user.profile.saving' | translate }}
               } @else {
-                Update profile
+                {{ 'user.profile.update_profile' | translate }}
               }
             </button>
           </div>
@@ -217,53 +223,57 @@
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
           <app-icon name="straighten" size="24" />
-          Preferred units
+          {{ 'user.profile.preferred_units' | translate }}
         </h3>
 
         <div [formGroup]="profileForm">
           <div class="row g-3" formGroupName="preferred_units">
             <!-- Speed -->
             <div class="col-md-6">
-              <label class="form-label" for="speed"> Speed </label>
+              <label class="form-label" for="speed"> {{ 'user.profile.speed' | translate }} </label>
               <select class="form-select" formControlName="speed" id="speed">
-                <option value="km/h">km/h</option>
-                <option value="mph">mph</option>
+                <option value="km/h">{{ 'units.kilometers_per_hour_short' | translate }}</option>
+                <option value="mph">{{ 'units.miles_per_hour_short' | translate }}</option>
               </select>
             </div>
 
             <!-- Distance -->
             <div class="col-md-6">
-              <label class="form-label" for="distance"> Distance </label>
+              <label class="form-label" for="distance">
+                {{ 'user.profile.distance' | translate }}
+              </label>
               <select class="form-select" formControlName="distance" id="distance">
-                <option value="km">km</option>
-                <option value="mi">mi</option>
+                <option value="km">{{ 'units.kilometers_short' | translate }}</option>
+                <option value="mi">{{ 'units.miles_short' | translate }}</option>
               </select>
             </div>
 
             <!-- Elevation -->
             <div class="col-md-6">
-              <label class="form-label" for="elevation"> Elevation </label>
+              <label class="form-label" for="elevation">
+                {{ 'user.profile.elevation' | translate }}
+              </label>
               <select class="form-select" formControlName="elevation" id="elevation">
-                <option value="m">m</option>
-                <option value="ft">ft</option>
+                <option value="m">{{ 'units.meters_short' | translate }}</option>
+                <option value="ft">{{ 'units.feet_short' | translate }}</option>
               </select>
             </div>
 
             <!-- Weight -->
             <div class="col-md-6">
-              <label class="form-label" for="weight"> Weight </label>
+              <label class="form-label" for="weight"> {{ 'user.profile.weight' | translate }} </label>
               <select class="form-select" formControlName="weight" id="weight">
-                <option value="kg">kg</option>
-                <option value="lbs">lbs</option>
+                <option value="kg">{{ 'units.kilograms_short' | translate }}</option>
+                <option value="lbs">{{ 'units.pounds_short' | translate }}</option>
               </select>
             </div>
 
             <!-- Height -->
             <div class="col-md-6">
-              <label class="form-label" for="height"> Height </label>
+              <label class="form-label" for="height"> {{ 'user.profile.height' | translate }} </label>
               <select class="form-select" formControlName="height" id="height">
-                <option value="cm">cm</option>
-                <option value="in">in</option>
+                <option value="cm">{{ 'units.centimeters_short' | translate }}</option>
+                <option value="in">{{ 'units.inches_short' | translate }}</option>
               </select>
             </div>
           </div>
@@ -276,16 +286,16 @@
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
           <app-icon name="bolt" size="24" />
-          Actions
+          {{ 'misc.actions' | translate }}
         </h3>
 
         <div
           class="d-flex align-items-center justify-content-between p-3 bg-body-secondary rounded"
         >
           <div>
-            <div class="fw-medium">Refresh all your workouts</div>
+            <div class="fw-medium">{{ 'user.profile.refresh_all_your_workouts' | translate }}</div>
             <p class="small text-muted mb-0">
-              This will recalculate statistics for all your workouts
+              {{ 'user.profile.refresh_workouts_help' | translate }}
             </p>
           </div>
           <button
@@ -294,7 +304,7 @@
             (click)="refreshWorkouts()"
           >
             <app-icon name="refresh" size="20" />
-            Refresh
+            {{ 'misc.refresh' | translate }}
           </button>
         </div>
       </div>

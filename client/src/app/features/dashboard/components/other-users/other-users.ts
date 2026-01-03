@@ -10,9 +10,9 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { Api } from '../../../core/services/api';
-import { AppIcon } from '../app-icon/app-icon';
-import { UserProfile } from '../../types/user';
+import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { Api } from '../../../../core/services/api';
+import { UserProfile } from '../../../../core/types/user';
 
 @Component({
   selector: 'app-other-users',

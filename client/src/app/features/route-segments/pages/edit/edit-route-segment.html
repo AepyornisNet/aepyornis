@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
       </div>
     </div>
   }
@@ -28,7 +28,7 @@
           <div class="card-body">
             <form [formGroup]="routeSegmentForm" (ngSubmit)="save()">
               <div class="mb-3">
-                <label class="form-label" for="name">{{ 'equipment.name' | translate }}</label>
+                <label class="form-label" for="name">{{ 'misc.name' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="name"
@@ -81,7 +81,7 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="notes">{{ 'equipment.notes' | translate }}</label>
+                <label class="form-label" for="notes">{{ 'misc.notes' | translate }}</label>
                 <textarea
                   class="form-control"
                   formControlName="notes"
@@ -116,7 +116,7 @@
                   [disabled]="saving()"
                   (click)="cancel()"
                 >
-                  {{ 'equipment.cancel' | translate }}
+                  {{ 'misc.cancel' | translate }}
                 </button>
               </div>
             </form>
@@ -155,7 +155,7 @@
                   <tr>
                     <th>
                       <app-icon name="file" size="16" />
-                      <span>{{ 'route_segment.file' | translate }}</span>
+                      <span>{{ 'misc.file' | translate }}</span>
                     </th>
                     <td>{{ routeSegment()!.filename }}</td>
                   </tr>

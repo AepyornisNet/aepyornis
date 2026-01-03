@@ -38,7 +38,7 @@ export class BaseList {
   public readonly error = input<string | null>(null);
   public readonly paginationSource = input.required<PaginationSource>();
   public readonly hasItems = input<boolean>(false);
-  public readonly emptyMessage = input<string>('shared.no_items');
+  public readonly emptyMessage = input<string>('misc.no_items');
 
   public readonly addClicked = output<void>();
   public readonly searchChanged = output<string>();

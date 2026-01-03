@@ -3,11 +3,11 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Totals, WorkoutRecord } from '../../../../core/types/workout';
-import { WorkoutCalendar } from '../../../workouts/components/workout-calendar/workout-calendar';
+import { WorkoutCalendar } from '../../components/workout-calendar/workout-calendar';
 import { KeyMetrics } from '../../components/key-metrics/key-metrics';
 import { Records } from '../../components/records/records';
 import { RecentActivity } from '../../components/recent-activity/recent-activity';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,6 +18,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 })
 export class Dashboard implements OnInit {
   private api = inject(Api);
+  private translate = inject(TranslateService);
 
   public readonly totals = signal<Totals | null>(null);
   public readonly records = signal<WorkoutRecord[]>([]);
@@ -48,7 +49,7 @@ export class Dashboard implements OnInit {
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
-      this.error.set('Failed to load dashboard data. Please try again.');
+      this.error.set(this.translate.instant('alerts.load_failed', { page: this.translate.instant('dashboard.page') }));
     } finally {
       this.loading.set(false);
     }

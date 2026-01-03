@@ -16,7 +16,7 @@
                 <input
                   class="form-control"
                   type="text"
-                  [placeholder]="config().searchPlaceholder || ('shared.search' | translate)"
+                  [placeholder]="config().searchPlaceholder || ('filters.search' | translate)"
                   [value]="searchQuery()"
                   (input)="onSearchInput($event)"
                 />
@@ -31,11 +31,11 @@
             <button
               class="btn btn-outline-secondary"
               [class.active]="showFilters()"
-              [title]="'shared.toggle_filters' | translate"
+              [title]="'filters.toggle_filters' | translate"
               (click)="toggleFilters()"
             >
               <app-icon name="settings" size="16" />
-              <span class="d-none d-md-inline ms-1">{{ 'shared.filters' | translate }}</span>
+              <span class="d-none d-md-inline ms-1">{{ 'filters.filters' | translate }}</span>
             </button>
           }
 
@@ -43,11 +43,11 @@
             <button
               class="btn btn-outline-secondary"
               [class.active]="multiSelectActive()"
-              [title]="'shared.toggle_multiselect' | translate"
+              [title]="'filters.toggle_multiselect' | translate"
               (click)="toggleMultiSelect()"
             >
               <app-icon name="check" size="16" />
-              <span class="d-none d-md-inline ms-1">{{ 'shared.select' | translate }}</span>
+              <span class="d-none d-md-inline ms-1">{{ 'filters.select' | translate }}</span>
             </button>
           }
 
@@ -68,18 +68,18 @@
               <strong>{{ selectionCount() }}</strong>
               {{
                 selectionCount() === 1
-                  ? ('shared.item_selected' | translate)
-                  : ('shared.items_selected' | translate)
+                  ? ('filters.item_selected' | translate)
+                  : ('filters.items_selected' | translate)
               }}
             </span>
             <div class="d-flex gap-2">
               <ng-content select="[bulkActions]" />
               <button
                 class="btn btn-sm btn-outline-secondary"
-                [title]="'shared.clear_selection' | translate"
+                [title]="'filters.clear_selection' | translate"
                 (click)="clearSelection()"
               >
-                {{ 'shared.clear' | translate }}
+                {{ 'filters.clear' | translate }}
               </button>
             </div>
           </div>
@@ -103,7 +103,7 @@
     @if (loading()) {
       <div class="text-center py-5">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">{{ 'statistics.loading' | translate }}</span>
+          <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
         </div>
       </div>
     }
