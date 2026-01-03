@@ -13,7 +13,7 @@
     @for (item of items(); track item.id; let index = $index) {
       <tr [class.table-active]="isSelected(item.id)">
         @if (multiSelectActive()) {
-          <td style="cursor: pointer" (click)="onCheckboxClick(item)">
+          <td style="cursor: pointer">
             <input
               class="form-check-input"
               type="checkbox"
