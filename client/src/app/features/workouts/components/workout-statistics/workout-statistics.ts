@@ -77,6 +77,16 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 		metricKey: 'heart-rate',
 	},
 	{
+		key: 'respiration-rate',
+		labelKey: 'workout.respiration_rate',
+		unit: () => 'bpm',
+		decimals: 0,
+		averageField: 'average_respiration_rate',
+		minField: 'min_respiration_rate',
+		maxField: 'max_respiration_rate',
+		metricKey: 'heart-rate',
+	},
+	{
 		key: 'power',
 		labelKey: 'workout.power',
 		unit: () => 'W',

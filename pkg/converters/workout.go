@@ -67,6 +67,11 @@ type (
 		MinHeartRate     float64 `json:"minHeartRate"`     // The minimum heart rate of the workout
 		MaxHeartRate     float64 `json:"maxHeartRate"`     // The maximum heart rate of the workout
 
+		// Respiration rate stats
+		AverageRespirationRate float64 `json:"averageRespirationRate"` // The average respiration rate of the workout
+		MinRespirationRate     float64 `json:"minRespirationRate"`     // The minimum respiration rate of the workout
+		MaxRespirationRate     float64 `json:"maxRespirationRate"`     // The maximum respiration rate of the workout
+
 		// Power stats
 		AveragePower float64 `json:"averagePower"` // The average power of the workout
 		MinPower     float64 `json:"minPower"`     // The minimum power of the workout
@@ -151,6 +156,14 @@ func (d *WorkoutData) MergeNonZero(from WorkoutData) {
 
 	if from.MaxHeartRate != 0 {
 		d.MaxHeartRate = from.MaxHeartRate
+	}
+
+	if from.AverageRespirationRate != 0 {
+		d.AverageRespirationRate = from.AverageRespirationRate
+	}
+
+	if from.MaxRespirationRate != 0 {
+		d.MaxRespirationRate = from.MaxRespirationRate
 	}
 
 	if from.AveragePower != 0 {

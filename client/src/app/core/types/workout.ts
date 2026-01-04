@@ -179,6 +179,10 @@ export type WorkoutRangeStats = {
   min_heart_rate?: number;
   max_heart_rate?: number;
 
+  average_respiration_rate?: number;
+  min_respiration_rate?: number;
+  max_respiration_rate?: number;
+
   average_power?: number;
   min_power?: number;
   max_power?: number;

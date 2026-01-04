@@ -40,6 +40,7 @@ import {
   FTP_ZONE_COLORS,
   HR_ZONE_COLORS,
 } from '../zone-colors';
+import { TranslateService } from '@ngx-translate/core';
 
 Chart.register(
   TimeScale,
@@ -77,6 +78,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   public readonly extraMetrics = input<string[]>([]);
   public readonly viewMode = input<'time' | 'distance'>('time');
 
+  private translate = inject(TranslateService);
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private userService = inject(User);
   private chart?: Chart;
@@ -394,12 +396,13 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
   private getMetricLabel(metric: string): string {
     const labels: Record<string, string> = {
-      speed: 'Speed',
-      elevation: 'Elevation',
-      'heart-rate': 'Heart Rate',
-      cadence: 'Cadence',
-      temperature: 'Temperature',
-      power: 'Power',
+      speed: this.translate.instant('workout.speed'),
+      elevation: this.translate.instant('workout.elevation'),
+      'heart-rate': this.translate.instant('workout.heart_rate'),
+      'respiration-rate': this.translate.instant('workout.respiration_rate'),
+      cadence: this.translate.instant('workout.cadence'),
+      temperature: this.translate.instant('workout.temperature'),
+      power: this.translate.instant('workout.power'),
     };
     return labels[metric] || metric;
   }

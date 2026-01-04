@@ -114,6 +114,10 @@ type WorkoutRangeStatsResponse struct {
 	MinHeartRate     *float64 `json:"min_heart_rate,omitempty"`
 	MaxHeartRate     *float64 `json:"max_heart_rate,omitempty"`
 
+	AverageRespirationRate *float64 `json:"average_respiration_rate,omitempty"`
+	MinRespirationRate     *float64 `json:"min_respiration_rate,omitempty"`
+	MaxRespirationRate     *float64 `json:"max_respiration_rate,omitempty"`
+
 	AveragePower *float64 `json:"average_power,omitempty"`
 	MinPower     *float64 `json:"min_power,omitempty"`
 	MaxPower     *float64 `json:"max_power,omitempty"`
@@ -673,6 +677,10 @@ func NewWorkoutRangeStatsResponse(stats database.MapDataRangeStats, startIdx, en
 	resp.AverageHeartRate = optionalMetric(stats.AverageHeartRate)
 	resp.MinHeartRate = optionalMetric(stats.MinHeartRate)
 	resp.MaxHeartRate = optionalMetric(stats.MaxHeartRate)
+
+	resp.AverageRespirationRate = optionalMetric(stats.AverageRespirationRate)
+	resp.MinRespirationRate = optionalMetric(stats.MinRespirationRate)
+	resp.MaxRespirationRate = optionalMetric(stats.MaxRespirationRate)
 
 	resp.AveragePower = optionalMetric(stats.AveragePower)
 	resp.MinPower = optionalMetric(stats.MinPower)

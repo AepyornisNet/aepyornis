@@ -329,6 +329,12 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 			gpxExtensionData["heart-rate"] = cast.ToString(r.HeartRate)
 		}
 
+		if r.EnhancedRespirationRate != math.MaxUint16 {
+			gpxExtensionData["respiration-rate"] = cast.ToString(r.EnhancedRespirationRateScaled())
+		} else if r.RespirationRate != math.MaxUint8 {
+			gpxExtensionData["respiration-rate"] = cast.ToString(r.RespirationRate)
+		}
+
 		if r.EnhancedSpeed != math.MaxUint32 {
 			gpxExtensionData["speed"] = cast.ToString(r.EnhancedSpeedScaled())
 		} else if r.Speed != math.MaxUint16 {
@@ -462,6 +468,11 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *database.MapData {
 		}
 		if r.HeartRate != math.MaxUint8 {
 			extra.Set("heart-rate", float64(r.HeartRate))
+		}
+		if r.EnhancedRespirationRate != math.MaxUint16 {
+			extra.Set("respiration-rate", float64(r.EnhancedRespirationRateScaled()))
+		} else if r.RespirationRate != math.MaxUint8 {
+			extra.Set("respiration-rate", float64(r.RespirationRate))
 		}
 		if r.Power != math.MaxUint16 {
 			extra.Set("power", float64(r.Power))

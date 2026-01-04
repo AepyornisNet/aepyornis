@@ -282,6 +282,12 @@ type rangeAggregator struct {
 	minHR   float64
 	foundHR bool
 
+	sumRR   float64
+	rrCnt   int
+	maxRR   float64
+	minRR   float64
+	foundRR bool
+
 	sumPower   float64
 	powerCnt   int
 	maxPower   float64
@@ -315,6 +321,7 @@ func (r *rangeAggregator) processMetrics(points []MapPoint, startIdx, endIdx int
 		r.handleUpDown(points, i, startIdx)
 		r.handleCadence(p)
 		r.handleHeartRate(p)
+		r.handleRespirationRate(p)
 		r.handlePower(p)
 		r.handleTemperature(p)
 	}
@@ -387,6 +394,22 @@ func (r *rangeAggregator) handleHeartRate(p MapPoint) {
 	if !r.foundHR || hr < r.minHR {
 		r.minHR = hr
 		r.foundHR = true
+	}
+}
+
+func (r *rangeAggregator) handleRespirationRate(p MapPoint) {
+	rr, ok := p.ExtraMetrics["respiration-rate"]
+	if !ok || rr <= 0 {
+		return
+	}
+
+	r.sumRR += rr
+	r.rrCnt++
+	r.maxRR = max(r.maxRR, rr)
+
+	if !r.foundRR || rr < r.minRR {
+		r.minRR = rr
+		r.foundRR = true
 	}
 }
 
@@ -476,6 +499,14 @@ func (r *rangeAggregator) finalize() {
 		r.stats.MaxHeartRate = r.maxHR
 		if r.foundHR {
 			r.stats.MinHeartRate = r.minHR
+		}
+	}
+
+	if r.rrCnt > 0 {
+		r.stats.AverageRespirationRate = r.sumRR / float64(r.rrCnt)
+		r.stats.MaxRespirationRate = r.maxRR
+		if r.foundRR {
+			r.stats.MinRespirationRate = r.minRR
 		}
 	}
 
