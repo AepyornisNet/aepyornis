@@ -12,6 +12,7 @@ import (
 	"github.com/muktihari/fit/decoder"
 	"github.com/muktihari/fit/kit/semicircles"
 	"github.com/muktihari/fit/profile/filedef"
+	"github.com/muktihari/fit/profile/typedef"
 	"github.com/spf13/cast"
 	"github.com/tkrajina/gpxgo/gpx"
 )
@@ -64,7 +65,6 @@ func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 			w.Data.WorkoutData.MergeNonZero(database.WorkoutData{
 				Name:          session.Sport.String() + " - " + startTime.Format(time.DateTime),
 				Type:          session.Sport.String(),
-				SubType:       session.SubSport.String(),
 				Start:         startTime,
 				Stop:          startTime.Add(elapsedDuration),
 				TotalDistance: session.TotalDistanceScaled(),
@@ -73,6 +73,10 @@ func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 				WorkoutStats:  stats,
 				Laps:          laps,
 			})
+		}
+
+		if session.SubSport != typedef.SubSportInvalid {
+			w.Data.WorkoutData.SubType = session.SubSport.String()
 		}
 
 		w.Name = w.Data.WorkoutData.Name
