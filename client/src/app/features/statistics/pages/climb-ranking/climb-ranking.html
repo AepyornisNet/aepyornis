@@ -1,15 +1,17 @@
-<div class="container my-5 records-ranking">
+<div class="container my-5 climb-ranking">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
     <div>
       <a class="text-decoration-none" routerLink="/statistics/records">
         {{ 'statistics.back_to_records' | translate }}
       </a>
-      <h1 class="display-5 mb-1">{{ label }} · {{ ('sports.' + workoutType) | translate }}</h1>
+      <h1 class="display-5 mb-1 d-flex align-items-center gap-2">
+        <app-icon class="text-primary" name="up" size="32" />
+        <span>{{ 'statistics.climb_ranking_title' | translate:{ sport: ('sports.' + workoutType) | translate } }}</span>
+      </h1>
       <p class="text-muted mb-0">
-        {{ 'statistics.fastest_workouts_for' | translate: { label: label } }}
+        {{ 'statistics.climb_ranking_description' | translate:{ sport: ('sports.' + workoutType) | translate } }}
       </p>
     </div>
-    <app-icon name="trophy" size="48" />
   </div>
 
   @if (loading()) {
@@ -26,7 +28,7 @@
 
   @if (!loading() && records().length === 0) {
     <div class="alert alert-secondary">
-      {{ 'statistics.no_efforts_distance' | translate }}
+      {{ 'statistics.no_climb_records' | translate }}
     </div>
   }
 
@@ -36,21 +38,21 @@
         <thead>
           <tr>
             <th style="width: 80px">{{ 'statistics.rank' | translate }}</th>
+            <th>{{ 'statistics.elevation_gain' | translate }}</th>
             <th>{{ 'dashboard.distance' | translate }}</th>
-            <th>{{ 'dashboard.duration' | translate }}</th>
-            <th>{{ 'dashboard.average_speed' | translate }}</th>
+            <th>{{ 'workout.average_slope' | translate }}</th>
             <th class="text-end">{{ 'statistics.workout' | translate }}</th>
           </tr>
         </thead>
         <tbody>
-          @for (dr of records(); track dr.workout_id; let idx = $index) {
+          @for (cr of records(); track $index; let idx = $index) {
             <tr>
               <td class="fw-semibold">#{{ rankNumber(idx) }}</td>
-              <td>{{ formatDistance(dr.distance) }}</td>
-              <td>{{ formatDuration(dr.duration_seconds) }}</td>
-              <td>{{ formatSpeed(dr.average_speed) }}</td>
+              <td class="fw-semibold">{{ formatElevation(cr.elevation_gain) }}</td>
+              <td>{{ formatDistance(cr.distance) }}</td>
+              <td>{{ formatSlope(cr.average_slope) }}</td>
               <td class="text-end">
-                <a [routerLink]="['/workouts', dr.workout_id]">{{ formatDate(dr.date) }}</a>
+                <a [routerLink]="['/workouts', cr.workout_id]">{{ formatDate(cr.date) }}</a>
               </td>
             </tr>
           }

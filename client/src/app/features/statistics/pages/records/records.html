@@ -34,9 +34,9 @@
             <div>
               <h3 class="mb-1">
                 <app-icon
-                  [name]="record.workout_type"
-                  size="24"
                   class="me-2 text-primary"
+                  size="24"
+                  [name]="record.workout_type"
                 />
                 {{ ('sports.' + record.workout_type) | translate }}
               </h3>
@@ -94,6 +94,12 @@
                         class="ms-2"
                         [routerLink]="['/workouts', record.biggest_climb.workout_id]"
                         >{{ formatDate(record.biggest_climb.date) }}</a
+                      >
+                    </div>
+                    <div class="stat-link">
+                      <a
+                        [routerLink]="['/statistics/records/climbs', record.workout_type]"
+                        >{{ 'statistics.view_ranking' | translate }}</a
                       >
                     </div>
                   </div>

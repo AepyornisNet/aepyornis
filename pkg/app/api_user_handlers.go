@@ -15,6 +15,7 @@ func (a *App) registerAPIV2UserRoutes(e *echo.Group) {
 	e.GET("/whoami", a.apiV2WhoamiHandler).Name = "api-v2-whoami"
 	e.GET("/totals", a.apiV2TotalsHandler).Name = "api-v2-totals"
 	e.GET("/records", a.apiV2RecordsHandler).Name = "api-v2-records"
+	e.GET("/records/climbs/ranking", a.apiV2ClimbRecordsRankingHandler).Name = "api-v2-records-climbs-ranking"
 	e.GET("/records/ranking", a.apiV2RecordsRankingHandler).Name = "api-v2-records-ranking"
 	e.GET("/:id", a.apiV2UserShowHandler).Name = "api-v2-user-show"
 }
@@ -150,6 +151,59 @@ func (a *App) apiV2RecordsRankingHandler(c echo.Context) error {
 
 	resp := api.PaginatedResponse[api.DistanceRecordResponse]{
 		Results:    api.NewDistanceRecordResponses(records),
+		Page:       pagination.Page,
+		PerPage:    pagination.PerPage,
+		TotalPages: pagination.CalculateTotalPages(totalCount),
+		TotalCount: totalCount,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2ClimbRecordsRankingHandler returns ranked climb segments ordered by elevation gain
+// @Summary      Get ranked climb records
+// @Tags         user
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        workout_type  query     string  true   "Workout type (e.g. cycling)"
+// @Param        start         query     string  false  "Start date (YYYY-MM-DD)"
+// @Param        end           query     string  false  "End date (YYYY-MM-DD, inclusive)"
+// @Param        page          query     int     false  "Page"
+// @Param        per_page      query     int     false  "Per page"
+// @Produce      json
+// @Success      200  {object}  api.PaginatedResponse[api.ClimbRecordResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /records/climbs/ranking [get]
+func (a *App) apiV2ClimbRecordsRankingHandler(c echo.Context) error {
+	user := a.getCurrentUser(c)
+
+	workoutType := c.QueryParam("workout_type")
+	if workoutType == "" {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout_type is required"))
+	}
+
+	wt := database.AsWorkoutType(workoutType)
+
+	var pagination api.PaginationParams
+	if err := c.Bind(&pagination); err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+	pagination.SetDefaults()
+
+	startDate, endDate, err := parseDateRange(c)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	records, totalCount, err := user.GetClimbRanking(wt, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	}
+
+	resp := api.PaginatedResponse[api.ClimbRecordResponse]{
+		Results:    api.NewClimbRecordResponses(records),
 		Page:       pagination.Page,
 		PerPage:    pagination.PerPage,
 		TotalPages: pagination.CalculateTotalPages(totalCount),

@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"gorm.io/gorm"
@@ -424,6 +425,78 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 	}
 
 	return result, totalCount, nil
+}
+
+// GetClimbRanking returns climb segments ordered by elevation gain (desc) for the given workout type.
+// A workout may appear multiple times if it contains multiple qualifying climbs.
+func (u *User) GetClimbRanking(t WorkoutType, startDate, endDate *time.Time, limit, offset int) ([]ClimbRecord, int64, error) {
+	if !t.IsDistance() {
+		return nil, 0, fmt.Errorf("climb ranking is only supported for distance workout types: %s", t)
+	}
+
+	workouts, err := loadWorkoutsForRecords(u.db, u.ID, t, startDate, endDate)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	records := make([]ClimbRecord, 0)
+
+	for _, w := range workouts {
+		if w == nil || w.Data == nil {
+			continue
+		}
+
+		for _, climb := range w.Data.Climbs {
+			if climb.Type != "climb" {
+				continue
+			}
+
+			records = append(records, ClimbRecord{
+				ElevationGain: climb.Elevation,
+				Distance:      climb.Length,
+				AverageSlope:  climb.AvgSlope,
+				WorkoutID:     w.ID,
+				Date:          w.Date,
+				StartIndex:    climb.StartIdx,
+				EndIndex:      climb.EndIdx,
+				Active:        true,
+			})
+		}
+	}
+
+	sort.SliceStable(records, func(i, j int) bool {
+		a := records[i]
+		b := records[j]
+
+		if a.ElevationGain != b.ElevationGain {
+			return a.ElevationGain > b.ElevationGain
+		}
+
+		if a.Distance != b.Distance {
+			return a.Distance > b.Distance
+		}
+
+		if a.Date.Equal(b.Date) {
+			return false
+		}
+
+		return a.Date.Before(b.Date)
+	})
+
+	totalCount := int64(len(records))
+
+	// Apply pagination manually on the in-memory slice
+	start := offset
+	if start > len(records) {
+		start = len(records)
+	}
+
+	end := start + limit
+	if end > len(records) {
+		end = len(records)
+	}
+
+	return records[start:end], totalCount, nil
 }
 
 //nolint:gocyclo // queries gather several aggregates in one pass

@@ -193,3 +193,29 @@ func NewDistanceRecordResponses(records []database.DistanceRecord) []DistanceRec
 
 	return results
 }
+
+// NewClimbRecordResponses converts climb records to API responses.
+func NewClimbRecordResponses(records []database.ClimbRecord) []ClimbRecordResponse {
+	if len(records) == 0 {
+		return []ClimbRecordResponse{}
+	}
+
+	results := make([]ClimbRecordResponse, 0, len(records))
+	for _, cr := range records {
+		if !cr.Active {
+			continue
+		}
+
+		results = append(results, ClimbRecordResponse{
+			ElevationGain: cr.ElevationGain,
+			Distance:      cr.Distance,
+			AverageSlope:  cr.AverageSlope,
+			WorkoutID:     cr.WorkoutID,
+			Date:          cr.Date,
+			StartIndex:    cr.StartIndex,
+			EndIndex:      cr.EndIndex,
+		})
+	}
+
+	return results
+}

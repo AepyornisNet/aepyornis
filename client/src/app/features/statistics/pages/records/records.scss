@@ -19,6 +19,15 @@
   font-weight: 600;
 }
 
+.statistics-records .stat-pill .stat-link {
+  font-size: 0.85rem;
+}
+
+.statistics-records .stat-pill .stat-link a {
+  color: var(--bs-primary-text);
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .statistics-records .stat-pill {
     width: 100%;

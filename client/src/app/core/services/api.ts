@@ -16,6 +16,7 @@ import {
 } from '../../core/types/user';
 import {
   CalendarEvent,
+  ClimbRecordEntry,
   DistanceRecordEntry,
   Totals,
   Workout,
@@ -399,6 +400,37 @@ export class Api {
 
     return this.http.get<PaginatedAPIResponse<DistanceRecordEntry>>(
       `${this.baseUrl}/records/ranking`,
+      { params: httpParams },
+    );
+  }
+
+  public getClimbRanking(params: {
+    workout_type: string;
+    start?: string;
+    end?: string;
+    page?: number;
+    per_page?: number;
+  }): Observable<PaginatedAPIResponse<ClimbRecordEntry>> {
+    let httpParams = new HttpParams().set('workout_type', params.workout_type);
+
+    if (params.start) {
+      httpParams = httpParams.set('start', params.start);
+    }
+
+    if (params.end) {
+      httpParams = httpParams.set('end', params.end);
+    }
+
+    if (params.page) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+
+    if (params.per_page) {
+      httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+
+    return this.http.get<PaginatedAPIResponse<ClimbRecordEntry>>(
+      `${this.baseUrl}/records/climbs/ranking`,
       { params: httpParams },
     );
   }

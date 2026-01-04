@@ -79,6 +79,13 @@ export const routes: Routes = [
           import('./features/statistics/pages/statistics/statistics').then((m) => m.Statistics),
       },
       {
+        path: 'statistics/records/climbs/:workoutType',
+        loadComponent: () =>
+          import('./features/statistics/pages/climb-ranking/climb-ranking').then(
+            (m) => m.ClimbRankingPage,
+          ),
+      },
+      {
         path: 'statistics/records/:workoutType/:label',
         loadComponent: () =>
           import('./features/statistics/pages/records-ranking/records-ranking').then(

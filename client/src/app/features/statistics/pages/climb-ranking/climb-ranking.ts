@@ -1,36 +1,39 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import { Api } from '../../../../core/services/api';
-import { DistanceRecordEntry } from '../../../../core/types/workout';
-import { UserPreferredUnits } from '../../../../core/types/user';
+
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Pagination } from '../../../../core/components/pagination/pagination';
-import { TranslatePipe } from '@ngx-translate/core';
+import { Api } from '../../../../core/services/api';
+import { UserPreferredUnits } from '../../../../core/types/user';
+import { ClimbRecordEntry } from '../../../../core/types/workout';
+
+const METERS_TO_MILES = 0.000621371;
+const METERS_TO_FEET = 3.28084;
 
 @Component({
-  selector: 'app-records-ranking',
+  selector: 'app-climb-ranking',
   standalone: true,
   imports: [RouterLink, AppIcon, Pagination, TranslatePipe],
-  templateUrl: './records-ranking.html',
-  styleUrl: './records-ranking.scss',
+  templateUrl: './climb-ranking.html',
+  styleUrl: './climb-ranking.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RecordsRankingPage implements OnInit {
+export class ClimbRankingPage implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
 
-  private readonly metersToMiles = 0.000621371;
-  private readonly metersToFeet = 3.28084;
-
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
-  public readonly records = signal<DistanceRecordEntry[]>([]);
+  public readonly records = signal<ClimbRecordEntry[]>([]);
   public readonly preferredUnits = signal<UserPreferredUnits | null>(null);
   public readonly page = signal(1);
   public readonly totalPages = signal(1);
   public readonly totalCount = signal(0);
   public readonly perPage = 20;
+
+  public workoutType = '';
 
   private readonly visiblePages = computed(() => {
     const current = this.page();
@@ -72,16 +75,8 @@ export class RecordsRankingPage implements OnInit {
     return pages;
   });
 
-  public workoutType = '';
-  public label = '';
-
   public async ngOnInit(): Promise<void> {
-    const workoutType = this.route.snapshot.paramMap.get('workoutType') || '';
-    const label = this.route.snapshot.paramMap.get('label') || '';
-
-    this.workoutType = workoutType;
-    this.label = decodeURIComponent(label);
-
+    this.workoutType = this.route.snapshot.paramMap.get('workoutType') ?? '';
     await this.loadData();
   }
 
@@ -95,9 +90,8 @@ export class RecordsRankingPage implements OnInit {
       const [profile, ranking] = await Promise.all([
         firstValueFrom(this.api.getProfile()),
         firstValueFrom(
-          this.api.getDistanceRecordRanking({
+          this.api.getClimbRanking({
             workout_type: this.workoutType,
-            label: this.label,
             page: targetPage,
             per_page: this.perPage,
           }),
@@ -112,7 +106,7 @@ export class RecordsRankingPage implements OnInit {
       this.totalPages.set(ranking.total_pages ?? 1);
       this.totalCount.set(ranking.total_count ?? 0);
     } catch (err) {
-      console.error('Failed to load distance ranking', err);
+      console.error('Failed to load climb ranking', err);
       this.error.set('Failed to load ranking. Please try again.');
     } finally {
       this.loading.set(false);
@@ -160,20 +154,7 @@ export class RecordsRankingPage implements OnInit {
     await this.loadData(page);
   }
 
-  public formatDistance(meters: number | undefined): string {
-    if (meters === undefined || meters === null) {
-      return '—';
-    }
-
-    const units = this.preferredUnits();
-    if (!units || units.distance === 'km') {
-      return `${(meters / 1000).toFixed(2)} km`;
-    }
-
-    return `${(meters * this.metersToMiles).toFixed(2)} mi`;
-  }
-
-  public formatElevation(meters: number | undefined): string {
+  public formatElevation(meters?: number | null): string {
     if (meters === undefined || meters === null) {
       return '—';
     }
@@ -183,44 +164,28 @@ export class RecordsRankingPage implements OnInit {
       return `${meters.toFixed(0)} m`;
     }
 
-    return `${(meters * this.metersToFeet).toFixed(0)} ft`;
+    return `${(meters * METERS_TO_FEET).toFixed(0)} ft`;
   }
 
-  public formatSpeed(metersPerSecond: number | undefined): string {
-    if (!metersPerSecond && metersPerSecond !== 0) {
+  public formatDistance(meters?: number | null): string {
+    if (meters === undefined || meters === null) {
       return '—';
     }
 
     const units = this.preferredUnits();
-    if (!units || units.speed === 'km/h') {
-      return `${(metersPerSecond * 3.6).toFixed(2)} km/h`;
+    if (!units || units.distance === 'km') {
+      return `${(meters / 1000).toFixed(2)} km`;
     }
 
-    return `${(metersPerSecond * 2.23694).toFixed(2)} mph`;
+    return `${(meters * METERS_TO_MILES).toFixed(2)} mi`;
   }
 
-  public formatDuration(seconds: number | undefined): string {
-    if (seconds === undefined || seconds === null) {
+  public formatSlope(slope?: number | null): string {
+    if (slope === undefined || slope === null) {
       return '—';
     }
 
-    const rounded = Math.round(seconds);
-    const hours = Math.floor(rounded / 3600);
-    const minutes = Math.floor((rounded % 3600) / 60);
-    const secs = rounded % 60;
-
-    const parts: string[] = [];
-    if (hours > 0) {
-      parts.push(`${hours}h`);
-    }
-    if (minutes > 0) {
-      parts.push(`${minutes}m`);
-    }
-    if (hours === 0 && minutes === 0) {
-      parts.push(`${secs}s`);
-    }
-
-    return parts.join(' ');
+    return `${(slope * 100).toFixed(1)}%`;
   }
 
   public formatDate(date: string | undefined): string {

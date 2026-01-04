@@ -81,6 +81,7 @@
     "clear": "Clear",
     "all": "All",
     "since": "Since",
+    "per": "Per",
     "day": "Day",
     "week": "Week",
     "month": "Month",
@@ -255,11 +256,15 @@
     "covered": "Covered",
     "workout": "Workout",
     "no_distance_records": "No distance-based records yet.",
+    "climb_ranking_title": "Biggest climbs for {{sport}}",
+    "climb_ranking_description": "Individual climbs ranked by elevation gain.",
     "back_to_records": "← Back to records",
     "fastest_workouts_for": "Fastest workouts for {{label}} (best first)",
     "no_efforts_distance": "No efforts recorded yet for this distance.",
+    "no_climb_records": "No climb records yet.",
     "rank": "Rank",
-    "page_info": "Page {{page}} of {{total}}"
+    "page_info": "Page {{page}} of {{total}}",
+    "view_ranking": "View ranking"
   },
   "user": {
     "profile": {
