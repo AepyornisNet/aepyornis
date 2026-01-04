@@ -74,7 +74,7 @@
                       <span class="text-muted ms-2">
                         {{ formatDistance(record.biggest_climb.distance) }}
                         ·
-                        {{ record.biggest_climb.average_slope.toFixed(1) }}%
+                        {{ (record.biggest_climb.average_slope * 100).toFixed(1) }}%
                       </span>
                       <a
                         class="ms-2"

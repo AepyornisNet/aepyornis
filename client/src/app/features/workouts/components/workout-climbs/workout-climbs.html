@@ -23,7 +23,7 @@
           <td>{{ formatDistance(climb.start_distance) }} km</td>
           <td>{{ formatDistance(climb.length) }} km</td>
           <td>{{ formatElevation(climb.elevation) }} m</td>
-          <td>{{ climb.avg_slope.toFixed(1) }}%</td>
+          <td>{{ (climb.avg_slope * 100).toFixed(1) }}%</td>
           <td>{{ climb.category }}</td>
         </tr>
       }
