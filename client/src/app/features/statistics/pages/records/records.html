@@ -43,7 +43,11 @@
                   <div class="value">
                     @if (record.distance) {
                       {{ formatDistance(record.distance.value) }}
-                      <span class="text-muted ms-2">{{ formatDate(record.distance.date) }}</span>
+                      <a
+                        class="ms-2"
+                        [routerLink]="['/workouts', record.distance.workout_id]"
+                        >{{ formatDate(record.distance.date) }}
+                      </a>
                     } @else {
                       —
                     }
@@ -57,7 +61,11 @@
                   <div class="value">
                     @if (record.total_up) {
                       {{ formatElevation(record.total_up.value) }}
-                      <span class="text-muted ms-2">{{ formatDate(record.total_up.date) }}</span>
+                      <a
+                        class="ms-2"
+                        [routerLink]="['/workouts', record.total_up.workout_id]"
+                        >{{ formatDate(record.total_up.date) }}
+                      </a>
                     } @else {
                       —
                     }
