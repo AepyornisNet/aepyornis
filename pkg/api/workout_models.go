@@ -13,7 +13,7 @@ import (
 type WorkoutResponse struct {
 	ID         uint64               `json:"id"`
 	Date       time.Time            `json:"date"`
-	Dirty      bool 	              `json:"dirty"`
+	Dirty      bool                 `json:"dirty"`
 	Name       string               `json:"name"`
 	Notes      string               `json:"notes"`
 	Type       string               `json:"type"`
