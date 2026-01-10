@@ -145,7 +145,7 @@ func biggestClimbRecord(workouts []*Workout) *ClimbRecord {
 			}
 
 			candidate := ClimbRecord{
-				ElevationGain: climb.Elevation,
+				ElevationGain: climb.Gain,
 				Distance:      climb.Length,
 				AverageSlope:  climb.AvgSlope,
 				WorkoutID:     w.ID,
