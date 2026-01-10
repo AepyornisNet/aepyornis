@@ -41,6 +41,7 @@ L.Icon.Default.mergeOptions({
 export class Heatmap implements AfterViewInit, OnDestroy {
   private readonly mapContainer = viewChild<ElementRef<HTMLDivElement>>('mapContainer');
 
+  private leaflet = window.L;
   private api = inject(Api);
   private environmentInjector = inject(EnvironmentInjector);
   private applicationRef = inject(ApplicationRef);
@@ -76,23 +77,23 @@ export class Heatmap implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.map = L.map(containerRef.nativeElement, {
+    this.map = this.leaflet.map(containerRef.nativeElement, {
       fadeAnimation: false,
     });
 
-    const layerStreet = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const layerStreet = this.leaflet.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       className: 'map-tiles',
     });
 
-    const layerAerial = L.tileLayer(
+    const layerAerial = this.leaflet.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       {
         attribution: 'Powered by Esri',
       },
     );
 
-    L.control
+    this.leaflet.control
       .layers({
         Streets: layerStreet,
         Aerial: layerAerial,
@@ -110,10 +111,10 @@ export class Heatmap implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const CustomControl = L.Control.extend({
+    const CustomControl = this.leaflet.Control.extend({
       options: { position: 'topright' },
       onAdd: () => {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        const container = this.leaflet.DomUtil.create('div', 'leaflet-bar leaflet-control');
         container.style.backgroundColor = 'white';
         container.style.padding = '10px';
         container.innerHTML = `
@@ -137,7 +138,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
           </div>
         `;
 
-        L.DomEvent.disableClickPropagation(container);
+        this.leaflet.DomEvent.disableClickPropagation(container);
 
         const radiusInput = container.querySelector('#radius') as HTMLInputElement;
         const blurInput = container.querySelector('#blur') as HTMLInputElement;
@@ -186,9 +187,9 @@ export class Heatmap implements AfterViewInit, OnDestroy {
       }
 
       if (centersResponse?.results && this.map) {
-        this.markersLayer = L.markerClusterGroup({ showCoverageOnHover: false });
+        this.markersLayer = this.leaflet.markerClusterGroup({ showCoverageOnHover: false });
 
-        const geoJsonLayer = L.geoJSON(
+        const geoJsonLayer = this.leaflet.geoJSON(
           centersResponse.results as unknown as GeoJSON.GeoJsonObject,
           {
             onEachFeature: (feature: unknown, layer) => {
@@ -272,7 +273,7 @@ export class Heatmap implements AfterViewInit, OnDestroy {
       config.gradient = { 0: 'blue' };
     }
 
-    this.heatLayer = L.heatLayer(this.heatMapData, config);
+    this.heatLayer = this.leaflet.heatLayer(this.heatMapData, config);
     this.heatLayer?.addTo(this.map);
 
     // Toggle markers
