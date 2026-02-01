@@ -452,7 +452,7 @@ func (u *User) GetClimbRanking(t WorkoutType, startDate, endDate *time.Time, lim
 			}
 
 			records = append(records, ClimbRecord{
-				ElevationGain: climb.Elevation,
+				ElevationGain: climb.Gain,
 				Distance:      climb.Length,
 				AverageSlope:  climb.AvgSlope,
 				WorkoutID:     w.ID,

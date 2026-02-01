@@ -207,16 +207,16 @@ type ZoneRangeResponse struct {
 
 // ClimbSegmentResponse represents a climb or descent segment
 type ClimbSegmentResponse struct {
-	Index         int     `json:"index"`
-	Type          string  `json:"type"`
-	StartDistance float64 `json:"start_distance"`
-	Length        float64 `json:"length"`
-	Elevation     float64 `json:"elevation"`
-	AvgSlope      float64 `json:"avg_slope"`
-	Category      string  `json:"category"`
-	StartIndex    int     `json:"start_index"`
-	EndIndex      int     `json:"end_index"`
-	Duration      float64 `json:"duration"`
+	Index         int                `json:"index"`
+	Type          database.SlopeKind `json:"type"`
+	StartDistance float64            `json:"start_distance"`
+	Length        float64            `json:"length"`
+	Elevation     float64            `json:"elevation"`
+	AvgSlope      float64            `json:"avg_slope"`
+	Category      database.Category  `json:"category"`
+	StartIndex    int                `json:"start_index"`
+	EndIndex      int                `json:"end_index"`
+	Duration      float64            `json:"duration"`
 }
 
 // RouteSegmentMatchResponse represents a matched route segment
@@ -407,9 +407,9 @@ func NewWorkoutDetailResponse(w *database.Workout, records []database.WorkoutInt
 				wr.Climbs[i] = ClimbSegmentResponse{
 					Index:         climb.Index,
 					Type:          climb.Type,
-					StartDistance: climb.StartDistance,
+					StartDistance: climb.Start.TotalDistance,
 					Length:        climb.Length,
-					Elevation:     climb.Elevation,
+					Elevation:     climb.Gain,
 					AvgSlope:      climb.AvgSlope,
 					Category:      climb.Category,
 					StartIndex:    climb.StartIdx,
