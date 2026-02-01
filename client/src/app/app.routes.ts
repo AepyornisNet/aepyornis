@@ -11,8 +11,8 @@ export const routes: Routes = [
   {
     path: 'share/:uuid',
     loadComponent: () =>
-      import('./features/workouts/pages/public-workout/public-workout').then(
-        (m) => m.PublicWorkout,
+      import('./features/workouts/pages/detail/workout-detail').then(
+        (m) => m.WorkoutDetailPage,
       ),
   },
   {

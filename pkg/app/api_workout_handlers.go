@@ -30,6 +30,8 @@ func (a *App) registerAPIV2WorkoutRoutes(apiGroup *echo.Group, apiGroupPublic *e
 	workoutGroup.DELETE("/:id", a.apiV2WorkoutDeleteHandler).Name = "api-v2-workout-delete"
 	workoutGroup.DELETE("/:id/share", a.apiV2WorkoutShareDeleteHandler).Name = "api-v2-workout-share-delete"
 	apiGroupPublic.GET("/workouts/public/:uuid", a.apiV2WorkoutPublicHandler).Name = "api-v2-workout-public"
+	apiGroupPublic.GET("/workouts/public/:uuid/breakdown", a.apiV2WorkoutPublicBreakdownHandler).Name = "api-v2-workout-public-breakdown"
+	apiGroupPublic.GET("/workouts/public/:uuid/stats-range", a.apiV2WorkoutPublicRangeStatsHandler).Name = "api-v2-workout-public-range-stats"
 }
 
 // apiV2WorkoutsHandler returns a paginated list of workouts for the current user
@@ -864,6 +866,153 @@ func (a *App) apiV2WorkoutPublicHandler(c echo.Context) error {
 
 	resp := api.Response[api.WorkoutDetailResponse]{
 		Results: result,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2WorkoutPublicBreakdownHandler returns breakdown table data or laps for a public workout
+// @Summary      Get public workout breakdown
+// @Tags         workouts
+// @Param        uuid   path   string  true  "Public UUID"
+// @Param        unit   query  string  false "Unit"
+// @Param        count  query  number  false "Count"
+// @Produce      json
+// @Success      200  {object}  api.Response[api.WorkoutBreakdownResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      404  {object}  api.Response[any]
+// @Router       /workouts/public/{uuid}/breakdown [get]
+func (a *App) apiV2WorkoutPublicBreakdownHandler(c echo.Context) error {
+	// Parse UUID
+	uuidParam := c.Param("uuid")
+	u, err := uuid.Parse(uuidParam)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	params := struct {
+		Count float64 `query:"count"`
+		Mode  string  `query:"mode"`
+	}{
+		Count: 1.0,
+		Mode:  "auto",
+	}
+
+	if err := c.Bind(&params); err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	if params.Count <= 0 {
+		params.Count = 1.0
+	}
+
+	// Get workout by UUID
+	workout, err := database.GetWorkoutDetailsByUUID(a.db, u)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+
+	owner, err := database.GetUserByID(a.db, workout.UserID)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+
+	resp := api.Response[api.WorkoutBreakdownResponse]{}
+
+	preferLaps := (params.Mode == "" || params.Mode == "auto" || params.Mode == "laps") && workout.Data != nil && len(workout.Data.Laps) > 1
+
+	if preferLaps {
+		resp.Results = api.WorkoutBreakdownResponse{
+			Mode:  "laps",
+			Items: api.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Details.Points, owner.PreferredUnits()),
+		}
+
+		return c.JSON(http.StatusOK, resp)
+	}
+
+	if workout.Data == nil || workout.Data.Details == nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+	}
+
+	breakdown, err := workout.StatisticsPer(params.Count, owner.PreferredUnits().Distance())
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	resp.Results = api.WorkoutBreakdownResponse{
+		Mode:  "unit",
+		Items: api.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, owner.PreferredUnits()),
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// apiV2WorkoutPublicRangeStatsHandler returns aggregate statistics for a selection of map points in a public workout
+// @Summary      Get public workout range statistics
+// @Tags         workouts
+// @Param        uuid         path   string  true  "Public UUID"
+// @Param        start_index  query  int  false "Start point index (inclusive)"
+// @Param        end_index    query  int  false "End point index (inclusive)"
+// @Produce      json
+// @Success      200  {object}  api.Response[api.WorkoutRangeStatsResponse]
+// @Failure      400  {object}  api.Response[any]
+// @Failure      404  {object}  api.Response[any]
+// @Router       /workouts/public/{uuid}/stats-range [get]
+func (a *App) apiV2WorkoutPublicRangeStatsHandler(c echo.Context) error {
+	// Parse UUID
+	uuidParam := c.Param("uuid")
+	u, err := uuid.Parse(uuidParam)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	params := struct {
+		StartIndex *int `query:"start_index"`
+		EndIndex   *int `query:"end_index"`
+	}{}
+
+	if err := c.Bind(&params); err != nil {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+	}
+
+	// Get workout by UUID
+	workout, err := database.GetWorkoutDetailsByUUID(a.db, u)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+
+	owner, err := database.GetUserByID(a.db, workout.UserID)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+
+	if workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+	}
+
+	points := workout.Data.Details.Points
+	startIdx := 0
+	endIdx := len(points) - 1
+
+	if params.StartIndex != nil {
+		startIdx = *params.StartIndex
+	}
+
+	if params.EndIndex != nil {
+		endIdx = *params.EndIndex
+	}
+
+	if startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+	}
+
+	stats, ok := workout.Data.Details.StatsForRange(startIdx, endIdx)
+	if !ok {
+		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+	}
+
+	resp := api.Response[api.WorkoutRangeStatsResponse]{
+		Results: api.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx, owner.PreferredUnits()),
 	}
 
 	return c.JSON(http.StatusOK, resp)

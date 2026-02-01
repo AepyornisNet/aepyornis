@@ -15,13 +15,17 @@
           (click)="selectMatch(match)"
         >
           <td>
-            <a
-              class="segment-link"
-              [routerLink]="['/route-segments', match.route_segment_id]"
-              (click)="$event.stopPropagation()"
-            >
-              {{ match.route_segment.name }}
-            </a>
+            @if (viewMode()) {
+              <span class="segment-link">{{ match.route_segment.name }}</span>
+            } @else {
+              <a
+                class="segment-link"
+                [routerLink]="['/route-segments', match.route_segment_id]"
+                (click)="$event.stopPropagation()"
+              >
+                {{ match.route_segment.name }}
+              </a>
+            }
           </td>
           <td class="text-end font-monospace">
             {{ formatDistance(match.distance) }} km

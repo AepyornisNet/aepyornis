@@ -15,6 +15,7 @@ export class WorkoutDetailDataService {
   public readonly workout = signal<WorkoutDetail | null>(null);
   public readonly loading = signal(false);
   public readonly error = signal<string | null>(null);
+  public readonly publicUuid = signal<string | null>(null);
 
   // Computed values
   public readonly hasTrack = computed(() => {
@@ -69,6 +70,7 @@ export class WorkoutDetailDataService {
   );
 
   public async loadWorkout(id: number): Promise<void> {
+    this.publicUuid.set(null);
     this.loading.set(true);
     this.error.set(null);
 
@@ -90,6 +92,26 @@ export class WorkoutDetailDataService {
     this.workout.set(null);
     this.loading.set(false);
     this.error.set(null);
+    this.publicUuid.set(null);
+  }
+
+  public async loadPublicWorkout(uuid: string): Promise<void> {
+    this.publicUuid.set(uuid);
+    this.loading.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(this.api.getPublicWorkout(uuid));
+
+      if (response) {
+        this.workout.set(response.results);
+      }
+    } catch (err) {
+      console.error('Failed to load public workout:', err);
+      this.error.set('Failed to load workout. The link may have expired or been removed.');
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   // Formatting utilities

@@ -15,6 +15,7 @@ import { RouterLink } from '@angular/router';
 export class RouteSegmentMatchesComponent {
   private readonly coordinatorService = inject(WorkoutDetailCoordinatorService);
   public readonly matches = input.required<RouteSegmentMatch[]>();
+  public readonly viewMode = input(false);
 
   public formatDistance(meters: number): string {
     return (meters / 1000).toFixed(2);
