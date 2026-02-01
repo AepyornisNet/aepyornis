@@ -1,0 +1,16 @@
+remote_theme: vaibhavvikas/jekyll-theme-minimalistic
+title: Workout Tracker
+description: A workout tracking web application for personal use (or family, friends), geared towards running and other GPX-based activities
+navigation:
+  - name: Home
+    link: ./index.html
+  - name: Getting started
+    link: ./getting-started.html
+  - name: Configuration
+    link: ./configuration.html
+  - name: API
+    link: ./api.html
+  - name: Screenshots
+    link: ./screenshots.html
+  - name: Development
+    link: ./development.html
