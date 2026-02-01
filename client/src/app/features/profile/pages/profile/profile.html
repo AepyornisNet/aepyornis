@@ -20,12 +20,13 @@
   } @else if (profile()) {
     <!-- User Settings Section -->
     <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
+      <div class="card-header">
+        <h3 class="h5 mb-0 d-flex align-items-center gap-2">
           <app-icon name="person" size="24" />
           {{ 'Your settings' | translate }}
         </h3>
-
+      </div>
+      <div class="card-body">
         <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
           <!-- API Access -->
           <div class="mb-3 pb-3 border-bottom">
@@ -220,12 +221,13 @@
 
     <!-- Preferred Units Section -->
     <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
+      <div class="card-header">
+        <h3 class="h5 mb-0 d-flex align-items-center gap-2">
           <app-icon name="straighten" size="24" />
           {{ 'Preferred units' | translate }}
         </h3>
-
+      </div>
+      <div class="card-body">
         <div [formGroup]="profileForm">
           <div class="row g-3" formGroupName="preferred_units">
             <!-- Speed -->
@@ -283,12 +285,12 @@
 
     <!-- Actions Section -->
     <div class="card shadow-sm">
-      <div class="card-body">
-        <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
-          <app-icon name="bolt" size="24" />
+      <div class="card-header">
+        <h3 class="h5 mb-0 d-flex align-items-center gap-2">
           {{ 'Actions' | translate }}
         </h3>
-
+      </div>
+      <div class="card-body">
         <div
           class="d-flex align-items-center justify-content-between p-3 bg-body-secondary rounded"
         >

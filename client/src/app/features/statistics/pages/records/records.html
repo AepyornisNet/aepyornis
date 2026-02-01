@@ -29,18 +29,17 @@
   @for (record of records(); track record.workout_type) {
     @if (record.active) {
       <div class="card mb-4 shadow-sm">
+        <div class="card-header">
+          <h3 class="card-title">
+            <app-icon
+              size="24"
+              [name]="record.workout_type"
+            />
+            {{ sportLabel(record.workout_type) | translate }}
+          </h3>
+        </div>
         <div class="card-body">
-          <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-            <div>
-              <h3 class="mb-1">
-                <app-icon
-                  class="me-2 text-primary"
-                  size="24"
-                  [name]="record.workout_type"
-                />
-                {{ sportLabel(record.workout_type) | translate }}
-              </h3>
-            </div>
+          <div class="d-flex flex-wrap flex-row-reverse align-items-start gap-3 mb-3">
             <div class="d-flex flex-wrap gap-2 stats-pills">
               <div class="stat-pill" [attr.title]="'Longest distance' | translate">
                 <app-icon name="distance" size="16" />

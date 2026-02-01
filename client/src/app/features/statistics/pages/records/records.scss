@@ -28,6 +28,16 @@
   text-decoration: underline;
 }
 
+.card-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+
+  app-icon {
+    margin-right: 12px;
+  }
+}
+
 @media (max-width: 768px) {
   .statistics-records .stat-pill {
     width: 100%;

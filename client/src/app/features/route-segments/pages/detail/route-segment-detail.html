@@ -51,22 +51,21 @@
     <div class="row">
       <!-- Map Section -->
       <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'Route Map' | translate }}</h5>
-            <app-route-segment-map
-              [center]="routeSegment()!.center"
-              [points]="routeSegment()!.points"
-            />
-          </div>
+        <div class="map-container shadow-sm">
+          <app-route-segment-map
+            [center]="routeSegment()!.center"
+            [points]="routeSegment()!.points"
+          />
         </div>
       </div>
 
       <!-- Details Section -->
       <div class="col-lg-6 mb-4">
         <div class="card shadow-sm">
+          <div class="card-header">
+            <h5 class="mb-0">{{ 'Details' | translate }}</h5>
+          </div>
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'Details' | translate }}</h5>
             <table class="table table-sm">
               <tbody>
                 @if (routeSegment()!.filename) {
@@ -150,11 +149,13 @@
       <div class="row">
         <div class="col-12 mb-4">
           <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title mb-3">
+            <div class="card-header">
+              <h5 class="mb-0">
                 <app-icon name="note" size="20" />
                 <span>{{ 'Notes' | translate }}</span>
               </h5>
+            </div>
+            <div class="card-body">
               <div style="white-space: pre-wrap">{{ routeSegment()!.notes }}</div>
             </div>
           </div>
@@ -167,13 +168,15 @@
       <div class="row">
         <div class="col-12 mb-4">
           <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title mb-3">
+            <div class="card-header">
+              <h5 class="mb-0">
                 {{
                   'Workout Matches'
                     | translate: { count: routeSegment()!.matches.length }
                 }}
               </h5>
+            </div>
+            <div class="card-body">
               <div class="table-responsive">
                 <table class="table table-hover mb-0">
                   <thead>

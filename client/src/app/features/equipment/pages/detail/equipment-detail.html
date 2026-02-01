@@ -41,8 +41,10 @@
       <div class="col-lg-6">
         <!-- Equipment Details Card -->
         <div class="card shadow-sm mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">{{ 'Details' | translate }}</h5>
+          </div>
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'Details' | translate }}</h5>
             <table class="table table-sm">
               <tbody>
                 <tr>
@@ -75,8 +77,10 @@
         <!-- Description Card -->
         @if (equipment()!.description) {
           <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'Description' | translate }}</h5>
+            </div>
             <div class="card-body">
-              <h5 class="card-title mb-3">{{ 'Description' | translate }}</h5>
               <p class="card-text">{{ equipment()!.description }}</p>
             </div>
           </div>
@@ -85,8 +89,10 @@
         <!-- Notes Card -->
         @if (equipment()!.notes) {
           <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'Notes' | translate }}</h5>
+            </div>
             <div class="card-body">
-              <h5 class="card-title mb-3">{{ 'Notes' | translate }}</h5>
               <div class="card-text" style="white-space: pre-wrap">{{ equipment()!.notes }}</div>
             </div>
           </div>
@@ -95,10 +101,10 @@
         <!-- Default Workout Types -->
         @if (equipment()!.default_for && equipment()!.default_for!.length > 0) {
           <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'Default For Workout Types' | translate }}</h5>
+            </div>
             <div class="card-body">
-              <h5 class="card-title mb-3">
-                {{ 'Default For Workout Types' | translate }}
-              </h5>
               <div class="d-flex flex-wrap gap-2">
                 @for (type of equipment()!.default_for!; track type) {
                   <span class="badge bg-primary">{{ sportLabel(type) | translate }}</span>
@@ -112,8 +118,10 @@
       <div class="col-lg-6">
         <!-- Usage statistics -->
         <div class="card shadow-sm mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">{{ 'Usage Statistics' | translate }}</h5>
+          </div>
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'Usage Statistics' | translate }}</h5>
             @if (equipment()!.usage && equipment()!.usage!.workouts > 0) {
               <table class="table table-sm mb-0">
                 <tbody>

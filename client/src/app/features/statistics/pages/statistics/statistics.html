@@ -57,11 +57,13 @@
     <div class="row g-4">
       <div class="col-lg-6">
         <div class="card">
-          <div class="card-body">
+          <div class="card-header">
             <h3 class="card-title">
-              <app-icon name="workout" />
+              <app-icon name="workout" size="24" />
               {{ 'Workouts' | translate }}
             </h3>
+          </div>
+          <div class="card-body">
             <app-statistic-chart
               [preferredUnits]="preferredUnits() || undefined"
               [stats]="statistics()"
@@ -73,11 +75,13 @@
 
       <div class="col-lg-6">
         <div class="card">
-          <div class="card-body">
+          <div class="card-header">
             <h3 class="card-title">
-              <app-icon name="duration" />
+              <app-icon name="duration" size="24" />
               {{ 'Duration' | translate }}
             </h3>
+          </div>
+          <div class="card-body">
             <app-statistic-chart
               [filterNoDuration]="true"
               [preferredUnits]="preferredUnits() || undefined"
@@ -91,11 +95,13 @@
 
       <div class="col-lg-6">
         <div class="card">
-          <div class="card-body">
+          <div class="card-header">
             <h3 class="card-title">
-              <app-icon name="distance" />
+              <app-icon name="distance" size="24" />
               {{ 'Distance' | translate }}
             </h3>
+          </div>
+          <div class="card-body">
             <app-statistic-chart
               [filterNoDuration]="true"
               [preferredUnits]="preferredUnits() || undefined"
@@ -109,11 +115,13 @@
 
       <div class="col-lg-6">
         <div class="card">
-          <div class="card-body">
+          <div class="card-header">
             <h3 class="card-title">
-              <app-icon name="speed" />
+              <app-icon name="speed" size="24" />
               {{ 'Average speed' | translate }}
             </h3>
+          </div>
+          <div class="card-body">
             <app-statistic-chart
               [filterNoDuration]="true"
               [preferredUnits]="preferredUnits() || undefined"
@@ -127,11 +135,13 @@
 
       <div class="col-lg-6">
         <div class="card">
-          <div class="card-body">
+          <div class="card-header">
             <h3 class="card-title">
-              <app-icon name="speed" />
+              <app-icon name="speed" size="24" />
               Average Speed (No Pause)
             </h3>
+          </div>
+          <div class="card-body">
             <app-statistic-chart
               [filterNoDuration]="true"
               [preferredUnits]="preferredUnits() || undefined"
@@ -145,11 +155,13 @@
 
       <div class="col-lg-6">
         <div class="card">
-          <div class="card-body">
+          <div class="card-header">
             <h3 class="card-title">
-              <app-icon name="max-speed" />
+              <app-icon name="max-speed" size="24" />
               Max Speed
             </h3>
+          </div>
+          <div class="card-body">
             <app-statistic-chart
               [filterNoDuration]="true"
               [preferredUnits]="preferredUnits() || undefined"
