@@ -8,6 +8,7 @@ import { Pagination } from '../../../../core/components/pagination/pagination';
 import { Api } from '../../../../core/services/api';
 import { UserPreferredUnits } from '../../../../core/types/user';
 import { ClimbRecordEntry } from '../../../../core/types/workout';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 const METERS_TO_MILES = 0.000621371;
 const METERS_TO_FEET = 3.28084;
@@ -32,6 +33,7 @@ export class ClimbRankingPage implements OnInit {
   public readonly totalPages = signal(1);
   public readonly totalCount = signal(0);
   public readonly perPage = 20;
+  public readonly sportLabel = getSportLabel;
 
   public workoutType = '';
 

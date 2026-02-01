@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
+import { _ } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -25,7 +26,7 @@ export class RouteSegments extends PaginatedListView<RouteSegment> {
   public readonly hasRouteSegments = computed(() => this.hasItems());
 
   public readonly routeSegmentListConfig: BaseListConfig = {
-    title: 'menu.route_segments',
+    title: _('Route segments'),
   };
 
   public async loadData(page?: number): Promise<void> {

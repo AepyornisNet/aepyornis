@@ -11,7 +11,7 @@
               [class.btn-primary]="breakdownMode() === 'laps'"
               (click)="useLaps()"
             >
-              {{ 'workout.laps' | translate }}
+              {{ 'Laps' | translate }}
             </button>
           }
 
@@ -31,7 +31,7 @@
     </div>
 
     @if (loading()) {
-      <div class="text-center text-muted small mb-2">{{ 'misc.loading' | translate }}</div>
+      <div class="text-center text-muted small mb-2">{{ 'Loading' | translate }}</div>
     }
 
     @if (breakdown()?.items?.length) {
@@ -39,18 +39,18 @@
         <table class="table table-sm table-hover breakdown-table">
           <thead>
             <tr>
-              <th>{{ 'workout.index' | translate }}</th>
-              <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
-              <th class="text-end">{{ 'workout.time' | translate }}</th>
-              <th class="text-end">{{ 'workout.speed' | translate }}</th>
-              <th class="text-end">{{ 'workout.pace' | translate }}</th>
-              <th class="text-end d-none d-lg-table-cell">{{ 'workout.elev_up' | translate }}</th>
-              <th class="text-end d-none d-lg-table-cell">{{ 'workout.elev_down' | translate }}</th>
+              <th>{{ 'Index' | translate }}</th>
+              <th class="text-end">{{ 'Distance' | translate }}</th>
+              <th class="text-end">{{ 'Time' | translate }}</th>
+              <th class="text-end">{{ 'Speed' | translate }}</th>
+              <th class="text-end">{{ 'Pace' | translate }}</th>
+              <th class="text-end d-none d-lg-table-cell">{{ 'Elev Up' | translate }}</th>
+              <th class="text-end d-none d-lg-table-cell">{{ 'Elev Down' | translate }}</th>
               @if (hasExtraMetric('heart-rate')) {
-                <th class="text-end d-none d-xl-table-cell">{{ 'workout.hr' | translate }}</th>
+                <th class="text-end d-none d-xl-table-cell">{{ 'Hr' | translate }}</th>
               }
               @if (hasExtraMetric('cadence')) {
-                <th class="text-end d-none d-xl-table-cell">{{ 'workout.cadence' | translate }}</th>
+                <th class="text-end d-none d-xl-table-cell">{{ 'Cadence' | translate }}</th>
               }
             </tr>
           </thead>
@@ -113,7 +113,7 @@
         </table>
       </div>
     } @else if (!loading()) {
-      <div class="text-muted small">{{ 'misc.no_items' | translate }}</div>
+      <div class="text-muted small">{{ 'No items found' | translate }}</div>
     }
   }
 </div>

@@ -7,6 +7,7 @@ import { UserPreferredUnits } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Pagination } from '../../../../core/components/pagination/pagination';
 import { TranslatePipe } from '@ngx-translate/core';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-records-ranking',
@@ -31,6 +32,7 @@ export class RecordsRankingPage implements OnInit {
   public readonly totalPages = signal(1);
   public readonly totalCount = signal(0);
   public readonly perPage = 20;
+  public readonly sportLabel = getSportLabel;
 
   private readonly visiblePages = computed(() => {
     const current = this.page();

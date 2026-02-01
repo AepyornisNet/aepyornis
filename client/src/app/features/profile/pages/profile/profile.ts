@@ -77,7 +77,7 @@ export class Profile implements OnInit {
       }
     } catch (err) {
       this.error.set(
-        this.translate.instant('user.profile.load_profile_failed', {
+        this.translate.instant('Failed to load profile: {{message}}', {
           message: this.errorMessage(err),
         }),
       );
@@ -100,14 +100,14 @@ export class Profile implements OnInit {
       if (response?.results) {
         this.profile.set(response.results);
         this.successMessage.set(
-          this.translate.instant('user.profile.profile_updated_success'),
+          this.translate.instant('Profile updated successfully'),
         );
         // Clear success message after 3 seconds
         setTimeout(() => this.successMessage.set(null), 3000);
       }
     } catch (err) {
       this.error.set(
-        this.translate.instant('user.profile.save_profile_failed', {
+        this.translate.instant('Failed to save profile: {{message}}', {
           message: this.errorMessage(err),
         }),
       );
@@ -117,7 +117,7 @@ export class Profile implements OnInit {
   }
 
   public async resetAPIKey(): Promise<void> {
-    if (!confirm(this.translate.instant('user.profile.confirm_reset_api_key'))) {
+    if (!confirm(this.translate.instant('Are you sure you want to generate a new API key? The old key will no longer work.'))) {
       return;
     }
 
@@ -127,13 +127,13 @@ export class Profile implements OnInit {
     try {
       const response = await firstValueFrom(this.api.resetAPIKey());
       if (response?.results) {
-        this.successMessage.set(this.translate.instant('user.profile.reset_api_key_success'));
+        this.successMessage.set(this.translate.instant('API key reset successfully'));
         // Reload profile to get new key
         await this.loadProfile();
       }
     } catch (err) {
       this.error.set(
-        this.translate.instant('user.profile.reset_api_key_failed', {
+        this.translate.instant('Failed to reset API key: {{message}}', {
           message: this.errorMessage(err),
         }),
       );
@@ -141,7 +141,7 @@ export class Profile implements OnInit {
   }
 
   public async refreshWorkouts(): Promise<void> {
-    if (!confirm(this.translate.instant('user.profile.confirm_refresh_workouts'))) {
+    if (!confirm(this.translate.instant('Are you sure you want to refresh all your workouts? This may take several minutes.'))) {
       return;
     }
 
@@ -153,12 +153,12 @@ export class Profile implements OnInit {
       if (response?.results) {
         this.successMessage.set(
           response.results.message ??
-              this.translate.instant('user.profile.refresh_workouts_success'),
+              this.translate.instant('Workouts refreshed'),
         );
       }
     } catch (err) {
       this.error.set(
-        this.translate.instant('user.profile.refresh_workouts_failed', {
+        this.translate.instant('Failed to refresh workouts: {{message}}', {
           message: this.errorMessage(err),
         }),
       );
@@ -174,12 +174,12 @@ export class Profile implements OnInit {
       .writeText(text)
       .then(() => {
         this.successMessage.set(
-          this.translate.instant('user.profile.copied_to_clipboard'),
+          this.translate.instant('Copied to clipboard'),
         );
         setTimeout(() => this.successMessage.set(null), 2000);
       })
       .catch(() => {
-        this.error.set(this.translate.instant('user.profile.copy_failed'));
+        this.error.set(this.translate.instant('Failed to copy to clipboard'));
       });
   }
 

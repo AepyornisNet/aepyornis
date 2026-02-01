@@ -2,9 +2,9 @@
   <h2 class="display-6 mb-4 d-flex align-items-center gap-2">
     <app-icon name="settings" size="32" />
     @if (user()) {
-      {{ 'admin.manage_user' | translate: { name: user()!.name } }}
+      {{ 'Manage user: {{name}}' | translate: { name: user()!.name } }}
     } @else {
-      {{ 'admin.edit_user_title' | translate }}
+      {{ 'Edit user' | translate }}
     }
   </h2>
 
@@ -17,7 +17,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'Loading' | translate }}</span>
       </div>
     </div>
   } @else if (user()) {
@@ -26,7 +26,7 @@
         <form [formGroup]="userForm" (ngSubmit)="saveUser()">
           <!-- Username -->
           <div class="mb-3">
-            <label class="form-label" for="username"> {{ 'admin.username' | translate }} </label>
+            <label class="form-label" for="username"> {{ 'Username' | translate }} </label>
             <input
               class="form-control"
               formControlName="username"
@@ -38,32 +38,32 @@
 
           <!-- Name -->
           <div class="mb-3">
-            <label class="form-label" for="name"> {{ 'admin.name' | translate }} </label>
+            <label class="form-label" for="name"> {{ 'Name' | translate }} </label>
             <input class="form-control" formControlName="name" id="name" required type="text" />
           </div>
 
           <!-- Password -->
           <div class="mb-3">
-            <label class="form-label" for="password"> {{ 'admin.password' | translate }} </label>
+            <label class="form-label" for="password"> {{ 'Password' | translate }} </label>
             <input
               class="form-control"
               formControlName="password"
               id="password"
               type="password"
-              [placeholder]="'admin.password_placeholder' | translate"
+              [placeholder]="'Leave blank to keep current password' | translate"
             />
           </div>
 
           <!-- Active -->
           <div class="mb-3 form-check">
             <input class="form-check-input" formControlName="active" id="active" type="checkbox" />
-            <label class="form-check-label" for="active"> {{ 'admin.active' | translate }} </label>
+            <label class="form-check-label" for="active"> {{ 'Active' | translate }} </label>
           </div>
 
           <!-- Admin -->
           <div class="mb-3 form-check">
             <input class="form-check-input" formControlName="admin" id="admin" type="checkbox" />
-            <label class="form-check-label" for="admin"> {{ 'admin.admin' | translate }} </label>
+            <label class="form-check-label" for="admin"> {{ 'Admin' | translate }} </label>
           </div>
 
           <!-- Actions -->
@@ -75,12 +75,12 @@
                   class="spinner-border spinner-border-sm me-2"
                   role="status"
                 ></span>
-                {{ 'admin.saving' | translate }}
+                {{ 'Saving...' | translate }}
               } @else {
-                {{ 'admin.update_user' | translate }}
+                {{ 'Update user' | translate }}
               }
             </button>
-            <a class="btn btn-secondary" routerLink="/admin"> {{ 'admin.cancel' | translate }} </a>
+            <a class="btn btn-secondary" routerLink="/admin"> {{ 'Cancel' | translate }} </a>
           </div>
         </form>
       </div>

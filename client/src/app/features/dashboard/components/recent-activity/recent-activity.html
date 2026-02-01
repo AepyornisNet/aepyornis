@@ -1,19 +1,19 @@
 <div class="recent-activity-container">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">{{ 'dashboard.recent_activity' | translate }}</h5>
+    <h5 class="mb-0">{{ 'Recent activity' | translate }}</h5>
   </div>
 
   @if (initialLoading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'misc.last' | translate }}</span>
+        <span class="visually-hidden">{{ 'Last' | translate }}</span>
       </div>
     </div>
   } @else if (displayedWorkouts().length === 0) {
     <div class="card shadow-sm">
       <div class="card-body">
         <p class="text-muted text-center py-5 mb-0">
-          {{ 'dashboard.recent_no_activity' | translate }}
+          {{ 'Recent No Activity' | translate }}
         </p>
       </div>
     </div>
@@ -85,7 +85,7 @@
       @if (loading()) {
         <div class="text-center py-3">
           <div class="spinner-border spinner-border-sm text-primary" role="status">
-            <span class="visually-hidden">{{ 'misc.last' | translate }}</span>
+            <span class="visually-hidden">{{ 'Last' | translate }}</span>
           </div>
         </div>
       }
@@ -93,14 +93,14 @@
       @if (hasMore() && !loading()) {
         <div class="text-center py-3">
           <button class="btn btn-outline-primary" (click)="loadMore()">
-            {{ 'dashboard.load_more' | translate }}
+            {{ 'Load More' | translate }}
           </button>
         </div>
       }
 
       @if (!hasMore() && displayedWorkouts().length > 0) {
         <div class="text-center text-muted py-3">
-          <small>{{ 'dashboard.no_more_activities' | translate }}</small>
+          <small>{{ 'No More Activities' | translate }}</small>
         </div>
       }
     </div>

@@ -2,14 +2,14 @@
   <div class="card-header">
     <h5 class="mb-0">
       <app-icon class="me-2" name="users" />
-      <ng-container>{{ 'dashboard.other_users' | translate }}</ng-container>
+      <ng-container>{{ 'Other Users' | translate }}</ng-container>
     </h5>
   </div>
   <div class="card-body">
     @if (loading()) {
       <div class="text-center py-3">
         <div class="spinner-border spinner-border-sm text-primary" role="status">
-          <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
+          <span class="visually-hidden">{{ 'Loading' | translate }}</span>
         </div>
       </div>
     }
@@ -20,7 +20,7 @@
     }
     @if (!loading() && !error()) {
       @if (otherUsers().length === 0) {
-        <p class="text-muted mb-0">{{ 'dashboard.other_users_empty' | translate }}</p>
+        <p class="text-muted mb-0">{{ 'No other users found' | translate }}</p>
       } @else {
         <div class="d-flex flex-wrap gap-2">
           @for (user of otherUsers(); track user.id) {

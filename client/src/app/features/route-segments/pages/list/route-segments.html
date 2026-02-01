@@ -10,14 +10,14 @@
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th>{{ 'misc.name' | translate }}</th>
-          <th class="text-end">{{ 'dashboard.distance' | translate }}</th>
+          <th>{{ 'Name' | translate }}</th>
+          <th class="text-end">{{ 'Distance' | translate }}</th>
           <th class="text-end d-none d-md-table-cell">
-            {{ 'route_segment.max_elevation' | translate }}
+            {{ 'Max elevation' | translate }}
           </th>
-          <th class="text-end d-none d-lg-table-cell">{{ 'route_segment.matches' | translate }}</th>
-          <th class="text-end d-none d-lg-table-cell">{{ 'misc.created' | translate }}</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'misc.actions' | translate }}</th>
+          <th class="text-end d-none d-lg-table-cell">{{ 'Matches' | translate }}</th>
+          <th class="text-end d-none d-lg-table-cell">{{ 'Created' | translate }}</th>
+          <th class="text-end d-none d-xl-table-cell">{{ 'Actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -36,14 +36,14 @@
                     <br />
                     <small class="text-muted">
                       <app-icon name="bidirectional" size="14" />
-                      <span>{{ 'route_segment.bidirectional' | translate }}</span>
+                      <span>{{ 'Bidirectional' | translate }}</span>
                     </small>
                   }
                   @if (segment.circular) {
                     <br />
                     <small class="text-muted">
                       <app-icon name="circular" size="14" />
-                      <span>{{ 'route_segment.circular' | translate }}</span>
+                      <span>{{ 'Circular' | translate }}</span>
                     </small>
                   }
                 </div>

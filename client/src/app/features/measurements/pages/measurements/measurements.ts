@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { _, TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Measurement } from '../../../../core/types/measurement';
@@ -19,8 +19,8 @@ export class Measurements extends PaginatedListView<Measurement> {
   private api = inject(Api);
 
   public readonly measurementListConfig: BaseListConfig = {
-    title: 'menu.measurements',
-    addButtonText: 'measurements.add_measurement',
+    title: _('Measurements'),
+    addButtonText: _('Add measurement'),
   };
 
   // Alias for better template readability

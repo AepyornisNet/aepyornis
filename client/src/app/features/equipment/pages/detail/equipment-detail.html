@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'Loading' | translate }}</span>
       </div>
     </div>
   }
@@ -18,21 +18,21 @@
       <div>
         <button class="btn btn-link p-0 mb-2" (click)="goBack()">
           <app-icon name="back" size="20" />
-          <span>{{ 'equipment.back_to_equipment' | translate }}</span>
+          <span>{{ 'Back To Equipment' | translate }}</span>
         </button>
         <h1 class="display-4 mb-0">{{ equipment()!.name }}</h1>
         @if (equipment()!.active) {
-          <span class="badge bg-success">{{ 'misc.active' | translate }}</span>
+          <span class="badge bg-success">{{ 'Active' | translate }}</span>
         } @else {
-          <span class="badge bg-secondary">{{ 'equipment.inactive' | translate }}</span>
+          <span class="badge bg-secondary">{{ 'Inactive' | translate }}</span>
         }
       </div>
       <div class="btn-group" role="group">
         <button class="btn btn-outline-secondary" (click)="openEditModal()">
-          {{ 'misc.edit' | translate }}
+          {{ 'Edit' | translate }}
         </button>
         <button class="btn btn-outline-danger" (click)="openDeleteModal()">
-          {{ 'misc.delete' | translate }}
+          {{ 'Delete' | translate }}
         </button>
       </div>
     </div>
@@ -42,28 +42,28 @@
         <!-- Equipment Details Card -->
         <div class="card shadow-sm mb-4">
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'misc.details' | translate }}</h5>
+            <h5 class="card-title mb-3">{{ 'Details' | translate }}</h5>
             <table class="table table-sm">
               <tbody>
                 <tr>
-                  <th style="width: 40%">{{ 'misc.name' | translate }}</th>
+                  <th style="width: 40%">{{ 'Name' | translate }}</th>
                   <td>{{ equipment()!.name }}</td>
                 </tr>
                 <tr>
-                  <th>{{ 'misc.created' | translate }}</th>
+                  <th>{{ 'Created' | translate }}</th>
                   <td>{{ formatDate(equipment()!.created_at) }}</td>
                 </tr>
                 <tr>
-                  <th>{{ 'misc.last_updated' | translate }}</th>
+                  <th>{{ 'Last updated' | translate }}</th>
                   <td>{{ formatDate(equipment()!.updated_at) }}</td>
                 </tr>
                 <tr>
-                  <th>{{ 'misc.active' | translate }}</th>
+                  <th>{{ 'Active' | translate }}</th>
                   <td>
                     @if (equipment()!.active) {
-                      <span class="text-success">{{ 'misc.yes' | translate }}</span>
+                      <span class="text-success">{{ 'Yes' | translate }}</span>
                     } @else {
-                      <span class="text-secondary">{{ 'misc.no' | translate }}</span>
+                      <span class="text-secondary">{{ 'No' | translate }}</span>
                     }
                   </td>
                 </tr>
@@ -76,7 +76,7 @@
         @if (equipment()!.description) {
           <div class="card shadow-sm mb-4">
             <div class="card-body">
-              <h5 class="card-title mb-3">{{ 'equipment.description' | translate }}</h5>
+              <h5 class="card-title mb-3">{{ 'Description' | translate }}</h5>
               <p class="card-text">{{ equipment()!.description }}</p>
             </div>
           </div>
@@ -86,7 +86,7 @@
         @if (equipment()!.notes) {
           <div class="card shadow-sm mb-4">
             <div class="card-body">
-              <h5 class="card-title mb-3">{{ 'misc.notes' | translate }}</h5>
+              <h5 class="card-title mb-3">{{ 'Notes' | translate }}</h5>
               <div class="card-text" style="white-space: pre-wrap">{{ equipment()!.notes }}</div>
             </div>
           </div>
@@ -97,7 +97,7 @@
           <div class="card shadow-sm mb-4">
             <div class="card-body">
               <h5 class="card-title mb-3">
-                {{ 'equipment.default_for_workout_types' | translate }}
+                {{ 'Default For Workout Types' | translate }}
               </h5>
               <div class="d-flex flex-wrap gap-2">
                 @for (type of equipment()!.default_for!; track type) {
@@ -113,10 +113,10 @@
         <!-- Placeholder for workouts or stats -->
         <div class="card shadow-sm mb-4">
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'equipment.usage_statistics' | translate }}</h5>
+            <h5 class="card-title mb-3">{{ 'Usage Statistics' | translate }}</h5>
             <p class="text-muted">
               {{
-                'equipment.Workout_history_and_statistics_will_be_displayed_here_in_a_future_update'
+                'Workout history and statistics will be displayed here in a future update.'
                   | translate
               }}
             </p>
@@ -133,7 +133,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'equipment.edit_equipment' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Edit Equipment' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -143,7 +143,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="edit-name">{{ 'misc.name' | translate }}</label>
+            <label class="form-label" for="edit-name">{{ 'Name' | translate }}</label>
             <input
               class="form-control"
               id="edit-name"
@@ -154,7 +154,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-description">{{
-              'equipment.description' | translate
+              'Description' | translate
             }}</label>
             <textarea
               class="form-control"
@@ -165,7 +165,7 @@
             ></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="edit-notes">{{ 'misc.notes' | translate }}</label>
+            <label class="form-label" for="edit-notes">{{ 'Notes' | translate }}</label>
             <textarea
               class="form-control"
               id="edit-notes"
@@ -183,16 +183,16 @@
               (change)="updateFormActive($any($event.target).checked)"
             />
             <label class="form-check-label" for="edit-active">
-              {{ 'misc.active' | translate }}
+              {{ 'Active' | translate }}
             </label>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="updateEquipment()">
-            {{ 'misc.update' | translate }}
+            {{ 'Update' | translate }}
           </button>
         </div>
       </div>
@@ -206,7 +206,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'equipment.delete_equipment' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Delete Equipment' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -215,18 +215,18 @@
           ></button>
         </div>
         <div class="modal-body">
-          <p>{{ 'equipment.are_you_sure_you_want_to_delete_this_equipment' | translate }}</p>
+          <p>{{ 'Are You Sure You Want To Delete This Equipment' | translate }}</p>
           <p>
             <strong>{{ equipment()!.name }}</strong>
           </p>
-          <p class="text-danger">{{ 'equipment.this_action_cannot_be_undone' | translate }}</p>
+          <p class="text-danger">{{ 'This Action Cannot Be Undone' | translate }}</p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-danger" type="button" (click)="deleteEquipment()">
-            {{ 'misc.delete' | translate }}
+            {{ 'Delete' | translate }}
           </button>
         </div>
       </div>

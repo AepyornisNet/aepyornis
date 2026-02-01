@@ -1,5 +1,5 @@
 @if (!cards().length) {
-  <p class="text-muted small mb-0">{{ 'misc.no_items' | translate }}</p>
+  <p class="text-muted small mb-0">{{ 'No items found' | translate }}</p>
 } @else {
   <div class="workout-statistics-grid">
     @for (card of cards(); track card.key) {

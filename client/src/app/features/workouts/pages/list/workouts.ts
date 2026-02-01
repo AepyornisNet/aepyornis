@@ -16,10 +16,11 @@ import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { WorkoutListActions } from '../../components/workout-list-actions/workout-list-actions';
-import { TranslatePipe, TranslateService, Translation } from '@ngx-translate/core';
+import { _, TranslatePipe, TranslateService, Translation } from '@ngx-translate/core';
 import { BaseList, BaseListConfig } from '../../../../core/components/base-list/base-list';
 import { BaseTable } from '../../../../core/components/base-table/base-table';
 import { AsyncPipe } from '@angular/common';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 type WorkoutListFilterState = {
   type: string;
@@ -50,43 +51,44 @@ export class Workouts extends PaginatedListView<Workout> {
   public readonly hasWorkouts = computed(() => this.hasItems());
 
   public readonly listConfig: BaseListConfig = {
-    title: 'menu.workouts',
-    addButtonText: 'workout.add_workout',
+    title: _('Workouts'),
+    addButtonText: _('Add workout'),
     enableSearch: false,
     enableFilters: true,
     enableMultiSelect: true,
   };
 
   public readonly workoutTypes = WORKOUT_TYPES;
+  public readonly sportLabel = getSportLabel;
 
   public readonly sinceOptions: FilterOption[] = [
-    { value: 'forever', label: this.translate.stream('filters.forever') },
-    { value: '7 days', label: this.translate.stream('filters.n_days', { num : 7 }) },
-    { value: '15 days', label: this.translate.stream('filters.n_days', { num: 15 }) },
-    { value: '1 month', label: this.translate.stream('filters.1_month') },
-    { value: '3 months', label: this.translate.stream('filters.n_months', { num: 3 }) },
-    { value: '6 months', label: this.translate.stream('filters.n_months', { num: 6 }) },
-    { value: '1 year', label: this.translate.stream('filters.1_year') },
-    { value: '2 years', label: this.translate.stream('filters.n_years', { num: 2 }) },
-    { value: '5 years', label: this.translate.stream('filters.n_years', { num: 5 }) },
-    { value: '10 years', label: this.translate.stream('filters.n_years', { num: 10 }) },
+    { value: 'forever', label: this.translate.stream('forever') },
+    { value: '7 days', label: this.translate.stream('{{num}} days', { num : 7 }) },
+    { value: '15 days', label: this.translate.stream('{{num}} days', { num: 15 }) },
+    { value: '1 month', label: this.translate.stream('1 month') },
+    { value: '3 months', label: this.translate.stream('{{num}} months', { num: 3 }) },
+    { value: '6 months', label: this.translate.stream('{{num}} months', { num: 6 }) },
+    { value: '1 year', label: this.translate.stream('1 year') },
+    { value: '2 years', label: this.translate.stream('{{num}} years', { num: 2 }) },
+    { value: '5 years', label: this.translate.stream('{{num}} years', { num: 5 }) },
+    { value: '10 years', label: this.translate.stream('{{num}} years', { num: 10 }) },
   ];
 
   public readonly orderByOptions: FilterOption[] = [
-    { value: 'date', label: this.translate.stream('misc.date') },
-    { value: 'total_distance', label: this.translate.stream('workout.distance') },
-    { value: 'total_duration', label: this.translate.stream('workout.duration') },
-    { value: 'total_weight', label: this.translate.stream('workout.weight') },
-    { value: 'total_repetitions', label: this.translate.stream('workout.repetitions') },
-    { value: 'total_up', label: this.translate.stream('workout.elev_up') },
-    { value: 'total_down', label: this.translate.stream('workout.elev_down') },
-    { value: 'average_speed_no_pause', label: this.translate.stream('workout.average_speed_no_pause') },
-    { value: 'max_speed', label: this.translate.stream('workout.max_speed') },
+    { value: 'date', label: this.translate.stream('Date') },
+    { value: 'total_distance', label: this.translate.stream('Distance') },
+    { value: 'total_duration', label: this.translate.stream('Duration') },
+    { value: 'total_weight', label: this.translate.stream('Weight') },
+    { value: 'total_repetitions', label: this.translate.stream('Repetitions') },
+    { value: 'total_up', label: this.translate.stream('Elev Up') },
+    { value: 'total_down', label: this.translate.stream('Elev Down') },
+    { value: 'average_speed_no_pause', label: this.translate.stream('Average speed no pause') },
+    { value: 'max_speed', label: this.translate.stream('Max speed') },
   ];
 
   public readonly orderDirOptions: FilterOption[] = [
-    { value: 'desc', label: this.translate.stream('filters.descending') },
-    { value: 'asc', label: this.translate.stream('filters.ascending') },
+    { value: 'desc', label: this.translate.stream('Descending') },
+    { value: 'asc', label: this.translate.stream('Ascending') },
   ];
 
   private readonly _filters = signal<WorkoutListFilterState>({

@@ -11,20 +11,20 @@
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th>{{ 'misc.date' | translate }}</th>
-          <th class="text-end">{{ 'measurements.weight' | translate }} (kg)</th>
+          <th>{{ 'Date' | translate }}</th>
+          <th class="text-end">{{ 'Weight' | translate }} (kg)</th>
           <th class="text-end d-none d-md-table-cell">
-            {{ 'measurements.height' | translate }} (cm)
+            {{ 'Height' | translate }} (cm)
           </th>
-          <th class="text-end d-none d-lg-table-cell">{{ 'measurements.steps' | translate }}</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'measurements.ftp' | translate }} (W)</th>
+          <th class="text-end d-none d-lg-table-cell">{{ 'Steps' | translate }}</th>
+          <th class="text-end d-none d-xl-table-cell">{{ 'FTP' | translate }} (W)</th>
           <th class="text-end d-none d-xl-table-cell">
-            {{ 'measurements.resting_hr' | translate }} (bpm)
+            {{ 'Resting HR' | translate }} (bpm)
           </th>
           <th class="text-end d-none d-xl-table-cell">
-            {{ 'measurements.max_hr' | translate }} (bpm)
+            {{ 'Max HR' | translate }} (bpm)
           </th>
-          <th class="text-center">{{ 'misc.actions' | translate }}</th>
+          <th class="text-center">{{ 'Actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -79,14 +79,14 @@
               <div class="btn-group btn-group-sm" role="group">
                 <button
                   class="btn btn-outline-secondary"
-                  [attr.title]="'misc.edit' | translate"
+                  [attr.title]="'Edit' | translate"
                   (click)="openEditModal(measurement)"
                 >
                   <app-icon name="edit" size="16" />
                 </button>
                 <button
                   class="btn btn-outline-danger"
-                  [attr.title]="'misc.delete' | translate"
+                  [attr.title]="'Delete' | translate"
                   (click)="openDeleteModal(measurement)"
                 >
                   <app-icon name="delete" size="16" />
@@ -106,7 +106,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'measurements.add_measurement' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Add Measurement' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -116,7 +116,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="create-date">{{ 'misc.date' | translate }}</label>
+            <label class="form-label" for="create-date">{{ 'Date' | translate }}</label>
             <input
               class="form-control"
               id="create-date"
@@ -127,7 +127,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-weight"
-              >{{ 'measurements.weight' | translate }} (kg)</label
+              >{{ 'Weight' | translate }} (kg)</label
             >
             <input
               class="form-control"
@@ -140,7 +140,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-height"
-              >{{ 'measurements.height' | translate }} (cm)</label
+              >{{ 'Height' | translate }} (cm)</label
             >
             <input
               class="form-control"
@@ -153,7 +153,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-steps">{{
-              'measurements.steps' | translate
+              'Steps' | translate
             }}</label>
             <input
               class="form-control"
@@ -165,7 +165,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-ftp">
-              {{ 'measurements.ftp' | translate }} (W)
+              {{ 'FTP' | translate }} (W)
             </label>
             <input
               class="form-control"
@@ -178,7 +178,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-rhr">
-              {{ 'measurements.resting_hr' | translate }} (bpm)
+              {{ 'Resting HR' | translate }} (bpm)
             </label>
             <input
               class="form-control"
@@ -191,7 +191,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-mhr">
-              {{ 'measurements.max_hr' | translate }} (bpm)
+              {{ 'Max HR' | translate }} (bpm)
             </label>
             <input
               class="form-control"
@@ -205,10 +205,10 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="createMeasurement()">
-            {{ 'misc.create' | translate }}
+            {{ 'Create' | translate }}
           </button>
         </div>
       </div>
@@ -222,7 +222,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'measurements.update_measurement' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Update measurement' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -232,7 +232,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="edit-date">{{ 'misc.date' | translate }}</label>
+            <label class="form-label" for="edit-date">{{ 'Date' | translate }}</label>
             <input
               class="form-control"
               id="edit-date"
@@ -243,7 +243,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-weight"
-              >{{ 'measurements.weight' | translate }} (kg)</label
+              >{{ 'Weight' | translate }} (kg)</label
             >
             <input
               class="form-control"
@@ -256,7 +256,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-height"
-              >{{ 'measurements.height' | translate }} (cm)</label
+              >{{ 'Height' | translate }} (cm)</label
             >
             <input
               class="form-control"
@@ -268,7 +268,7 @@
             />
           </div>
           <div class="mb-3">
-            <label class="form-label" for="edit-steps">{{ 'measurements.steps' | translate }}</label>
+            <label class="form-label" for="edit-steps">{{ 'Steps' | translate }}</label>
             <input
               class="form-control"
               id="edit-steps"
@@ -279,7 +279,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-ftp">
-              {{ 'measurements.ftp' | translate }} (W)
+              {{ 'FTP' | translate }} (W)
             </label>
             <input
               class="form-control"
@@ -292,7 +292,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-rhr">
-              {{ 'measurements.resting_hr' | translate }} (bpm)
+              {{ 'Resting HR' | translate }} (bpm)
             </label>
             <input
               class="form-control"
@@ -305,7 +305,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-mhr">
-              {{ 'measurements.max_hr' | translate }} (bpm)
+              {{ 'Max HR' | translate }} (bpm)
             </label>
             <input
               class="form-control"
@@ -319,10 +319,10 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="updateMeasurement()">
-            {{ 'misc.update' | translate }}
+            {{ 'Update' | translate }}
           </button>
         </div>
       </div>
@@ -336,7 +336,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'misc.delete' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Delete' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -345,17 +345,17 @@
           ></button>
         </div>
         <div class="modal-body">
-          <p>{{ 'misc.are_you_sure' | translate }}</p>
+          <p>{{ 'Are you sure?' | translate }}</p>
           <p>
             <strong>{{ formatDate(selectedMeasurement()!.date) }}</strong>
           </p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-danger" type="button" (click)="deleteMeasurement()">
-            {{ 'misc.delete' | translate }}
+            {{ 'Delete' | translate }}
           </button>
         </div>
       </div>

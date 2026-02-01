@@ -49,7 +49,10 @@ export class Dashboard implements OnInit {
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
-      this.error.set(this.translate.instant('alerts.load_failed', { page: this.translate.instant('dashboard.page') }));
+      this.error.set(this.translate.instant(
+        'Failed to load {{page}} data. Please try again.',
+        { page: this.translate.instant('dashboard') }
+      ));
     } finally {
       this.loading.set(false);
     }

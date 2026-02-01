@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { _, TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -25,8 +25,8 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
   public readonly hasEquipment = computed(() => this.hasItems());
 
   public readonly equipmentListConfig: BaseListConfig = {
-    title: 'menu.equipment',
-    addButtonText: 'equipment.add_equipment',
+    title: _('Equipment'),
+    addButtonText: _('Add equipment'),
   };
 
   // Modal state

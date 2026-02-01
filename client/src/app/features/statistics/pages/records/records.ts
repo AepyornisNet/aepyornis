@@ -7,6 +7,7 @@ import { UserPreferredUnits } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { StatisticsNav } from '../../components/statistics-nav/statistics-nav';
 import { TranslatePipe } from '@ngx-translate/core';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-statistics-records',
@@ -26,6 +27,7 @@ export class StatisticsRecords implements OnInit {
   public readonly preferredUnits = signal<UserPreferredUnits | null>(null);
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
+  public readonly sportLabel = getSportLabel;
 
   public async ngOnInit(): Promise<void> {
     await this.loadData();

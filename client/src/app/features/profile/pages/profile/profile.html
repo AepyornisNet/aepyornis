@@ -14,7 +14,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'Loading' | translate }}</span>
       </div>
     </div>
   } @else if (profile()) {
@@ -23,7 +23,7 @@
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
           <app-icon name="person" size="24" />
-          {{ 'user.profile.your_settings' | translate }}
+          {{ 'Your settings' | translate }}
         </h3>
 
         <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
@@ -37,7 +37,7 @@
                 type="checkbox"
               />
               <label class="form-check-label" for="api_active">
-                {{ 'user.profile.enable_api_access' | translate }}
+                {{ 'Enable API access' | translate }}
                 <a
                   class="link-primary ms-1"
                   href="https://github.com/jovandeginste/workout-tracker?tab=readme-ov-file#api-usage"
@@ -58,7 +58,7 @@
                 <button
                   class="btn btn-sm btn-outline-secondary"
                   type="button"
-                  [title]="'user.profile.show_hide' | translate"
+                  [title]="'show/hide' | translate"
                   (click)="toggleAPIKeyVisibility()"
                 >
                   <app-icon size="20" [name]="apiKeyVisible() ? 'visibility-off' : 'visibility'" />
@@ -66,7 +66,7 @@
                 <button
                   class="btn btn-sm btn-outline-secondary"
                   type="button"
-                  [title]="'user.profile.copy_to_clipboard' | translate"
+                  [title]="'Copy to clipboard' | translate"
                   (click)="copyToClipboard(profile()!.profile.api_key!)"
                 >
                   <app-icon name="content-copy" size="20" />
@@ -74,7 +74,7 @@
                 <button
                   class="btn btn-sm btn-outline-danger"
                   type="button"
-                  [title]="'user.profile.generate_a_new_api_key' | translate"
+                  [title]="'Generate a new API key' | translate"
                   (click)="resetAPIKey()"
                 >
                   <app-icon name="refresh" size="20" />
@@ -86,20 +86,20 @@
           <!-- Totals Show -->
           <div class="mb-3">
             <label class="form-label" for="totals_show">
-              {{ 'user.profile.totals_to_show_on_dashboard' | translate }}
+              {{ 'Totals to show on dashboard' | translate }}
             </label>
             <select class="form-select" formControlName="totals_show" id="totals_show">
-              <option value="all">{{ 'filters.all' | translate }}</option>
-              <option value="running">{{ 'sports.running' | translate }}</option>
-              <option value="cycling">{{ 'sports.cycling' | translate }}</option>
-              <option value="walking">{{ 'sports.walking' | translate }}</option>
+              <option value="all">{{ 'All' | translate }}</option>
+              <option value="running">{{ 'running' | translate }}</option>
+              <option value="cycling">{{ 'cycling' | translate }}</option>
+              <option value="walking">{{ 'walking' | translate }}</option>
             </select>
           </div>
 
           <!-- Timezone -->
           <div class="mb-3">
             <label class="form-label" for="timezone">
-              {{ 'user.profile.time_zone' | translate }}
+              {{ 'Time zone' | translate }}
             </label>
             <input
               class="form-control"
@@ -113,8 +113,8 @@
           <!-- Birthdate -->
           <div class="mb-3">
             <label class="form-label" for="birthdate">
-              {{ 'user.profile.birthdate' | translate }}
-              <small class="text-muted">{{ 'user.profile.birthdate_hint' | translate }}</small>
+              {{ 'Birthdate' | translate }}
+              <small class="text-muted">{{ '(used to estimate max heart rate)' | translate }}</small>
             </label>
             <input
               class="form-control"
@@ -127,38 +127,38 @@
           <!-- Language -->
           <div class="mb-3">
             <label class="form-label" for="language">
-              {{ 'user.profile.language' | translate }}
+              {{ 'Language' | translate }}
               <a
                 class="link-primary ms-1"
                 href="https://hosted.weblate.org/projects/workout-tracker/"
                 target="_blank"
-                [title]="'user.profile.weblate_help' | translate"
+                [title]="'Please help translate via Weblate' | translate"
               >
                 <app-icon name="translate" size="16" />
               </a>
             </label>
             <select class="form-select" formControlName="language" id="language">
-              <option value="browser">{{ 'languages.browser' | translate }}</option>
-              <option value="en">{{ 'languages.english' | translate }}</option>
-              <option value="de">{{ 'languages.german' | translate }}</option>
-              <option value="fr">{{ 'languages.french' | translate }}</option>
+              <option value="browser">{{ 'Browser / System' | translate }}</option>
+              <option value="en">{{ 'English' | translate }}</option>
+              <option value="de">{{ 'German' | translate }}</option>
+              <option value="fr">{{ 'French' | translate }}</option>
             </select>
           </div>
 
           <!-- Theme -->
           <div class="mb-3">
-            <label class="form-label" for="theme"> {{ 'user.profile.theme' | translate }} </label>
+            <label class="form-label" for="theme"> {{ 'Theme' | translate }} </label>
             <select class="form-select" formControlName="theme" id="theme">
-              <option value="light">{{ 'user.profile.light' | translate }}</option>
-              <option value="dark">{{ 'user.profile.dark' | translate }}</option>
-              <option value="browser">{{ 'user.profile.browser_system' | translate }}</option>
+              <option value="light">{{ 'Light' | translate }}</option>
+              <option value="dark">{{ 'Dark' | translate }}</option>
+              <option value="browser">{{ 'Browser / System' | translate }}</option>
             </select>
           </div>
 
           <!-- Auto Import Directory -->
           <div class="mb-3">
             <label class="form-label" for="auto_import_directory">
-              {{ 'user.profile.auto_import_directory' | translate }}
+              {{ 'Auto import directory' | translate }}
             </label>
             <input
               class="form-control"
@@ -178,7 +178,7 @@
               type="checkbox"
             />
             <label class="form-check-label" for="prefer_full_date">
-              {{ 'user.profile.show_full_date_by_default' | translate }}
+              {{ 'Show full date by default' | translate }}
             </label>
           </div>
 
@@ -191,7 +191,7 @@
               type="checkbox"
             />
             <label class="form-check-label" for="socials_disabled">
-              {{ 'user.profile.disable_social_sharing_buttons' | translate }}
+              {{ 'Disable social sharing buttons' | translate }}
             </label>
           </div>
 
@@ -208,9 +208,9 @@
                   class="spinner-border spinner-border-sm me-2"
                   role="status"
                 ></span>
-                {{ 'user.profile.saving' | translate }}
+                {{ 'Saving...' | translate }}
               } @else {
-                {{ 'user.profile.update_profile' | translate }}
+                {{ 'Update profile' | translate }}
               }
             </button>
           </div>
@@ -223,57 +223,57 @@
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
           <app-icon name="straighten" size="24" />
-          {{ 'user.profile.preferred_units' | translate }}
+          {{ 'Preferred units' | translate }}
         </h3>
 
         <div [formGroup]="profileForm">
           <div class="row g-3" formGroupName="preferred_units">
             <!-- Speed -->
             <div class="col-md-6">
-              <label class="form-label" for="speed"> {{ 'user.profile.speed' | translate }} </label>
+              <label class="form-label" for="speed"> {{ 'Speed' | translate }} </label>
               <select class="form-select" formControlName="speed" id="speed">
-                <option value="km/h">{{ 'units.kilometers_per_hour_short' | translate }}</option>
-                <option value="mph">{{ 'units.miles_per_hour_short' | translate }}</option>
+                <option value="km/h">{{ 'km/h' | translate }}</option>
+                <option value="mph">{{ 'mph' | translate }}</option>
               </select>
             </div>
 
             <!-- Distance -->
             <div class="col-md-6">
               <label class="form-label" for="distance">
-                {{ 'user.profile.distance' | translate }}
+                {{ 'Distance' | translate }}
               </label>
               <select class="form-select" formControlName="distance" id="distance">
-                <option value="km">{{ 'units.kilometers_short' | translate }}</option>
-                <option value="mi">{{ 'units.miles_short' | translate }}</option>
+                <option value="km">{{ 'km' | translate }}</option>
+                <option value="mi">{{ 'mi' | translate }}</option>
               </select>
             </div>
 
             <!-- Elevation -->
             <div class="col-md-6">
               <label class="form-label" for="elevation">
-                {{ 'user.profile.elevation' | translate }}
+                {{ 'Elevation' | translate }}
               </label>
               <select class="form-select" formControlName="elevation" id="elevation">
-                <option value="m">{{ 'units.meters_short' | translate }}</option>
-                <option value="ft">{{ 'units.feet_short' | translate }}</option>
+                <option value="m">{{ 'm' | translate }}</option>
+                <option value="ft">{{ 'ft' | translate }}</option>
               </select>
             </div>
 
             <!-- Weight -->
             <div class="col-md-6">
-              <label class="form-label" for="weight"> {{ 'user.profile.weight' | translate }} </label>
+              <label class="form-label" for="weight"> {{ 'Weight' | translate }} </label>
               <select class="form-select" formControlName="weight" id="weight">
-                <option value="kg">{{ 'units.kilograms_short' | translate }}</option>
-                <option value="lbs">{{ 'units.pounds_short' | translate }}</option>
+                <option value="kg">{{ 'kg' | translate }}</option>
+                <option value="lbs">{{ 'lbs' | translate }}</option>
               </select>
             </div>
 
             <!-- Height -->
             <div class="col-md-6">
-              <label class="form-label" for="height"> {{ 'user.profile.height' | translate }} </label>
+              <label class="form-label" for="height"> {{ 'Height' | translate }} </label>
               <select class="form-select" formControlName="height" id="height">
-                <option value="cm">{{ 'units.centimeters_short' | translate }}</option>
-                <option value="in">{{ 'units.inches_short' | translate }}</option>
+                <option value="cm">{{ 'cm' | translate }}</option>
+                <option value="in">{{ 'in' | translate }}</option>
               </select>
             </div>
           </div>
@@ -286,16 +286,16 @@
       <div class="card-body">
         <h3 class="card-title h5 mb-3 d-flex align-items-center gap-2">
           <app-icon name="bolt" size="24" />
-          {{ 'misc.actions' | translate }}
+          {{ 'Actions' | translate }}
         </h3>
 
         <div
           class="d-flex align-items-center justify-content-between p-3 bg-body-secondary rounded"
         >
           <div>
-            <div class="fw-medium">{{ 'user.profile.refresh_all_your_workouts' | translate }}</div>
+            <div class="fw-medium">{{ 'Refresh all your workouts' | translate }}</div>
             <p class="small text-muted mb-0">
-              {{ 'user.profile.refresh_workouts_help' | translate }}
+              {{ 'This will recalculate statistics for all your workouts' | translate }}
             </p>
           </div>
           <button
@@ -304,7 +304,7 @@
             (click)="refreshWorkouts()"
           >
             <app-icon name="refresh" size="20" />
-            {{ 'misc.refresh' | translate }}
+            {{ 'Refresh' | translate }}
           </button>
         </div>
       </div>

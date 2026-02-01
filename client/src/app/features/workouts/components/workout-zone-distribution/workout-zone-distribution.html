@@ -1,6 +1,6 @@
 <div class="zone-distribution">
   @if (!hasData()) {
-    <p class="text-muted mb-0">{{ 'workout.no_zone_data' | translate }}</p>
+    <p class="text-muted mb-0">{{ 'No zone data available' | translate }}</p>
   } @else {
     <div aria-hidden="true" class="zone-bar">
       @for (segment of distribution(); track segment.zone) {
@@ -21,7 +21,7 @@
             <span class="zone-dot" [style.backgroundColor]="segment.color"></span>
             <div class="zone-row__label-text">
               <span class="fw-semibold">
-                {{ 'workout.zone_label' | translate: { value: segment.zone } }}
+                {{ 'Zone {{value}}' | translate: { value: segment.zone } }}
               </span>
               @if (formatRange(segment); as rangeLabel) {
                 <small class="zone-range text-muted">{{ rangeLabel }}</small>

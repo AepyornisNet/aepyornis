@@ -24,6 +24,7 @@ import { Workout } from '../../../../core/types/workout';
 import { WorkoutRecordsComponent } from '../../components/workout-records/workout-records';
 import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } from '@ng-bootstrap/ng-bootstrap';
 import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
+import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-workout-detail',
@@ -61,6 +62,8 @@ export class WorkoutDetailPage implements OnInit {
     hasWorkoutStatistics(this.dataService.workout()),
   );
   public readonly viewMode = signal(false);
+  public readonly sportLabel = getSportLabel;
+  public readonly sportSubtypeLabel = getSportSubtypeLabel;
 
   public constructor() {
     // React to interval selection changes

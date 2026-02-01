@@ -3,8 +3,8 @@
     <div class="row justify-content-center">
       <div class="col-lg-10 col-xl-8">
         <div class="text-center mb-5">
-          <h1 class="display-4 fw-bold mb-3">{{ 'auth.welcome' | translate }}</h1>
-          <p class="lead text-muted">{{ 'auth.welcome_lead' | translate }}</p>
+          <h1 class="display-4 fw-bold mb-3">{{ 'Welcome!' | translate }}</h1>
+          <p class="lead text-muted">{{ 'Welcome Lead' | translate }}</p>
         </div>
 
         <div class="row g-4">
@@ -12,7 +12,7 @@
           <div [class]="isRegistrationDisabled ? 'col-12 col-md-8 col-lg-6 mx-auto' : 'col-md-6'">
             <div class="card shadow-sm h-100">
               <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">{{ 'auth.sign_in' | translate }}</h3>
+                <h3 class="card-title text-center mb-4">{{ 'Sign in' | translate }}</h3>
 
                 @if (errorMessage()) {
                   <div class="alert alert-danger" role="alert">
@@ -32,7 +32,7 @@
                       required
                       type="text"
                     />
-                    <label for="username">{{ 'auth.username_email' | translate }}</label>
+                    <label for="username">{{ 'Username (email)' | translate }}</label>
                   </div>
 
                   <!-- Password input -->
@@ -46,7 +46,7 @@
                       required
                       type="password"
                     />
-                    <label for="password">{{ 'auth.password' | translate }}</label>
+                    <label for="password">{{ 'Password' | translate }}</label>
                   </div>
 
                   <button
@@ -54,7 +54,7 @@
                     type="submit"
                     [disabled]="loginForm.invalid"
                   >
-                    {{ 'auth.sign_in' | translate }}
+                    {{ 'Sign in' | translate }}
                   </button>
                 </form>
               </div>
@@ -67,7 +67,7 @@
               <div class="card shadow-sm h-100">
                 <div class="card-body p-4">
                   <h3 class="card-title text-center mb-4">
-                    {{ 'auth.register' | translate }}
+                    {{ 'Register' | translate }}
                   </h3>
 
                   @if (registerErrorMessage()) {
@@ -95,7 +95,7 @@
                         type="text"
                       />
                       <label for="registerUsername">{{
-                        'auth.username_email' | translate
+                        'Username (email)' | translate
                       }}</label>
                     </div>
 
@@ -111,7 +111,7 @@
                         required
                         type="password"
                       />
-                      <label for="registerPassword">{{ 'auth.password' | translate }}</label>
+                      <label for="registerPassword">{{ 'Password' | translate }}</label>
                     </div>
 
                     <!-- Confirm Password input -->
@@ -127,15 +127,15 @@
                           registerForm.get('confirmPassword')?.touched &&
                           registerForm.hasError('passwordMismatch')
                         "
-                        [placeholder]="'auth.confirm_password' | translate"
+                        [placeholder]="'Confirm password' | translate"
                       />
-                      <label for="confirmPassword">{{ 'auth.confirm_password' | translate }}</label>
+                      <label for="confirmPassword">{{ 'Confirm password' | translate }}</label>
                       @if (
                         registerForm.get('confirmPassword')?.touched &&
                         registerForm.hasError('passwordMismatch')
                       ) {
                         <div class="invalid-feedback d-block">
-                          {{ 'auth.passwords_do_not_match' | translate }}
+                          {{ 'Passwords do not match' | translate }}
                         </div>
                       }
                     </div>
@@ -145,7 +145,7 @@
                       type="submit"
                       [disabled]="registerForm.invalid"
                     >
-                      {{ 'auth.register' | translate }}
+                      {{ 'Register' | translate }}
                     </button>
                   </form>
                 </div>

@@ -396,13 +396,13 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
   private getMetricLabel(metric: string): string {
     const labels: Record<string, string> = {
-      speed: this.translate.instant('workout.speed'),
+      speed: this.translate.instant('Speed'),
       elevation: this.translate.instant('workout.elevation'),
-      'heart-rate': this.translate.instant('workout.heart_rate'),
-      'respiration-rate': this.translate.instant('workout.respiration_rate'),
-      cadence: this.translate.instant('workout.cadence'),
-      temperature: this.translate.instant('workout.temperature'),
-      power: this.translate.instant('workout.power'),
+      'heart-rate': this.translate.instant('Heart rate'),
+      'respiration-rate': this.translate.instant('Respiration rate'),
+      cadence: this.translate.instant('Cadence'),
+      temperature: this.translate.instant('Temperature'),
+      power: this.translate.instant('Power'),
     };
     return labels[metric] || metric;
   }

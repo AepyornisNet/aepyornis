@@ -2,7 +2,7 @@
   @if (dataService.loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'Loading' | translate }}</span>
       </div>
     </div>
   }
@@ -13,7 +13,7 @@
     </div>
     @if (!viewMode()) {
       <button class="btn btn-primary" (click)="goBack()">
-        {{ 'dashboard.workouts' | translate }}
+        {{ 'Workouts' | translate }}
       </button>
     }
   }
@@ -30,20 +30,20 @@
             @if (dataService.workout()!.locked) {
               <span class="badge bg-warning">
                 <app-icon name="locked" size="16" />
-                {{ 'workout.locked' | translate }}
+                {{ 'Locked' | translate }}
               </span>
             }
             @if (dataService.workout()!.dirty) {
               <span class="badge bg-info">
                 <app-icon name="refresh" size="16" />
-                {{ 'workout.updating' | translate }}
+                {{ 'Updating' | translate }}
               </span>
             }
           </div>
           @if (!viewMode()) {
             <div class="d-flex gap-2 align-items-center flex-wrap">
               <button class="btn btn-outline-secondary" (click)="goBack()">
-                {{ 'misc.back' | translate }}
+                {{ 'Back' | translate }}
               </button>
             </div>
           }
@@ -53,7 +53,7 @@
         <div class="workout-stats">
           @if (dataService.workout()!.total_distance) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'dashboard.distance' | translate }}</div>
+              <div class="stat-label">{{ 'Distance' | translate }}</div>
               <div class="stat-value">
                 {{ dataService.formatDistance(dataService.workout()!.total_distance!) }} km
               </div>
@@ -62,7 +62,7 @@
 
           @if (dataService.workout()!.total_duration) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'dashboard.duration' | translate }}</div>
+              <div class="stat-label">{{ 'Duration' | translate }}</div>
               <div class="stat-value">
                 {{ dataService.formatDuration(dataService.workout()!.total_duration!) }}
               </div>
@@ -71,7 +71,7 @@
 
           @if (dataService.workout()!.average_speed) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'dashboard.average_speed' | translate }}</div>
+              <div class="stat-label">{{ 'Average speed' | translate }}</div>
               <div class="stat-value">
                 {{ dataService.formatSpeed(dataService.workout()!.average_speed!) }} km/h
               </div>
@@ -80,7 +80,7 @@
 
           @if (dataService.workout()!.total_repetitions) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'workout.repetitions' | translate }}</div>
+              <div class="stat-label">{{ 'Repetitions' | translate }}</div>
               <div class="stat-value">
                 {{ dataService.workout()!.total_repetitions! }}
               </div>
@@ -89,7 +89,7 @@
 
           @if (dataService.workout()!.total_weight) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'measurements.weight' | translate }}</div>
+              <div class="stat-label">{{ 'Weight' | translate }}</div>
               <div class="stat-value">
                 {{ dataService.workout()!.total_weight! }}
               </div>
@@ -117,7 +117,7 @@
             <div class="card-header">
               <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
                 <li ngbNavItem [destroyOnHide]="false">
-                  <button ngbNavLink>{{ 'workout.time_chart' | translate }}</button>
+                  <button ngbNavLink>{{ 'Time chart' | translate }}</button>
                   <ng-template ngbNavContent>
                     <div class="chart-container">
                       <app-workout-chart
@@ -128,7 +128,7 @@
                   </ng-template>
                 </li>
                 <li ngbNavItem [destroyOnHide]="false">
-                  <button ngbNavLink>{{ 'workout.distance_chart' | translate }}</button>
+                  <button ngbNavLink>{{ 'Distance chart' | translate }}</button>
                   <ng-template ngbNavContent>
                     <div class="chart-container">
                       <app-workout-chart
@@ -141,7 +141,7 @@
                 </li>
                 @if (hasWorkoutStatisticsTab() && dataService.workout()) {
                   <li ngbNavItem>
-                    <button ngbNavLink>{{ 'workout.statistics' | translate }}</button>
+                    <button ngbNavLink>{{ 'Statistics' | translate }}</button>
                     <ng-template ngbNavContent>
                       <app-workout-statistics [workout]="dataService.workout()!" />
                     </ng-template>
@@ -149,7 +149,7 @@
                 }
                 @if (dataService.hasHeartRateDistribution()) {
                   <li ngbNavItem>
-                    <button ngbNavLink>{{ 'workout.hr-distribution' | translate }}</button>
+                    <button ngbNavLink>{{ 'Heart rate zones' | translate }}</button>
                     <ng-template ngbNavContent>
                       <app-workout-zone-distribution
                         type="heart-rate"
@@ -160,7 +160,7 @@
                 }
                 @if (dataService.hasPowerDistribution()) {
                   <li ngbNavItem>
-                    <button ngbNavLink>{{ 'workout.power-distribution' | translate }}</button>
+                    <button ngbNavLink>{{ 'Power zones' | translate }}</button>
                     <ng-template ngbNavContent>
                       <app-workout-zone-distribution
                         type="power"
@@ -185,7 +185,7 @@
               <ul #intervalsNav="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
                 <!-- Workout Breakdown (Laps + Intervals) -->
                 <li ngbNavItem>
-                  <button ngbNavLink>{{ 'workout.breakdown' | translate }}</button>
+                  <button ngbNavLink>{{ 'Breakdown' | translate }}</button>
                   <ng-template ngbNavContent>
                     <app-workout-breakdown
                       [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
@@ -199,7 +199,7 @@
                 <!-- Route Segment Matches -->
                 @if (dataService.hasRouteSegmentMatches()) {
                   <li ngbNavItem>
-					<button ngbNavLink>{{ 'route_segment.matching_route_segments' | translate }}</button>
+					<button ngbNavLink>{{ 'Matching route segments' | translate }}</button>
                     <ng-template ngbNavContent>
                       <app-route-segment-matches
                         [matches]="dataService.workout()!.route_segment_matches!"
@@ -212,7 +212,7 @@
                 <!-- Climbs -->
                 @if (dataService.hasClimbs()) {
                   <li ngbNavItem>
-                    <button ngbNavLink>{{ 'workout.climbs_and_descents' | translate }}</button>
+                    <button ngbNavLink>{{ 'Climbs and descents' | translate }}</button>
                     <ng-template ngbNavContent>
                       <app-workout-climbs [climbs]="dataService.workout()!.climbs!" />
                     </ng-template>
@@ -222,7 +222,7 @@
                 <!-- Interval Records -->
                 @if (dataService.hasRecords()) {
                   <li ngbNavItem>
-					<button ngbNavLink>{{ 'workout.records' | translate }}</button>
+					<button ngbNavLink>{{ 'Records' | translate }}</button>
                     <ng-template ngbNavContent>
                       <app-workout-records [records]="dataService.workout()!.records!" />
                     </ng-template>
@@ -238,41 +238,41 @@
         <!-- Additional Details -->
         <div class="card shadow-sm mb-4">
           <div class="card-header">
-            <h5 class="mb-0">{{ 'misc.details' | translate }}</h5>
+            <h5 class="mb-0">{{ 'Details' | translate }}</h5>
           </div>
           <div class="card-body">
             <dl class="row mb-0">
-              <dt class="col-sm-3">{{ 'workout.type' | translate }}</dt>
+              <dt class="col-sm-3">{{ 'Type' | translate }}</dt>
               <dd class="col-sm-9">
                 <app-icon size="20" [name]="dataService.workout()!.type" />
-                {{ `sports.${dataService.workout()!.type}` | translate }}
+                {{ sportLabel(dataService.workout()!.type) | translate }}
                 @if (dataService.workout()!.custom_type) {
                   <em>({{ dataService.workout()!.custom_type }})</em>
                 }
               </dd>
 
               @if (dataService.workout()!.sub_type) {
-                <dt class="col-sm-3">{{ 'workout.sub_type' | translate }}</dt>
-                <dd class="col-sm-9">{{ `sports_subtypes.${dataService.workout()!.sub_type}` | translate }}</dd>
+                <dt class="col-sm-3">{{ 'Sub type' | translate }}</dt>
+                <dd class="col-sm-9">{{ sportSubtypeLabel(dataService.workout()!.sub_type) | translate }}</dd>
               }
 
-              <dt class="col-sm-3">{{ 'misc.date' | translate }}</dt>
+              <dt class="col-sm-3">{{ 'Date' | translate }}</dt>
               <dd class="col-sm-9">{{ dataService.formatDate(dataService.workout()!.date) }}</dd>
 
               @if (dataService.workout()!.address_string) {
-                <dt class="col-sm-3">{{ 'misc.location' | translate }}</dt>
+                <dt class="col-sm-3">{{ 'Location' | translate }}</dt>
                 <dd class="col-sm-9">{{ dataService.workout()!.address_string }}</dd>
               }
 
               @if (dataService.workout()!.map_data?.creator) {
-				<dt class="col-sm-3">{{ 'workout.source' | translate }}</dt>
+				<dt class="col-sm-3">{{ 'Source' | translate }}</dt>
                 <dd class="col-sm-9">{{ dataService.workout()!.map_data!.creator }}</dd>
               }
 
               @if (dataService.workout()!.locked) {
-                <dt class="col-sm-3">{{ 'workout.status' | translate }}</dt>
+                <dt class="col-sm-3">{{ 'Status' | translate }}</dt>
                 <dd class="col-sm-9">
-                  <span class="badge bg-warning">{{ 'workout.locked' | translate }}</span>
+                  <span class="badge bg-warning">{{ 'Locked' | translate }}</span>
                 </dd>
               }
             </dl>
@@ -283,7 +283,7 @@
         @if (dataService.workout()!.notes) {
           <div class="card shadow-sm mb-4">
             <div class="card-header">
-              <h5 class="mb-0">{{ 'misc.notes' | translate }}</h5>
+              <h5 class="mb-0">{{ 'Notes' | translate }}</h5>
             </div>
             <div class="card-body">
               <p class="mb-0" style="white-space: pre-wrap">{{ dataService.workout()!.notes }}</p>
@@ -295,7 +295,7 @@
         @if (dataService.workout()!.equipment && dataService.workout()!.equipment!.length > 0) {
           <div class="card shadow-sm mb-4">
             <div class="card-header">
-              <h5 class="mb-0">{{ 'equipment.equipment' | translate }}</h5>
+              <h5 class="mb-0">{{ 'Equipment' | translate }}</h5>
             </div>
             <div class="card-body">
               <div class="list-group">

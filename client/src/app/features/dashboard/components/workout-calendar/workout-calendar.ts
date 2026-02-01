@@ -96,7 +96,10 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
           },
           error: (err) => {
             this.loading.set(false);
-            this.error.set(this.translate.instant('alerts.load_failed', { page: this.translate.instant('dashboard.calendar_events') }));
+            this.error.set(
+              this.translate.instant('Failed to load {{page}} data. Please try again.',
+              { page: this.translate.instant('calendar event') }
+            ));
             console.error('Failed to load calendar events:', err);
             failureCallback(err);
           },

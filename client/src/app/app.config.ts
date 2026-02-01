@@ -6,12 +6,12 @@ import {
   provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideTranslateService } from '@ngx-translate/core';
-import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { HttpClient, provideHttpClient, withFetch } from '@angular/common/http';
+import { provideTranslateService, TranslateLoader } from '@ngx-translate/core';
 
 import { routes } from './app.routes';
 import { iconProviders } from './core/config/icon-providers';
+import { PoTranslateLoader } from './core/i18n/po-translate-loader';
 import { User } from './core/services/user';
 import { AppConfig } from './core/services/app-config';
 
@@ -30,10 +30,11 @@ export const appConfig: ApplicationConfig = {
       return userService.checkAuthStatus();
     }),
     provideTranslateService({
-      loader: provideTranslateHttpLoader({
-        prefix: './assets/i18n/',
-        suffix: '.json',
-      }),
+      loader: {
+        provide: TranslateLoader,
+        useClass: PoTranslateLoader,
+        deps: [HttpClient],
+      },
       fallbackLang: 'en',
       lang: 'en',
     }),

@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'misc.loading' | translate }}</span>
+        <span class="visually-hidden">{{ 'Loading' | translate }}</span>
       </div>
     </div>
   }
@@ -17,7 +17,7 @@
     <div class="mb-4">
       <h1 class="display-4">
         <app-icon name="edit" size="48" />
-  <span>{{ 'route_segment.edit_route_segment' | translate }}</span>
+  <span>{{ 'Edit Route Segment' | translate }}</span>
       </h1>
       <p class="text-muted">{{ routeSegment()!.name }}</p>
     </div>
@@ -28,7 +28,7 @@
           <div class="card-body">
             <form [formGroup]="routeSegmentForm" (ngSubmit)="save()">
               <div class="mb-3">
-                <label class="form-label" for="name">{{ 'misc.name' | translate }}</label>
+                <label class="form-label" for="name">{{ 'Name' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="name"
@@ -50,11 +50,11 @@
                   />
                   <label class="form-check-label" for="bidirectional">
                     <app-icon name="bidirectional" size="16" />
-                    <span>{{ 'route_segment.bidirectional' | translate }}</span>
+                    <span>{{ 'Bidirectional' | translate }}</span>
                   </label>
                   <div class="form-text">
                     {{
-                      'route_segment.Check_if_the_route_can_be_traversed_in_both_directions'
+                      'Check If The Route Can Be Traversed In Both Directions'
                         | translate
                     }}
                   </div>
@@ -72,16 +72,16 @@
                   />
                   <label class="form-check-label" for="circular">
                     <app-icon name="circular" size="16" />
-                    <span>{{ 'route_segment.circular' | translate }}</span>
+                    <span>{{ 'Circular' | translate }}</span>
                   </label>
                   <div class="form-text">
-                    {{ 'route_segment.check_if_the_route_is_a_loop_circuit' | translate }}
+                    {{ 'Check If The Route Is A Loop Circuit' | translate }}
                   </div>
                 </div>
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="notes">{{ 'misc.notes' | translate }}</label>
+                <label class="form-label" for="notes">{{ 'Notes' | translate }}</label>
                 <textarea
                   class="form-control"
                   formControlName="notes"
@@ -100,7 +100,7 @@
                   @if (saving()) {
                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                   }
-                  <span>{{ 'route_segment.save_changes' | translate }}</span>
+                  <span>{{ 'Save changes' | translate }}</span>
                 </button>
                 <button
                   class="btn btn-secondary"
@@ -108,7 +108,7 @@
                   [disabled]="saving()"
                   (click)="reset()"
                 >
-                  {{ 'route_segment.reset' | translate }}
+                  {{ 'Reset' | translate }}
                 </button>
                 <button
                   class="btn btn-outline-secondary"
@@ -116,7 +116,7 @@
                   [disabled]="saving()"
                   (click)="cancel()"
                 >
-                  {{ 'misc.cancel' | translate }}
+                  {{ 'Cancel' | translate }}
                 </button>
               </div>
             </form>
@@ -127,27 +127,27 @@
       <div class="col-lg-4">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'route_segment.segment_details' | translate }}</h5>
+            <h5 class="card-title mb-3">{{ 'Segment Details' | translate }}</h5>
             <table class="table table-sm">
               <tbody>
                 <tr>
                   <th style="width: 50%">
                     <app-icon name="distance" size="16" />
-                    <span>{{ 'dashboard.distance' | translate }}</span>
+                    <span>{{ 'Distance' | translate }}</span>
                   </th>
                   <td>{{ (routeSegment()!.total_distance / 1000).toFixed(2) }} km</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="up" size="16" />
-                    <span>{{ 'route_segment.total_up' | translate }}</span>
+                    <span>{{ 'Total up' | translate }}</span>
                   </th>
                   <td>{{ routeSegment()!.total_up.toFixed(0) }} m</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="route-segment" size="16" />
-                    <span>{{ 'route_segment.matches' | translate }}</span>
+                    <span>{{ 'Matches' | translate }}</span>
                   </th>
                   <td>{{ routeSegment()!.matches.length || 0 }}</td>
                 </tr>
@@ -155,7 +155,7 @@
                   <tr>
                     <th>
                       <app-icon name="file" size="16" />
-                      <span>{{ 'misc.file' | translate }}</span>
+                      <span>{{ 'File' | translate }}</span>
                     </th>
                     <td>{{ routeSegment()!.filename }}</td>
                   </tr>

@@ -11,31 +11,31 @@
   <div bulkActions class="d-flex gap-2">
     <button
       class="btn btn-sm btn-outline-danger"
-      [title]="'workout.delete_selected' | translate"
+      [title]="'Delete selected workouts' | translate"
       (click)="bulkDelete()"
     >
       <app-icon name="delete" size="16" />
-      <span class="d-none d-sm-inline ms-1">{{ 'misc.delete' | translate }}</span>
+      <span class="d-none d-sm-inline ms-1">{{ 'Delete' | translate }}</span>
     </button>
   </div>
 
   <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3" filters>
     <div class="col">
-      <label class="form-label small text-muted" for="filter-type">{{ 'workout.type' | translate }}</label>
+      <label class="form-label small text-muted" for="filter-type">{{ 'Type' | translate }}</label>
       <select
         class="form-select form-select-sm"
         id="filter-type"
         [value]="filterState().type"
         (change)="onWorkoutTypeFilterChange($any($event.target).value)"
       >
-        <option value="">{{ 'filters.all' | translate }}</option>
+        <option value="">{{ 'All' | translate }}</option>
         @for (type of workoutTypes; track type.value) {
-          <option [value]="type.value">{{ ('sports.' + type.value) | translate }}</option>
+          <option [value]="type.value">{{ sportLabel(type.value) | translate }}</option>
         }
       </select>
     </div>
     <div class="col">
-      <label class="form-label small text-muted" for="filter-since">{{ 'filters.since' | translate }}</label>
+      <label class="form-label small text-muted" for="filter-since">{{ 'Since' | translate }}</label>
       <select
         class="form-select form-select-sm"
         id="filter-since"
@@ -48,7 +48,7 @@
       </select>
     </div>
     <div class="col">
-      <label class="form-label small text-muted" for="filter-sort-by">{{ 'filters.sort_by' | translate }}</label>
+      <label class="form-label small text-muted" for="filter-sort-by">{{ 'Sort by' | translate }}</label>
       <div class="d-flex gap-2">
         <select
           class="form-select form-select-sm flex-grow-1"
@@ -61,7 +61,7 @@
           }
         </select>
         <select
-          aria-label="{{ 'filters.sort_by' | translate }}"
+          aria-label="{{ 'Sort by' | translate }}"
           class="form-select form-select-sm"
           [value]="filterState().orderDir"
           (change)="onWorkoutOrderDirChange($any($event.target).value)"
@@ -85,16 +85,16 @@
     >
       <!-- Table header -->
       <ng-template #tableHeader>
-        <th>{{ 'workout.type' | translate }}</th>
-        <th>{{ 'misc.name' | translate }}</th>
-        <th>{{ 'misc.date' | translate }}</th>
-        <th>{{ 'dashboard.distance' | translate }}</th>
-        <th>{{ 'dashboard.duration' | translate }}</th>
+        <th>{{ 'Type' | translate }}</th>
+        <th>{{ 'Name' | translate }}</th>
+        <th>{{ 'Date' | translate }}</th>
+        <th>{{ 'Distance' | translate }}</th>
+        <th>{{ 'Duration' | translate }}</th>
         @if (sortedColumnMeta()) {
           <th class="text-end">{{ sortedColumnMeta()?.label | async }}</th>
         }
-        <th class="d-none d-md-table-cell">{{ 'dashboard.average_speed' | translate }}</th>
-        <th class="text-end d-none d-lg-table-cell">{{ 'misc.actions' | translate }}</th>
+        <th class="d-none d-md-table-cell">{{ 'Average speed' | translate }}</th>
+        <th class="text-end d-none d-lg-table-cell">{{ 'Actions' | translate }}</th>
       </ng-template>
 
       <!-- Table row -->
@@ -126,7 +126,7 @@
               </span>
             }
             <br />
-            <small class="text-muted">{{ 'sports.' + workout.type | translate }}</small>
+            <small class="text-muted">{{ sportLabel(workout.type) | translate }}</small>
           </div>
         </td>
         <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">

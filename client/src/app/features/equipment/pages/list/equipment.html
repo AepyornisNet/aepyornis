@@ -11,10 +11,10 @@
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th>{{ 'misc.name' | translate }}</th>
-          <th class="d-none d-md-table-cell">{{ 'equipment.description' | translate }}</th>
-          <th class="text-center">{{ 'misc.active' | translate }}</th>
-          <th class="text-center">{{ 'misc.actions' | translate }}</th>
+          <th>{{ 'Name' | translate }}</th>
+          <th class="d-none d-md-table-cell">{{ 'Description' | translate }}</th>
+          <th class="text-center">{{ 'Active' | translate }}</th>
+          <th class="text-center">{{ 'Actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -42,30 +42,30 @@
             </td>
             <td class="text-center">
               @if (item.active) {
-                <span class="badge bg-success">{{ 'misc.active' | translate }}</span>
+                <span class="badge bg-success">{{ 'Active' | translate }}</span>
               } @else {
-                <span class="badge bg-secondary">{{ 'equipment.inactive' | translate }}</span>
+                <span class="badge bg-secondary">{{ 'Inactive' | translate }}</span>
               }
             </td>
             <td class="text-center">
               <div class="btn-group btn-group-sm" role="group">
                 <button
                   class="btn btn-outline-primary"
-                  [attr.title]="'misc.details' | translate"
+                  [attr.title]="'Details' | translate"
                   (click)="viewDetails(item)"
                 >
                   <app-icon name="view" size="16" />
                 </button>
                 <button
                   class="btn btn-outline-secondary"
-                  [attr.title]="'misc.edit' | translate"
+                  [attr.title]="'Edit' | translate"
                   (click)="openEditModal(item)"
                 >
                   <app-icon name="edit" size="16" />
                 </button>
                 <button
                   class="btn btn-outline-danger"
-                  [attr.title]="'misc.delete' | translate"
+                  [attr.title]="'Delete' | translate"
                   (click)="openDeleteModal(item)"
                 >
                   <app-icon name="delete" size="16" />
@@ -85,7 +85,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'equipment.add_equipment' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Add equipment' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -95,7 +95,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="create-name">{{ 'misc.name' | translate }}</label>
+            <label class="form-label" for="create-name">{{ 'Name' | translate }}</label>
             <input
               class="form-control"
               id="create-name"
@@ -106,7 +106,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-description">{{
-              'equipment.description' | translate
+              'Description' | translate
             }}</label>
             <textarea
               class="form-control"
@@ -118,7 +118,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="create-notes">{{
-              'misc.notes' | translate
+              'Notes' | translate
             }}</label>
             <textarea
               class="form-control"
@@ -137,16 +137,16 @@
               (change)="updateFormActive($any($event.target).checked)"
             />
             <label class="form-check-label" for="create-active">
-              {{ 'misc.active' | translate }}
+              {{ 'Active' | translate }}
             </label>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="createEquipment()">
-            {{ 'misc.create' | translate }}
+            {{ 'Create' | translate }}
           </button>
         </div>
       </div>
@@ -160,7 +160,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'equipment.equipment' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Equipment' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -170,7 +170,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="edit-name">{{ 'misc.name' | translate }}</label>
+            <label class="form-label" for="edit-name">{{ 'Name' | translate }}</label>
             <input
               class="form-control"
               id="edit-name"
@@ -181,7 +181,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-description">{{
-              'equipment.description' | translate
+              'Description' | translate
             }}</label>
             <textarea
               class="form-control"
@@ -192,7 +192,7 @@
             ></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="edit-notes">{{ 'misc.notes' | translate }}</label>
+            <label class="form-label" for="edit-notes">{{ 'Notes' | translate }}</label>
             <textarea
               class="form-control"
               id="edit-notes"
@@ -210,16 +210,16 @@
               (change)="updateFormActive($any($event.target).checked)"
             />
             <label class="form-check-label" for="edit-active">
-              {{ 'misc.active' | translate }}
+              {{ 'Active' | translate }}
             </label>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-primary" type="button" (click)="updateEquipment()">
-            {{ 'misc.update' | translate }}
+            {{ 'Update' | translate }}
           </button>
         </div>
       </div>
@@ -233,7 +233,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ 'misc.delete' | translate }}</h5>
+          <h5 class="modal-title">{{ 'Delete' | translate }}</h5>
           <button
             aria-label="Close"
             class="btn-close"
@@ -242,17 +242,17 @@
           ></button>
         </div>
         <div class="modal-body">
-          <p>{{ 'misc.are_you_sure' | translate }}</p>
+          <p>{{ 'Are you sure?' | translate }}</p>
           <p>
             <strong>{{ selectedEquipment()!.name }}</strong>
           </p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'misc.cancel' | translate }}
+            {{ 'Cancel' | translate }}
           </button>
           <button class="btn btn-danger" type="button" (click)="deleteEquipment()">
-            {{ 'misc.delete' | translate }}
+            {{ 'Delete' | translate }}
           </button>
         </div>
       </div>

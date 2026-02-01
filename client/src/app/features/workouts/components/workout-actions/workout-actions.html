@@ -22,14 +22,14 @@
       [disabled]="isProcessing()"
       [title]="
         workout().locked
-          ? ('workout.Unlock_workout' | translate)
-          : ('workout.Lock_workout' | translate)
+          ? ('Unlock Workout' | translate)
+          : ('Lock Workout' | translate)
       "
       (click)="toggleLock()"
     >
       <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
       <span class="ms-1">{{
-  		workout().locked ? ('workout.unlock' | translate) : ('workout.lock' | translate)
+  		workout().locked ? ('Unlock' | translate) : ('Lock' | translate)
       }}</span>
     </button>
 
@@ -38,11 +38,11 @@
       <button
         class="btn btn-sm btn-outline-secondary"
         [disabled]="isProcessing()"
-        [title]="'workout.Download_original_file' | translate"
+        [title]="'Download Original File' | translate"
         (click)="download()"
       >
         <app-icon name="download" size="16" />
-        <span class="ms-1">{{ 'misc.download' | translate }}</span>
+        <span class="ms-1">{{ 'Download' | translate }}</span>
       </button>
     }
 
@@ -50,11 +50,11 @@
     <button
       class="btn btn-sm btn-outline-secondary"
       [disabled]="isProcessing()"
-      [title]="'workout.edit_workout' | translate"
+      [title]="'Edit Workout' | translate"
       (click)="edit()"
     >
       <app-icon name="edit" size="16" />
-      <span class="ms-1">{{ 'misc.edit' | translate }}</span>
+      <span class="ms-1">{{ 'Edit' | translate }}</span>
     </button>
 
     <!-- Refresh -->
@@ -62,11 +62,11 @@
       <button
         class="btn btn-sm btn-outline-secondary"
         [disabled]="isProcessing()"
-        [title]="'workout.Refresh_workout_data' | translate"
+        [title]="'Refresh Workout Data' | translate"
         (click)="refresh()"
       >
         <app-icon name="refresh" size="16" />
-        <span class="ms-1">{{ 'misc.refresh' | translate }}</span>
+        <span class="ms-1">{{ 'Refresh' | translate }}</span>
       </button>
     }
 
@@ -76,27 +76,27 @@
         class="btn btn-sm btn-outline-secondary dropdown-toggle w-100"
         ngbDropdownToggle
         [disabled]="isProcessing()"
-        [title]="'workout.Share_workout' | translate"
+        [title]="'Share Workout' | translate"
         (click)="toggleShareMenu()"
       >
         <app-icon name="share" size="16" />
-        <span class="ms-1">{{ 'workout.share' | translate }}</span>
+        <span class="ms-1">{{ 'Share' | translate }}</span>
       </button>
       @if (showShareMenu()) {
         <div class="dropdown-menu show position-absolute" ngbDropdownMenu>
           @if (workout().public_uuid) {
             <button class="dropdown-item" (click)="copyShareLink()">
               <app-icon name="copy" size="16" />
-              <span class="ms-1">{{ 'workout.copy_share_link' | translate }}</span>
+              <span class="ms-1">{{ 'Copy Share Link' | translate }}</span>
             </button>
             <button class="dropdown-item text-danger" (click)="deleteShareLink()">
               <app-icon name="delete" size="16" />
-              <span class="ms-1">{{ 'workout.delete_share_link' | translate }}</span>
+              <span class="ms-1">{{ 'Delete Share Link' | translate }}</span>
             </button>
           } @else {
             <button class="dropdown-item" (click)="generateShareLink()">
               <app-icon name="generate-share" size="16" />
-              <span class="ms-1">{{ 'workout.generate_share_link' | translate }}</span>
+              <span class="ms-1">{{ 'Generate Share Link' | translate }}</span>
             </button>
           }
         </div>
@@ -109,7 +109,7 @@
         [routerLink]="['/workouts', workout()!.id, 'create-route-segment']"
       >
         <app-icon name="route-segment-add" size="16" />
-        <span class="ms-1">{{ 'route_segment.create_route_segment' | translate }}</span>
+        <span class="ms-1">{{ 'Create route segment' | translate }}</span>
       </button>
     }
 
@@ -117,11 +117,11 @@
     <button
       class="btn btn-sm btn-outline-danger"
       [disabled]="isProcessing()"
-      [title]="'workout.Delete_workout' | translate"
+      [title]="'Delete Workout' | translate"
       (click)="confirmDelete()"
     >
       <app-icon name="delete" size="16" />
-      <span class="ms-1">{{ 'misc.delete' | translate }}</span>
+      <span class="ms-1">{{ 'Delete' | translate }}</span>
     </button>
   </div>
 
@@ -131,24 +131,24 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ 'workout.confirm_delete' | translate }}</h5>
+            <h5 class="modal-title">{{ 'Confirm Delete' | translate }}</h5>
             <button class="btn-close" type="button" (click)="cancelDelete()">
-              <span class="visually-hidden">{{ 'misc.close' | translate }}</span>
+              <span class="visually-hidden">{{ 'Close' | translate }}</span>
             </button>
           </div>
           <div class="modal-body">
-            <p>{{ 'workout.are_you_sure_you_want_to_delete_this_workout' | translate }}</p>
+            <p>{{ 'Are You Sure You Want To Delete This Workout' | translate }}</p>
             <p>
               <strong>{{ workout().name }}</strong>
             </p>
-            <p class="text-muted">{{ 'misc.action_cannot_be_undone' | translate }}</p>
+            <p class="text-muted">{{ 'This action cannot be undone.' | translate }}</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
-              {{ 'misc.cancel' | translate }}
+              {{ 'Cancel' | translate }}
             </button>
             <button class="btn btn-danger" type="button" (click)="delete()">
-              {{ 'misc.delete' | translate }}
+              {{ 'Delete' | translate }}
             </button>
           </div>
         </div>

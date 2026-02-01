@@ -3,8 +3,8 @@
     <h1 class="display-4 mb-0">
       {{
         editMode()
-          ? ('workout.edit_workout' | translate)
-          : ('workout.Add_a_Workout' | translate)
+          ? ('Edit Workout' | translate)
+          : ('Add a workout' | translate)
       }}
     </h1>
   </div>
@@ -27,12 +27,12 @@
       <div class="col-12 col-lg-6">
         <div class="card shadow-sm">
           <div class="card-header">
-            <h5 class="mb-0">{{ 'workout.use_a_file' | translate }}</h5>
+            <h5 class="mb-0">{{ 'Use a file' | translate }}</h5>
           </div>
           <div class="card-body">
             <form #fileForm="ngForm" [formGroup]="fileUploadForm" (ngSubmit)="submitFileUpload()">
               <div class="mb-3">
-                <label class="form-label" for="file">{{ 'misc.file' | translate }}</label>
+                <label class="form-label" for="file">{{ 'File' | translate }}</label>
                 <input
                   accept=".fit,.ftb,.gpx,.tcx,.zip"
                   class="form-control"
@@ -64,9 +64,9 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="type">{{ 'workout.type' | translate }}</label>
+                <label class="form-label" for="type">{{ 'Type' | translate }}</label>
                 <select class="form-select" formControlName="type" id="type" [disabled]="loading()">
-                  <option value="auto">{{ 'workout.autodetect' | translate }}</option>
+                  <option value="auto">{{ 'Auto-detect' | translate }}</option>
                   @for (wt of workoutTypes; track wt.value) {
                     <option [value]="wt.value">{{ wt.value }}</option>
                   }
@@ -75,7 +75,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="file-notes">{{
-                  'misc.notes' | translate
+                  'Notes' | translate
                 }}</label>
                 <textarea
                   class="form-control"
@@ -87,23 +87,23 @@
               </div>
 
               <div class="mb-3">
-                <p class="fw-bold mb-2">{{ 'workout.resources' | translate }}</p>
+                <p class="fw-bold mb-2">{{ 'Resources' | translate }}</p>
                 <p class="text-muted small">
                   {{
-                    'workout.You_can_edit_your_GPX_files_before_uploading_them_here' | translate
+                    'You can edit your GPX files before uploading them here:' | translate
                   }}
                 </p>
                 <ul class="small text-muted">
-                  <li>{{ 'workout.split_files_with_multiple_tracks' | translate }}</li>
+                  <li>{{ 'Split Files With Multiple Tracks' | translate }}</li>
                   <li>
-                    {{ 'workout.convert_from_not_yet_supported_file_format' | translate }}
+                    {{ 'Convert From Not Yet Supported File Format' | translate }}
                   </li>
                   <li>
-                    {{ 'workout.remove_the_beginning_or_the_ending_of_a_workout' | translate }}
+                    {{ 'Remove The Beginning Or The Ending Of A Workout' | translate }}
                   </li>
                 </ul>
                 <p class="text-muted small">
-                  {{ 'workout.try_one_of_these_sites' | translate }}
+                  {{ 'Try one of these sites:' | translate }}
                 </p>
                 <ul class="small">
                   <li>
@@ -135,7 +135,7 @@
                       role="status"
                     ></span>
                   }
-                  <span>{{ 'workout.add_workouts' | translate }}</span>
+                  <span>{{ 'Add workouts' | translate }}</span>
                 </button>
               </div>
             </form>
@@ -150,7 +150,7 @@
         <div class="card-header">
           <h5 class="mb-0">
             {{
-				editMode() ? ('misc.details' | translate) : ('workout.manual' | translate)
+				editMode() ? ('Details' | translate) : ('Manual' | translate)
             }}
           </h5>
         </div>
@@ -162,7 +162,7 @@
           >
             <div class="mb-3">
               <label class="form-label" for="workout-type">{{
-                'workout.Workout_type' | translate
+                'Workout type' | translate
               }}</label>
               <select
                 class="form-select"
@@ -173,7 +173,7 @@
                 [value]="manualWorkoutType()"
                 (change)="updateManualWorkoutType($any($event.target).value)"
               >
-                <option value="">{{ 'workout.select' | translate }}</option>
+                <option value="">{{ 'Select...' | translate }}</option>
                 @for (wt of workoutTypes; track wt.value) {
                   <option [value]="wt.value">{{ wt.value }}</option>
                 }
@@ -184,7 +184,7 @@
               @if (showCustomType()) {
                 <div class="mb-3">
                   <label class="form-label" for="custom-type">{{
-                    'workout.type' | translate
+                    'Type' | translate
                   }}</label>
                   <input
                     class="form-control"
@@ -198,7 +198,7 @@
               }
 
               <div class="mb-3">
-                <label class="form-label" for="name">{{ 'misc.name' | translate }}</label>
+                <label class="form-label" for="name">{{ 'Name' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="name"
@@ -210,7 +210,7 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="date">{{ 'misc.date' | translate }}</label>
+                <label class="form-label" for="date">{{ 'Date' | translate }}</label>
                 <input
                   class="form-control"
                   formControlName="date"
@@ -224,7 +224,7 @@
               @if (showLocation()) {
                 <div class="mb-3">
                   <label class="form-label" for="location">{{
-                    'misc.location' | translate
+                    'Location' | translate
                   }}</label>
                   <input
                     class="form-control"
@@ -239,7 +239,7 @@
               @if (showDuration()) {
                 <div class="mb-3">
                   <label class="form-label" for="duration-hours">{{
-                    'dashboard.duration' | translate
+                    'Duration' | translate
                   }}</label>
                   <div class="d-flex align-items-center gap-2">
                     <input
@@ -278,7 +278,7 @@
                       type="number"
                       [disabled]="loading()"
                     />
-                    <span class="text-muted small">{{ 'misc.duration_hms_hint' | translate }}</span>
+                    <span class="text-muted small">{{ '(hh:mm:ss)' | translate }}</span>
                   </div>
                 </div>
               }
@@ -286,7 +286,7 @@
               @if (showDistance()) {
                 <div class="mb-3">
                   <label class="form-label" for="distance">{{
-                    'dashboard.distance' | translate
+                    'Distance' | translate
                   }}</label>
                   <div class="input-group">
                     <input
@@ -299,7 +299,7 @@
                       [disabled]="loading()"
                     />
                     <span class="input-group-text">
-                      {{ 'units.kilometers_short' | translate }}
+                      {{ 'km' | translate }}
                     </span>
                   </div>
                 </div>
@@ -308,7 +308,7 @@
               @if (showRepetitions()) {
                 <div class="mb-3">
                   <label class="form-label" for="repetitions">{{
-                    'workout.repetitions' | translate
+                    'Repetitions' | translate
                   }}</label>
                   <input
                     class="form-control"
@@ -325,7 +325,7 @@
               @if (showWeight()) {
                 <div class="mb-3">
                   <label class="form-label" for="weight">{{
-                    'measurements.weight' | translate
+                    'Weight' | translate
                   }}</label>
                   <div class="input-group">
                     <input
@@ -338,7 +338,7 @@
                       [disabled]="loading()"
                     />
                     <span class="input-group-text">
-                      {{ 'units.kilograms_short' | translate }}
+                      {{ 'kg' | translate }}
                     </span>
                   </div>
                 </div>
@@ -346,7 +346,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="manual-notes">{{
-                  'misc.notes' | translate
+                  'Notes' | translate
                 }}</label>
                 <textarea
                   class="form-control"
@@ -359,7 +359,7 @@
 
               @if (equipment().length > 0) {
                 <div class="mb-3">
-                  <p class="fw-bold mb-2">{{ 'equipment.equipment' | translate }}</p>
+                  <p class="fw-bold mb-2">{{ 'Equipment' | translate }}</p>
                   <div class="d-flex flex-wrap gap-2">
                     @for (eq of equipment(); track eq.id) {
                       <div class="form-check">
@@ -395,8 +395,8 @@
                   }
                   <span>{{
                     editMode()
-                      ? ('workout.update_workout' | translate)
-                      : ('workout.add_workout' | translate)
+                      ? ('Update Workout' | translate)
+                      : ('Add workout' | translate)
                   }}</span>
                 </button>
               </div>

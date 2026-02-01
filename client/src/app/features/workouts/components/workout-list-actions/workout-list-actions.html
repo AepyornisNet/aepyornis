@@ -1,31 +1,31 @@
 <div class="workout-list-actions">
   <div container="body" ngbDropdown>
     <div class="btn-group" role="group">
-      <button class="btn btn-sm btn-outline-primary" [title]="'equipment.view' | translate" (click)="view()">
+      <button class="btn btn-sm btn-outline-primary" [title]="'View' | translate" (click)="view()">
         <app-icon name="view" size="16" />
       </button>
       <button
         class="btn btn-sm btn-outline-secondary"
         ngbDropdownToggle
         [disabled]="isProcessing()"
-  		[title]="'misc.actions' | translate"
+  		[title]="'Actions' | translate"
       ></button>
     </div>
     <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
       <button class="dropdown-item" (click)="edit()">
         <app-icon name="edit" size="16" />
-        <span class="ms-2">{{ 'misc.edit' | translate }}</span>
+        <span class="ms-2">{{ 'Edit' | translate }}</span>
       </button>
       <button class="dropdown-item" (click)="toggleLock()">
         <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
         <span class="ms-2">{{
-			workout().locked ? ('workout.unlock' | translate) : ('workout.lock' | translate)
+			workout().locked ? ('Unlock' | translate) : ('Lock' | translate)
         }}</span>
       </button>
       <div class="dropdown-divider"></div>
       <button class="dropdown-item text-danger" (click)="confirmDelete()">
         <app-icon name="delete" size="16" />
-        <span class="ms-2">{{ 'misc.delete' | translate }}</span>
+        <span class="ms-2">{{ 'Delete' | translate }}</span>
       </button>
     </div>
   </div>
@@ -36,24 +36,24 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ 'workout.confirm_delete' | translate }}</h5>
+            <h5 class="modal-title">{{ 'Confirm Delete' | translate }}</h5>
             <button class="btn-close" type="button" (click)="cancelDelete()">
-			  <span class="visually-hidden">{{ 'misc.close' | translate }}</span>
+			  <span class="visually-hidden">{{ 'Close' | translate }}</span>
             </button>
           </div>
           <div class="modal-body">
-            <p>{{ 'workout.are_you_sure_you_want_to_delete_this_workout' | translate }}</p>
+            <p>{{ 'Are You Sure You Want To Delete This Workout' | translate }}</p>
             <p>
               <strong>{{ workout().name }}</strong>
             </p>
-			<p class="text-muted">{{ 'misc.action_cannot_be_undone' | translate }}</p>
+			<p class="text-muted">{{ 'This action cannot be undone.' | translate }}</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">
-              {{ 'misc.cancel' | translate }}
+              {{ 'Cancel' | translate }}
             </button>
             <button class="btn btn-danger" type="button" (click)="delete()">
-              {{ 'misc.delete' | translate }}
+              {{ 'Delete' | translate }}
             </button>
           </div>
         </div>

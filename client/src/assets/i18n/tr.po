@@ -1,0 +1,1302 @@
+msgid ""
+msgstr ""
+"mime-version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "(hh:mm:ss)"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "(no name)"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "(used to estimate max heart rate)"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "1 month"
+msgstr "1 ay"
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "1 year"
+msgstr "1 yıl"
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "API key reset successfully"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Actions"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Active"
+msgstr "Etkin"
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "Add Measurement"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Add a workout"
+msgstr "Bir çalışma ekle"
+
+#: client/src/app/features/equipment/pages/list/equipment.html
+msgid "Add equipment"
+msgstr "Ekipman ekle"
+
+#: client/src/app/features/measurements/pages/measurements/measurements.ts
+msgid "Add measurement"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Add workout"
+msgstr "Çalışma ekle"
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Add workouts"
+msgstr "Çalışmalar ekle"
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Admin"
+msgstr "Yönetici"
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "All"
+msgstr "Tümü"
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Application settings"
+msgstr "Uygulama ayarları"
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Are You Sure You Want To Delete This Equipment"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Are You Sure You Want To Delete This Workout"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Are you sure you want to generate a new API key? The old key will no longer work."
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Are you sure you want to refresh all your workouts? This may take several minutes."
+msgstr ""
+
+#: client/src/app/features/equipment/pages/list/equipment.html
+msgid "Are you sure?"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "Ascending"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Auto import directory"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Auto-detect"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/records/records.html
+msgid "Average (no pause)"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
+msgid "Average Slope"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/records/records.html
+msgid "Average speed"
+msgstr "Ortalama hız"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Back"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Back To Equipment"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Back To Route Segments"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Back To Workout"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Bidirectional"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "Biggest climb"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
+msgid "Biggest climbs for {{sport}}"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "Biggest single climb"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Birthdate"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Breakdown"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Browser / System"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
+msgid "Cadence"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/workout-calendar/workout-calendar.html
+msgid "Calendar"
+msgstr ""
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.html
+msgid "Cancel"
+msgstr "İptal"
+
+#: client/src/app/features/workouts/components/workout-climbs/workout-climbs.html
+msgid "Category"
+msgstr ""
+
+#: client/src/app/core/components/footer/footer.html
+msgid "Changelog"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Check If The Route Can Be Traversed In Both Directions"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Check If The Route Is A Loop Circuit"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Circular"
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Clear"
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Clear selection"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Climbs and descents"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Close"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Confirm Delete"
+msgstr ""
+
+#: client/src/app/features/auth/pages/login/login.html
+#: client/src/app/features/auth/pages/login/login.html
+msgid "Confirm password"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Convert From Not Yet Supported File Format"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Copied to clipboard"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Copy Share Link"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Copy to clipboard"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "Covered"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/list/equipment.html
+msgid "Create"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Create a route segment from {{name}}"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Create route segment"
+msgstr "Rota bölümü oluştur"
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Created"
+msgstr "Oluşturuldu"
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Creating"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Dark"
+msgstr "Karanlık"
+
+#: client/src/app/core/components/sidebar/sidebar.ts
+msgid "Dashboard"
+msgstr "Gösterge"
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "Date"
+msgstr "Tarih"
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "Day"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Default For Workout Types"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Delete"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Delete Equipment"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Delete Share Link"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Delete Workout"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Delete selected workouts"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Delete user"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Delete?"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "Descending"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Description"
+msgstr "Tanım"
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Details"
+msgstr "Ayrıntılar"
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Disable account registration"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Disable social sharing buttons"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
+msgid "Distance"
+msgstr "Mesafe"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Distance chart"
+msgstr ""
+
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+msgid "Download"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Download Original File"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
+msgid "Duration"
+msgstr "Süre"
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Edit"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Edit Equipment"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Edit Route Segment"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Edit Workout"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Edit user"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "Elev Down"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "Elev Up"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
+msgid "Elevation"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
+msgid "Elevation gain"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Enable API access"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "End Point"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "English"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/list/equipment.html
+msgid "Equipment"
+msgstr "Ekipman"
+
+#: client/src/app/core/i18n/marker-strings.ts
+msgid "Example backend message"
+msgstr ""
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "FTP"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Failed to copy to clipboard"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Failed to load profile: {{message}}"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/workout-calendar/workout-calendar.ts
+msgid "Failed to load {{page}} data. Please try again."
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Failed to refresh workouts: {{message}}"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Failed to reset API key: {{message}}"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Failed to save profile: {{message}}"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records-ranking/records-ranking.html
+msgid "Fastest workouts for {{label}} (best first)"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "File"
+msgstr "Dosya"
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Filters"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "French"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Generate Share Link"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Generate a new API key"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "German"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
+msgid "Heart rate"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Heart rate zones"
+msgstr ""
+
+#: client/src/app/core/components/sidebar/sidebar.ts
+msgid "Heatmap"
+msgstr "Isı haritası"
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "Height"
+msgstr ""
+
+#: client/src/app/core/components/footer/footer.html
+msgid "Help Translate"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
+msgid "Hr"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Inactive"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
+msgid "Index"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
+msgid "Individual climbs ranked by elevation gain."
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Language"
+msgstr "Dil"
+
+#: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
+msgid "Laps"
+msgstr ""
+
+#: client/src/app/core/components/pagination/pagination.html
+msgid "Last"
+msgstr "Son"
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Last updated"
+msgstr ""
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.html
+msgid "Leave blank to keep current password"
+msgstr "Mevcut parolayı kullanmak için boş bırakın"
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Light"
+msgstr "Aydınlık"
+
+#: client/src/app/features/dashboard/components/recent-activity/recent-activity.html
+msgid "Load More"
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Loading"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Location"
+msgstr "Konum"
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Lock"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Lock Workout"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Locked"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "Longest"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "Longest distance"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Manage"
+msgstr "Yönet"
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.html
+msgid "Manage user: {{name}}"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Manage users ({{count}})"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Manual"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Matches"
+msgstr "Eşleşmeler"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Matching route segments"
+msgstr ""
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "Max HR"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Max elevation"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/records/records.html
+msgid "Max speed"
+msgstr ""
+
+#: client/src/app/core/components/sidebar/sidebar.ts
+msgid "Measurements"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Min elevation"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "Month"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Name"
+msgstr "Ad"
+
+#: client/src/app/core/components/pagination/pagination.html
+msgid "Next"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "No"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/recent-activity/recent-activity.html
+msgid "No More Activities"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
+msgid "No climb records yet."
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "No distance-based records yet."
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records-ranking/records-ranking.html
+msgid "No efforts recorded yet for this distance."
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
+msgid "No items found"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/other-users/other-users.html
+msgid "No other users found"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "No records found yet. Start logging workouts to see your records."
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-zone-distribution/workout-zone-distribution.html
+msgid "No zone data available"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Notes"
+msgstr "Notlar"
+
+#: client/src/app/features/dashboard/components/other-users/other-users.html
+msgid "Other Users"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
+msgid "Pace"
+msgstr ""
+
+#: client/src/app/core/components/pagination/pagination.html
+msgid "Page {{currentPage}} of {{totalPages}} • {{totalEntries}} items"
+msgstr ""
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.html
+msgid "Password"
+msgstr "Parola"
+
+#: client/src/app/features/auth/pages/login/login.html
+msgid "Passwords do not match"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.html
+msgid "Per"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Please help translate via Weblate"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
+msgid "Power"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Power zones"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Preferred units"
+msgstr "Tercih edilen birimler"
+
+#: client/src/app/core/components/sidebar/sidebar.ts
+msgid "Profile"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Profile updated successfully"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
+msgid "Rank"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/recent-activity/recent-activity.html
+msgid "Recent No Activity"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/recent-activity/recent-activity.html
+msgid "Recent activity"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "Records"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/records/records.html
+msgid "Records for {{sport}}"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Refresh"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Refresh Workout Data"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Refresh all your workouts"
+msgstr ""
+
+#: client/src/app/features/auth/pages/login/login.html
+#: client/src/app/features/auth/pages/login/login.html
+msgid "Register"
+msgstr "Kayıt ol"
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Remove The Beginning Or The Ending Of A Workout"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "Repetitions"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Reset"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Resources"
+msgstr "Kaynaklar"
+
+#: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
+msgid "Respiration rate"
+msgstr ""
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "Resting HR"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Route Map"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Route Preview"
+msgstr ""
+
+#: client/src/app/core/components/sidebar/sidebar.ts
+msgid "Route segments"
+msgstr "Rota bölümleri"
+
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Save changes"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Saving..."
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Search"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Segment Details"
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Select"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Select The Ending Point Of Your Route Segment"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Select The Starting Point Of Your Route Segment"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Select..."
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Selected Distance"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Share"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Share Workout"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Show full date by default"
+msgstr ""
+
+#: client/src/app/features/auth/pages/login/login.html
+#: client/src/app/features/auth/pages/login/login.html
+msgid "Sign in"
+msgstr "Oturum aç"
+
+#: client/src/app/features/statistics/pages/statistics/statistics.html
+msgid "Since"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Sort by"
+msgstr "Sırala"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Source"
+msgstr "Kaynak"
+
+#: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
+msgid "Speed"
+msgstr "Hız"
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Split Files With Multiple Tracks"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-climbs/workout-climbs.html
+msgid "Start"
+msgstr "Başla"
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Start Point"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.html
+msgid "Statistics"
+msgstr "Sayımlama"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Status"
+msgstr ""
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "Steps"
+msgstr "Adım"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Sub type"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
+msgid "Temperature"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Tempo"
+msgstr ""
+
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+msgid "The workout will be refreshed soon…"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Theme"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "These settings may be overwritten by:"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "This Action Cannot Be Undone"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "This action cannot be undone."
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "This will recalculate statistics for all your workouts"
+msgstr ""
+
+#: client/src/app/features/workouts/components/route-segment-matches/route-segment-matches.html
+msgid "Time"
+msgstr "Zaman"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Time chart"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Time zone"
+msgstr "Zaman dilimi"
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Toggle filters"
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "Toggle multi-select"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Total distance"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Total down"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "Total elevation gain record"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Total up"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Totals to show on dashboard"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Try one of these sites:"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-climbs/workout-climbs.html
+msgid "Type"
+msgstr "Tür"
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Unlock"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-actions/workout-actions.html
+msgid "Unlock Workout"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Update"
+msgstr "Güncelleme"
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Update Workout"
+msgstr ""
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "Update measurement"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Update profile"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Update settings"
+msgstr "Güncelleme ayarları"
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.html
+msgid "Update user"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Updated"
+msgstr "Güncellendi"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Updating"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Usage Statistics"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Use a file"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "User"
+msgstr "Kullanıcı"
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Username"
+msgstr "Kullanıcı adı"
+
+#: client/src/app/features/auth/pages/login/login.html
+#: client/src/app/features/auth/pages/login/login.html
+msgid "Username (email)"
+msgstr "Kullanıcı adı (e-posta)"
+
+#: client/src/app/features/workouts/components/workout-list-actions/workout-list-actions.html
+msgid "View"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/records/records.html
+msgid "View ranking"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "Week"
+msgstr ""
+
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+#: client/src/app/features/measurements/pages/measurements/measurements.html
+msgid "Weight"
+msgstr "Ağırlık"
+
+#: client/src/app/features/auth/pages/login/login.html
+msgid "Welcome Lead"
+msgstr ""
+
+#: client/src/app/features/auth/pages/login/login.html
+msgid "Welcome!"
+msgstr "Hoş geldin!"
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Workout"
+msgstr "Çalışma"
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Workout Matches"
+msgstr ""
+
+#: client/src/app/core/components/sidebar/sidebar.html
+msgid "Workout Tracker"
+msgstr ""
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Workout history and statistics will be displayed here in a future update."
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "Workout type"
+msgstr "Çalışma türü"
+
+#: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
+msgid "Workouts"
+msgstr "Çalışmalar"
+
+#: client/src/app/features/profile/pages/profile/profile.ts
+msgid "Workouts refreshed"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "Year"
+msgstr ""
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "Yes"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.html
+msgid "You can edit your GPX files before uploading them here:"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "Your settings"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-zone-distribution/workout-zone-distribution.html
+msgid "Zone {{value}}"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "auto-detect"
+msgstr ""
+
+#: client/src/app/features/dashboard/components/workout-calendar/workout-calendar.ts
+msgid "calendar event"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "cm"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "cycling"
+msgstr "bisiklete binmek"
+
+#: client/src/app/features/dashboard/pages/dashboard/dashboard.ts
+msgid "dashboard"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "e-cycling"
+msgstr "e-bisiklet"
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "environment variables"
+msgstr ""
+
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+msgid "find matches"
+msgstr "eşleşmeleri bul"
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "forever"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "ft"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "golfing"
+msgstr "golf oynamak"
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "hiking"
+msgstr "doğa yürüyüşü"
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "horse riding"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "in"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "inline skating"
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "item selected"
+msgstr ""
+
+#: client/src/app/core/components/base-list/base-list.html
+msgid "items selected"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "kayaking"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "kg"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "km"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "km/h"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "lbs"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "m"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "mi"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "mph"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "other"
+msgstr "diğerleri"
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "push-ups"
+msgstr ""
+
+#: client/src/app/features/workouts/components/route-segment-matches/route-segment-matches.html
+msgid "route segment"
+msgstr "rota bölümü"
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "rowing"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "running"
+msgstr "koşu"
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "show/hide"
+msgstr "göster/gizle"
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "skiing"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "snowboarding"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "swimming"
+msgstr "yüzme"
+
+#: client/src/app/features/admin/pages/admin/admin.html
+msgid "the configuration file"
+msgstr "yapılandırma dosyası"
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "unknown"
+msgstr ""
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "virtual activity"
+msgstr ""
+
+#: client/src/app/features/profile/pages/profile/profile.html
+msgid "walking"
+msgstr "yürüme"
+
+#: client/src/app/core/i18n/sport-labels.ts
+msgid "weight lifting"
+msgstr "ağırlık kaldırma"
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "workout.average_speed_no_pause"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "workout.distance"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "workout.duration"
+msgstr ""
+
+#: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
+msgid "workout.elevation"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "workout.max_speed"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "workout.weight"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "{{num}} days"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "{{num}} months"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/statistics/statistics.ts
+msgid "{{num}} years"
+msgstr ""
+
+#: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
+msgid "← Back to records"
+msgstr ""

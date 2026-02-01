@@ -38,22 +38,22 @@ export class Statistics implements OnInit {
   public filterForm!: FormGroup;
 
   public sinceOptions: StatisticOption[] = [
-    { key: '7 days', label: this.translate.stream('filters.n_days', { num : 7 }) },
-    { key: '1 month', label: this.translate.stream('filters.1_month') },
-    { key: '3 months', label: this.translate.stream('filters.n_months', { num: 3 }) },
-    { key: '6 months', label: this.translate.stream('filters.n_months', { num: 6 }) },
-    { key: '1 year', label: this.translate.stream('filters.1_year') },
-    { key: '2 years', label: this.translate.stream('filters.n_years', { num: 2 }) },
-    { key: '5 years', label: this.translate.stream('filters.n_years', { num: 5 }) },
-    { key: '10 years', label: this.translate.stream('filters.n_years', { num: 10 }) },
-    { key: 'forever', label: this.translate.stream('filters.forever') },
+    { key: '7 days', label: this.translate.stream('{{num}} days', { num : 7 }) },
+    { key: '1 month', label: this.translate.stream('1 month') },
+    { key: '3 months', label: this.translate.stream('{{num}} months', { num: 3 }) },
+    { key: '6 months', label: this.translate.stream('{{num}} months', { num: 6 }) },
+    { key: '1 year', label: this.translate.stream('1 year') },
+    { key: '2 years', label: this.translate.stream('{{num}} years', { num: 2 }) },
+    { key: '5 years', label: this.translate.stream('{{num}} years', { num: 5 }) },
+    { key: '10 years', label: this.translate.stream('{{num}} years', { num: 10 }) },
+    { key: 'forever', label: this.translate.stream('forever') },
   ];
 
   public perOptions: StatisticOption[] = [
-    { key: 'day', label: this.translate.stream('filters.day') },
-    { key: 'week', label: this.translate.stream('filters.week') },
-    { key: 'month', label: this.translate.stream('filters.month') },
-    { key: 'year', label: this.translate.stream('filters.year') },
+    { key: 'day', label: this.translate.stream('Day') },
+    { key: 'week', label: this.translate.stream('Week') },
+    { key: 'month', label: this.translate.stream('Month') },
+    { key: 'year', label: this.translate.stream('Year') },
   ];
 
   public ngOnInit(): void {
