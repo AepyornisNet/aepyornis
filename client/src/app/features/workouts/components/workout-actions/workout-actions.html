@@ -108,44 +108,9 @@
         class="btn btn-sm btn-outline-primary"
         [routerLink]="['/workouts', workout()!.id, 'create-route-segment']"
       >
-        <app-icon name="route-segment-add" size="20" />
-        <span>{{ 'route_segment.create_route_segment' | translate }}</span>
+        <app-icon name="route-segment-add" size="16" />
+        <span class="ms-1">{{ 'route_segment.create_route_segment' | translate }}</span>
       </button>
-    }
-
-    @if (!socialsDisabled()) {
-      <div class="btn-group" role="group">
-        <button
-          class="btn btn-outline-secondary"
-          type="button"
-          [attr.title]="
-            'workout.Publicly_shareable_link_was_copied_to_clipboard' | translate
-          "
-        >
-          <app-icon name="share" size="20" />
-          <span class="visually-hidden">{{ 'misc.strava' | translate }}</span>
-        </button>
-        <button
-          class="btn btn-outline-secondary"
-          type="button"
-          [attr.title]="
-            'workout.Publicly_shareable_link_was_copied_to_clipboard' | translate
-          "
-        >
-          <app-icon name="share" size="20" />
-          <span class="visually-hidden">{{ 'misc.facebook' | translate }}</span>
-        </button>
-        <button
-          class="btn btn-outline-secondary"
-          type="button"
-          [attr.title]="
-            'workout.Publicly_shareable_link_was_copied_to_clipboard' | translate
-          "
-        >
-          <app-icon name="share" size="20" />
-          <span class="visually-hidden">{{ 'misc.twitter' | translate }}</span>
-        </button>
-      </div>
     }
 
     <!-- Delete -->
