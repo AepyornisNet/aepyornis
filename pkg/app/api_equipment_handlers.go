@@ -88,7 +88,7 @@ func (a *App) apiV2EquipmentGetHandler(c echo.Context) error {
 	}
 
 	resp := api.Response[api.EquipmentResponse]{
-		Results: api.NewEquipmentResponse(e),
+		Results: api.NewEquipmentDetailResponse(e),
 	}
 
 	return c.JSON(http.StatusOK, resp)

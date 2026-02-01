@@ -8,74 +8,81 @@
   (addClicked)="openCreateModal()"
 >
   <div table>
-    <table class="table table-hover mb-0">
-      <thead>
-        <tr>
-          <th>{{ 'Name' | translate }}</th>
-          <th class="d-none d-md-table-cell">{{ 'Description' | translate }}</th>
-          <th class="text-center">{{ 'Active' | translate }}</th>
-          <th class="text-center">{{ 'Actions' | translate }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of equipment(); track item.id) {
-          <tr>
-            <td>
-              <strong
-                style="cursor: pointer"
-                tabindex="0"
-                (click)="viewDetails(item)"
-                (keydown.enter)="viewDetails(item)"
-                >{{ item.name }}</strong
-              >
-            </td>
-            <td class="d-none d-md-table-cell">
-              @if (item.description) {
-                {{
-                  item.description.length > 50
-                    ? item.description.substring(0, 50) + '...'
-                    : item.description
-                }}
-              } @else {
-                <span class="text-muted">-</span>
-              }
-            </td>
-            <td class="text-center">
-              @if (item.active) {
-                <span class="badge bg-success">{{ 'Active' | translate }}</span>
-              } @else {
-                <span class="badge bg-secondary">{{ 'Inactive' | translate }}</span>
-              }
-            </td>
-            <td class="text-center">
-              <div class="btn-group btn-group-sm" role="group">
-                <button
-                  class="btn btn-outline-primary"
-                  [attr.title]="'Details' | translate"
-                  (click)="viewDetails(item)"
-                >
-                  <app-icon name="view" size="16" />
-                </button>
-                <button
-                  class="btn btn-outline-secondary"
-                  [attr.title]="'Edit' | translate"
-                  (click)="openEditModal(item)"
-                >
-                  <app-icon name="edit" size="16" />
-                </button>
-                <button
-                  class="btn btn-outline-danger"
-                  [attr.title]="'Delete' | translate"
-                  (click)="openDeleteModal(item)"
-                >
-                  <app-icon name="delete" size="16" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+    <app-base-table [getRowLink]="getEquipmentLink" [items]="equipment()">
+      <ng-template #tableHeader>
+        <th>{{ 'Name' | translate }}</th>
+        <th class="d-none d-md-table-cell">{{ 'Description' | translate }}</th>
+        <th class="text-center">{{ 'Active' | translate }}</th>
+        <th class="text-center">{{ 'Actions' | translate }}</th>
+      </ng-template>
+
+      <ng-template #tableRow let-getRowLink="getRowLink" let-item let-multiSelectActive="multiSelectActive">
+        <td class="position-relative">
+          @if (!multiSelectActive) {
+            <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
+            <a class="cell-link-backdrop" [routerLink]="getRowLink(item)"></a>
+          }
+          <div class="cell-content">
+            <strong>{{ item.name }}</strong>
+          </div>
+        </td>
+        <td class="d-none d-md-table-cell position-relative">
+          @if (!multiSelectActive) {
+            <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
+            <a class="cell-link-backdrop" [routerLink]="getRowLink(item)"></a>
+          }
+          <div class="cell-content">
+            @if (item.description) {
+              {{
+                item.description.length > 50
+                  ? item.description.substring(0, 50) + '...'
+                  : item.description
+              }}
+            } @else {
+              <span class="text-muted">-</span>
+            }
+          </div>
+        </td>
+        <td class="text-center position-relative">
+          @if (!multiSelectActive) {
+            <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
+            <a class="cell-link-backdrop" [routerLink]="getRowLink(item)"></a>
+          }
+          <div class="cell-content">
+            @if (item.active) {
+              <span class="badge bg-success">{{ 'Active' | translate }}</span>
+            } @else {
+              <span class="badge bg-secondary">{{ 'Inactive' | translate }}</span>
+            }
+          </div>
+        </td>
+        <td class="text-center">
+          <div class="btn-group btn-group-sm" role="group">
+            <button
+              class="btn btn-outline-primary"
+              [attr.title]="'Details' | translate"
+              (click)="viewDetails(item)"
+            >
+              <app-icon name="view" size="16" />
+            </button>
+            <button
+              class="btn btn-outline-secondary"
+              [attr.title]="'Edit' | translate"
+              (click)="openEditModal(item)"
+            >
+              <app-icon name="edit" size="16" />
+            </button>
+            <button
+              class="btn btn-outline-danger"
+              [attr.title]="'Delete' | translate"
+              (click)="openDeleteModal(item)"
+            >
+              <app-icon name="delete" size="16" />
+            </button>
+          </div>
+        </td>
+      </ng-template>
+    </app-base-table>
   </div>
 </app-base-list>
 
@@ -127,6 +134,25 @@
               [value]="equipmentForm().notes"
               (input)="updateFormNotes($any($event.target).value)"
             ></textarea>
+          </div>
+          <div class="mb-3">
+            <span class="form-label">{{ 'Default For Workout Types' | translate }}</span>
+            <div class="d-flex flex-wrap gap-3">
+              @for (type of workoutTypes; track type.value) {
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [checked]="isDefaultForSelected(type.value)"
+                    [id]="'create-default-' + type.value"
+                    (change)="toggleDefaultFor(type.value)"
+                  />
+                  <label class="form-check-label" [for]="'create-default-' + type.value">
+                    {{ sportLabel(type.value) | translate }}
+                  </label>
+                </div>
+              }
+            </div>
           </div>
           <div class="form-check">
             <input
@@ -200,6 +226,25 @@
               [value]="equipmentForm().notes"
               (input)="updateFormNotes($any($event.target).value)"
             ></textarea>
+          </div>
+          <div class="mb-3">
+            <span class="form-label">{{ 'Default For Workout Types' | translate }}</span>
+            <div class="d-flex flex-wrap gap-3">
+              @for (type of workoutTypes; track type.value) {
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [checked]="isDefaultForSelected(type.value)"
+                    [id]="'edit-default-' + type.value"
+                    (change)="toggleDefaultFor(type.value)"
+                  />
+                  <label class="form-check-label" [for]="'edit-default-' + type.value">
+                    {{ sportLabel(type.value) | translate }}
+                  </label>
+                </div>
+              }
+            </div>
           </div>
           <div class="form-check">
             <input

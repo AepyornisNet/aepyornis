@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import { _, TranslatePipe } from '@ngx-translate/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Equipment as EquipmentModel } from '../../../../core/types/equipment';
@@ -9,10 +9,13 @@ import { PaginationParams } from '../../../../core/types/api-response';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { BaseList, BaseListConfig } from '../../../../core/components/base-list/base-list';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
+import { BaseTable } from '../../../../core/components/base-table/base-table';
+import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-equipment',
-  imports: [AppIcon, BaseList, TranslatePipe],
+  imports: [AppIcon, BaseList, BaseTable, TranslatePipe, RouterLink],
   templateUrl: './equipment.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -29,6 +32,9 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     addButtonText: _('Add equipment'),
   };
 
+  public readonly workoutTypes = WORKOUT_TYPES;
+  public readonly sportLabel = getSportLabel;
+
   // Modal state
   public readonly showCreateModal = signal(false);
   public readonly showEditModal = signal(false);
@@ -41,6 +47,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
     description: '',
     notes: '',
     active: true,
+    default_for: [] as string[],
   });
 
   // Form update helpers
@@ -62,6 +69,21 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
   public updateFormActive(value: boolean): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, active: value });
+  }
+
+  public toggleDefaultFor(value: string): void {
+    const form = this.equipmentForm();
+    const next = new Set(form.default_for);
+    if (next.has(value)) {
+      next.delete(value);
+    } else {
+      next.add(value);
+    }
+    this.equipmentForm.set({ ...form, default_for: Array.from(next) });
+  }
+
+  public isDefaultForSelected(value: string): boolean {
+    return this.equipmentForm().default_for.includes(value);
   }
 
   public async loadData(page?: number): Promise<void> {
@@ -101,6 +123,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
       description: '',
       notes: '',
       active: true,
+      default_for: [],
     });
     this.showCreateModal.set(true);
   }
@@ -127,6 +150,7 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
       description: equipment.description || '',
       notes: equipment.notes || '',
       active: equipment.active,
+      default_for: equipment.default_for ? [...equipment.default_for] : [],
     });
     this.showEditModal.set(true);
   }
@@ -182,4 +206,9 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
   public viewDetails(equipment: EquipmentModel): void {
     this.router.navigate(['/equipment', equipment.id]);
   }
+
+  public readonly getEquipmentLink = (equipment: EquipmentModel): (string | number)[] => [
+    '/equipment',
+    equipment.id,
+  ];
 }

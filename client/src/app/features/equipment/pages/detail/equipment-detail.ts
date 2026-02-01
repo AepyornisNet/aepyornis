@@ -6,6 +6,8 @@ import { Api } from '../../../../core/services/api';
 import { Equipment } from '../../../../core/types/equipment';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
+import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-equipment-detail',
@@ -32,7 +34,11 @@ export class EquipmentDetail implements OnInit {
     description: '',
     notes: '',
     active: true,
+    default_for: [] as string[],
   });
+
+  public readonly workoutTypes = WORKOUT_TYPES;
+  public readonly sportLabel = getSportLabel;
 
   // Form update helpers
   public updateFormName(value: string): void {
@@ -53,6 +59,21 @@ export class EquipmentDetail implements OnInit {
   public updateFormActive(value: boolean): void {
     const form = this.equipmentForm();
     this.equipmentForm.set({ ...form, active: value });
+  }
+
+  public toggleDefaultFor(value: string): void {
+    const form = this.equipmentForm();
+    const next = new Set(form.default_for);
+    if (next.has(value)) {
+      next.delete(value);
+    } else {
+      next.add(value);
+    }
+    this.equipmentForm.set({ ...form, default_for: Array.from(next) });
+  }
+
+  public isDefaultForSelected(value: string): boolean {
+    return this.equipmentForm().default_for.includes(value);
   }
 
   public ngOnInit(): void {
@@ -86,6 +107,25 @@ export class EquipmentDetail implements OnInit {
     return new Date(dateString).toLocaleDateString();
   }
 
+  public formatDistance(distance: number): string {
+    return (distance / 1000).toFixed(2);
+  }
+
+  public formatDuration(seconds: number): string {
+    const totalSeconds = Math.floor(seconds);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainingSeconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds
+        .toString()
+        .padStart(2, '0')}`;
+    }
+
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
   public openEditModal(): void {
     const eq = this.equipment();
     if (!eq) {
@@ -97,6 +137,7 @@ export class EquipmentDetail implements OnInit {
       description: eq.description || '',
       notes: eq.notes || '',
       active: eq.active,
+      default_for: eq.default_for ? [...eq.default_for] : [],
     });
     this.showEditModal.set(true);
   }

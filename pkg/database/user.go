@@ -427,7 +427,7 @@ func (u *User) GetAllEquipment(db *gorm.DB) ([]*Equipment, error) {
 func (u *User) GetEquipment(db *gorm.DB, id uint64) (*Equipment, error) {
 	var w *Equipment
 
-	if err := db.Where(&Equipment{UserID: u.ID}).First(&w, id).Error; err != nil {
+	if err := db.Preload("Workouts").Preload("Workouts.Data").Where(&Equipment{UserID: u.ID}).First(&w, id).Error; err != nil {
 		return nil, err
 	}
 
