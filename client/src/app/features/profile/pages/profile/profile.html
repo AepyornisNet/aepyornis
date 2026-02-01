@@ -1,4 +1,4 @@
-<div class="container my-5" style="max-width: 800px">
+<div class="container my-5">
   @if (error()) {
     <div class="alert alert-danger" role="alert">
       {{ error() }}
@@ -18,16 +18,18 @@
       </div>
     </div>
   } @else if (profile()) {
-    <!-- User Settings Section -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header">
-        <h3 class="h5 mb-0 d-flex align-items-center gap-2">
-          <app-icon name="person" size="24" />
-          {{ 'Your settings' | translate }}
-        </h3>
-      </div>
-      <div class="card-body">
-        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <!-- User Settings Section -->
+          <div class="card shadow-sm h-100">
+            <div class="card-header">
+              <h3 class="h5 mb-0 d-flex align-items-center gap-2">
+                <app-icon name="person" size="24" />
+                {{ 'Your settings' | translate }}
+              </h3>
+            </div>
+            <div class="card-body">
           <!-- API Access -->
           <div class="mb-3 pb-3 border-bottom">
             <div class="form-check">
@@ -196,120 +198,124 @@
             </label>
           </div>
 
-          <!-- Save Button -->
-          <div class="pt-3">
-            <button
-              class="btn btn-primary"
-              type="submit"
-              [disabled]="saving() || profileForm.invalid"
-            >
-              @if (saving()) {
-                <span
-                  aria-hidden="true"
-                  class="spinner-border spinner-border-sm me-2"
-                  role="status"
-                ></span>
-                {{ 'Saving...' | translate }}
-              } @else {
-                {{ 'Update profile' | translate }}
-              }
-            </button>
+            </div>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
 
-    <!-- Preferred Units Section -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header">
-        <h3 class="h5 mb-0 d-flex align-items-center gap-2">
-          <app-icon name="straighten" size="24" />
-          {{ 'Preferred units' | translate }}
-        </h3>
-      </div>
-      <div class="card-body">
-        <div [formGroup]="profileForm">
-          <div class="row g-3" formGroupName="preferred_units">
-            <!-- Speed -->
-            <div class="col-md-6">
-              <label class="form-label" for="speed"> {{ 'Speed' | translate }} </label>
-              <select class="form-select" formControlName="speed" id="speed">
-                <option value="km/h">{{ 'km/h' | translate }}</option>
-                <option value="mph">{{ 'mph' | translate }}</option>
-              </select>
+        <div class="col-lg-5">
+          <!-- Preferred Units Section -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h3 class="h5 mb-0 d-flex align-items-center gap-2">
+                <app-icon name="straighten" size="24" />
+                {{ 'Preferred units' | translate }}
+              </h3>
             </div>
+            <div class="card-body">
+              <div [formGroup]="profileForm">
+                <div class="row g-3" formGroupName="preferred_units">
+                  <!-- Speed -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="speed"> {{ 'Speed' | translate }} </label>
+                    <select class="form-select" formControlName="speed" id="speed">
+                      <option value="km/h">{{ 'km/h' | translate }}</option>
+                      <option value="mph">{{ 'mph' | translate }}</option>
+                    </select>
+                  </div>
 
-            <!-- Distance -->
-            <div class="col-md-6">
-              <label class="form-label" for="distance">
-                {{ 'Distance' | translate }}
-              </label>
-              <select class="form-select" formControlName="distance" id="distance">
-                <option value="km">{{ 'km' | translate }}</option>
-                <option value="mi">{{ 'mi' | translate }}</option>
-              </select>
+                  <!-- Distance -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="distance">
+                      {{ 'Distance' | translate }}
+                    </label>
+                    <select class="form-select" formControlName="distance" id="distance">
+                      <option value="km">{{ 'km' | translate }}</option>
+                      <option value="mi">{{ 'mi' | translate }}</option>
+                    </select>
+                  </div>
+
+                  <!-- Elevation -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="elevation">
+                      {{ 'Elevation' | translate }}
+                    </label>
+                    <select class="form-select" formControlName="elevation" id="elevation">
+                      <option value="m">{{ 'm' | translate }}</option>
+                      <option value="ft">{{ 'ft' | translate }}</option>
+                    </select>
+                  </div>
+
+                  <!-- Weight -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="weight"> {{ 'Weight' | translate }} </label>
+                    <select class="form-select" formControlName="weight" id="weight">
+                      <option value="kg">{{ 'kg' | translate }}</option>
+                      <option value="lbs">{{ 'lbs' | translate }}</option>
+                    </select>
+                  </div>
+
+                  <!-- Height -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="height"> {{ 'Height' | translate }} </label>
+                    <select class="form-select" formControlName="height" id="height">
+                      <option value="cm">{{ 'cm' | translate }}</option>
+                      <option value="in">{{ 'in' | translate }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <!-- Elevation -->
-            <div class="col-md-6">
-              <label class="form-label" for="elevation">
-                {{ 'Elevation' | translate }}
-              </label>
-              <select class="form-select" formControlName="elevation" id="elevation">
-                <option value="m">{{ 'm' | translate }}</option>
-                <option value="ft">{{ 'ft' | translate }}</option>
-              </select>
+          <!-- Actions Section -->
+          <div class="card border-0 shadow-sm bg-body-tertiary">
+            <div class="card-header bg-transparent">
+              <h3 class="h6 mb-0 text-uppercase tracking-wide">
+                {{ 'Actions' | translate }}
+              </h3>
             </div>
-
-            <!-- Weight -->
-            <div class="col-md-6">
-              <label class="form-label" for="weight"> {{ 'Weight' | translate }} </label>
-              <select class="form-select" formControlName="weight" id="weight">
-                <option value="kg">{{ 'kg' | translate }}</option>
-                <option value="lbs">{{ 'lbs' | translate }}</option>
-              </select>
-            </div>
-
-            <!-- Height -->
-            <div class="col-md-6">
-              <label class="form-label" for="height"> {{ 'Height' | translate }} </label>
-              <select class="form-select" formControlName="height" id="height">
-                <option value="cm">{{ 'cm' | translate }}</option>
-                <option value="in">{{ 'in' | translate }}</option>
-              </select>
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between gap-3">
+                <div>
+                  <div class="fw-medium">{{ 'Refresh all your workouts' | translate }}</div>
+                  <p class="small text-muted mb-0">
+                    {{ 'This will recalculate statistics for all your workouts' | translate }}
+                  </p>
+                </div>
+                <button
+                  class="btn btn-primary d-flex align-items-center gap-2"
+                  type="button"
+                  (click)="refreshWorkouts()"
+                >
+                  <app-icon name="refresh" size="20" />
+                  {{ 'Refresh' | translate }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Actions Section -->
-    <div class="card shadow-sm">
-      <div class="card-header">
-        <h3 class="h5 mb-0 d-flex align-items-center gap-2">
-          {{ 'Actions' | translate }}
-        </h3>
-      </div>
-      <div class="card-body">
-        <div
-          class="d-flex align-items-center justify-content-between p-3 bg-body-secondary rounded"
-        >
-          <div>
-            <div class="fw-medium">{{ 'Refresh all your workouts' | translate }}</div>
-            <p class="small text-muted mb-0">
-              {{ 'This will recalculate statistics for all your workouts' | translate }}
-            </p>
-          </div>
+      <div class="row mt-4">
+        <div class="col-lg-6">
           <button
-            class="btn btn-primary d-flex align-items-center gap-2"
-            type="button"
-            (click)="refreshWorkouts()"
+            class="btn btn-primary"
+            type="submit"
+            [disabled]="saving() || profileForm.invalid"
           >
-            <app-icon name="refresh" size="20" />
-            {{ 'Refresh' | translate }}
+            @if (saving()) {
+              <span
+                aria-hidden="true"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+              ></span>
+              {{ 'Saving...' | translate }}
+            } @else {
+              {{ 'Update profile' | translate }}
+            }
           </button>
         </div>
       </div>
-    </div>
+    </form>
   }
 </div>
