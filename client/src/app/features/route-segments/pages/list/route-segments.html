@@ -5,6 +5,7 @@
   [hasItems]="hasRouteSegments()"
   [loading]="loading()"
   [paginationSource]="pagination()"
+  (addClicked)="onAddRouteSegment()"
 >
   <div table>
     <table class="table table-hover mb-0">

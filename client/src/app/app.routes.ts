@@ -60,9 +60,9 @@ export const routes: Routes = [
           {
             path: ':id/create-route-segment',
             loadComponent: () =>
-              import('./features/route-segments/pages/create/create-route-segment').then(
-                (m) => m.CreateRouteSegmentPage,
-              ),
+              import(
+                './features/route-segments/pages/create-workout/create-workout-route-segment'
+              ).then((m) => m.CreateWorkoutRouteSegmentPage),
           },
         ],
       },
@@ -110,6 +110,13 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/route-segments/pages/list/route-segments').then(
                 (m) => m.RouteSegments,
+              ),
+          },
+          {
+            path: 'create',
+            loadComponent: () =>
+              import('./features/route-segments/pages/create/create-route-segment').then(
+                (m) => m.CreateRouteSegmentPage,
               ),
           },
           {

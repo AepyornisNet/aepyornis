@@ -346,6 +346,10 @@ export class Api {
     return this.http.get<APIResponse<RouteSegmentDetail>>(`${this.baseUrl}/route-segments/${id}`);
   }
 
+  public createRouteSegment(formData: FormData): Observable<APIResponse<RouteSegment[]>> {
+    return this.http.post<APIResponse<RouteSegment[]>>(`${this.baseUrl}/route-segments`, formData);
+  }
+
   public createRouteSegmentFromWorkout(
     workoutId: number,
     params: {

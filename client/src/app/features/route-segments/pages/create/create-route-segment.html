@@ -1,11 +1,13 @@
 <div class="container my-5">
-  @if (loading()) {
-    <div class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ 'Loading' | translate }}</span>
-      </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="display-4 mb-0">
+        <app-icon name="route-segment" size="48" />
+        {{ 'Create route segment' | translate }}
+      </h1>
+      <p class="text-muted">{{ 'Upload a GPX file to create a route segment' | translate }}</p>
     </div>
-  }
+  </div>
 
   @if (error()) {
     <div class="alert alert-danger" role="alert">
@@ -13,132 +15,115 @@
     </div>
   }
 
-  @if (!loading() && workout()) {
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h1 class="display-4 mb-0">
-          <app-icon name="route-segment" size="48" />
-          {{ 'Create route segment' | translate }}
-        </h1>
-        <p class="text-muted">
-          {{ 'Create a route segment from {{name}}' | translate: { name: workout()!.name } }}
-        </p>
-      </div>
-    </div>
-
-    <div class="row">
-      <!-- Map Section -->
-      <div class="col-lg-6 mb-4">
-        <app-route-segment-map
-          [points]="workoutPoints()"
-          [selection]="selection()"
-        />
-      </div>
-
-      <!-- Form Section -->
-      <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'Segment Details' | translate }}</h5>
-
-            <form (ngSubmit)="createRouteSegment()">
-              <div class="mb-3">
-                <label class="form-label" for="name">{{ 'Name' | translate }}</label>
-                <input
-                  class="form-control"
-                  id="name"
-                  required
-                  type="text"
-                  [value]="name()"
-                  (input)="name.set($any($event.target).value)"
-                />
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form [formGroup]="routeSegmentForm" (ngSubmit)="createRouteSegment()">
+            <div class="mb-3">
+              <label class="form-label" for="route-segment-file">{{ 'GPX file' | translate }}</label>
+              <input
+                accept=".gpx"
+                aria-describedby="route-segment-file-help"
+                class="form-control"
+                id="route-segment-file"
+                multiple
+                type="file"
+                (change)="onFilesSelected($event)"
+              />
+              <div class="form-text" id="route-segment-file-help">
+                {{ 'Select one or more GPX files' | translate }}
               </div>
+            </div>
 
+            @if (hasFiles()) {
               <div class="mb-3">
-                <label class="form-label" for="start">{{
-                  'Start Point' | translate
-                }}</label>
-                <div class="d-flex align-items-center gap-2">
-                  <input
-                    class="form-range flex-grow-1"
-                    id="start"
-                    min="1"
-                    type="range"
-                    [max]="totalPoints()"
-                    [value]="start()"
-                    (input)="updateStart(+$any($event.target).value)"
-                  />
-                  <span class="badge bg-primary">{{ start() }}</span>
-                </div>
-                <small class="text-muted">{{
-                  'Select the starting point of your route segment' | translate
-                }}</small>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label" for="end">{{
-                  'End Point' | translate
-                }}</label>
-                <div class="d-flex align-items-center gap-2">
-                  <input
-                    class="form-range flex-grow-1"
-                    id="end"
-                    min="1"
-                    type="range"
-                    [max]="totalPoints()"
-                    [value]="end()"
-                    (input)="updateEnd(+$any($event.target).value)"
-                  />
-                  <span class="badge bg-primary">{{ end() }}</span>
-                </div>
-                <small class="text-muted">{{
-                  'Select the ending point of your route segment' | translate
-                }}</small>
-              </div>
-
-              <div class="mb-4">
-                <div class="card bg-primary-subtle text-primary-emphasis">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <span class="text-muted">{{
-                        'Selected Distance' | translate
-                      }}</span>
-                      <span class="h5 mb-0">{{ selectedDistance().toFixed(2) }} km</span>
+                <div class="list-group">
+                  @for (file of selectedFiles(); track file.name) {
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>{{ file.name }}</strong>
+                        <div class="text-muted small">{{ (file.size / 1024).toFixed(1) }} KB</div>
+                      </div>
+                      <button
+                        class="btn btn-outline-danger btn-sm"
+                        type="button"
+                        [disabled]="creating()"
+                        (click)="removeFile($index)"
+                      >
+                        {{ 'Remove' | translate }}
+                      </button>
                     </div>
-                  </div>
+                  }
+                </div>
+                <div class="form-text mt-2">
+                  {{ fileCount() }} {{ 'file(s) selected' | translate }}
                 </div>
               </div>
+            }
 
-              <div class="d-grid gap-2">
-                <button
-                  class="btn btn-primary btn-lg"
-                  type="submit"
-                  [disabled]="creating() || !name() || selectedDistance() === 0"
-                >
-                  @if (creating()) {
-                    <span
-                      aria-hidden="true"
-                      class="spinner-border spinner-border-sm me-2"
-                      role="status"
-                    ></span>
-                    <span>{{ 'Creating' | translate }}</span>
-                  } @else {
-                    <span>{{ 'Create route segment' | translate }}</span>
-                  }
-                </button>
-                <button
-                  class="btn btn-outline-secondary"
-                  type="button"
-                  [disabled]="creating()"
-                  (click)="goBack()"
-                >
-                  <span>{{ 'Cancel' | translate }}</span>
-                </button>
+            <div class="mb-3">
+              <label class="form-label" for="notes">{{ 'Notes' | translate }}</label>
+              <textarea
+                class="form-control"
+                formControlName="notes"
+                id="notes"
+                rows="3"
+                [placeholder]="'Optional notes about this route segment' | translate"
+              ></textarea>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  id="bidirectional"
+                  type="checkbox"
+                  [checked]="bidirectional()"
+                  (change)="bidirectional.set($any($event.target).checked)"
+                />
+                <label class="form-check-label" for="bidirectional">
+                  {{ 'Bidirectional' | translate }}
+                </label>
               </div>
-            </form>
-          </div>
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  id="circular"
+                  type="checkbox"
+                  [checked]="circular()"
+                  (change)="circular.set($any($event.target).checked)"
+                />
+                <label class="form-check-label" for="circular">
+                  {{ 'Roundtour' | translate }}
+                </label>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button
+                class="btn btn-primary btn-lg"
+                type="submit"
+                [disabled]="creating() || !hasFiles()"
+              >
+                @if (creating()) {
+                  <span
+                    aria-hidden="true"
+                    class="spinner-border spinner-border-sm me-2"
+                    role="status"
+                  ></span>
+                  <span>{{ 'Creating' | translate }}</span>
+                } @else {
+                  <span>{{ 'Create route segment' | translate }}</span>
+                }
+              </button>
+              <button class="btn btn-outline-secondary" type="button" (click)="goBack()">
+                <span>{{ 'Cancel' | translate }}</span>
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
-  }
+  </div>
 </div>

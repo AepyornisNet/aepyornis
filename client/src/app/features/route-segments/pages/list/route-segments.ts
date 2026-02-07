@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import { _ } from '@ngx-translate/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { RouteSegment } from '../../../../core/types/route-segment';
@@ -20,6 +20,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 })
 export class RouteSegments extends PaginatedListView<RouteSegment> {
   private api = inject(Api);
+  private router = inject(Router);
 
   // Alias for better template readability
   public routeSegments = this.items;
@@ -27,6 +28,7 @@ export class RouteSegments extends PaginatedListView<RouteSegment> {
 
   public readonly routeSegmentListConfig: BaseListConfig = {
     title: _('Route segments'),
+    addButtonText: _('Create route segment'),
   };
 
   public async loadData(page?: number): Promise<void> {
@@ -62,5 +64,9 @@ export class RouteSegments extends PaginatedListView<RouteSegment> {
 
   public formatDistance(distance: number): string {
     return (distance / 1000).toFixed(2);
+  }
+
+  public onAddRouteSegment(): void {
+    this.router.navigate(['/route-segments/create']);
   }
 }
