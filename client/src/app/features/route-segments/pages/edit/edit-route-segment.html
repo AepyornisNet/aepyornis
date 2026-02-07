@@ -17,7 +17,7 @@
     <div class="mb-4">
       <h1 class="display-4">
         <app-icon name="edit" size="48" />
-  <span>{{ 'Edit Route Segment' | translate }}</span>
+        {{ 'Edit Route Segment' | translate }}
       </h1>
       <p class="text-muted">{{ routeSegment()!.name }}</p>
     </div>
@@ -50,11 +50,11 @@
                   />
                   <label class="form-check-label" for="bidirectional">
                     <app-icon name="bidirectional" size="16" />
-                    <span>{{ 'Bidirectional' | translate }}</span>
+                    {{ 'Bidirectional' | translate }}
                   </label>
                   <div class="form-text">
                     {{
-                      'Check If The Route Can Be Traversed In Both Directions'
+                      'Check if the route can be traversed in both directions'
                         | translate
                     }}
                   </div>
@@ -72,10 +72,10 @@
                   />
                   <label class="form-check-label" for="circular">
                     <app-icon name="circular" size="16" />
-                    <span>{{ 'Circular' | translate }}</span>
+                    {{ 'Circular' | translate }}
                   </label>
                   <div class="form-text">
-                    {{ 'Check If The Route Is A Loop Circuit' | translate }}
+                    {{ 'Check if the route is a loop circuit' | translate }}
                   </div>
                 </div>
               </div>
@@ -133,21 +133,21 @@
                 <tr>
                   <th style="width: 50%">
                     <app-icon name="distance" size="16" />
-                    <span>{{ 'Distance' | translate }}</span>
+                    {{ 'Distance' | translate }}
                   </th>
                   <td>{{ (routeSegment()!.total_distance / 1000).toFixed(2) }} km</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="up" size="16" />
-                    <span>{{ 'Total up' | translate }}</span>
+                    {{ 'Total up' | translate }}
                   </th>
                   <td>{{ routeSegment()!.total_up.toFixed(0) }} m</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="route-segment" size="16" />
-                    <span>{{ 'Matches' | translate }}</span>
+                    {{ 'Matches' | translate }}
                   </th>
                   <td>{{ routeSegment()!.matches.length || 0 }}</td>
                 </tr>
@@ -155,7 +155,7 @@
                   <tr>
                     <th>
                       <app-icon name="file" size="16" />
-                      <span>{{ 'File' | translate }}</span>
+                      {{ 'File' | translate }}
                     </th>
                     <td>{{ routeSegment()!.filename }}</td>
                   </tr>

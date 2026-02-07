@@ -3,14 +3,6 @@ msgstr ""
 "mime-version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
-"Last-Translator: \n"
-"Language: \n"
-"Language-Team: \n"
-"Plural-Forms: \n"
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "(hh:mm:ss)"
@@ -89,12 +81,20 @@ msgid "Are You Sure You Want To Delete This Workout"
 msgstr "Are You Sure You Want To Delete This Workout"
 
 #: client/src/app/features/profile/pages/profile/profile.ts
-msgid "Are you sure you want to generate a new API key? The old key will no longer work."
-msgstr "Are you sure you want to generate a new API key? The old key will no longer work."
+msgid ""
+"Are you sure you want to generate a new API key? The old key will no longer "
+"work."
+msgstr ""
+"Are you sure you want to generate a new API key? The old key will no longer "
+"work."
 
 #: client/src/app/features/profile/pages/profile/profile.ts
-msgid "Are you sure you want to refresh all your workouts? This may take several minutes."
-msgstr "Are you sure you want to refresh all your workouts? This may take several minutes."
+msgid ""
+"Are you sure you want to refresh all your workouts? This may take several "
+"minutes."
+msgstr ""
+"Are you sure you want to refresh all your workouts? This may take several "
+"minutes."
 
 #: client/src/app/features/equipment/pages/list/equipment.html
 msgid "Are you sure?"
@@ -112,6 +112,10 @@ msgstr "Auto import directory"
 msgid "Auto-detect"
 msgstr "Auto-detect"
 
+#: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
+msgid "Average"
+msgstr ""
+
 #: client/src/app/features/dashboard/components/records/records.html
 msgid "Average (no pause)"
 msgstr "Average (no pause)"
@@ -124,21 +128,9 @@ msgstr "Average Slope"
 msgid "Average speed"
 msgstr "Average speed"
 
-#: client/src/app/features/workouts/pages/detail/workout-detail.html
-msgid "Back"
-msgstr "Back"
-
-#: client/src/app/features/equipment/pages/detail/equipment-detail.html
-msgid "Back To Equipment"
-msgstr "Back To Equipment"
-
-#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
-msgid "Back To Route Segments"
-msgstr "Back To Route Segments"
-
-#: client/src/app/features/route-segments/pages/create/create-route-segment.html
-msgid "Back To Workout"
-msgstr "Back To Workout"
+#: client/src/app/features/workouts/pages/list/workouts.ts
+msgid "Average speed no pause"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Bidirectional"
@@ -190,12 +182,12 @@ msgid "Changelog"
 msgstr "Changelog"
 
 #: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
-msgid "Check If The Route Can Be Traversed In Both Directions"
-msgstr "Check If The Route Can Be Traversed In Both Directions"
+msgid "Check if the route can be traversed in both directions"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
-msgid "Check If The Route Is A Loop Circuit"
-msgstr "Check If The Route Is A Loop Circuit"
+msgid "Check if the route is a loop circuit"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Circular"
@@ -394,6 +386,10 @@ msgstr "Elevation"
 msgid "Elevation gain"
 msgstr "Elevation gain"
 
+#: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
+msgid "Elevation range"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Enable API access"
 msgstr "Enable API access"
@@ -445,8 +441,8 @@ msgid "Failed to save profile: {{message}}"
 msgstr "Failed to save profile: {{message}}"
 
 #: client/src/app/features/statistics/pages/records-ranking/records-ranking.html
-msgid "Fastest workouts for {{label}} (best first)"
-msgstr "Fastest workouts for {{label}} (best first)"
+msgid "Fastest workouts for {{label}}"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "File"
@@ -525,6 +521,10 @@ msgstr "Last"
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Last updated"
 msgstr "Last updated"
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Last used"
+msgstr ""
 
 #: client/src/app/features/admin/pages/user-edit/user-edit.html
 msgid "Leave blank to keep current password"
@@ -605,6 +605,10 @@ msgstr "Max elevation"
 msgid "Max speed"
 msgstr "Max speed"
 
+#: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
+msgid "Maximum"
+msgstr ""
+
 #: client/src/app/core/components/sidebar/sidebar.ts
 msgid "Measurements"
 msgstr "Measurements"
@@ -612,6 +616,10 @@ msgstr "Measurements"
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Min elevation"
 msgstr "Min elevation"
+
+#: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
+msgid "Minimum"
+msgstr ""
 
 #: client/src/app/features/statistics/pages/statistics/statistics.ts
 msgid "Month"
@@ -656,6 +664,10 @@ msgstr "No other users found"
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "No records found yet. Start logging workouts to see your records."
 msgstr "No records found yet. Start logging workouts to see your records."
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "No usage data yet."
+msgstr ""
 
 #: client/src/app/features/workouts/components/workout-zone-distribution/workout-zone-distribution.html
 msgid "No zone data available"
@@ -777,14 +789,6 @@ msgstr "Respiration rate"
 msgid "Resting HR"
 msgstr "Resting HR"
 
-#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
-msgid "Route Map"
-msgstr "Route Map"
-
-#: client/src/app/features/route-segments/pages/create/create-route-segment.html
-msgid "Route Preview"
-msgstr "Route Preview"
-
 #: client/src/app/core/components/sidebar/sidebar.ts
 msgid "Route segments"
 msgstr "Route segments"
@@ -810,12 +814,12 @@ msgid "Select"
 msgstr "Select"
 
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
-msgid "Select The Ending Point Of Your Route Segment"
-msgstr "Select The Ending Point Of Your Route Segment"
+msgid "Select the ending point of your route segment"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
-msgid "Select The Starting Point Of Your Route Segment"
-msgstr "Select The Starting Point Of Your Route Segment"
+msgid "Select the starting point of your route segment"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Select..."
@@ -845,6 +849,10 @@ msgstr "Sign in"
 #: client/src/app/features/statistics/pages/statistics/statistics.html
 msgid "Since"
 msgstr "Since"
+
+#: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
+msgid "Slope"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/list/workouts.html
 #: client/src/app/features/workouts/pages/list/workouts.html
@@ -929,6 +937,10 @@ msgstr "Time"
 msgid "Time chart"
 msgstr "Time chart"
 
+#: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
+msgid "Time paused"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Time zone"
 msgstr "Time zone"
@@ -949,13 +961,25 @@ msgstr "Total distance"
 msgid "Total down"
 msgstr "Total down"
 
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Total duration"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "Total elevation gain record"
 msgstr "Total elevation gain record"
 
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Total repetitions"
+msgstr ""
+
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Total up"
 msgstr "Total up"
+
+#: client/src/app/features/equipment/pages/detail/equipment-detail.html
+msgid "Total workouts"
+msgstr ""
 
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Totals to show on dashboard"
@@ -1067,10 +1091,6 @@ msgstr "Workout Matches"
 #: client/src/app/core/components/sidebar/sidebar.html
 msgid "Workout Tracker"
 msgstr "Workout Tracker"
-
-#: client/src/app/features/equipment/pages/detail/equipment-detail.html
-msgid "Workout history and statistics will be displayed here in a future update."
-msgstr "Workout history and statistics will be displayed here in a future update."
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Workout type"
@@ -1261,28 +1281,8 @@ msgstr "walking"
 msgid "weight lifting"
 msgstr "weight lifting"
 
-#: client/src/app/features/workouts/pages/list/workouts.ts
-msgid "workout.average_speed_no_pause"
-msgstr ""
-
-#: client/src/app/features/workouts/pages/list/workouts.ts
-msgid "workout.distance"
-msgstr ""
-
-#: client/src/app/features/workouts/pages/list/workouts.ts
-msgid "workout.duration"
-msgstr ""
-
 #: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
 msgid "workout.elevation"
-msgstr ""
-
-#: client/src/app/features/workouts/pages/list/workouts.ts
-msgid "workout.max_speed"
-msgstr ""
-
-#: client/src/app/features/workouts/pages/list/workouts.ts
-msgid "workout.weight"
 msgstr ""
 
 #: client/src/app/features/statistics/pages/statistics/statistics.ts

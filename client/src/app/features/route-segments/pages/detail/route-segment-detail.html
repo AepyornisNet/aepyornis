@@ -16,25 +16,21 @@
   @if (!loading() && routeSegment()) {
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <button class="btn btn-link p-0 mb-2" (click)="goBack()">
-          <app-icon name="back" size="20" />
-          <span>{{ 'Back To Route Segments' | translate }}</span>
-        </button>
         <h1 class="display-4 mb-0">
           <app-icon name="route-segment" size="48" />
-		  {{ routeSegment()!.name || ('(no name)' | translate) }}
+		      {{ routeSegment()!.name || ('(no name)' | translate) }}
         </h1>
         <div class="d-flex gap-2 mt-2">
           @if (routeSegment()!.bidirectional) {
             <span class="badge bg-secondary">
               <app-icon name="bidirectional" size="14" />
-              <span>{{ 'Bidirectional' | translate }}</span>
+              {{ 'Bidirectional' | translate }}
             </span>
           }
           @if (routeSegment()!.circular) {
             <span class="badge bg-secondary">
               <app-icon name="circular" size="14" />
-              <span>{{ 'Circular' | translate }}</span>
+              {{ 'Circular' | translate }}
             </span>
           }
         </div>
@@ -72,7 +68,7 @@
                   <tr>
                     <th style="width: 40%">
                       <app-icon name="file" size="16" />
-                      <span>{{ 'File' | translate }}</span>
+                      {{ 'File' | translate }}
                     </th>
                     <td>{{ routeSegment()!.filename }}</td>
                   </tr>
@@ -80,14 +76,14 @@
                 <tr>
                   <th>
                     <app-icon name="date" size="16" />
-                    <span>{{ 'Created' | translate }}</span>
+                    {{ 'Created' | translate }}
                   </th>
                   <td>{{ formatDate(routeSegment()!.created_at) }}</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="date" size="16" />
-                    <span>{{ 'Updated' | translate }}</span>
+                    {{ 'Updated' | translate }}
                   </th>
                   <td>{{ formatDate(routeSegment()!.updated_at) }}</td>
                 </tr>
@@ -95,7 +91,7 @@
                   <tr>
                     <th>
                       <app-icon name="location" size="16" />
-                      <span>{{ 'Location' | translate }}</span>
+                      {{ 'Location' | translate }}
                     </th>
                     <td>{{ routeSegment()!.address_string }}</td>
                   </tr>
@@ -103,7 +99,7 @@
                 <tr>
                   <th>
                     <app-icon name="distance" size="16" />
-                    <span>{{ 'Total distance' | translate }}</span>
+                    {{ 'Total distance' | translate }}
                   </th>
                   <td>
                     <strong>{{ formatDistance(routeSegment()!.total_distance) }}</strong> km
@@ -112,28 +108,28 @@
                 <tr>
                   <th>
                     <app-icon name="elevation" size="16" />
-                    <span>{{ 'Min elevation' | translate }}</span>
+                    {{ 'Min elevation' | translate }}
                   </th>
                   <td>{{ routeSegment()!.min_elevation.toFixed(0) }} m</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="elevation" size="16" />
-                    <span>{{ 'Max elevation' | translate }}</span>
+                    {{ 'Max elevation' | translate }}
                   </th>
                   <td>{{ routeSegment()!.max_elevation.toFixed(0) }} m</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="up" size="16" />
-                    <span>{{ 'Total up' | translate }}</span>
+                    {{ 'Total up' | translate }}
                   </th>
                   <td>{{ routeSegment()!.total_up.toFixed(0) }} m</td>
                 </tr>
                 <tr>
                   <th>
                     <app-icon name="down" size="16" />
-                    <span>{{ 'Total down' | translate }}</span>
+                    {{ 'Total down' | translate }}
                   </th>
                   <td>{{ routeSegment()!.total_down.toFixed(0) }} m</td>
                 </tr>
@@ -152,7 +148,7 @@
             <div class="card-header">
               <h5 class="mb-0">
                 <app-icon name="note" size="20" />
-                <span>{{ 'Notes' | translate }}</span>
+                {{ 'Notes' | translate }}
               </h5>
             </div>
             <div class="card-body">

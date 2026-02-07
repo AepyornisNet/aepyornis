@@ -16,13 +16,9 @@
   @if (!loading() && workout()) {
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <button class="btn btn-link p-0 mb-2" (click)="goBack()">
-          <app-icon name="back" size="20" />
-          <span>{{ 'Back To Workout' | translate }}</span>
-        </button>
         <h1 class="display-4 mb-0">
-          <app-icon name="route-segment-add" size="48" />
-          <span>{{ 'Create route segment' | translate }}</span>
+          <app-icon name="route-segment" size="48" />
+          {{ 'Create route segment' | translate }}
         </h1>
         <p class="text-muted">
           {{ 'Create a route segment from {{name}}' | translate: { name: workout()!.name } }}
@@ -33,15 +29,10 @@
     <div class="row">
       <!-- Map Section -->
       <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'Route Preview' | translate }}</h5>
-            <app-route-segment-map
-              [points]="workoutPoints()"
-              [selection]="selection()"
-            />
-          </div>
-        </div>
+        <app-route-segment-map
+          [points]="workoutPoints()"
+          [selection]="selection()"
+        />
       </div>
 
       <!-- Form Section -->
@@ -80,7 +71,7 @@
                   <span class="badge bg-primary">{{ start() }}</span>
                 </div>
                 <small class="text-muted">{{
-                  'Select The Starting Point Of Your Route Segment' | translate
+                  'Select the starting point of your route segment' | translate
                 }}</small>
               </div>
 
@@ -101,7 +92,7 @@
                   <span class="badge bg-primary">{{ end() }}</span>
                 </div>
                 <small class="text-muted">{{
-                  'Select The Ending Point Of Your Route Segment' | translate
+                  'Select the ending point of your route segment' | translate
                 }}</small>
               </div>
 
@@ -132,7 +123,6 @@
                     ></span>
                     <span>{{ 'Creating' | translate }}</span>
                   } @else {
-                    <app-icon name="route-segment-add" size="20" />
                     <span>{{ 'Create route segment' | translate }}</span>
                   }
                 </button>

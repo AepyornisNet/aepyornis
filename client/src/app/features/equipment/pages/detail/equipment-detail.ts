@@ -4,14 +4,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Equipment } from '../../../../core/types/equipment';
-import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-equipment-detail',
-  imports: [AppIcon, TranslatePipe],
+  imports: [TranslatePipe],
   templateUrl: './equipment-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "extract-translations": "ngx-translate-extract --input ./src --output ./src/assets/i18n/messages.pot --format pot --sort --clean"
+    "extract-translations": "ngx-translate-extract --input ./src --output ./src/assets/i18n/en.po --format pot --sort --clean"
   },
   "prettier": {
     "printWidth": 100,
