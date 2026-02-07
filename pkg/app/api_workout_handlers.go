@@ -71,7 +71,7 @@ func (a *App) apiV2WorkoutsHandler(c echo.Context) error {
 
 	// Get paginated workouts
 	var workouts []*database.Workout
-	db := filters.ToQuery(a.db.Model(&database.Workout{})).Preload("Data").
+	db := filters.ToQuery(a.db.Model(&database.Workout{})).Preload("GPX").Preload("Data").
 		Where("user_id = ?", user.ID).
 		Order("date DESC").
 		Limit(pagination.PerPage).

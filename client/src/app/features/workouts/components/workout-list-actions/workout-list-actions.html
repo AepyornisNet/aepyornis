@@ -16,6 +16,12 @@
         <app-icon name="edit" size="16" />
         <span class="ms-2">{{ 'Edit' | translate }}</span>
       </button>
+      @if (workout().has_file) {
+        <button class="dropdown-item" [title]="'Download Original File' | translate" (click)="download()">
+          <app-icon name="download" size="16" />
+          <span class="ms-2">{{ 'Download' | translate }}</span>
+        </button>
+      }
       <button class="dropdown-item" (click)="toggleLock()">
         <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
         <span class="ms-2">{{

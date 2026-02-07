@@ -22,9 +22,9 @@ export class WorkoutActions {
   public readonly workoutUpdated = output<Workout>();
   public readonly workoutDeleted = output<void>();
 
-  private api = inject(Api);
-  private router = inject(Router);
-  private userService = inject(User);
+  protected api = inject(Api);
+  protected router = inject(Router);
+  protected userService = inject(User);
 
   public readonly showDeleteConfirm = signal(false);
   public readonly showShareMenu = signal(false);
