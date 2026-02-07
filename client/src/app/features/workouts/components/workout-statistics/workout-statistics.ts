@@ -10,7 +10,7 @@ import {
 	signal,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { TranslatePipe } from '@ngx-translate/core';
+import { _, TranslatePipe } from '@ngx-translate/core';
 
 import { Api } from '../../../../core/services/api';
 import { WorkoutDetail, WorkoutRangeStats, WorkoutRangeStatsUnits } from '../../../../core/types/workout';
@@ -48,7 +48,7 @@ type WorkoutStatCard = {
 const RANGE_CONFIGS: RangeStatConfig[] = [
 	{
 		key: 'speed',
-		labelKey: 'workout.speed',
+		labelKey: _('Speed'),
 		unit: (units) => units.speed,
 		decimals: 1,
 		averageField: 'average_speed',
@@ -59,7 +59,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'cadence',
-		labelKey: 'workout.cadence',
+		labelKey: _('Cadence'),
 		unit: () => 'rpm',
 		decimals: 0,
 		averageField: 'average_cadence',
@@ -69,7 +69,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'heart-rate',
-		labelKey: 'workout.heart_rate',
+		labelKey: _('Heart rate'),
 		unit: () => 'bpm',
 		decimals: 0,
 		averageField: 'average_heart_rate',
@@ -79,7 +79,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'respiration-rate',
-		labelKey: 'workout.respiration_rate',
+		labelKey: _('Respiration rate'),
 		unit: () => 'bpm',
 		decimals: 0,
 		averageField: 'average_respiration_rate',
@@ -89,7 +89,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'power',
-		labelKey: 'workout.power',
+		labelKey: _('Power'),
 		unit: () => 'W',
 		decimals: 0,
 		averageField: 'average_power',
@@ -99,7 +99,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'slope',
-		labelKey: 'workout.slope',
+		labelKey: _('Slope'),
 		unit: () => '%',
 		decimals: 1,
 		averageField: 'average_slope',
@@ -109,7 +109,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
 	},
 	{
 		key: 'temperature',
-		labelKey: 'workout.temperature',
+		labelKey: _('Temperature'),
 		unit: (units) => units.temperature,
 		decimals: 1,
 		ignoreZero: false,
@@ -238,27 +238,27 @@ export class WorkoutStatisticsComponent {
 
 		if (stats.distance > 0) {
 			rows.push({
-				labelKey: selectionActive ? 'dashboard.distance' : 'workout.total_distance',
+				labelKey: selectionActive ? _('Distance') : _('Total distance'),
 				value: this.formatDistance(stats.distance, units.distance),
 			});
 		}
 
 		if (stats.duration > 0) {
-			rows.push({ labelKey: 'dashboard.duration', value: this.formatDurationValue(stats.duration) });
+			rows.push({ labelKey: _('Duration'), value: this.formatDurationValue(stats.duration) });
 		}
 
 		if (Number.isFinite(stats.pause_duration) && stats.pause_duration >= 0) {
-			rows.push({ labelKey: 'workout.pause_time', value: this.formatDurationValue(stats.pause_duration) });
+			rows.push({ labelKey: _('Time paused'), value: this.formatDurationValue(stats.pause_duration) });
 		}
 
 		if (!selectionActive && lapCount > 0) {
-			rows.push({ labelKey: 'workout.laps', value: lapCount.toString() });
+			rows.push({ labelKey: _('Laps'), value: lapCount.toString() });
 		}
 
 		return rows.length
 			? {
 					key: 'distance-summary',
-					labelKey: 'dashboard.distance',
+					labelKey: _('Distance'),
 					rows,
 			  }
 			: null;
@@ -271,11 +271,11 @@ export class WorkoutStatisticsComponent {
 		const rows: WorkoutStatRow[] = [];
 
 		if (stats.total_up > 0) {
-			rows.push({ labelKey: 'workout.elev_up', value: this.formatElevation(stats.total_up, units.elevation) });
+			rows.push({ labelKey: _('Total up'), value: this.formatElevation(stats.total_up, units.elevation) });
 		}
 
 		if (stats.total_down > 0) {
-			rows.push({ labelKey: 'workout.elev_down', value: this.formatElevation(stats.total_down, units.elevation) });
+			rows.push({ labelKey: _('Total down'), value: this.formatElevation(stats.total_down, units.elevation) });
 		}
 
 		if (stats.max_elevation > stats.min_elevation) {
@@ -285,7 +285,7 @@ export class WorkoutStatisticsComponent {
 			)}`;
 
 			rows.push({
-				labelKey: 'dashboard.elevation_range',
+				labelKey: _('Elevation range'),
 				value: elevationRange,
 			});
 		}
@@ -293,7 +293,7 @@ export class WorkoutStatisticsComponent {
 		return rows.length
 			? {
 					key: 'elevation-summary',
-					labelKey: 'dashboard.elevation',
+					labelKey: _('Elevation'),
 					rows,
 			  }
 			: null;
@@ -317,22 +317,22 @@ export class WorkoutStatisticsComponent {
 		const unitLabel = config.unit(units);
 
 		if (average !== undefined) {
-			rows.push({ labelKey: 'misc.average', value: this.formatRangeValue(average, unitLabel, config.decimals) });
+			rows.push({ labelKey: _('Average'), value: this.formatRangeValue(average, unitLabel, config.decimals) });
 		}
 
 		if (moving !== undefined && config.movingField) {
 			rows.push({
-				labelKey: 'dashboard.average_speed_no_pause',
+				labelKey: _('Average (no pause)'),
 				value: this.formatRangeValue(moving, unitLabel, config.decimals),
 			});
 		}
 
 		if (min !== undefined) {
-			rows.push({ labelKey: 'misc.minimum', value: this.formatRangeValue(min, unitLabel, config.decimals) });
+			rows.push({ labelKey: _('Minimum'), value: this.formatRangeValue(min, unitLabel, config.decimals) });
 		}
 
 		if (max !== undefined) {
-			rows.push({ labelKey: 'misc.maximum', value: this.formatRangeValue(max, unitLabel, config.decimals) });
+			rows.push({ labelKey: _('Maximum'), value: this.formatRangeValue(max, unitLabel, config.decimals) });
 		}
 
 		return rows.length

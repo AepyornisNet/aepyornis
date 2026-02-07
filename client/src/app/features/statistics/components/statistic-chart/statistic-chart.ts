@@ -4,6 +4,7 @@ import {
   Component,
   effect,
   ElementRef,
+  inject,
   input,
   OnDestroy,
   viewChild,
@@ -22,8 +23,10 @@ import {
   Tooltip,
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
+import { TranslateService } from '@ngx-translate/core';
 import { Statistics } from '../../../../core/types/statistics';
 import { UserPreferredUnits } from '../../../../core/types/user';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 Chart.register(
   TimeScale,
@@ -44,6 +47,7 @@ Chart.register(
 })
 export class StatisticChartComponent implements AfterViewInit, OnDestroy {
   private readonly chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('chartCanvas');
+  private readonly translate = inject(TranslateService);
 
   public readonly stats = input.required<Statistics | null>();
   public readonly preferredUnits = input<UserPreferredUnits>();
@@ -160,7 +164,7 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
         }
 
         return {
-          label: value.local_workout_type,
+          label: this.translate.instant(getSportLabel(value.local_workout_type)),
           data: data,
         };
       })
