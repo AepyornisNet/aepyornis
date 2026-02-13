@@ -10,7 +10,6 @@ import (
 
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/invopop/ctxi18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -97,22 +96,6 @@ func (a *App) ValidateAdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if !u.Admin {
 			log.Warn("User is not an admin")
 			return ctx.Redirect(http.StatusFound, a.echo.Reverse("dashboard"))
-		}
-
-		return next(ctx)
-	}
-}
-
-func (a *App) ValidateUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(ctx echo.Context) error {
-		if err := a.setUserFromContext(ctx); err != nil {
-			a.logger.Warn("error validating user", "error", err.Error())
-			return ctx.Redirect(http.StatusFound, a.echo.Reverse("user-signout"))
-		}
-
-		lctx, _ := ctxi18n.WithLocale(ctx.Request().Context(), langFromContextString(ctx))
-		if lctx != nil {
-			ctx.SetRequest(ctx.Request().WithContext(lctx))
 		}
 
 		return next(ctx)
