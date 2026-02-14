@@ -27,3 +27,24 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  # Maintain image versions for node
+  - package-ecosystem: "npm"
+    directory: "/client/"
+    schedule:
+      interval: "monthly"
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/build-angular"
+          - "@schematics/angular"
+      fullcalendar:
+        patterns:
+          - "@fullcalendar/*"
+      ng-icons:
+        patterns:
+          - "@ng-icons/*"
+      ngx-translate:
+        patterns:
+          - "@ngx-translate/*"
