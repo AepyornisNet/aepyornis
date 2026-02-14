@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
 
@@ -27,17 +27,6 @@ type authController struct {
 	context *container.Container
 }
 
-type signinRequest struct {
-	Username string `json:"username" form:"username"`
-	Password string `json:"password" form:"password"`
-}
-
-type registerRequest struct {
-	Username string `json:"username" form:"username"`
-	Password string `json:"password" form:"password"`
-	Name     string `json:"name" form:"name"`
-}
-
 func NewAuthController(c *container.Container) AuthController {
 	return &authController{context: c}
 }
@@ -53,7 +42,7 @@ func NewAuthController(c *container.Container) AuthController {
 // @Failure      500  {object}  api.Response[any]
 // @Router       /auth/signin [post]
 func (ac *authController) SignIn(c echo.Context) error {
-	var req signinRequest
+	var req dto.SigninRequest
 	if err := c.Bind(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -116,7 +105,7 @@ func (ac *authController) Register(c echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, errors.New("registration is disabled"))
 	}
 
-	var req registerRequest
+	var req dto.RegisterRequest
 	if err := c.Bind(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cast"
 )
@@ -307,12 +307,6 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-type calendarQueryParams struct {
-	Start    *string `query:"start"`
-	End      *string `query:"end"`
-	TimeZone *string `query:"timeZone"`
-}
-
 // GetWorkoutCalendar returns calendar events of workouts for the current user
 // @Summary      Get workout calendar events
 // @Tags         workouts
@@ -327,7 +321,7 @@ type calendarQueryParams struct {
 func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	user := wc.context.GetUser(c)
 
-	var params calendarQueryParams
+	var params dto.CalendarQueryParams
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}

@@ -10,8 +10,8 @@ import (
 
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

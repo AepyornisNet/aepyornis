@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	"gorm.io/datatypes"
 )
@@ -21,19 +21,6 @@ type ProfileController interface {
 
 type profileController struct {
 	context *container.Container
-}
-
-type profileUpdateData struct {
-	Birthdate           *string                     `json:"birthdate"`
-	PreferredUnits      model.UserPreferredUnits `json:"preferred_units"`
-	Language            string                      `json:"language"`
-	Theme               string                      `json:"theme"`
-	TotalsShow          string                      `json:"totals_show"`
-	Timezone            string                      `json:"timezone"`
-	AutoImportDirectory string                      `json:"auto_import_directory"`
-	APIActive           bool                        `json:"api_active"`
-	SocialsDisabled     bool                        `json:"socials_disabled"`
-	PreferFullDate      bool                        `json:"prefer_full_date"`
 }
 
 func NewProfileController(c *container.Container) ProfileController {
@@ -78,7 +65,7 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 func (pc *profileController) UpdateProfile(c echo.Context) error {
 	user := pc.context.GetUser(c)
 
-	var updateData profileUpdateData
+	var updateData dto.ProfileUpdateData
 	if err := c.Bind(&updateData); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}

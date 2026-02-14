@@ -254,3 +254,41 @@ func setIfNotNil[T any](dst *T, src *T) {
 
 	*dst = *src
 }
+
+type SigninRequest struct {
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
+}
+
+type RegisterRequest struct {
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
+	Name     string `json:"name" form:"name"`
+}
+
+type AdminUserUpdateData struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Admin    bool   `json:"admin"`
+	Active   bool   `json:"active"`
+	Password string `json:"password,omitempty"`
+}
+
+type ProfileUpdateData struct {
+	Birthdate           *string                  `json:"birthdate"`
+	PreferredUnits      model.UserPreferredUnits `json:"preferred_units"`
+	Language            string                   `json:"language"`
+	Theme               string                   `json:"theme"`
+	TotalsShow          string                   `json:"totals_show"`
+	Timezone            string                   `json:"timezone"`
+	AutoImportDirectory string                   `json:"auto_import_directory"`
+	APIActive           bool                     `json:"api_active"`
+	SocialsDisabled     bool                     `json:"socials_disabled"`
+	PreferFullDate      bool                     `json:"prefer_full_date"`
+}
+
+type CalendarQueryParams struct {
+	Start    *string `query:"start"`
+	End      *string `query:"end"`
+	TimeZone *string `query:"timeZone"`
+}

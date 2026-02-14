@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,14 +21,6 @@ type AdminController interface {
 type adminController struct {
 	context            *container.Container
 	resetConfiguration func() error
-}
-
-type adminUserUpdateData struct {
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Admin    bool   `json:"admin"`
-	Active   bool   `json:"active"`
-	Password string `json:"password,omitempty"`
 }
 
 func NewAdminController(c *container.Container, resetConfiguration func() error) AdminController {
@@ -118,7 +110,7 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	var updateData adminUserUpdateData
+	var updateData dto.AdminUserUpdateData
 	if err := c.Bind(&updateData); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
