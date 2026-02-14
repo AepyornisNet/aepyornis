@@ -11,9 +11,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var ErrInvalidJWTToken = errors.New("invalid JWT token")
+
 func (a *App) setContext(ctx echo.Context) {
 	ctx.Set("version", &a.Version)
-	ctx.Set("config", &a.Config)
+	ctx.Set("config", a.Config)
 	ctx.Set("echo", a.echo)
 	ctx.Set("sessionManager", a.sessionManager)
 

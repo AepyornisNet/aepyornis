@@ -8,29 +8,38 @@ import (
 func (a *App) registerUserController(apiGroup *echo.Group) {
 	uc := controller.NewUserController(a.getContainer())
 
-	apiGroup.GET("/whoami", uc.GetWhoami).Name = "api-v2-whoami"
-	apiGroup.GET("/totals", uc.GetTotals).Name = "api-v2-totals"
-	apiGroup.GET("/records", uc.GetRecords).Name = "api-v2-records"
-	apiGroup.GET("/records/climbs/ranking", uc.GetClimbRecordsRanking).Name = "api-v2-records-climbs-ranking"
-	apiGroup.GET("/records/ranking", uc.GetRecordsRanking).Name = "api-v2-records-ranking"
-	apiGroup.GET("/:id", uc.GetUserByID).Name = "api-v2-user-show"
+	apiGroup.GET("/whoami", uc.GetWhoami).Name = "whoami"
+	apiGroup.GET("/totals", uc.GetTotals).Name = "totals"
+	apiGroup.GET("/records", uc.GetRecords).Name = "records"
+	apiGroup.GET("/records/climbs/ranking", uc.GetClimbRecordsRanking).Name = "records-climbs-ranking"
+	apiGroup.GET("/records/ranking", uc.GetRecordsRanking).Name = "records-ranking"
+	apiGroup.GET("/:id", uc.GetUserByID).Name = "user-show"
+}
+
+func (a *App) registerAuthController(apiGroupPublic *echo.Group) {
+	ac := controller.NewAuthController(a.getContainer())
+
+	authGroup := apiGroupPublic.Group("/auth")
+	authGroup.POST("/signin", ac.SignIn).Name = "auth-signin"
+	authGroup.POST("/register", ac.Register).Name = "auth-register"
+	authGroup.POST("/signout", ac.SignOut).Name = "auth-signout"
 }
 
 func (a *App) registerStatisticsController(apiGroup *echo.Group) {
 	sc := controller.NewStatisticsController(a.getContainer())
 
-	apiGroup.GET("/statistics", sc.GetStatistics).Name = "api-v2-statistics"
+	apiGroup.GET("/statistics", sc.GetStatistics).Name = "statistics"
 }
 
 func (a *App) registerProfileController(apiGroup *echo.Group) {
 	pc := controller.NewProfileController(a.getContainer())
 
 	profileGroup := apiGroup.Group("/profile")
-	profileGroup.GET("", pc.GetProfile).Name = "api-v2-profile"
-	profileGroup.PUT("", pc.UpdateProfile).Name = "api-v2-profile-update"
-	profileGroup.POST("/reset-api-key", pc.ResetAPIKey).Name = "api-v2-profile-reset-api-key"
-	profileGroup.POST("/refresh-workouts", pc.RefreshWorkouts).Name = "api-v2-profile-refresh-workouts"
-	profileGroup.POST("/update-version", pc.UpdateVersion).Name = "api-v2-user-update-version"
+	profileGroup.GET("", pc.GetProfile).Name = "profile"
+	profileGroup.PUT("", pc.UpdateProfile).Name = "profile-update"
+	profileGroup.POST("/reset-api-key", pc.ResetAPIKey).Name = "profile-reset-api-key"
+	profileGroup.POST("/refresh-workouts", pc.RefreshWorkouts).Name = "profile-refresh-workouts"
+	profileGroup.POST("/update-version", pc.UpdateVersion).Name = "user-update-version"
 }
 
 func (a *App) registerAdminController(apiGroup *echo.Group) {
@@ -42,11 +51,11 @@ func (a *App) registerAdminController(apiGroup *echo.Group) {
 	adminGroup := apiGroup.Group("/admin")
 	adminGroup.Use(a.ValidateAdminMiddleware)
 
-	adminGroup.GET("/users", ac.GetUsers).Name = "api-v2-admin-users"
-	adminGroup.GET("/users/:id", ac.GetUser).Name = "api-v2-admin-user"
-	adminGroup.PUT("/users/:id", ac.UpdateUser).Name = "api-v2-admin-user-update"
-	adminGroup.DELETE("/users/:id", ac.DeleteUser).Name = "api-v2-admin-user-delete"
-	adminGroup.PUT("/config", ac.UpdateConfig).Name = "api-v2-admin-config-update"
+	adminGroup.GET("/users", ac.GetUsers).Name = "admin-users"
+	adminGroup.GET("/users/:id", ac.GetUser).Name = "admin-user"
+	adminGroup.PUT("/users/:id", ac.UpdateUser).Name = "admin-user-update"
+	adminGroup.DELETE("/users/:id", ac.DeleteUser).Name = "admin-user-delete"
+	adminGroup.PUT("/config", ac.UpdateConfig).Name = "admin-config-update"
 }
 
 func (a *App) registerEquipmentController(apiGroup *echo.Group) {

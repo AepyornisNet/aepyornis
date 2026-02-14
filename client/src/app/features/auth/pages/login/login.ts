@@ -1,23 +1,23 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { _, TranslatePipe } from '@ngx-translate/core';
 import {
   FormBuilder,
   FormGroup,
-  FormsModule,
   ReactiveFormsModule,
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { User } from '../../../../core/services/user';
 import { AppConfig } from '../../../../core/services/app-config';
-import { AUTH_LOGIN_URL, AUTH_REGISTER_URL } from '../../../../core/types/auth';
+import { Api } from '../../../../core/services/api';
 import { PublicLayout } from '../../../../layouts/public-layout/public-layout';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, ReactiveFormsModule, PublicLayout, TranslatePipe],
+  imports: [ReactiveFormsModule, PublicLayout, TranslatePipe],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,6 +25,7 @@ import { PublicLayout } from '../../../../layouts/public-layout/public-layout';
 export class Login implements OnInit {
   private userService = inject(User);
   private appConfig = inject(AppConfig);
+  private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fb = inject(FormBuilder);
@@ -32,12 +33,14 @@ export class Login implements OnInit {
   // Login form (reactive form)
   public loginForm!: FormGroup;
   public readonly errorMessage = signal<string | null>(null);
+  public readonly loginSubmitting = signal(false);
   public readonly returnUrl = signal('/dashboard');
 
   // Register form (reactive form with 3 fields)
   public registerForm!: FormGroup;
   public readonly registerErrorMessage = signal<string | null>(null);
   public readonly registerSuccessMessage = signal<string | null>(null);
+  public readonly registerSubmitting = signal(false);
 
   public get isRegistrationDisabled(): boolean {
     return this.appConfig.isRegistrationDisabled();
@@ -96,38 +99,45 @@ export class Login implements OnInit {
   }
 
   public onSubmit(): void {
-    if (this.loginForm.invalid) {
+    if (this.loginForm.invalid || this.loginSubmitting()) {
       return;
     }
 
     // Clear any previous errors
     this.errorMessage.set(null);
 
+    this.loginSubmitting.set(true);
+
     const formValue = this.loginForm.value;
 
-    // Create and submit a form to the backend
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = AUTH_LOGIN_URL;
+    this.api
+      .signIn({
+        username: String(formValue.username ?? ''),
+        password: String(formValue.password ?? ''),
+      })
+      .subscribe({
+        next: (response) => {
+          if (response?.results) {
+            this.userService.setAuthenticatedUser(response.results);
+            void this.router.navigate([this.returnUrl()]);
+            return;
+          }
 
-    const usernameInput = document.createElement('input');
-    usernameInput.type = 'hidden';
-    usernameInput.name = 'username';
-    usernameInput.value = formValue.username;
-    form.appendChild(usernameInput);
-
-    const passwordInput = document.createElement('input');
-    passwordInput.type = 'hidden';
-    passwordInput.name = 'password';
-    passwordInput.value = formValue.password;
-    form.appendChild(passwordInput);
-
-    document.body.appendChild(form);
-    form.submit();
+          this.errorMessage.set(_('Login failed'));
+        },
+        error: (err: HttpErrorResponse) => {
+          const apiMessage = err.error?.errors?.[0];
+          this.errorMessage.set(apiMessage || _('Login failed'));
+          this.loginSubmitting.set(false);
+        },
+        complete: () => {
+          this.loginSubmitting.set(false);
+        },
+      });
   }
 
   public onRegister(): void {
-    if (this.registerForm.invalid) {
+    if (this.registerForm.invalid || this.registerSubmitting()) {
       return;
     }
 
@@ -135,26 +145,31 @@ export class Login implements OnInit {
     this.registerErrorMessage.set(null);
     this.registerSuccessMessage.set(null);
 
+    this.registerSubmitting.set(true);
+
     const formValue = this.registerForm.value;
 
-    // Create and submit a form to the backend
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = AUTH_REGISTER_URL;
-
-    const usernameInput = document.createElement('input');
-    usernameInput.type = 'hidden';
-    usernameInput.name = 'username';
-    usernameInput.value = formValue.username;
-    form.appendChild(usernameInput);
-
-    const passwordInput = document.createElement('input');
-    passwordInput.type = 'hidden';
-    passwordInput.name = 'password';
-    passwordInput.value = formValue.password;
-    form.appendChild(passwordInput);
-
-    document.body.appendChild(form);
-    form.submit();
+    this.api
+      .register({
+        username: String(formValue.username ?? ''),
+        password: String(formValue.password ?? ''),
+        name: String(formValue.username ?? ''),
+      })
+      .subscribe({
+        next: (response) => {
+          this.registerSuccessMessage.set(
+            response?.results?.message ?? 'Your account has been created',
+          );
+          this.registerForm.reset();
+        },
+        error: (err: HttpErrorResponse) => {
+          const apiMessage = err.error?.errors?.[0];
+          this.registerErrorMessage.set(apiMessage || 'Registration failed');
+          this.registerSubmitting.set(false);
+        },
+        complete: () => {
+          this.registerSubmitting.set(false);
+        },
+      });
   }
 }

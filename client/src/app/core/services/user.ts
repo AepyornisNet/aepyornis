@@ -1,9 +1,9 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { AUTH_LOGOUT_URL } from '../../core/types/auth';
 import { Api } from './api';
 import { UserProfile } from '../../core/types/user';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
+import { Router } from '@angular/router';
 
 export type UserInfo = {
   username: string;
@@ -18,6 +18,7 @@ export type UserInfo = {
 export class User {
   private api = inject(Api);
   private translate = inject(TranslateService);
+  private router = inject(Router);
 
   private readonly userInfo = signal<UserInfo | null>(null);
   private readonly checkingAuth = signal<boolean>(false);
@@ -34,6 +35,23 @@ export class User {
     return this.checkingAuth();
   }
 
+  public setAuthenticatedUser(profile: UserProfile): void {
+    const user: UserInfo = {
+      username: profile.username,
+      name: profile.name || profile.username,
+      isAuthenticated: true,
+      profile,
+    };
+
+    this.userInfo.set(user);
+
+    const lang = profile.language;
+    if (lang) {
+      this.translate.use(lang);
+      localStorage.setItem('locale', lang);
+    }
+  }
+
   public checkAuthStatus(): Observable<UserProfile | null> {
     this.checkingAuth.set(true);
     return this.api
@@ -47,19 +65,7 @@ export class User {
         tap((response) => {
           this.checkingAuth.set(false);
           if (response && response.results) {
-            const user: UserInfo = {
-              username: response.results.username,
-              name: response.results.name || response.results.username,
-              isAuthenticated: true,
-              profile: response.results,
-            };
-            this.userInfo.set(user);
-            // If user profile contains a language, use it for translations
-            const lang = user.profile?.language;
-            if (lang) {
-              this.translate.use(lang);
-              localStorage.setItem('locale', lang);
-            }
+            this.setAuthenticatedUser(response.results);
           } else {
             this.userInfo.set(null);
           }
@@ -73,9 +79,15 @@ export class User {
   }
 
   public logout(): void {
-    // Clear local user info
-    this.clearUser();
-
-    window.location.href = AUTH_LOGOUT_URL;
+    this.api
+      .signOut()
+      .pipe(
+        catchError(() => of(null)),
+        tap(() => {
+          this.clearUser();
+          this.router.navigate(['/login']);
+        }),
+      )
+      .subscribe();
   }
 }

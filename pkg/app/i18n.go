@@ -1,11 +1,9 @@
 package app
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/invopop/ctxi18n"
-	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
 )
@@ -47,21 +45,4 @@ func langFromContext(ctx echo.Context) []any {
 		ctx.Get("user_language"),
 		ctx.Request().Header.Get("Accept-Language"),
 	}
-}
-
-func (a *App) i18nT(ctx echo.Context, message string, vars ...any) string {
-	t := a.translatorFromContext(ctx)
-	if t.Has(message) {
-		return t.T(message, vars...)
-	}
-
-	return fmt.Sprintf("%s: %v", message, vars)
-}
-
-func (a *App) translatorFromContext(ctx echo.Context) *i18n.Locale {
-	if l := ctxi18n.Locale(ctx.Request().Context()); l != nil {
-		return l
-	}
-
-	return a.translator
 }

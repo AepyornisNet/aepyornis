@@ -23,7 +23,7 @@ func newCLI() (*cli, error) {
 	a.Assets = appassets.FS()
 	a.Translations = apptranslations.FS()
 
-	if err := a.ReadConfiguration(); err != nil {
+	if err := a.ResetConfiguration(); err != nil {
 		return nil, err
 	}
 

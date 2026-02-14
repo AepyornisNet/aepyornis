@@ -35,6 +35,7 @@ import {
   Statistics,
   StatisticsParams,
 } from '../../core/types/statistics';
+import { RegisterRequest, SignInRequest } from '../../core/types/auth';
 
 @Injectable({
   providedIn: 'root',
@@ -43,6 +44,20 @@ export class Api {
   private http = inject(HttpClient);
 
   private baseUrl = '/api/v2';
+
+  // Auth endpoints
+  public signIn(payload: SignInRequest): Observable<APIResponse<UserProfile>> {
+    return this.http.post<APIResponse<UserProfile>>(`${this.baseUrl}/auth/signin`, payload);
+  }
+
+  public register(payload: RegisterRequest): Observable<APIResponse<{ message: string }>> {
+    return this.http.post<APIResponse<{ message: string }>>(`${this.baseUrl}/auth/register`, payload);
+  }
+
+  public signOut(): Observable<APIResponse<{ message: string }>> {
+    return this.http.post<APIResponse<{ message: string }>>(`${this.baseUrl}/auth/signout`, {});
+  }
+
   public whoami(): Observable<APIResponse<UserProfile>> {
     return this.http.get<APIResponse<UserProfile>>(`${this.baseUrl}/whoami`);
   }

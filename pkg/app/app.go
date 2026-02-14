@@ -5,12 +5,10 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/alitto/pond/v2"
-	"github.com/cat-dealer/go-rand/v2"
 	"github.com/fsouza/slognil"
 	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
@@ -35,33 +33,10 @@ type App struct {
 	sessionManager *scs.SessionManager
 	translator     *i18n.Locale
 	Version        version.Version
-	Config         database.Config
+	Config         *container.Config
 	container      *container.Container
 	workerPool     pond.Pool
 	workerPoolGeo  pond.Pool
-}
-
-func (a *App) jwtSecret() []byte {
-	if a.Config.JWTEncryptionKey != "" {
-		return []byte(a.Config.JWTEncryptionKey)
-	}
-
-	if a.Config.JWTEncryptionKeyFile != "" {
-		a.logger.Info("reading JWTEncryptionKeyFile", "file", a.Config.JWTEncryptionKeyFile)
-
-		key, err := os.ReadFile(a.Config.JWTEncryptionKeyFile)
-		if err == nil {
-			a.Config.JWTEncryptionKey = strings.TrimSpace(string(key))
-			return []byte(a.Config.JWTEncryptionKey)
-		}
-
-		a.logger.Error("could not read JWTEncryptionKeyFile", "error", err)
-	}
-
-	a.logger.Error("JWTEncryptionKey is not set; generating a random string at startup")
-	a.Config.JWTEncryptionKey = rand.String(32, rand.GetAlphaNumericPool())
-
-	return []byte(a.Config.JWTEncryptionKey)
 }
 
 func (a *App) Serve() error {
@@ -73,15 +48,18 @@ func (a *App) Serve() error {
 }
 
 func (a *App) Configure() error {
-	if err := a.ReadConfiguration(); err != nil {
+	cfg, err := container.NewConfig()
+	if err != nil {
 		return err
 	}
 
-	a.ConfigureLogger()
+	a.Config = cfg
 
 	if err := a.ConfigureLocalizer(); err != nil {
 		return err
 	}
+
+	a.ConfigureLogger()
 
 	if err := a.ConfigureDatabase(); err != nil {
 		return err
@@ -96,8 +74,6 @@ func (a *App) Configure() error {
 	if err := a.Config.UpdateFromDatabase(a.db); err != nil {
 		return err
 	}
-
-	a.container = container.NewContainer(a.db, &a.Config, &a.Version)
 
 	if err := a.ConfigureWebserver(); err != nil {
 		return err
@@ -116,7 +92,7 @@ func (a *App) ConfigureGeocoder() {
 }
 
 func (a *App) ConfigureDatabase() error {
-	a.SetDSN()
+	a.Config.SetDSN(a.logger)
 
 	a.logger.Info("Connecting to the database '" + a.Config.DatabaseDriver + "': " + a.Config.DSN)
 
@@ -176,6 +152,7 @@ func (a *App) ConfigureLogger() {
 func NewApp(v version.Version) *App {
 	return &App{
 		Version:   v,
+		Config:    &container.Config{},
 		logger:    newLogger(false),
 		rawLogger: newLogger(false),
 	}
@@ -212,7 +189,7 @@ func (a *App) Logger() *slog.Logger {
 
 func (a *App) getContainer() *container.Container {
 	if a.container == nil {
-		a.container = container.NewContainer(a.db, &a.Config, &a.Version)
+		a.container = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager)
 	}
 
 	return a.container

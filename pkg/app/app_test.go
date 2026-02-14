@@ -26,11 +26,11 @@ func defaultApp(t *testing.T) *App {
 
 func TestApp_RandomJWTError(t *testing.T) {
 	a1 := defaultApp(t)
-	s1 := a1.jwtSecret()
+	s1 := a1.Config.JWTSecret()
 	assert.NotEmpty(t, s1)
 
 	a2 := defaultApp(t)
-	s2 := a2.jwtSecret()
+	s2 := a2.Config.JWTSecret()
 	assert.NotEqual(t, s1, s2)
 }
 
@@ -63,9 +63,9 @@ func TestApp_NewLogger(t *testing.T) {
 
 func TestApp_RandomJWTErrorIdemPotent(t *testing.T) {
 	a := defaultApp(t)
-	s1 := a.jwtSecret()
+	s1 := a.Config.JWTSecret()
 	assert.NotEmpty(t, s1)
 
-	s2 := a.jwtSecret()
+	s2 := a.Config.JWTSecret()
 	assert.Equal(t, s1, s2)
 }

@@ -4,7 +4,6 @@
       <div class="col-lg-10 col-xl-8">
         <div class="text-center mb-5">
           <h1 class="display-4 fw-bold mb-3">{{ 'Welcome!' | translate }}</h1>
-          <p class="lead text-muted">{{ 'Welcome Lead' | translate }}</p>
         </div>
 
         <div class="row g-4">
@@ -16,7 +15,7 @@
 
                 @if (errorMessage()) {
                   <div class="alert alert-danger" role="alert">
-                    {{ errorMessage() }}
+                    {{ errorMessage() | translate }}
                   </div>
                 }
 
@@ -52,7 +51,7 @@
                   <button
                     class="btn btn-primary w-100"
                     type="submit"
-                    [disabled]="loginForm.invalid"
+                    [disabled]="loginForm.invalid || loginSubmitting()"
                   >
                     {{ 'Sign in' | translate }}
                   </button>
@@ -72,13 +71,13 @@
 
                   @if (registerErrorMessage()) {
                     <div class="alert alert-danger" role="alert">
-                      {{ registerErrorMessage() }}
+                      {{ registerErrorMessage() | translate }}
                     </div>
                   }
 
                   @if (registerSuccessMessage()) {
                     <div class="alert alert-success" role="alert">
-                      {{ registerSuccessMessage() }}
+                      {{ registerSuccessMessage() | translate }}
                     </div>
                   }
 
@@ -143,7 +142,7 @@
                     <button
                       class="btn btn-success w-100 mb-3"
                       type="submit"
-                      [disabled]="registerForm.invalid"
+                      [disabled]="registerForm.invalid || registerSubmitting()"
                     >
                       {{ 'Register' | translate }}
                     </button>

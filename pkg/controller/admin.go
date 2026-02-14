@@ -192,7 +192,7 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 // @Failure      500  {object}  api.Response[any]
 // @Router       /admin/config [put]
 func (ac *adminController) UpdateConfig(c echo.Context) error {
-	var cnf database.Config
+	var cnf container.Config
 
 	if err := c.Bind(&cnf); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
