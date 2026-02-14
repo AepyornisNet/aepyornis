@@ -51,6 +51,8 @@ type Config struct {
 	WithResponseHeader bool
 	WithSpanID         bool
 	WithTraceID        bool
+	WithClientIP       bool
+	WithCustomMessage  func(c echo.Context, err error) string
 
 	Filters []Filter
 }
@@ -60,22 +62,7 @@ type Config struct {
 // Requests with errors are logged using slog.Error().
 // Requests without errors are logged using slog.Info().
 func New(logger *slog.Logger) echo.MiddlewareFunc {
-	return NewWithConfig(logger, Config{
-		DefaultLevel:     slog.LevelInfo,
-		ClientErrorLevel: slog.LevelWarn,
-		ServerErrorLevel: slog.LevelError,
-
-		WithUserAgent:      false,
-		WithRequestID:      true,
-		WithRequestBody:    false,
-		WithRequestHeader:  false,
-		WithResponseBody:   false,
-		WithResponseHeader: false,
-		WithSpanID:         false,
-		WithTraceID:        false,
-
-		Filters: []Filter{},
-	})
+	return NewWithConfig(logger, DefaultConfig())
 }
 
 // NewWithFilters returns a echo.MiddlewareFunc (middleware) that logs requests using slog.
@@ -83,7 +70,14 @@ func New(logger *slog.Logger) echo.MiddlewareFunc {
 // Requests with errors are logged using slog.Error().
 // Requests without errors are logged using slog.Info().
 func NewWithFilters(logger *slog.Logger, filters ...Filter) echo.MiddlewareFunc {
-	return NewWithConfig(logger, Config{
+	config := DefaultConfig()
+	config.Filters = filters
+	return NewWithConfig(logger, config)
+}
+
+// DefaultConfig returns the default configuration for the request logger.
+func DefaultConfig() Config {
+	return Config{
 		DefaultLevel:     slog.LevelInfo,
 		ClientErrorLevel: slog.LevelWarn,
 		ServerErrorLevel: slog.LevelError,
@@ -96,9 +90,11 @@ func NewWithFilters(logger *slog.Logger, filters ...Filter) echo.MiddlewareFunc 
 		WithResponseHeader: false,
 		WithSpanID:         false,
 		WithTraceID:        false,
+		WithClientIP:       true,
+		WithCustomMessage:  nil,
 
-		Filters: filters,
-	})
+		Filters: []Filter{},
+	}
 }
 
 // NewWithConfig returns a echo.HandlerFunc (middleware) that logs requests using slog.
@@ -162,9 +158,11 @@ func NewWithConfig(logger *slog.Logger, config Config) echo.MiddlewareFunc {
 				}
 			}
 
-			baseAttributes := []slog.Attr{}
+			baseAttributes := make([]slog.Attr, 0, 3)
+			requestAttributes := make([]slog.Attr, 0, 14)
+			responseAttributes := make([]slog.Attr, 0, 6)
 
-			requestAttributes := []slog.Attr{
+			requestAttributes = append(requestAttributes,
 				slog.Time("time", start.UTC()),
 				slog.String("method", method),
 				slog.String("host", host),
@@ -172,15 +170,20 @@ func NewWithConfig(logger *slog.Logger, config Config) echo.MiddlewareFunc {
 				slog.String("query", query),
 				slog.Any("params", params),
 				slog.String("route", route),
-				slog.String("ip", ip),
 				slog.String("referer", referer),
+			)
+
+			if config.WithClientIP {
+				requestAttributes = append(requestAttributes,
+					slog.String("ip", ip),
+				)
 			}
 
-			responseAttributes := []slog.Attr{
+			responseAttributes = append(responseAttributes,
 				slog.Time("time", end.UTC()),
 				slog.Duration("latency", latency),
 				slog.Int("status", status),
-			}
+			)
 
 			if config.WithRequestID {
 				requestID := req.Header.Get(echo.HeaderXRequestID)
@@ -303,6 +306,10 @@ func NewWithConfig(logger *slog.Logger, config Config) echo.MiddlewareFunc {
 				}
 			}
 
+			if config.WithCustomMessage != nil {
+				msg = config.WithCustomMessage(c, errMsg)
+			}
+
 			logger.LogAttrs(c.Request().Context(), level, msg, attributes...)
 
 			return
@@ -334,7 +341,7 @@ func extractTraceSpanID(ctx context.Context, withTraceID bool, withSpanID bool) 
 		return []slog.Attr{}
 	}
 
-	attrs := []slog.Attr{}
+	attrs := make([]slog.Attr, 0, 2)
 	spanCtx := span.SpanContext()
 
 	if withTraceID && spanCtx.HasTraceID() {
