@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/anyappinc/fitbit"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"resty.dev/v3"
 )
 
@@ -66,8 +66,8 @@ func (fs *fitbitSync) syncActivities(days int) {
 	}
 }
 
-func (fs *fitbitSync) buildMeasurement(date string, final bool, units *fitbit.Unit, act *fitbit.DailyActivitySummary) *api.Measurement {
-	mw := &api.Measurement{
+func (fs *fitbitSync) buildMeasurement(date string, final bool, units *fitbit.Unit, act *fitbit.DailyActivitySummary) *dto.Measurement {
+	mw := &dto.Measurement{
 		Date: date,
 	}
 
@@ -94,7 +94,7 @@ func (fs *fitbitSync) buildMeasurement(date string, final bool, units *fitbit.Un
 	return mw
 }
 
-func (fs *fitbitSync) postMeasurement(m *api.Measurement) error {
+func (fs *fitbitSync) postMeasurement(m *dto.Measurement) error {
 	res, err := fs.restClient.R().
 		SetBody(m).
 		Post("/measurements")
@@ -124,7 +124,7 @@ func (fs *fitbitSync) uploadActivity(a fitbit.Activity) error {
 		return err
 	}
 
-	var response api.Response[[]api.WorkoutResponse]
+	var response dto.Response[[]dto.WorkoutResponse]
 
 	if err := json.Unmarshal(res.Bytes(), &response); err != nil {
 		return err

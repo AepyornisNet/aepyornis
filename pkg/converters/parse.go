@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/tkrajina/gpxgo/gpx"
 )
 
@@ -20,10 +20,10 @@ type (
 )
 
 func init() {
-	database.WorkoutParser = ParseCollection
+	model.WorkoutParser = ParseCollection
 }
 
-func Parse(filename string, content []byte) (*database.Workout, error) {
+func Parse(filename string, content []byte) (*model.Workout, error) {
 	c, err := ParseCollection(filename, content)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func Parse(filename string, content []byte) (*database.Workout, error) {
 	return c[0], nil
 }
 
-func ParseCollection(filename string, content []byte) ([]*database.Workout, error) {
+func ParseCollection(filename string, content []byte) ([]*model.Workout, error) {
 	if filename == "" {
 		// Assume GPX when filename is empty
 		return parseSingle(ParseGPX, "gpx", "", content)
@@ -56,7 +56,7 @@ func ParseCollection(filename string, content []byte) ([]*database.Workout, erro
 	return c, nil
 }
 
-func parseContent(filename string, content []byte) ([]*database.Workout, error) {
+func parseContent(filename string, content []byte) ([]*model.Workout, error) {
 	suffix := strings.ToLower(path.Ext(filename))
 
 	switch suffix {
@@ -75,7 +75,7 @@ func parseContent(filename string, content []byte) ([]*database.Workout, error) 
 	}
 }
 
-func parseSingle(f parserFunc, fileType string, filename string, content []byte) ([]*database.Workout, error) {
+func parseSingle(f parserFunc, fileType string, filename string, content []byte) ([]*model.Workout, error) {
 	g, err := f(content)
 	if err != nil {
 		return nil, err
@@ -85,21 +85,21 @@ func parseSingle(f parserFunc, fileType string, filename string, content []byte)
 		return nil, nil
 	}
 
-	return []*database.Workout{workoutFromGPX(g, filename, fileType, content)}, nil
+	return []*model.Workout{workoutFromGPX(g, filename, fileType, content)}, nil
 }
 
-func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte) *database.Workout {
-	data := database.MapDataFromGPX(g)
+func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte) *model.Workout {
+	data := model.MapDataFromGPX(g)
 	if data == nil {
-		data = &database.MapData{}
+		data = &model.MapData{}
 	}
 
-	w := &database.Workout{
+	w := &model.Workout{
 		Data: data,
 		Name: data.WorkoutData.Name,
 	}
 
-	if date := database.GPXDate(g); date != nil {
+	if date := model.GPXDate(g); date != nil {
 		w.Date = *date
 	}
 
@@ -110,7 +110,7 @@ func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte
 	return w
 }
 
-func ensureWorkoutName(w *database.Workout, basename string) {
+func ensureWorkoutName(w *model.Workout, basename string) {
 	if w == nil || w.Name != "" {
 		return
 	}
@@ -122,7 +122,7 @@ func ensureWorkoutName(w *database.Workout, basename string) {
 	w.Name = strings.TrimSuffix(basename, path.Ext(basename))
 }
 
-func setContentAndName(w *database.Workout, filename string, fileType string, content []byte) {
+func setContentAndName(w *model.Workout, filename string, fileType string, content []byte) {
 	ext := strings.TrimPrefix(path.Ext(filename), ".")
 	name := strings.TrimSuffix(path.Base(filename), path.Ext(filename))
 

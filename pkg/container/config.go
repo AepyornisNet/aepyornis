@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/cat-dealer/go-rand/v2"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
 type Config struct {
-	database.Config `mapstructure:",squash"`
+	model.Config `mapstructure:",squash"`
 }
 
 func NewConfig() (*Config, error) {
@@ -25,7 +25,7 @@ func NewConfig() (*Config, error) {
 	return c, nil
 }
 
-func (c *Config) GetDatabaseConfig() *database.Config {
+func (c *Config) GetDatabaseConfig() *model.Config {
 	return &c.Config
 }
 

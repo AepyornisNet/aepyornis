@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/table"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -39,14 +39,14 @@ func (c *cli) workoutsDiagCmd() *cobra.Command {
 
 			var ids []uint64
 
-			if err := c.getDatabase().Model(&database.Workout{}).Pluck("ID", &ids).Error; err != nil {
+			if err := c.getDatabase().Model(&model.Workout{}).Pluck("ID", &ids).Error; err != nil {
 				return err
 			}
 
 			for _, id := range ids {
 				issues := []string{}
 
-				wo, err := database.GetWorkout(c.getDatabase(), id)
+				wo, err := model.GetWorkout(c.getDatabase(), id)
 				if err != nil {
 					issues = append(issues, err.Error())
 				}
@@ -73,7 +73,7 @@ func (c *cli) workoutsListCmd() *cobra.Command {
 			t := table.New(os.Stdout)
 			t.SetHeaders("ID", "Date", "Name")
 
-			workouts, err := database.GetWorkouts(c.getDatabase())
+			workouts, err := model.GetWorkouts(c.getDatabase())
 			if err != nil {
 				return err
 			}
@@ -103,7 +103,7 @@ func (c *cli) workoutsShowCmd() *cobra.Command {
 			t := table.New(os.Stdout)
 			t.SetRowLines(false)
 
-			wo, err := database.GetWorkout(c.getDatabase(), id)
+			wo, err := model.GetWorkout(c.getDatabase(), id)
 			if err != nil {
 				return err
 			}
@@ -130,7 +130,7 @@ func (c *cli) workoutsExportCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var ids []uint64
 
-			if err := c.getDatabase().Model(&database.Workout{}).Pluck("ID", &ids).Error; err != nil {
+			if err := c.getDatabase().Model(&model.Workout{}).Pluck("ID", &ids).Error; err != nil {
 				return err
 			}
 
@@ -143,7 +143,7 @@ func (c *cli) workoutsExportCmd() *cobra.Command {
 
 				c.app.Logger().Info("Exporting workout", "id", id)
 
-				wo, err := database.GetWorkoutDetails(c.getDatabase(), id)
+				wo, err := model.GetWorkoutDetails(c.getDatabase(), id)
 				if err != nil {
 					return err
 				}
@@ -182,7 +182,7 @@ func (c *cli) workoutsImportCmd() *cobra.Command {
 					continue
 				}
 
-				var wo database.Workout
+				var wo model.Workout
 
 				if err := json.Unmarshal([]byte(line), &wo); err != nil {
 					return err

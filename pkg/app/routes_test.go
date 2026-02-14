@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
@@ -21,14 +21,14 @@ func configuredApp(t *testing.T) *App {
 	return a
 }
 
-func defaultUser(db *gorm.DB) *database.User {
-	u := &database.User{
-		UserData: database.UserData{
+func defaultUser(db *gorm.DB) *model.User {
+	u := &model.User{
+		UserData: model.UserData{
 			Username: "my-username",
 			Name:     "my-name",
 			Active:   true,
 		},
-		UserSecrets: database.UserSecrets{
+		UserSecrets: model.UserSecrets{
 			Password: "my-password",
 		},
 	}

@@ -2,7 +2,7 @@ package container
 
 import (
 	"github.com/alexedwards/scs/v2"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -35,12 +35,12 @@ func (c *Container) GetSessionManager() *scs.SessionManager {
 	return c.sessionManager
 }
 
-func (c *Container) GetUser(e echo.Context) *database.User {
+func (c *Container) GetUser(e echo.Context) *model.User {
 	d := e.Get("user_info")
 
-	u, ok := d.(*database.User)
+	u, ok := d.(*model.User)
 	if !ok {
-		u = database.AnonymousUser()
+		u = model.AnonymousUser()
 	}
 
 	u.SetContext(e.Request().Context())

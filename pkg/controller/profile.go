@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 	"gorm.io/datatypes"
 )
@@ -25,7 +25,7 @@ type profileController struct {
 
 type profileUpdateData struct {
 	Birthdate           *string                     `json:"birthdate"`
-	PreferredUnits      database.UserPreferredUnits `json:"preferred_units"`
+	PreferredUnits      model.UserPreferredUnits `json:"preferred_units"`
 	Language            string                      `json:"language"`
 	Theme               string                      `json:"theme"`
 	TotalsShow          string                      `json:"totals_show"`
@@ -47,13 +47,13 @@ func NewProfileController(c *container.Container) ProfileController {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Success      200  {object}  api.Response[dto.UserProfileResponse]
 // @Router       /profile [get]
 func (pc *profileController) GetProfile(c echo.Context) error {
 	user := pc.context.GetUser(c)
 
-	resp := api.Response[api.UserProfileResponse]{
-		Results: api.NewUserProfileResponse(user),
+	resp := dto.Response[dto.UserProfileResponse]{
+		Results: dto.NewUserProfileResponse(user),
 	}
 
 	if user.Profile.APIActive {
@@ -71,7 +71,7 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 // @Security     CookieAuth
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Success      200  {object}  api.Response[dto.UserProfileResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /profile [put]
@@ -97,7 +97,7 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 	user.Profile.PreferredUnits = updateData.PreferredUnits
 	user.Profile.Language = updateData.Language
 	user.Profile.Theme = updateData.Theme
-	user.Profile.TotalsShow = database.WorkoutType(updateData.TotalsShow)
+	user.Profile.TotalsShow = model.WorkoutType(updateData.TotalsShow)
 	user.Profile.Timezone = updateData.Timezone
 	user.Profile.AutoImportDirectory = updateData.AutoImportDirectory
 	user.Profile.APIActive = updateData.APIActive
@@ -113,8 +113,8 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.UserProfileResponse]{
-		Results: api.NewUserProfileResponse(user),
+	resp := dto.Response[dto.UserProfileResponse]{
+		Results: dto.NewUserProfileResponse(user),
 	}
 
 	if user.Profile.APIActive {
@@ -143,7 +143,7 @@ func (pc *profileController) ResetAPIKey(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[map[string]string]{
+	resp := dto.Response[map[string]string]{
 		Results: map[string]string{
 			"api_key": user.APIKey,
 			"message": "API key reset successfully",
@@ -170,7 +170,7 @@ func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[map[string]string]{
+	resp := dto.Response[map[string]string]{
 		Results: map[string]string{
 			"message": "All workouts marked for refresh",
 		},

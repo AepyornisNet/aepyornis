@@ -13,7 +13,7 @@ import (
 
 	"github.com/alitto/pond/v2"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"gorm.io/gorm"
 )
 
@@ -70,7 +70,7 @@ func (a *App) bgLoop() {
 func (a *App) autoImports(l *slog.Logger) {
 	var uID []uint64
 
-	q := a.db.Model(&database.User{}).Pluck("ID", &uID)
+	q := a.db.Model(&model.User{}).Pluck("ID", &uID)
 	if err := q.Error; err != nil {
 		l.Error(ErrWorker.Error() + ": " + err.Error())
 	}
@@ -87,7 +87,7 @@ func (a *App) autoImports(l *slog.Logger) {
 }
 
 func (a *App) autoImportForUser(l *slog.Logger, userID uint64) error {
-	u, err := database.GetUserByID(a.db, userID)
+	u, err := model.GetUserByID(a.db, userID)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (a *App) autoImportForUser(l *slog.Logger, userID uint64) error {
 	return nil
 }
 
-func (a *App) importForUser(logger *slog.Logger, u *database.User, path string) error {
+func (a *App) importForUser(logger *slog.Logger, u *model.User, path string) error {
 	// Get file info for path
 	info, err := os.Stat(path)
 	if err != nil {
@@ -162,7 +162,7 @@ func moveImportFile(logger *slog.Logger, dir, path, statusDir string) error {
 	return nil
 }
 
-func (a *App) importFile(logger *slog.Logger, u *database.User, path string) error {
+func (a *App) importFile(logger *slog.Logger, u *model.User, path string) error {
 	logger.Info("Importing path")
 
 	dat, err := os.ReadFile(path)
@@ -170,7 +170,7 @@ func (a *App) importFile(logger *slog.Logger, u *database.User, path string) err
 		return err
 	}
 
-	w, addErr := u.AddWorkout(a.db, database.WorkoutTypeAutoDetect, "", path, dat)
+	w, addErr := u.AddWorkout(a.db, model.WorkoutTypeAutoDetect, "", path, dat)
 	if len(addErr) > 0 {
 		return addErr[0]
 	}
@@ -198,11 +198,11 @@ func fileCanBeImported(p string, i os.FileInfo) bool {
 }
 
 // For the route segment, re-match against all workouts, marking the segments as clean after matching.
-func (a *App) rematchRouteSegmentToWorkouts(rs *database.RouteSegment, l *slog.Logger) error {
-	rs.RouteSegmentMatches = []*database.RouteSegmentMatch{}
+func (a *App) rematchRouteSegmentToWorkouts(rs *model.RouteSegment, l *slog.Logger) error {
+	rs.RouteSegmentMatches = []*model.RouteSegmentMatch{}
 
-	var workoutsBatch []*database.Workout
-	qw := a.db.Preload("Data.Details").Preload("User").Model(&database.Workout{}).
+	var workoutsBatch []*model.Workout
+	qw := a.db.Preload("Data.Details").Preload("User").Model(&model.Workout{}).
 		FindInBatches(&workoutsBatch, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
 			l.With("batch_no", batchNo).
 				With("workouts_batch_size", len(workoutsBatch)).
@@ -236,8 +236,8 @@ func (a *App) rematchRouteSegmentToWorkouts(rs *database.RouteSegment, l *slog.L
 func (a *App) updateRouteSegments(l *slog.Logger) {
 	var rsIDs []uint64
 
-	r := a.db.Model(&database.RouteSegment{}).
-		Where(&database.RouteSegment{Dirty: true}).
+	r := a.db.Model(&model.RouteSegment{}).
+		Where(&model.RouteSegment{Dirty: true}).
 		Pluck("ID", &rsIDs)
 	if r.Error != nil {
 		l.Error("Error during batch query", "error", r.Error)
@@ -247,7 +247,7 @@ func (a *App) updateRouteSegments(l *slog.Logger) {
 		i := idx
 
 		a.workerPool.Go(func() {
-			rs, err := database.GetRouteSegment(a.db, rsIDs[i])
+			rs, err := model.GetRouteSegment(a.db, rsIDs[i])
 			if err != nil {
 				l.Error("Error during batch query", "error", err)
 				return
@@ -270,8 +270,8 @@ func (a *App) updateRouteSegments(l *slog.Logger) {
 func (a *App) updateWorkouts(l *slog.Logger) {
 	var wIDs []uint64
 
-	r := a.db.Model(&database.Workout{}).
-		Where(&database.Workout{Dirty: true}).
+	r := a.db.Model(&model.Workout{}).
+		Where(&model.Workout{Dirty: true}).
 		Pluck("ID", &wIDs)
 	if r.Error != nil {
 		l.Error("Error during batch query", "error", r.Error)
@@ -281,7 +281,7 @@ func (a *App) updateWorkouts(l *slog.Logger) {
 		i := idx
 
 		a.workerPool.Go(func() {
-			w, err := database.GetWorkoutDetails(a.db, wIDs[i])
+			w, err := model.GetWorkoutDetails(a.db, wIDs[i])
 			if err != nil {
 				l.Error("Error during batch query", "error", err)
 				return
@@ -304,7 +304,7 @@ func (a *App) updateWorkouts(l *slog.Logger) {
 func (a *App) updateAddresses(l *slog.Logger) {
 	var mdIDs []uint64
 
-	r := a.db.Model(&database.MapData{}).
+	r := a.db.Model(&model.MapData{}).
 		Where("center IS NOT NULL").Where("address_string", "").
 		Pluck("ID", &mdIDs)
 	if r.Error != nil {
@@ -315,7 +315,7 @@ func (a *App) updateAddresses(l *slog.Logger) {
 		i := idx
 
 		a.workerPoolGeo.Go(func() {
-			md, err := database.GetMapData(a.db, mdIDs[i])
+			md, err := model.GetMapData(a.db, mdIDs[i])
 			if err != nil {
 				l.Error("Error during batch query", "error", err)
 				return

@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -47,7 +47,7 @@ func NewAuthController(c *container.Container) AuthController {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Success      200  {object}  api.Response[dto.UserProfileResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      401  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
@@ -59,10 +59,10 @@ func (ac *authController) SignIn(c echo.Context) error {
 	}
 
 	if req.Username == "" || req.Password == "" {
-		return renderApiError(c, http.StatusBadRequest, api.ErrBadRequest)
+		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
 	}
 
-	storedUser, err := database.GetUser(ac.context.GetDB(), req.Username)
+	storedUser, err := model.GetUser(ac.context.GetDB(), req.Username)
 	if err != nil || !storedUser.ValidLogin(req.Password) {
 		return renderApiError(c, http.StatusUnauthorized, ErrLoginFailed)
 	}
@@ -73,8 +73,8 @@ func (ac *authController) SignIn(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.UserProfileResponse]{
-		Results: api.NewUserProfileResponse(storedUser),
+	resp := dto.Response[dto.UserProfileResponse]{
+		Results: dto.NewUserProfileResponse(storedUser),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -94,7 +94,7 @@ func (ac *authController) SignOut(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[map[string]string]{
+	resp := dto.Response[map[string]string]{
 		Results: map[string]string{"message": "signed out"},
 	}
 
@@ -122,15 +122,15 @@ func (ac *authController) Register(c echo.Context) error {
 	}
 
 	if req.Username == "" || req.Password == "" {
-		return renderApiError(c, http.StatusBadRequest, api.ErrBadRequest)
+		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
 	}
 
 	if req.Name == "" {
 		req.Name = req.Username
 	}
 
-	u := &database.User{
-		UserData: database.UserData{
+	u := &model.User{
+		UserData: model.UserData{
 			Username: req.Username,
 			Name:     req.Name,
 			Admin:    false,
@@ -143,14 +143,14 @@ func (ac *authController) Register(c echo.Context) error {
 	}
 
 	u.Profile.Theme = "browser"
-	u.Profile.TotalsShow = database.WorkoutTypeRunning
+	u.Profile.TotalsShow = model.WorkoutTypeRunning
 	u.Profile.Language = "browser"
 
 	if err := u.Create(ac.context.GetDB()); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[map[string]string]{
+	resp := dto.Response[map[string]string]{
 		Results: map[string]string{
 			"message": "Your account has been created but needs to be activated",
 		},
@@ -159,7 +159,7 @@ func (ac *authController) Register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-func (ac *authController) createToken(u *database.User, c echo.Context) error {
+func (ac *authController) createToken(u *model.User, c echo.Context) error {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims, ok := token.Claims.(jwt.MapClaims)

@@ -8,7 +8,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/muktihari/fit/decoder"
 	"github.com/muktihari/fit/kit/semicircles"
 	"github.com/muktihari/fit/profile/filedef"
@@ -17,7 +17,7 @@ import (
 	"github.com/tkrajina/gpxgo/gpx"
 )
 
-func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
+func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	dec := decoder.New(bytes.NewReader(content), decoder.WithIgnoreChecksum())
 
 	f, err := dec.Decode()
@@ -44,7 +44,7 @@ func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
 
-	workouts := make([]*database.Workout, 0, len(act.Sessions))
+	workouts := make([]*model.Workout, 0, len(act.Sessions))
 
 	for _, session := range act.Sessions {
 		startTime := session.StartTime.Local()
@@ -56,13 +56,13 @@ func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 		elapsedDuration := durationFromSeconds(session.TotalElapsedTimeScaled())
 		pauseDuration := maxDuration(elapsedDuration-moveDuration, 0)
 
-		w := &database.Workout{
+		w := &model.Workout{
 			Data: cloneMapData(data),
 			Date: startTime,
 		}
 
 		if w.Data != nil {
-			w.Data.WorkoutData.MergeNonZero(database.WorkoutData{
+			w.Data.WorkoutData.MergeNonZero(model.WorkoutData{
 				Name:          session.Sport.String() + " - " + startTime.Format(time.DateTime),
 				Type:          session.Sport.String(),
 				Start:         startTime,
@@ -91,8 +91,8 @@ func ParseFit(content []byte, filename string) ([]*database.Workout, error) {
 }
 
 //gocyclo:ignore
-func parseLaps(act *filedef.Activity) []database.WorkoutLap {
-	laps := make([]database.WorkoutLap, 0, len(act.Laps))
+func parseLaps(act *filedef.Activity) []model.WorkoutLap {
+	laps := make([]model.WorkoutLap, 0, len(act.Laps))
 	for _, lap := range act.Laps {
 		elapsed := time.Duration(0)
 		if lap.TotalElapsedTime != math.MaxUint32 {
@@ -191,13 +191,13 @@ func parseLaps(act *filedef.Activity) []database.WorkoutLap {
 			avgSpeedNoPause = totalDistance / movingDuration.Seconds()
 		}
 
-		laps = append(laps, database.WorkoutLap{
+		laps = append(laps, model.WorkoutLap{
 			Start:         lapStart,
 			Stop:          lapStop,
 			TotalDistance: totalDistance,
 			TotalDuration: elapsed,
 			PauseDuration: pause,
-			WorkoutStats: database.WorkoutStats{
+			WorkoutStats: model.WorkoutStats{
 				MinElevation:        minElevation,
 				MaxElevation:        maxElevation,
 				TotalUp:             totalUp,
@@ -218,9 +218,9 @@ func parseLaps(act *filedef.Activity) []database.WorkoutLap {
 	return laps
 }
 
-func parseWorkoutStats(act *filedef.Activity) database.WorkoutStats {
+func parseWorkoutStats(act *filedef.Activity) model.WorkoutStats {
 	session := act.Sessions[0]
-	stats := database.WorkoutStats{}
+	stats := model.WorkoutStats{}
 
 	if session.AvgCadence != math.MaxUint8 {
 		stats.AverageCadence = float64(session.AvgCadence)
@@ -364,8 +364,8 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 // mapDataFromActivity converts a FIT activity into MapData, falling back to
 // non-positional record data when coordinates are missing so charts and
 // breakdowns remain available even without a map.
-func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *database.MapData {
-	data := database.MapDataFromGPX(gpxFile)
+func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData {
+	data := model.MapDataFromGPX(gpxFile)
 
 	if data != nil && data.Details != nil && len(data.Details.Points) > 0 {
 		return data
@@ -380,12 +380,12 @@ func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *database.MapD
 // and breakdowns.
 //
 //nolint:gocyclo // branching covers optional FIT metrics without positions
-func buildMapDataWithoutPositions(act *filedef.Activity) *database.MapData {
+func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 	if act == nil || len(act.Records) == 0 {
 		return nil
 	}
 
-	points := make([]database.MapPoint, 0, len(act.Records))
+	points := make([]model.MapPoint, 0, len(act.Records))
 
 	var (
 		totalDistance float64
@@ -459,7 +459,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *database.MapData {
 			}
 		}
 
-		extra := database.ExtraMetrics{}
+		extra := model.ExtraMetrics{}
 		if !math.IsNaN(elevation) {
 			extra.Set("elevation", elevation)
 		}
@@ -489,7 +489,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *database.MapData {
 			elevationValue = 0
 		}
 
-		points = append(points, database.MapPoint{
+		points = append(points, model.MapPoint{
 			Time:          ts,
 			Lat:           0,
 			Lng:           0,
@@ -515,17 +515,17 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *database.MapData {
 		maxElevation = 0
 	}
 
-	data := &database.MapData{
+	data := &model.MapData{
 		Creator: act.FileId.Manufacturer.String(),
-		Center:  database.MapCenter{},
-		Details: &database.MapDataDetails{Points: points},
-		WorkoutData: database.WorkoutData{
+		Center:  model.MapCenter{},
+		Details: &model.MapDataDetails{Points: points},
+		WorkoutData: model.WorkoutData{
 			Start:         startTime,
 			Stop:          points[len(points)-1].Time,
 			TotalDistance: totalDistance,
 			TotalDuration: totalDuration,
 			PauseDuration: pauseDuration,
-			WorkoutStats: database.WorkoutStats{
+			WorkoutStats: model.WorkoutStats{
 				MinElevation:        minElevation,
 				MaxElevation:        maxElevation,
 				AverageSpeed:        safeDivide(totalDistance, totalDuration),
@@ -558,7 +558,7 @@ func safeDivide(distance float64, d time.Duration) float64 {
 	return distance / d.Seconds()
 }
 
-func sanitizeMapData(data *database.MapData) {
+func sanitizeMapData(data *model.MapData) {
 	if data == nil {
 		return
 	}
@@ -584,14 +584,14 @@ func sanitizeMapData(data *database.MapData) {
 	}
 }
 
-func cloneMapData(src *database.MapData) *database.MapData {
+func cloneMapData(src *model.MapData) *model.MapData {
 	if src == nil {
-		return &database.MapData{}
+		return &model.MapData{}
 	}
 
 	clone := *src
 	if src.Details != nil {
-		clone.Details = &database.MapDataDetails{Points: src.Details.Points}
+		clone.Details = &model.MapDataDetails{Points: src.Details.Points}
 	}
 
 	return &clone

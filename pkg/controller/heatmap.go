@@ -3,7 +3,7 @@ package controller
 import (
 	"net/http"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/labstack/echo/v4"
 	geojson "github.com/paulmach/orb/geojson"
@@ -53,7 +53,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 		}
 	}
 
-	resp := api.Response[[][]float64]{
+	resp := dto.Response[[][]float64]{
 		Results: coords,
 	}
 
@@ -91,12 +91,12 @@ func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 		}
 
 		f := geojson.NewFeature(p.ToOrbPoint())
-		f.Properties["popup_data"] = api.NewWorkoutPopupData(w)
+		f.Properties["popup_data"] = dto.NewWorkoutPopupData(w)
 
 		coords.Append(f)
 	}
 
-	resp := api.Response[*geojson.FeatureCollection]{
+	resp := dto.Response[*geojson.FeatureCollection]{
 		Results: coords,
 	}
 

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cast"
 )
@@ -36,14 +36,14 @@ func NewUserController(c *container.Container) UserController {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Success      200  {object}  api.Response[dto.UserProfileResponse]
 // @Failure      401  {object}  api.Response[any]
 // @Router       /whoami [get]
 func (uc *userController) GetWhoami(c echo.Context) error {
 	user := uc.context.GetUser(c)
 
-	resp := api.Response[api.UserProfileResponse]{
-		Results: api.NewUserProfileResponse(user),
+	resp := dto.Response[dto.UserProfileResponse]{
+		Results: dto.NewUserProfileResponse(user),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -58,7 +58,7 @@ func (uc *userController) GetWhoami(c echo.Context) error {
 // @Param        start  query     string  false  "Start date (YYYY-MM-DD)"
 // @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Produce      json
-// @Success      200  {object}  api.Response[api.TotalsResponse]
+// @Success      200  {object}  api.Response[dto.TotalsResponse]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /totals [get]
 func (uc *userController) GetTotals(c echo.Context) error {
@@ -74,8 +74,8 @@ func (uc *userController) GetTotals(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.TotalsResponse]{
-		Results: api.NewTotalsResponse(totals),
+	resp := dto.Response[dto.TotalsResponse]{
+		Results: dto.NewTotalsResponse(totals),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -106,8 +106,8 @@ func (uc *userController) GetRecords(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[[]api.WorkoutRecordResponse]{
-		Results: api.NewWorkoutRecordsResponse(records),
+	resp := dto.Response[[]dto.WorkoutRecordResponse]{
+		Results: dto.NewWorkoutRecordsResponse(records),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -126,7 +126,7 @@ func (uc *userController) GetRecords(c echo.Context) error {
 // @Param        page          query     int     false  "Page"
 // @Param        per_page      query     int     false  "Per page"
 // @Produce      json
-// @Success      200  {object}  api.PaginatedResponse[api.DistanceRecordResponse]
+// @Success      200  {object}  api.PaginatedResponse[dto.DistanceRecordResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /records/ranking [get]
@@ -140,9 +140,9 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout_type and label are required"))
 	}
 
-	wt := database.AsWorkoutType(workoutType)
+	wt := model.AsWorkoutType(workoutType)
 
-	var pagination api.PaginationParams
+	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -158,8 +158,8 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.PaginatedResponse[api.DistanceRecordResponse]{
-		Results:    api.NewDistanceRecordResponses(records),
+	resp := dto.PaginatedResponse[dto.DistanceRecordResponse]{
+		Results:    dto.NewDistanceRecordResponses(records),
 		Page:       pagination.Page,
 		PerPage:    pagination.PerPage,
 		TotalPages: pagination.CalculateTotalPages(totalCount),
@@ -181,7 +181,7 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 // @Param        page          query     int     false  "Page"
 // @Param        per_page      query     int     false  "Per page"
 // @Produce      json
-// @Success      200  {object}  api.PaginatedResponse[api.ClimbRecordResponse]
+// @Success      200  {object}  api.PaginatedResponse[dto.ClimbRecordResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /records/climbs/ranking [get]
@@ -193,9 +193,9 @@ func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout_type is required"))
 	}
 
-	wt := database.AsWorkoutType(workoutType)
+	wt := model.AsWorkoutType(workoutType)
 
-	var pagination api.PaginationParams
+	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -211,8 +211,8 @@ func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.PaginatedResponse[api.ClimbRecordResponse]{
-		Results:    api.NewClimbRecordResponses(records),
+	resp := dto.PaginatedResponse[dto.ClimbRecordResponse]{
+		Results:    dto.NewClimbRecordResponses(records),
 		Page:       pagination.Page,
 		PerPage:    pagination.PerPage,
 		TotalPages: pagination.CalculateTotalPages(totalCount),
@@ -243,13 +243,13 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	u, err := database.GetUserByID(uc.context.GetDB(), id)
+	u, err := model.GetUserByID(uc.context.GetDB(), id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	if u.IsAnonymous() {
-		return renderApiError(c, http.StatusForbidden, api.ErrNotAuthorized)
+		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
 	startDate, endDate, err := parseDateRange(c)
@@ -262,8 +262,8 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[[]api.WorkoutRecordResponse]{
-		Results: api.NewWorkoutRecordsResponse(records),
+	resp := dto.Response[[]dto.WorkoutRecordResponse]{
+		Results: dto.NewWorkoutRecordsResponse(records),
 	}
 
 	return c.JSON(http.StatusOK, resp)

@@ -3,8 +3,8 @@ package app
 import (
 	"strings"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -15,13 +15,13 @@ func (a *App) ValidateAPIKeyMiddleware(key string, c echo.Context) (bool, error)
 		token = strings.TrimSpace(token[7:])
 	}
 
-	u, err := database.GetUserByAPIKey(a.db, token)
+	u, err := model.GetUserByAPIKey(a.db, token)
 	if err != nil {
-		return false, api.ErrInvalidAPIKey
+		return false, dto.ErrInvalidAPIKey
 	}
 
 	if !u.IsActive() || !u.Profile.APIActive {
-		return false, api.ErrInvalidAPIKey
+		return false, dto.ErrInvalidAPIKey
 	}
 
 	c.Set("user_info", u)

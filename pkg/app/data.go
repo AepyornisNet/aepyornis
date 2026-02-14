@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/invopop/ctxi18n"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 
 	"github.com/labstack/echo/v4"
 )
@@ -51,7 +51,7 @@ func (a *App) setUser(c echo.Context) error {
 		return ErrInvalidJWTToken
 	}
 
-	dbUser, err := database.GetUser(a.db, claims["name"].(string))
+	dbUser, err := model.GetUser(a.db, claims["name"].(string))
 	if err != nil {
 		return err
 	}
@@ -66,12 +66,12 @@ func (a *App) setUser(c echo.Context) error {
 	return nil
 }
 
-func (a *App) getCurrentUser(c echo.Context) *database.User {
+func (a *App) getCurrentUser(c echo.Context) *model.User {
 	d := c.Get("user_info")
 
-	u, ok := d.(*database.User)
+	u, ok := d.(*model.User)
 	if !ok {
-		u = database.AnonymousUser()
+		u = model.AnonymousUser()
 	}
 
 	u.SetContext(c.Request().Context())

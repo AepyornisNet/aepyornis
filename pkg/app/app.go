@@ -12,7 +12,7 @@ import (
 	"github.com/fsouza/slognil"
 	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
 	"github.com/labstack/echo/v4"
@@ -67,7 +67,7 @@ func (a *App) Configure() error {
 
 	a.ConfigureGeocoder()
 
-	if err := database.InitTZFinder(); err != nil {
+	if err := model.InitTZFinder(); err != nil {
 		return err
 	}
 
@@ -96,7 +96,7 @@ func (a *App) ConfigureDatabase() error {
 
 	a.logger.Info("Connecting to the database '" + a.Config.DatabaseDriver + "': " + a.Config.DSN)
 
-	db, err := database.Connect(a.Config.DatabaseDriver, a.Config.DSN, a.Config.Debug, a.rawLogger)
+	db, err := model.Connect(a.Config.DatabaseDriver, a.Config.DSN, a.Config.Debug, a.rawLogger)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (a *App) ConfigureDatabase() error {
 
 	a.db = db
 
-	err = db.First(&database.User{}).Error
+	err = db.First(&model.User{}).Error
 	if err == nil {
 		return nil
 	}
@@ -159,8 +159,8 @@ func NewApp(v version.Version) *App {
 }
 
 func (a *App) createAdminUser() error {
-	u := &database.User{
-		UserData: database.UserData{
+	u := &model.User{
+		UserData: model.UserData{
 			Username: "admin",
 			Name:     "Administrator",
 			Active:   true,

@@ -10,7 +10,7 @@ import (
 
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -85,12 +85,12 @@ func (a *App) ValidateAdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		u := a.getCurrentUser(ctx)
 		if u.IsAnonymous() || !u.IsActive() {
 			log.Warn("User is not found")
-			return a.renderAPIV2Error(ctx, http.StatusForbidden, api.ErrNotAuthorized)
+			return a.renderAPIV2Error(ctx, http.StatusForbidden, dto.ErrNotAuthorized)
 		}
 
 		if !u.Admin {
 			log.Warn("User is not an admin")
-			return a.renderAPIV2Error(ctx, http.StatusForbidden, api.ErrNotAuthorized)
+			return a.renderAPIV2Error(ctx, http.StatusForbidden, dto.ErrNotAuthorized)
 		}
 
 		return next(ctx)
@@ -155,9 +155,9 @@ func (a *App) apiV2Routes(e *echo.Group) {
 		ErrorHandler: func(c echo.Context, err error) error {
 			log.Warn(err.Error())
 
-			r := api.Response[any]{}
+			r := dto.Response[any]{}
 			r.AddError(err)
-			r.AddError(api.ErrNotAuthorized)
+			r.AddError(dto.ErrNotAuthorized)
 
 			return c.JSON(http.StatusForbidden, r)
 		},
@@ -226,7 +226,7 @@ func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
 	}
 
-	return c.JSON(http.StatusOK, api.Response[[]string]{
+	return c.JSON(http.StatusOK, dto.Response[[]string]{
 		Results: results,
 	})
 }
@@ -235,11 +235,11 @@ func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 // @Summary      Get application info
 // @Tags         meta
 // @Produce      json
-// @Success      200  {object}  api.Response[api.AppInfoResponse]
+// @Success      200  {object}  api.Response[dto.AppInfoResponse]
 // @Router       /app-info [get]
 func (a *App) apiV2AppInfoHandler(c echo.Context) error {
-	resp := api.Response[api.AppInfoResponse]{
-		Results: api.AppInfoResponse{
+	resp := dto.Response[dto.AppInfoResponse]{
+		Results: dto.AppInfoResponse{
 			Version:              a.Version.PrettyVersion(),
 			VersionSha:           a.Version.Sha,
 			RegistrationDisabled: a.Config.RegistrationDisabled,
@@ -252,7 +252,7 @@ func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 
 // renderAPIV2Error renders an API v2 error response
 func (a *App) renderAPIV2Error(c echo.Context, status int, err error) error {
-	resp := api.Response[any]{}
+	resp := dto.Response[any]{}
 	resp.AddError(err)
 	return c.JSON(status, resp)
 }

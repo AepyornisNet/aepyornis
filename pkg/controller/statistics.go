@@ -3,9 +3,9 @@ package controller
 import (
 	"net/http"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -30,14 +30,14 @@ func NewStatisticsController(c *container.Container) StatisticsController {
 // @Produce      json
 // @Param        since  query  string false "Relative start (e.g. '1 year')"
 // @Param        per    query  string false "Aggregation period (day|week|month|year)"
-// @Success      200  {object}  api.Response[api.StatisticsResponse]
+// @Success      200  {object}  api.Response[dto.StatisticsResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /statistics [get]
 func (sc *statisticsController) GetStatistics(c echo.Context) error {
 	user := sc.context.GetUser(c)
 
-	var statConfig database.StatConfig
+	var statConfig model.StatConfig
 	if err := c.Bind(&statConfig); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -55,8 +55,8 @@ func (sc *statisticsController) GetStatistics(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.StatisticsResponse]{
-		Results: api.NewStatisticsResponse(statistics),
+	resp := dto.Response[dto.StatisticsResponse]{
+		Results: dto.NewStatisticsResponse(statistics),
 	}
 
 	return c.JSON(http.StatusOK, resp)

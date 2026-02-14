@@ -4,14 +4,14 @@ import (
 	"strings"
 
 	"github.com/invopop/ctxi18n"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 )
 
 const (
 	BrowserLanguage   = "browser"
 	BrowserTheme      = "browser"
-	DefaultTotalsShow = database.WorkoutTypeRunning
+	DefaultTotalsShow = model.WorkoutTypeRunning
 )
 
 func (a *App) ConfigureLocalizer() error {

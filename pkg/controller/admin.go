@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -47,17 +47,17 @@ func NewAdminController(c *container.Container, resetConfiguration func() error)
 // @Failure      500  {object}  api.Response[any]
 // @Router       /admin/users [get]
 func (ac *adminController) GetUsers(c echo.Context) error {
-	users, err := database.GetUsers(ac.context.GetDB())
+	users, err := model.GetUsers(ac.context.GetDB())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	results := make([]api.UserProfileResponse, len(users))
+	results := make([]dto.UserProfileResponse, len(users))
 	for i, u := range users {
-		results[i] = api.NewUserProfileResponse(u)
+		results[i] = dto.NewUserProfileResponse(u)
 	}
 
-	resp := api.Response[[]api.UserProfileResponse]{
+	resp := dto.Response[[]dto.UserProfileResponse]{
 		Results: results,
 	}
 
@@ -72,7 +72,7 @@ func (ac *adminController) GetUsers(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "User ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Success      200  {object}  api.Response[dto.UserProfileResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /admin/users/{id} [get]
@@ -82,13 +82,13 @@ func (ac *adminController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := database.GetUserByID(ac.context.GetDB(), userID)
+	user, err := model.GetUserByID(ac.context.GetDB(), userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	resp := api.Response[api.UserProfileResponse]{
-		Results: api.NewUserProfileResponse(user),
+	resp := dto.Response[dto.UserProfileResponse]{
+		Results: dto.NewUserProfileResponse(user),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -103,7 +103,7 @@ func (ac *adminController) GetUser(c echo.Context) error {
 // @Param        id   path  int  true  "User ID"
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[api.UserProfileResponse]
+// @Success      200  {object}  api.Response[dto.UserProfileResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /admin/users/{id} [put]
@@ -113,7 +113,7 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := database.GetUserByID(ac.context.GetDB(), userID)
+	user, err := model.GetUserByID(ac.context.GetDB(), userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -138,8 +138,8 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.UserProfileResponse]{
-		Results: api.NewUserProfileResponse(user),
+	resp := dto.Response[dto.UserProfileResponse]{
+		Results: dto.NewUserProfileResponse(user),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -163,7 +163,7 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := database.GetUserByID(ac.context.GetDB(), userID)
+	user, err := model.GetUserByID(ac.context.GetDB(), userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -172,7 +172,7 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[any]{
+	resp := dto.Response[any]{
 		Results: map[string]string{"message": "User deleted successfully"},
 	}
 
@@ -187,7 +187,7 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 // @Security     CookieAuth
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[api.AppInfoResponse]
+// @Success      200  {object}  api.Response[dto.AppInfoResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /admin/config [put]
@@ -209,8 +209,8 @@ func (ac *adminController) UpdateConfig(c echo.Context) error {
 	cfg := ac.context.GetConfig()
 	v := ac.context.GetVersion()
 
-	resp := api.Response[api.AppInfoResponse]{
-		Results: api.AppInfoResponse{
+	resp := dto.Response[dto.AppInfoResponse]{
+		Results: dto.AppInfoResponse{
 			Version:              v.PrettyVersion(),
 			VersionSha:           v.Sha,
 			RegistrationDisabled: cfg.RegistrationDisabled,

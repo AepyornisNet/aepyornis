@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -33,25 +33,25 @@ func NewMeasurementController(c *container.Container) MeasurementController {
 // @Param        page      query     int false "Page"
 // @Param        per_page  query     int false "Per page"
 // @Produce      json
-// @Success      200  {object}  api.PaginatedResponse[api.MeasurementResponse]
+// @Success      200  {object}  api.PaginatedResponse[dto.MeasurementResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /measurements [get]
 func (mc *measurementController) GetMeasurements(c echo.Context) error {
 	user := mc.context.GetUser(c)
 
-	var pagination api.PaginationParams
+	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	pagination.SetDefaults()
 
 	var totalCount int64
-	if err := mc.context.GetDB().Model(&database.Measurement{}).Where("user_id = ?", user.ID).Count(&totalCount).Error; err != nil {
+	if err := mc.context.GetDB().Model(&model.Measurement{}).Where("user_id = ?", user.ID).Count(&totalCount).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	var measurements []*database.Measurement
+	var measurements []*model.Measurement
 	db := mc.context.GetDB().Where("user_id = ?", user.ID).
 		Order("date DESC").
 		Limit(pagination.PerPage).
@@ -61,9 +61,9 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	results := api.NewMeasurementsResponse(measurements)
+	results := dto.NewMeasurementsResponse(measurements)
 
-	resp := api.PaginatedResponse[api.MeasurementResponse]{
+	resp := dto.PaginatedResponse[dto.MeasurementResponse]{
 		Results:    results,
 		Page:       pagination.Page,
 		PerPage:    pagination.PerPage,
@@ -82,14 +82,14 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 // @Security     CookieAuth
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[api.MeasurementResponse]
+// @Success      200  {object}  api.Response[dto.MeasurementResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /measurements [post]
 func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 	user := mc.context.GetUser(c)
 
-	d := &api.Measurement{Units: user.PreferredUnits()}
+	d := &dto.Measurement{Units: user.PreferredUnits()}
 	if err := c.Bind(d); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -105,8 +105,8 @@ func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.MeasurementResponse]{
-		Results: api.NewMeasurementResponse(m),
+	resp := dto.Response[dto.MeasurementResponse]{
+		Results: dto.NewMeasurementResponse(m),
 	}
 
 	return c.JSON(http.StatusOK, resp)

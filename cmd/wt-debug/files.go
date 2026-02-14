@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +33,7 @@ func (c *cli) workoutsParseCmd() *cobra.Command {
 				return err
 			}
 
-			wo, err := database.WorkoutParser(filename, content)
+			wo, err := model.WorkoutParser(filename, content)
 			if err != nil {
 				return err
 			}
@@ -73,7 +73,7 @@ func (c *cli) workoutsCalculateCmd() *cobra.Command {
 				return err
 			}
 
-			workouts, err := database.NewWorkout(database.AnonymousUser(), database.WorkoutTypeAutoDetect, "", filename, content)
+			workouts, err := model.NewWorkout(model.AnonymousUser(), model.WorkoutTypeAutoDetect, "", filename, content)
 			if err != nil {
 				return err
 			}

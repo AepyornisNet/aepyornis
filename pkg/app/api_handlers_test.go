@@ -7,14 +7,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
-func defaultAPIUser(db *gorm.DB) *database.User {
+func defaultAPIUser(db *gorm.DB) *model.User {
 	u := defaultUser(db)
 	u.APIKey = "my-api-key"
 	u.Profile.APIActive = true
@@ -24,12 +24,12 @@ func defaultAPIUser(db *gorm.DB) *database.User {
 	return u
 }
 
-func validateAPIUser(t *testing.T, u *database.User, b []byte) {
+func validateAPIUser(t *testing.T, u *model.User, b []byte) {
 	t.Helper()
 
 	assert.NotContains(t, string(b), "password")
 
-	var resp api.Response[api.UserProfileResponse]
+	var resp dto.Response[dto.UserProfileResponse]
 
 	err := json.Unmarshal(b, &resp)
 	require.NoError(t, err)

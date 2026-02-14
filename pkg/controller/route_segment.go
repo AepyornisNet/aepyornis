@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cast"
 )
@@ -34,13 +34,13 @@ func NewRouteSegmentController(c *container.Container) RouteSegmentController {
 	return &routeSegmentController{context: c}
 }
 
-func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*database.RouteSegment, error) {
+func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteSegment, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return nil, err
 	}
 
-	rs, err := database.GetRouteSegment(rc.context.GetDB(), id)
+	rs, err := model.GetRouteSegment(rc.context.GetDB(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -57,23 +57,23 @@ func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*database.Rou
 // @Produce      json
 // @Param        page      query  int false "Page"
 // @Param        per_page  query  int false "Items per page"
-// @Success      200  {object}  api.PaginatedResponse[api.RouteSegmentResponse]
+// @Success      200  {object}  api.PaginatedResponse[dto.RouteSegmentResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments [get]
 func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
-	var pagination api.PaginationParams
+	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	pagination.SetDefaults()
 
 	var totalCount int64
-	if err := rc.context.GetDB().Model(&database.RouteSegment{}).Count(&totalCount).Error; err != nil {
+	if err := rc.context.GetDB().Model(&model.RouteSegment{}).Count(&totalCount).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	var routeSegments []*database.RouteSegment
+	var routeSegments []*model.RouteSegment
 	db := rc.context.GetDB().Preload("RouteSegmentMatches").
 		Order("created_at DESC").
 		Limit(pagination.PerPage).
@@ -83,9 +83,9 @@ func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	results := api.NewRouteSegmentsResponse(routeSegments)
+	results := dto.NewRouteSegmentsResponse(routeSegments)
 
-	resp := api.PaginatedResponse[api.RouteSegmentResponse]{
+	resp := dto.PaginatedResponse[dto.RouteSegmentResponse]{
 		Results:    results,
 		Page:       pagination.Page,
 		PerPage:    pagination.PerPage,
@@ -104,7 +104,7 @@ func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Route segment ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[api.RouteSegmentDetailResponse]
+// @Success      200  {object}  api.Response[dto.RouteSegmentDetailResponse]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /route-segments/{id} [get]
 func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
@@ -113,8 +113,8 @@ func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	resp := api.Response[api.RouteSegmentDetailResponse]{
-		Results: api.NewRouteSegmentDetailResponse(rs),
+	resp := dto.Response[dto.RouteSegmentDetailResponse]{
+		Results: dto.NewRouteSegmentDetailResponse(rs),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -130,7 +130,7 @@ func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
 // @Produce      json
 // @Param        file   formData  file   true  "GPX file"
 // @Param        notes  formData  string false "Notes"
-// @Success      201  {object}  api.Response[api.RouteSegmentsDetailResponse]
+// @Success      201  {object}  api.Response[dto.RouteSegmentsDetailResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments [post]
@@ -143,7 +143,7 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 	files := form.File["file"]
 	errMsg := []string{}
 
-	segments := []*api.RouteSegmentResponse{}
+	segments := []*dto.RouteSegmentResponse{}
 	for _, file := range files {
 		content, parseErr := uploadedRouteSegmentFile(file)
 		if parseErr != nil {
@@ -153,17 +153,17 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 
 		notes := c.FormValue("notes")
 
-		w, addErr := database.AddRouteSegment(rc.context.GetDB(), notes, file.Filename, content)
+		w, addErr := model.AddRouteSegment(rc.context.GetDB(), notes, file.Filename, content)
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
 		}
 
-		resp := api.NewRouteSegmentResponse(w)
+		resp := dto.NewRouteSegmentResponse(w)
 		segments = append(segments, &resp)
 	}
 
-	resp := api.Response[api.RouteSegmentsDetailResponse]{
+	resp := dto.Response[dto.RouteSegmentsDetailResponse]{
 		Results: segments,
 		Errors:  errMsg,
 	}
@@ -180,7 +180,7 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Accept       json
 // @Produce      json
-// @Success      201  {object}  api.Response[api.RouteSegmentDetailResponse]
+// @Success      201  {object}  api.Response[dto.RouteSegmentDetailResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/route-segment [post]
@@ -190,28 +190,28 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	workout, err := database.GetWorkoutDetails(rc.context.GetDB(), workoutID)
+	workout, err := model.GetWorkoutDetails(rc.context.GetDB(), workoutID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	var params database.RoutSegmentCreationParams
+	var params model.RoutSegmentCreationParams
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	content, err := database.RouteSegmentFromPoints(workout, &params)
+	content, err := model.RouteSegmentFromPoints(workout, &params)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	rs, err := database.AddRouteSegment(rc.context.GetDB(), "", params.Filename(), content)
+	rs, err := model.AddRouteSegment(rc.context.GetDB(), "", params.Filename(), content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.RouteSegmentDetailResponse]{
-		Results: api.NewRouteSegmentDetailResponse(rs),
+	resp := dto.Response[dto.RouteSegmentDetailResponse]{
+		Results: dto.NewRouteSegmentDetailResponse(rs),
 	}
 
 	return c.JSON(http.StatusCreated, resp)
@@ -239,7 +239,7 @@ func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[map[string]string]{
+	resp := dto.Response[map[string]string]{
 		Results: map[string]string{"message": "Route segment deleted successfully"},
 	}
 
@@ -272,7 +272,7 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[map[string]string]{
+	resp := dto.Response[map[string]string]{
 		Results: map[string]string{"message": "Route segment refreshed successfully"},
 	}
 
@@ -288,7 +288,7 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 // @Param        id   path  int  true  "Route segment ID"
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[api.RouteSegmentDetailResponse]
+// @Success      200  {object}  api.Response[dto.RouteSegmentDetailResponse]
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
@@ -321,8 +321,8 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[api.RouteSegmentDetailResponse]{
-		Results: api.NewRouteSegmentDetailResponse(rs),
+	resp := dto.Response[dto.RouteSegmentDetailResponse]{
+		Results: dto.NewRouteSegmentDetailResponse(rs),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -374,7 +374,7 @@ func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error 
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	resp := api.Response[map[string]string]{
+	resp := dto.Response[map[string]string]{
 		Results: map[string]string{"message": "Finding matches in background"},
 	}
 

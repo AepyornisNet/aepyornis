@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,7 +11,7 @@ func TestTranslateWorkoutTypes(t *testing.T) {
 	a := defaultApp(t)
 	a.ConfigureLocalizer()
 
-	wt := database.WorkoutTypes()
+	wt := model.WorkoutTypes()
 	tr := a.translator
 
 	for _, w := range wt {
