@@ -1,8 +1,6 @@
-package app
+package api
 
 import (
-	"io"
-	"mime/multipart"
 	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
@@ -10,25 +8,7 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 )
 
-const (
-	htmlDateFormat = "2006-01-02T15:04"
-)
-
-func uploadedFile(file *multipart.FileHeader) ([]byte, error) {
-	src, err := file.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer src.Close()
-
-	// Read all from r into a bytes slice
-	content, err := io.ReadAll(src)
-	if err != nil {
-		return nil, err
-	}
-
-	return content, nil
-}
+const htmlDateFormat = "2006-01-02T15:04"
 
 type ManualWorkout struct {
 	Name            *string               `form:"name" json:"name"`
@@ -46,7 +26,7 @@ type ManualWorkout struct {
 	CustomType      *string               `form:"custom_type" json:"custom_type"`
 	EquipmentIDs    []uint64              `form:"equipment_ids" json:"equipment_ids"`
 
-	units *database.UserPreferredUnits
+	Units *database.UserPreferredUnits `json:"-" form:"-"`
 }
 
 func (m *ManualWorkout) ToDate() *time.Time {
@@ -63,7 +43,6 @@ func (m *ManualWorkout) ToDate() *time.Time {
 		return &d
 	}
 
-	// Handle timezone offset
 	tzLoc, err := time.LoadLocation(*m.Timezone)
 	if err == nil {
 		d = d.In(tzLoc)
@@ -72,7 +51,6 @@ func (m *ManualWorkout) ToDate() *time.Time {
 	_, zoneOffset := d.Zone()
 	d = d.Add(-time.Duration(zoneOffset) * time.Second)
 
-	// handle DST transitions
 	if d.IsDST() {
 		d = d.Add(1 * time.Hour)
 	}
@@ -85,8 +63,12 @@ func (m *ManualWorkout) ToWeight() *float64 {
 		return nil
 	}
 
-	d := templatehelpers.WeightToDatabase(*m.Weight, m.units.Weight())
+	unit := "kg"
+	if m.Units != nil {
+		unit = m.Units.Weight()
+	}
 
+	d := templatehelpers.WeightToDatabase(*m.Weight, unit)
 	return &d
 }
 
@@ -95,8 +77,12 @@ func (m *ManualWorkout) ToDistance() *float64 {
 		return nil
 	}
 
-	d := templatehelpers.DistanceToDatabase(*m.Distance, m.units.Distance())
+	unit := "km"
+	if m.Units != nil {
+		unit = m.Units.Distance()
+	}
 
+	d := templatehelpers.DistanceToDatabase(*m.Distance, unit)
 	return &d
 }
 
@@ -120,14 +106,6 @@ func (m *ManualWorkout) ToDuration() *time.Duration {
 	}
 
 	return &totalDuration
-}
-
-func setIfNotNil[T any](dst *T, src *T) {
-	if src == nil {
-		return
-	}
-
-	*dst = *src
 }
 
 func (m *ManualWorkout) Update(w *database.Workout) {
@@ -160,4 +138,119 @@ func (m *ManualWorkout) Update(w *database.Workout) {
 	}
 
 	w.Data.UpdateExtraMetrics()
+}
+
+type Measurement struct {
+	Date       string  `form:"date" json:"date"`
+	Steps      float64 `form:"steps" json:"steps"`
+	WeightUnit string  `form:"weight_unit" json:"weight_unit"`
+	HeightUnit string  `form:"height_unit" json:"height_unit"`
+
+	Weight           float64 `form:"weight" json:"weight"`
+	Height           float64 `form:"height" json:"height"`
+	FTP              float64 `form:"ftp" json:"ftp"`
+	RestingHeartRate float64 `form:"resting_heart_rate" json:"resting_heart_rate"`
+	MaxHeartRate     float64 `form:"max_heart_rate" json:"max_heart_rate"`
+
+	Units *database.UserPreferredUnits `json:"-" form:"-"`
+}
+
+func (m *Measurement) Time() time.Time {
+	if m.Date == "" {
+		return time.Now()
+	}
+
+	d, err := time.Parse("2006-01-02", m.Date)
+	if err != nil {
+		return time.Now()
+	}
+
+	return d
+}
+
+func (m *Measurement) ToSteps() *float64 {
+	if m.Steps == 0 {
+		return nil
+	}
+
+	d := m.Steps
+	return &d
+}
+
+func (m *Measurement) ToFTP() *float64 {
+	if m.FTP == 0 {
+		return nil
+	}
+
+	d := m.FTP
+	return &d
+}
+
+func (m *Measurement) ToRestingHeartRate() *float64 {
+	if m.RestingHeartRate == 0 {
+		return nil
+	}
+
+	d := m.RestingHeartRate
+	return &d
+}
+
+func (m *Measurement) ToMaxHeartRate() *float64 {
+	if m.MaxHeartRate == 0 {
+		return nil
+	}
+
+	d := m.MaxHeartRate
+	return &d
+}
+
+func (m *Measurement) ToHeight() *float64 {
+	if m.Height == 0 {
+		return nil
+	}
+
+	if m.HeightUnit == "" {
+		if m.Units != nil {
+			m.HeightUnit = m.Units.Height()
+		} else {
+			m.HeightUnit = "cm"
+		}
+	}
+
+	d := templatehelpers.HeightToDatabase(m.Height, m.HeightUnit)
+	return &d
+}
+
+func (m *Measurement) ToWeight() *float64 {
+	if m.Weight == 0 {
+		return nil
+	}
+
+	if m.WeightUnit == "" {
+		if m.Units != nil {
+			m.WeightUnit = m.Units.Weight()
+		} else {
+			m.WeightUnit = "kg"
+		}
+	}
+
+	d := templatehelpers.WeightToDatabase(m.Weight, m.WeightUnit)
+	return &d
+}
+
+func (m *Measurement) Update(measurement *database.Measurement) {
+	setIfNotNil(&measurement.Weight, m.ToWeight())
+	setIfNotNil(&measurement.Height, m.ToHeight())
+	setIfNotNil(&measurement.Steps, m.ToSteps())
+	setIfNotNil(&measurement.FTP, m.ToFTP())
+	setIfNotNil(&measurement.RestingHeartRate, m.ToRestingHeartRate())
+	setIfNotNil(&measurement.MaxHeartRate, m.ToMaxHeartRate())
+}
+
+func setIfNotNil[T any](dst *T, src *T) {
+	if src == nil {
+		return
+	}
+
+	*dst = *src
 }

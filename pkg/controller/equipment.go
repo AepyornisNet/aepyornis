@@ -1,22 +1,46 @@
-package app
+package controller
 
 import (
 	"net/http"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
+	"github.com/spf13/cast"
 )
 
-func (a *App) registerAPIV2EquipmentRoutes(apiGroup *echo.Group) {
-	apiGroup.GET("/equipment", a.apiV2EquipmentHandler).Name = "api-v2-equipment"
-	apiGroup.GET("/equipment/:id", a.apiV2EquipmentGetHandler).Name = "api-v2-equipment-get"
-	apiGroup.POST("/equipment", a.apiV2EquipmentCreateHandler).Name = "api-v2-equipment-create"
-	apiGroup.PUT("/equipment/:id", a.apiV2EquipmentUpdateHandler).Name = "api-v2-equipment-update"
-	apiGroup.DELETE("/equipment/:id", a.apiV2EquipmentDeleteHandler).Name = "api-v2-equipment-delete"
+type EquipmentController interface {
+	GetEquipmentList(c echo.Context) error
+	GetEquipment(c echo.Context) error
+	CreateEquipment(c echo.Context) error
+	UpdateEquipment(c echo.Context) error
+	DeleteEquipment(c echo.Context) error
 }
 
-// apiV2EquipmentHandler returns a paginated list of equipment for the current user
+type equipmentController struct {
+	context *container.Container
+}
+
+func NewEquipmentController(c *container.Container) EquipmentController {
+	return &equipmentController{context: c}
+}
+
+func (ec *equipmentController) getEquipment(c echo.Context) (*database.Equipment, error) {
+	id, err := cast.ToUint64E(c.Param("id"))
+	if err != nil {
+		return nil, err
+	}
+
+	e, err := ec.context.GetUser(c).GetEquipment(ec.context.GetDB(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return e, nil
+}
+
+// GetEquipmentList returns a paginated list of equipment for the current user
 // @Summary      List equipment
 // @Tags         equipment
 // @Security     ApiKeyAuth
@@ -29,34 +53,30 @@ func (a *App) registerAPIV2EquipmentRoutes(apiGroup *echo.Group) {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /equipment [get]
-func (a *App) apiV2EquipmentHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
+	user := ec.context.GetUser(c)
 
-	// Parse pagination parameters
 	var pagination api.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	pagination.SetDefaults()
 
-	// Get total count
 	var totalCount int64
-	if err := a.db.Model(&database.Equipment{}).Where(&database.Equipment{UserID: user.ID}).Count(&totalCount).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := ec.context.GetDB().Model(&database.Equipment{}).Where(&database.Equipment{UserID: user.ID}).Count(&totalCount).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Get paginated equipment
 	var equipment []*database.Equipment
-	db := a.db.Where(&database.Equipment{UserID: user.ID}).
+	db := ec.context.GetDB().Where(&database.Equipment{UserID: user.ID}).
 		Order("name DESC").
 		Limit(pagination.PerPage).
 		Offset(pagination.GetOffset())
 
 	if err := db.Find(&equipment).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Convert to API response
 	results := api.NewEquipmentListResponse(equipment)
 
 	resp := api.PaginatedResponse[api.EquipmentResponse]{
@@ -70,7 +90,7 @@ func (a *App) apiV2EquipmentHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2EquipmentGetHandler returns a single equipment by ID
+// GetEquipment returns a single equipment by ID
 // @Summary      Get equipment
 // @Tags         equipment
 // @Security     ApiKeyAuth
@@ -81,10 +101,10 @@ func (a *App) apiV2EquipmentHandler(c echo.Context) error {
 // @Success      200  {object}  api.Response[api.EquipmentResponse]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /equipment/{id} [get]
-func (a *App) apiV2EquipmentGetHandler(c echo.Context) error {
-	e, err := a.getEquipment(c)
+func (ec *equipmentController) GetEquipment(c echo.Context) error {
+	e, err := ec.getEquipment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	resp := api.Response[api.EquipmentResponse]{
@@ -94,7 +114,7 @@ func (a *App) apiV2EquipmentGetHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2EquipmentCreateHandler creates a new equipment
+// CreateEquipment creates a new equipment
 // @Summary      Create equipment
 // @Tags         equipment
 // @Security     ApiKeyAuth
@@ -106,18 +126,18 @@ func (a *App) apiV2EquipmentGetHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /equipment [post]
-func (a *App) apiV2EquipmentCreateHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (ec *equipmentController) CreateEquipment(c echo.Context) error {
+	user := ec.context.GetUser(c)
 
 	var e database.Equipment
 	if err := c.Bind(&e); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	e.UserID = user.ID
 
-	if err := e.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := e.Save(ec.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[api.EquipmentResponse]{
@@ -127,7 +147,7 @@ func (a *App) apiV2EquipmentCreateHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-// apiV2EquipmentUpdateHandler updates an existing equipment
+// UpdateEquipment updates an existing equipment
 // @Summary      Update equipment
 // @Tags         equipment
 // @Security     ApiKeyAuth
@@ -141,29 +161,28 @@ func (a *App) apiV2EquipmentCreateHandler(c echo.Context) error {
 // @Failure      403  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /equipment/{id} [put]
-func (a *App) apiV2EquipmentUpdateHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
+	user := ec.context.GetUser(c)
 
-	e, err := a.getEquipment(c)
+	e, err := ec.getEquipment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	e.DefaultFor = nil
 
 	if e.UserID != user.ID {
-		return a.renderAPIV2Error(c, http.StatusForbidden, api.ErrNotAuthorized)
+		return renderApiError(c, http.StatusForbidden, api.ErrNotAuthorized)
 	}
 
 	if err := c.Bind(e); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Ensure user can't change ownership
 	e.UserID = user.ID
 
-	if err := e.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := e.Save(ec.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[api.EquipmentResponse]{
@@ -173,7 +192,7 @@ func (a *App) apiV2EquipmentUpdateHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2EquipmentDeleteHandler deletes an equipment
+// DeleteEquipment deletes an equipment
 // @Summary      Delete equipment
 // @Tags         equipment
 // @Security     ApiKeyAuth
@@ -184,20 +203,20 @@ func (a *App) apiV2EquipmentUpdateHandler(c echo.Context) error {
 // @Failure      403  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /equipment/{id} [delete]
-func (a *App) apiV2EquipmentDeleteHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (ec *equipmentController) DeleteEquipment(c echo.Context) error {
+	user := ec.context.GetUser(c)
 
-	e, err := a.getEquipment(c)
+	e, err := ec.getEquipment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	if e.UserID != user.ID {
-		return a.renderAPIV2Error(c, http.StatusForbidden, api.ErrNotAuthorized)
+		return renderApiError(c, http.StatusForbidden, api.ErrNotAuthorized)
 	}
 
-	if err := e.Delete(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := e.Delete(ec.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	return c.NoContent(http.StatusNoContent)

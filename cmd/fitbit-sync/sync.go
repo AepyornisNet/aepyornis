@@ -11,7 +11,6 @@ import (
 
 	"github.com/anyappinc/fitbit"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/app"
 	"resty.dev/v3"
 )
 
@@ -67,8 +66,8 @@ func (fs *fitbitSync) syncActivities(days int) {
 	}
 }
 
-func (fs *fitbitSync) buildMeasurement(date string, final bool, units *fitbit.Unit, act *fitbit.DailyActivitySummary) *app.Measurement {
-	mw := &app.Measurement{
+func (fs *fitbitSync) buildMeasurement(date string, final bool, units *fitbit.Unit, act *fitbit.DailyActivitySummary) *api.Measurement {
+	mw := &api.Measurement{
 		Date: date,
 	}
 
@@ -95,7 +94,7 @@ func (fs *fitbitSync) buildMeasurement(date string, final bool, units *fitbit.Un
 	return mw
 }
 
-func (fs *fitbitSync) postMeasurement(m *app.Measurement) error {
+func (fs *fitbitSync) postMeasurement(m *api.Measurement) error {
 	res, err := fs.restClient.R().
 		SetBody(m).
 		Post("/measurements")

@@ -13,6 +13,7 @@ import (
 	"github.com/cat-dealer/go-rand/v2"
 	"github.com/fsouza/slognil"
 	"github.com/invopop/ctxi18n/i18n"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
@@ -35,6 +36,7 @@ type App struct {
 	translator     *i18n.Locale
 	Version        version.Version
 	Config         database.Config
+	container      *container.Container
 	workerPool     pond.Pool
 	workerPoolGeo  pond.Pool
 }
@@ -94,6 +96,8 @@ func (a *App) Configure() error {
 	if err := a.Config.UpdateFromDatabase(a.db); err != nil {
 		return err
 	}
+
+	a.container = container.NewContainer(a.db, &a.Config, &a.Version)
 
 	if err := a.ConfigureWebserver(); err != nil {
 		return err
@@ -204,4 +208,12 @@ func (a *App) DB() *gorm.DB {
 
 func (a *App) Logger() *slog.Logger {
 	return a.logger
+}
+
+func (a *App) getContainer() *container.Container {
+	if a.container == nil {
+		a.container = container.NewContainer(a.db, &a.Config, &a.Version)
+	}
+
+	return a.container
 }

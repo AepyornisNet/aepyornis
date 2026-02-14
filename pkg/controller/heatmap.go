@@ -1,19 +1,28 @@
-package app
+package controller
 
 import (
 	"net/http"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/labstack/echo/v4"
 	geojson "github.com/paulmach/orb/geojson"
 )
 
-func (a *App) registerAPIV2HeatmapRoutes(apiGroup *echo.Group) {
-	apiGroup.GET("/workouts/coordinates", a.apiV2WorkoutsCoordinatesHandler).Name = "api-v2-workouts-coordinates"
-	apiGroup.GET("/workouts/centers", a.apiV2WorkoutsCentersHandler).Name = "api-v2-workouts-centers"
+type HeatmapController interface {
+	GetWorkoutCoordinates(c echo.Context) error
+	GetWorkoutCenters(c echo.Context) error
 }
 
-// apiV2WorkoutsCoordinatesHandler returns all coordinates of all workouts of the current user
+type heatmapController struct {
+	context *container.Container
+}
+
+func NewHeatmapController(c *container.Container) HeatmapController {
+	return &heatmapController{context: c}
+}
+
+// GetWorkoutCoordinates returns all coordinates of all workouts of the current user
 // @Summary      Get workout coordinates
 // @Tags         heatmap
 // @Security     ApiKeyAuth
@@ -23,15 +32,15 @@ func (a *App) registerAPIV2HeatmapRoutes(apiGroup *echo.Group) {
 // @Success      200  {object}  api.Response[[][]float64]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts/coordinates [get]
-func (a *App) apiV2WorkoutsCoordinatesHandler(c echo.Context) error {
+func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 	coords := [][]float64{}
 
-	db := a.db.Preload("Data").Preload("Data.Details")
-	u := a.getCurrentUser(c)
+	db := hc.context.GetDB().Preload("Data").Preload("Data.Details")
+	u := hc.context.GetUser(c)
 
 	wos, err := u.GetWorkouts(db)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	for _, w := range wos {
@@ -51,7 +60,7 @@ func (a *App) apiV2WorkoutsCoordinatesHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutsCentersHandler returns the center of all workouts of the current user
+// GetWorkoutCenters returns the center of all workouts of the current user
 // @Summary      Get workout centers
 // @Tags         heatmap
 // @Security     ApiKeyAuth
@@ -61,14 +70,14 @@ func (a *App) apiV2WorkoutsCoordinatesHandler(c echo.Context) error {
 // @Success      200  {object}  api.Response[geojson.FeatureCollection]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts/centers [get]
-func (a *App) apiV2WorkoutsCentersHandler(c echo.Context) error {
+func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()
-	u := a.getCurrentUser(c)
-	db := a.db.Preload("Data").Preload("Data.Details")
+	u := hc.context.GetUser(c)
+	db := hc.context.GetDB().Preload("Data").Preload("Data.Details")
 
 	wos, err := u.GetWorkouts(db)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	for _, w := range wos {
@@ -82,10 +91,7 @@ func (a *App) apiV2WorkoutsCentersHandler(c echo.Context) error {
 		}
 
 		f := geojson.NewFeature(p.ToOrbPoint())
-
-		// Add structured popup data
-		popupData := api.NewWorkoutPopupData(w)
-		f.Properties["popup_data"] = popupData
+		f.Properties["popup_data"] = api.NewWorkoutPopupData(w)
 
 		coords.Append(f)
 	}

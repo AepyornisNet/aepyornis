@@ -1,30 +1,54 @@
-package app
+package controller
 
 import (
 	"bytes"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"path"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cast"
 )
 
-func (a *App) registerAPIV2RouteSegmentRoutes(apiGroup *echo.Group) {
-	routeSegmentsGroup := apiGroup.Group("/route-segments")
-	routeSegmentsGroup.GET("", a.apiV2RouteSegmentsHandler).Name = "api-v2-route-segments"
-	routeSegmentsGroup.POST("", a.apiV2RouteSegmentCreateHandler).Name = "api-v2-route-segment-create"
-	routeSegmentsGroup.GET("/:id", a.apiV2RouteSegmentGetHandler).Name = "api-v2-route-segment"
-	routeSegmentsGroup.PUT("/:id", a.apiV2RouteSegmentUpdateHandler).Name = "api-v2-route-segment-update"
-	routeSegmentsGroup.DELETE("/:id", a.apiV2RouteSegmentDeleteHandler).Name = "api-v2-route-segment-delete"
-	routeSegmentsGroup.POST("/:id/refresh", a.apiV2RouteSegmentRefreshHandler).Name = "api-v2-route-segment-refresh"
-	routeSegmentsGroup.POST("/:id/matches", a.apiV2RouteSegmentFindMatchesHandler).Name = "api-v2-route-segment-matches"
-	routeSegmentsGroup.GET("/:id/download", a.apiV2RouteSegmentDownloadHandler).Name = "api-v2-route-segment-download"
-	apiGroup.POST("/workouts/:id/route-segment", a.apiV2RouteSegmentCreateFromWorkoutHandler).Name = "api-v2-workout-route-segment-create"
+type RouteSegmentController interface {
+	GetRouteSegments(c echo.Context) error
+	GetRouteSegment(c echo.Context) error
+	CreateRouteSegment(c echo.Context) error
+	CreateRouteSegmentFromWorkout(c echo.Context) error
+	DeleteRouteSegment(c echo.Context) error
+	RefreshRouteSegment(c echo.Context) error
+	UpdateRouteSegment(c echo.Context) error
+	DownloadRouteSegment(c echo.Context) error
+	FindRouteSegmentMatches(c echo.Context) error
 }
 
-// apiV2RouteSegmentsHandler returns a paginated list of route segments
+type routeSegmentController struct {
+	context *container.Container
+}
+
+func NewRouteSegmentController(c *container.Container) RouteSegmentController {
+	return &routeSegmentController{context: c}
+}
+
+func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*database.RouteSegment, error) {
+	id, err := cast.ToUint64E(c.Param("id"))
+	if err != nil {
+		return nil, err
+	}
+
+	rs, err := database.GetRouteSegment(rc.context.GetDB(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return rs, nil
+}
+
+// GetRouteSegments returns a paginated list of route segments
 // @Summary      List route segments
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -37,32 +61,28 @@ func (a *App) registerAPIV2RouteSegmentRoutes(apiGroup *echo.Group) {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments [get]
-func (a *App) apiV2RouteSegmentsHandler(c echo.Context) error {
-	// Parse pagination parameters
+func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 	var pagination api.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	pagination.SetDefaults()
 
-	// Get total count
 	var totalCount int64
-	if err := a.db.Model(&database.RouteSegment{}).Count(&totalCount).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := rc.context.GetDB().Model(&database.RouteSegment{}).Count(&totalCount).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Get paginated route segments
 	var routeSegments []*database.RouteSegment
-	db := a.db.Preload("RouteSegmentMatches").
+	db := rc.context.GetDB().Preload("RouteSegmentMatches").
 		Order("created_at DESC").
 		Limit(pagination.PerPage).
 		Offset(pagination.GetOffset())
 
 	if err := db.Find(&routeSegments).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Convert to API response
 	results := api.NewRouteSegmentsResponse(routeSegments)
 
 	resp := api.PaginatedResponse[api.RouteSegmentResponse]{
@@ -76,7 +96,7 @@ func (a *App) apiV2RouteSegmentsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2RouteSegmentGetHandler returns a single route segment by ID with full details
+// GetRouteSegment returns a single route segment by ID with full details
 // @Summary      Get route segment
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -87,10 +107,10 @@ func (a *App) apiV2RouteSegmentsHandler(c echo.Context) error {
 // @Success      200  {object}  api.Response[api.RouteSegmentDetailResponse]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /route-segments/{id} [get]
-func (a *App) apiV2RouteSegmentGetHandler(c echo.Context) error {
-	rs, err := a.getRouteSegment(c)
+func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	resp := api.Response[api.RouteSegmentDetailResponse]{
@@ -100,7 +120,7 @@ func (a *App) apiV2RouteSegmentGetHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2RouteSegmentCreateHandler uploads one or more route segment files
+// CreateRouteSegment uploads one or more route segment files
 // @Summary      Create route segment
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -114,19 +134,18 @@ func (a *App) apiV2RouteSegmentGetHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments [post]
-func (a *App) apiV2RouteSegmentCreateHandler(c echo.Context) error {
+func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 	form, err := c.MultipartForm()
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	files := form.File["file"]
-
 	errMsg := []string{}
 
 	segments := []*api.RouteSegmentResponse{}
 	for _, file := range files {
-		content, parseErr := uploadedFile(file)
+		content, parseErr := uploadedRouteSegmentFile(file)
 		if parseErr != nil {
 			errMsg = append(errMsg, parseErr.Error())
 			continue
@@ -134,7 +153,7 @@ func (a *App) apiV2RouteSegmentCreateHandler(c echo.Context) error {
 
 		notes := c.FormValue("notes")
 
-		w, addErr := database.AddRouteSegment(a.db, notes, file.Filename, content)
+		w, addErr := database.AddRouteSegment(rc.context.GetDB(), notes, file.Filename, content)
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
@@ -152,7 +171,7 @@ func (a *App) apiV2RouteSegmentCreateHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-// apiV2RouteSegmentCreateFromWorkoutHandler creates a route segment from a workout
+// CreateRouteSegmentFromWorkout creates a route segment from a workout
 // @Summary      Create route segment from workout
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -165,30 +184,30 @@ func (a *App) apiV2RouteSegmentCreateHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/route-segment [post]
-func (a *App) apiV2RouteSegmentCreateFromWorkoutHandler(c echo.Context) error {
+func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) error {
 	workoutID, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	workout, err := database.GetWorkoutDetails(a.db, workoutID)
+	workout, err := database.GetWorkoutDetails(rc.context.GetDB(), workoutID)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	var params database.RoutSegmentCreationParams
 	if err := c.Bind(&params); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	content, err := database.RouteSegmentFromPoints(workout, &params)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	rs, err := database.AddRouteSegment(a.db, "", params.Filename(), content)
+	rs, err := database.AddRouteSegment(rc.context.GetDB(), "", params.Filename(), content)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[api.RouteSegmentDetailResponse]{
@@ -198,7 +217,7 @@ func (a *App) apiV2RouteSegmentCreateFromWorkoutHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-// apiV2RouteSegmentDeleteHandler deletes a route segment
+// DeleteRouteSegment deletes a route segment
 // @Summary      Delete route segment
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -210,14 +229,14 @@ func (a *App) apiV2RouteSegmentCreateFromWorkoutHandler(c echo.Context) error {
 // @Failure      404  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments/{id} [delete]
-func (a *App) apiV2RouteSegmentDeleteHandler(c echo.Context) error {
-	rs, err := a.getRouteSegment(c)
+func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := rs.Delete(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := rs.Delete(rc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[map[string]string]{
@@ -227,7 +246,7 @@ func (a *App) apiV2RouteSegmentDeleteHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2RouteSegmentRefreshHandler marks a route segment for refresh
+// RefreshRouteSegment marks a route segment for refresh
 // @Summary      Refresh route segment
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -239,18 +258,18 @@ func (a *App) apiV2RouteSegmentDeleteHandler(c echo.Context) error {
 // @Failure      404  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments/{id}/refresh [post]
-func (a *App) apiV2RouteSegmentRefreshHandler(c echo.Context) error {
-	rs, err := a.getRouteSegment(c)
+func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	if err := rs.UpdateFromContent(); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := rs.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := rs.Save(rc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[map[string]string]{
@@ -260,7 +279,7 @@ func (a *App) apiV2RouteSegmentRefreshHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2RouteSegmentUpdateHandler updates a route segment
+// UpdateRouteSegment updates a route segment
 // @Summary      Update route segment
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -274,22 +293,22 @@ func (a *App) apiV2RouteSegmentRefreshHandler(c echo.Context) error {
 // @Failure      404  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments/{id} [put]
-func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
-	rs, err := a.getRouteSegment(c)
+func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	type UpdateParams struct {
+	type updateParams struct {
 		Name          string `json:"name"`
 		Notes         string `json:"notes"`
 		Bidirectional bool   `json:"bidirectional"`
 		Circular      bool   `json:"circular"`
 	}
 
-	var params UpdateParams
+	var params updateParams
 	if err := c.Bind(&params); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	rs.Name = params.Name
@@ -298,8 +317,8 @@ func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
 	rs.Circular = params.Circular
 	rs.Dirty = true
 
-	if err := rs.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := rs.Save(rc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[api.RouteSegmentDetailResponse]{
@@ -309,7 +328,7 @@ func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2RouteSegmentDownloadHandler downloads the original route segment file
+// DownloadRouteSegment downloads the original route segment file
 // @Summary      Download route segment file
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -320,20 +339,19 @@ func (a *App) apiV2RouteSegmentUpdateHandler(c echo.Context) error {
 // @Success      200  {string}  string  "binary GPX content"
 // @Failure      404  {object}  api.Response[any]
 // @Router       /route-segments/{id}/download [get]
-func (a *App) apiV2RouteSegmentDownloadHandler(c echo.Context) error {
-	rs, err := a.getRouteSegment(c)
+func (rc *routeSegmentController) DownloadRouteSegment(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	basename := path.Base(rs.Filename)
-
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
 
 	return c.Stream(http.StatusOK, "application/binary", bytes.NewReader(rs.Content))
 }
 
-// apiV2RouteSegmentFindMatchesHandler finds matching workouts for a route segment
+// FindRouteSegmentMatches finds matching workouts for a route segment
 // @Summary      Find matching workouts
 // @Tags         route-segments
 // @Security     ApiKeyAuth
@@ -345,15 +363,15 @@ func (a *App) apiV2RouteSegmentDownloadHandler(c echo.Context) error {
 // @Failure      404  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /route-segments/{id}/matches [post]
-func (a *App) apiV2RouteSegmentFindMatchesHandler(c echo.Context) error {
-	rs, err := a.getRouteSegment(c)
+func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	rs.Dirty = true
-	if err := rs.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := rs.Save(rc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[map[string]string]{
@@ -361,4 +379,19 @@ func (a *App) apiV2RouteSegmentFindMatchesHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func uploadedRouteSegmentFile(file *multipart.FileHeader) ([]byte, error) {
+	src, err := file.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer src.Close()
+
+	content, err := io.ReadAll(src)
+	if err != nil {
+		return nil, err
+	}
+
+	return content, nil
 }

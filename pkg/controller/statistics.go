@@ -1,18 +1,27 @@
-package app
+package controller
 
 import (
 	"net/http"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
 )
 
-func (a *App) registerAPIV2StatisticsRoutes(apiGroup *echo.Group) {
-	apiGroup.GET("/statistics", a.apiV2StatisticsHandler).Name = "api-v2-statistics"
+type StatisticsController interface {
+	GetStatistics(c echo.Context) error
 }
 
-// apiV2StatisticsHandler returns user's workout statistics
+type statisticsController struct {
+	context *container.Container
+}
+
+func NewStatisticsController(c *container.Container) StatisticsController {
+	return &statisticsController{context: c}
+}
+
+// GetStatistics returns user's workout statistics
 // @Summary      Get workout statistics
 // @Tags         statistics
 // @Security     ApiKeyAuth
@@ -25,26 +34,25 @@ func (a *App) registerAPIV2StatisticsRoutes(apiGroup *echo.Group) {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /statistics [get]
-func (a *App) apiV2StatisticsHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (sc *statisticsController) GetStatistics(c echo.Context) error {
+	user := sc.context.GetUser(c)
 
-	// Parse statistics config from query parameters
 	var statConfig database.StatConfig
 	if err := c.Bind(&statConfig); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Set defaults if not provided
 	if statConfig.Since == "" {
 		statConfig.Since = "1 year"
 	}
+
 	if statConfig.Per == "" {
 		statConfig.Per = "month"
 	}
 
 	statistics, err := user.GetStatisticsFor(statConfig.Since, statConfig.Per)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[api.StatisticsResponse]{

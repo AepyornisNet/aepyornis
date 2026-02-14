@@ -1,7 +1,9 @@
-package app
+package controller
 
 import (
 	"errors"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,32 +11,57 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/api"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
 	"github.com/labstack/echo/v4"
+	"github.com/spf13/cast"
 )
 
-func (a *App) registerAPIV2WorkoutRoutes(apiGroup *echo.Group, apiGroupPublic *echo.Group) {
-	workoutGroup := apiGroup.Group("/workouts")
-	workoutGroup.GET("", a.apiV2WorkoutsHandler).Name = "api-v2-workouts"
-	workoutGroup.POST("", a.apiV2WorkoutCreateHandler).Name = "api-v2-workouts-create"
-	workoutGroup.GET("/recent", a.apiV2RecentWorkoutsHandler).Name = "api-v2-workouts-recent"
-	workoutGroup.GET("/calendar", a.apiV2WorkoutsCalendarHandler).Name = "api-v2-workouts-calendar"
-	workoutGroup.GET("/:id", a.apiV2WorkoutHandler).Name = "api-v2-workout"
-	workoutGroup.GET("/:id/breakdown", a.apiV2WorkoutBreakdownHandler).Name = "api-v2-workout-breakdown"
-	workoutGroup.GET("/:id/stats-range", a.apiV2WorkoutRangeStatsHandler).Name = "api-v2-workout-range-stats"
-	workoutGroup.GET("/:id/download", a.apiV2WorkoutDownloadHandler).Name = "api-v2-workout-download"
-	workoutGroup.PUT("/:id", a.apiV2WorkoutUpdateHandler).Name = "api-v2-workout-update"
-	workoutGroup.POST("/:id/toggle-lock", a.apiV2WorkoutToggleLockHandler).Name = "api-v2-workout-toggle-lock"
-	workoutGroup.POST("/:id/refresh", a.apiV2WorkoutRefreshHandler).Name = "api-v2-workout-refresh"
-	workoutGroup.POST("/:id/share", a.apiV2WorkoutShareHandler).Name = "api-v2-workout-share"
-	workoutGroup.DELETE("/:id", a.apiV2WorkoutDeleteHandler).Name = "api-v2-workout-delete"
-	workoutGroup.DELETE("/:id/share", a.apiV2WorkoutShareDeleteHandler).Name = "api-v2-workout-share-delete"
-	apiGroupPublic.GET("/workouts/public/:uuid", a.apiV2WorkoutPublicHandler).Name = "api-v2-workout-public"
-	apiGroupPublic.GET("/workouts/public/:uuid/breakdown", a.apiV2WorkoutPublicBreakdownHandler).Name = "api-v2-workout-public-breakdown"
-	apiGroupPublic.GET("/workouts/public/:uuid/stats-range", a.apiV2WorkoutPublicRangeStatsHandler).Name = "api-v2-workout-public-range-stats"
+type WorkoutController interface {
+	GetWorkouts(c echo.Context) error
+	GetWorkout(c echo.Context) error
+	GetWorkoutBreakdown(c echo.Context) error
+	GetWorkoutRangeStats(c echo.Context) error
+	GetWorkoutCalendar(c echo.Context) error
+	CreateWorkout(c echo.Context) error
+	GetRecentWorkouts(c echo.Context) error
+	DeleteWorkout(c echo.Context) error
+	UpdateWorkout(c echo.Context) error
+	ToggleWorkoutLock(c echo.Context) error
+	RefreshWorkout(c echo.Context) error
+	CreateWorkoutShare(c echo.Context) error
+	DeleteWorkoutShare(c echo.Context) error
+	DownloadWorkout(c echo.Context) error
+	GetPublicWorkout(c echo.Context) error
+	GetPublicWorkoutBreakdown(c echo.Context) error
+	GetPublicWorkoutRangeStats(c echo.Context) error
 }
 
-// apiV2WorkoutsHandler returns a paginated list of workouts for the current user
+type workoutController struct {
+	context *container.Container
+}
+
+var _ WorkoutController = (*workoutController)(nil)
+
+func NewWorkoutController(c *container.Container) WorkoutController {
+	return &workoutController{context: c}
+}
+
+func (wc *workoutController) getWorkout(c echo.Context) (*database.Workout, error) {
+	id, err := cast.ToUint64E(c.Param("id"))
+	if err != nil {
+		return nil, err
+	}
+
+	w, err := wc.context.GetUser(c).GetWorkout(wc.context.GetDB(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
+// GetWorkouts returns a paginated list of workouts for the current user
 // @Summary      List workouts
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -47,41 +74,36 @@ func (a *App) registerAPIV2WorkoutRoutes(apiGroup *echo.Group, apiGroupPublic *e
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts [get]
-func (a *App) apiV2WorkoutsHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) GetWorkouts(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	// Parse pagination parameters
 	var pagination api.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	pagination.SetDefaults()
 
-	// Parse filters
 	filters, err := database.GetWorkoutsFilters(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Get total count
 	var totalCount int64
-	if err := filters.ToQuery(a.db.Model(&database.Workout{})).Where("user_id = ?", user.ID).Select("COUNT(workouts.id)").Count(&totalCount).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := filters.ToQuery(wc.context.GetDB().Model(&database.Workout{})).Where("user_id = ?", user.ID).Select("COUNT(workouts.id)").Count(&totalCount).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Get paginated workouts
 	var workouts []*database.Workout
-	db := filters.ToQuery(a.db.Model(&database.Workout{})).Preload("GPX").Preload("Data").
+	db := filters.ToQuery(wc.context.GetDB().Model(&database.Workout{})).Preload("GPX").Preload("Data").
 		Where("user_id = ?", user.ID).
 		Order("date DESC").
 		Limit(pagination.PerPage).
 		Offset(pagination.GetOffset())
 
 	if err := db.Find(&workouts).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Convert to API response
 	results := api.NewWorkoutsResponse(workouts)
 
 	resp := api.PaginatedResponse[api.WorkoutResponse]{
@@ -95,7 +117,7 @@ func (a *App) apiV2WorkoutsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutHandler returns a single workout for the current user
+// GetWorkout returns a single workout for the current user
 // @Summary      Get workout by ID
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -107,18 +129,16 @@ func (a *App) apiV2WorkoutsHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id} [get]
-func (a *App) apiV2WorkoutHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) GetWorkout(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	// Parse workout ID
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Get workout with all details
 	var workout database.Workout
-	db := a.db.Preload("Data.Details").
+	db := wc.context.GetDB().Preload("Data.Details").
 		Preload("Data").
 		Preload("GPX").
 		Preload("Equipment").
@@ -126,16 +146,15 @@ func (a *App) apiV2WorkoutHandler(c echo.Context) error {
 		Where("user_id = ? AND id = ?", user.ID, id)
 
 	if err := db.First(&workout).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	workout.User = user
-	records, err := database.GetWorkoutIntervalRecordsWithRank(a.db, user.ID, workout.Type, workout.ID)
+	records, err := database.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), user.ID, workout.Type, workout.ID)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Convert to API response
 	result := api.NewWorkoutDetailResponse(&workout, records)
 
 	resp := api.Response[api.WorkoutDetailResponse]{
@@ -145,7 +164,7 @@ func (a *App) apiV2WorkoutHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutBreakdownHandler returns breakdown table data or laps for a workout
+// GetWorkoutBreakdown returns breakdown table data or laps for a workout
 // @Summary      Get workout breakdown
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -159,13 +178,12 @@ func (a *App) apiV2WorkoutHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/breakdown [get]
-func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	// Parse workout ID
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	params := struct {
@@ -177,17 +195,16 @@ func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
 	}
 
 	if err := c.Bind(&params); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	if params.Count <= 0 {
 		params.Count = 1.0
 	}
 
-	// Get workout with details and laps
 	var workout database.Workout
-	if err := a.db.Preload("Data").Preload("Data.Details").Preload("GPX").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Preload("GPX").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	workout.User = user
@@ -206,12 +223,12 @@ func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
 	}
 
 	if workout.Data == nil || workout.Data.Details == nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
 	breakdown, err := workout.StatisticsPer(params.Count, user.PreferredUnits().Distance())
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	resp.Results = api.WorkoutBreakdownResponse{
@@ -222,7 +239,7 @@ func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutRangeStatsHandler returns aggregate statistics for a selection of map points
+// GetWorkoutRangeStats returns aggregate statistics for a selection of map points
 // @Summary      Get workout range statistics
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -236,13 +253,12 @@ func (a *App) apiV2WorkoutBreakdownHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/stats-range [get]
-func (a *App) apiV2WorkoutRangeStatsHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	// Parse workout ID
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	params := struct {
@@ -251,17 +267,16 @@ func (a *App) apiV2WorkoutRangeStatsHandler(c echo.Context) error {
 	}{}
 
 	if err := c.Bind(&params); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Load workout with map details
 	var workout database.Workout
-	if err := a.db.Preload("Data").Preload("Data.Details").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	if workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
 	points := workout.Data.Details.Points
@@ -277,12 +292,12 @@ func (a *App) apiV2WorkoutRangeStatsHandler(c echo.Context) error {
 	}
 
 	if startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
 	stats, ok := workout.Data.Details.StatsForRange(startIdx, endIdx)
 	if !ok {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
 	resp := api.Response[api.WorkoutRangeStatsResponse]{
@@ -292,14 +307,13 @@ func (a *App) apiV2WorkoutRangeStatsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// CalendarQueryParams represents query parameters for calendar endpoint
-type CalendarQueryParams struct {
+type calendarQueryParams struct {
 	Start    *string `query:"start"`
 	End      *string `query:"end"`
 	TimeZone *string `query:"timeZone"`
 }
 
-// apiV2WorkoutsCalendarHandler returns calendar events of workouts for the current user
+// GetWorkoutCalendar returns calendar events of workouts for the current user
 // @Summary      Get workout calendar events
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -310,16 +324,14 @@ type CalendarQueryParams struct {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts/calendar [get]
-func (a *App) apiV2WorkoutsCalendarHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	// Parse query parameters
-	var params CalendarQueryParams
+	var params calendarQueryParams
 	if err := c.Bind(&params); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Parse timezone
 	tz := time.UTC
 	if params.TimeZone != nil {
 		location, err := time.LoadLocation(*params.TimeZone)
@@ -328,10 +340,8 @@ func (a *App) apiV2WorkoutsCalendarHandler(c echo.Context) error {
 		}
 	}
 
-	// Build query
-	db := a.db.Preload("Data").Where("user_id = ?", user.ID)
+	db := wc.context.GetDB().Preload("Data").Where("user_id = ?", user.ID)
 
-	// Apply date filters
 	const calTS = "2006-01-02T15:04:05"
 	if params.Start != nil {
 		if start, err := time.ParseInLocation(calTS, *params.Start, tz); err == nil {
@@ -344,22 +354,18 @@ func (a *App) apiV2WorkoutsCalendarHandler(c echo.Context) error {
 		}
 	}
 
-	// Get workouts
 	var workouts []*database.Workout
 	if err := db.Find(&workouts).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Convert to calendar events
 	events := make([]api.CalendarEventResponse, len(workouts))
 	for i, w := range workouts {
-		// Build title from workout name and type
 		title := w.Name
 		if title == "" {
 			title = string(w.Type)
 		}
 
-		// Add distance/duration info if available
 		if w.Data != nil {
 			if w.Data.TotalDistance > 0 {
 				title += " - " + formatDistance(w.Data.TotalDistance)
@@ -384,7 +390,7 @@ func (a *App) apiV2WorkoutsCalendarHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutCreateHandler creates a new workout (file upload or manual entry)
+// CreateWorkout creates a new workout (file upload or manual entry)
 // @Summary      Create workout
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -397,29 +403,26 @@ func (a *App) apiV2WorkoutsCalendarHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts [post]
-func (a *App) apiV2WorkoutCreateHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) CreateWorkout(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	// Check if this is a multipart form (file upload)
 	if c.Request().Header.Get(echo.HeaderContentType) != "" &&
 		strings.HasPrefix(c.Request().Header.Get(echo.HeaderContentType), echo.MIMEMultipartForm) {
-		return a.apiV2WorkoutCreateFromFileHandler(c, user)
+		return wc.createWorkoutFromFile(c, user)
 	}
 
-	// Manual workout creation
-	return a.apiV2WorkoutCreateManualHandler(c, user)
+	return wc.createWorkoutManual(c, user)
 }
 
-// apiV2WorkoutCreateFromFileHandler handles file upload workout creation
-func (a *App) apiV2WorkoutCreateFromFileHandler(c echo.Context, user *database.User) error {
+func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *database.User) error {
 	form, err := c.MultipartForm()
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	files := form.File["file"]
 	if len(files) == 0 {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("no file uploaded"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("no file uploaded"))
 	}
 
 	notes := c.FormValue("notes")
@@ -438,7 +441,7 @@ func (a *App) apiV2WorkoutCreateFromFileHandler(c echo.Context, user *database.U
 			continue
 		}
 
-		ws, addErr := user.AddWorkout(a.db, workoutType, notes, file.Filename, content)
+		ws, addErr := user.AddWorkout(wc.context.GetDB(), workoutType, notes, file.Filename, content)
 		if len(addErr) > 0 {
 			for _, e := range addErr {
 				errs = append(errs, e.Error())
@@ -469,11 +472,10 @@ func (a *App) apiV2WorkoutCreateFromFileHandler(c echo.Context, user *database.U
 	return c.JSON(statusCode, resp)
 }
 
-// apiV2WorkoutCreateManualHandler handles manual workout creation
-func (a *App) apiV2WorkoutCreateManualHandler(c echo.Context, user *database.User) error {
-	d := &ManualWorkout{units: user.PreferredUnits()}
+func (wc *workoutController) createWorkoutManual(c echo.Context, user *database.User) error {
+	d := &api.ManualWorkout{Units: user.PreferredUnits()}
 	if err := c.Bind(d); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	workout := &database.Workout{}
@@ -483,23 +485,21 @@ func (a *App) apiV2WorkoutCreateManualHandler(c echo.Context, user *database.Use
 	workout.UserID = user.ID
 	workout.Data.Creator = "web-interface"
 
-	// Handle equipment IDs
-	equipment, err := database.GetEquipmentByIDs(a.db, user.ID, d.EquipmentIDs)
+	equipment, err := database.GetEquipmentByIDs(wc.context.GetDB(), user.ID, d.EquipmentIDs)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if err := workout.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := workout.Save(wc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := a.db.Model(&workout).Association("Equipment").Replace(equipment); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := wc.context.GetDB().Model(&workout).Association("Equipment").Replace(equipment); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Reload workout with associations
-	if err := a.db.Preload("Data").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := wc.context.GetDB().Preload("Data").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	result := api.NewWorkoutResponse(workout)
@@ -510,25 +510,7 @@ func (a *App) apiV2WorkoutCreateManualHandler(c echo.Context, user *database.Use
 	return c.JSON(http.StatusCreated, resp)
 }
 
-// Helper functions for formatting
-func formatDistance(meters float64) string {
-	km := meters / 1000
-	if km < 10 {
-		return strconv.FormatFloat(km, 'f', 2, 64) + " km"
-	}
-	return strconv.FormatFloat(km, 'f', 1, 64) + " km"
-}
-
-func formatDuration(seconds int64) string {
-	hours := seconds / 3600
-	minutes := (seconds % 3600) / 60
-	if hours > 0 {
-		return strconv.FormatInt(hours, 10) + "h " + strconv.FormatInt(minutes, 10) + "m"
-	}
-	return strconv.FormatInt(minutes, 10) + "m"
-}
-
-// apiV2RecentWorkoutsHandler returns recent workouts from all users
+// GetRecentWorkouts returns recent workouts from all users
 // @Summary      List recent workouts
 // @Tags         workouts
 // @Produce      json
@@ -537,8 +519,7 @@ func formatDuration(seconds int64) string {
 // @Success      200  {object}  api.Response[[]api.WorkoutResponse]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts/recent [get]
-func (a *App) apiV2RecentWorkoutsHandler(c echo.Context) error {
-	// Parse limit parameter (default to 20, max 100)
+func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	limit := 20
 	if limitStr := c.QueryParam("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil {
@@ -548,7 +529,6 @@ func (a *App) apiV2RecentWorkoutsHandler(c echo.Context) error {
 		}
 	}
 
-	// Parse offset parameter (default to 0)
 	offset := 0
 	if offsetStr := c.QueryParam("offset"); offsetStr != "" {
 		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil {
@@ -558,13 +538,11 @@ func (a *App) apiV2RecentWorkoutsHandler(c echo.Context) error {
 		}
 	}
 
-	// Get recent workouts from all users
-	workouts, err := database.GetRecentWorkoutsWithOffset(a.db, limit, offset)
+	workouts, err := database.GetRecentWorkoutsWithOffset(wc.context.GetDB(), limit, offset)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Convert to API response
 	results := api.NewWorkoutsResponse(workouts)
 
 	resp := api.Response[[]api.WorkoutResponse]{
@@ -574,7 +552,7 @@ func (a *App) apiV2RecentWorkoutsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutDeleteHandler deletes a workout
+// DeleteWorkout deletes a workout
 // @Summary      Delete workout
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -586,16 +564,14 @@ func (a *App) apiV2RecentWorkoutsHandler(c echo.Context) error {
 // @Failure      404  {object}  api.Response[any]
 // @Failure      500  {object}  api.Response[any]
 // @Router       /workouts/{id} [delete]
-func (a *App) apiV2WorkoutDeleteHandler(c echo.Context) error {
-	// Get workout
-	workout, err := a.getWorkout(c)
+func (wc *workoutController) DeleteWorkout(c echo.Context) error {
+	workout, err := wc.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	// Delete workout
-	if err := workout.Delete(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := workout.Delete(wc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[map[string]string]{
@@ -605,7 +581,7 @@ func (a *App) apiV2WorkoutDeleteHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutUpdateHandler updates a workout
+// UpdateWorkout updates a workout
 // @Summary      Update workout
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -618,37 +594,37 @@ func (a *App) apiV2WorkoutDeleteHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id} [put]
-func (a *App) apiV2WorkoutUpdateHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) UpdateWorkout(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	workout, err := a.getWorkout(c)
+	workout, err := wc.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	d := &ManualWorkout{units: user.PreferredUnits()}
+	d := &api.ManualWorkout{Units: user.PreferredUnits()}
 	if err := c.Bind(d); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	d.Update(workout)
 
 	if d.EquipmentIDs != nil {
-		equipment, err := database.GetEquipmentByIDs(a.db, user.ID, d.EquipmentIDs)
+		equipment, err := database.GetEquipmentByIDs(wc.context.GetDB(), user.ID, d.EquipmentIDs)
 		if err != nil {
-			return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+			return renderApiError(c, http.StatusBadRequest, err)
 		}
-		if err := a.db.Model(&workout).Association("Equipment").Replace(equipment); err != nil {
-			return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		if err := wc.context.GetDB().Model(&workout).Association("Equipment").Replace(equipment); err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 	}
 
-	if err := workout.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := workout.Save(wc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := a.db.Preload("Data").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := wc.context.GetDB().Preload("Data").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	result := api.NewWorkoutResponse(workout)
@@ -659,7 +635,7 @@ func (a *App) apiV2WorkoutUpdateHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutToggleLockHandler toggles the locked status of a workout
+// ToggleWorkoutLock toggles the locked status of a workout
 // @Summary      Toggle workout lock
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -671,26 +647,22 @@ func (a *App) apiV2WorkoutUpdateHandler(c echo.Context) error {
 // @Failure      404  {object}  api.Response[any]
 // @Failure      403  {object}  api.Response[any]
 // @Router       /workouts/{id}/toggle-lock [post]
-func (a *App) apiV2WorkoutToggleLockHandler(c echo.Context) error {
-	user := a.getCurrentUser(c)
+func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
+	user := wc.context.GetUser(c)
 
-	// Get workout with details (including GPX for HasFile check)
-	workout, err := a.getWorkout(c)
+	workout, err := wc.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	// Verify user owns this workout
 	if workout.UserID != user.ID {
-		return a.renderAPIV2Error(c, http.StatusForbidden, errors.New("not authorized"))
+		return renderApiError(c, http.StatusForbidden, errors.New("not authorized"))
 	}
 
-	// Toggle locked status
 	workout.Locked = !workout.Locked
 
-	// Save workout
-	if err := workout.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := workout.Save(wc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	result := api.NewWorkoutResponse(workout)
@@ -701,7 +673,7 @@ func (a *App) apiV2WorkoutToggleLockHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutRefreshHandler marks a workout for refresh
+// RefreshWorkout marks a workout for refresh
 // @Summary      Refresh workout
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -712,16 +684,16 @@ func (a *App) apiV2WorkoutToggleLockHandler(c echo.Context) error {
 // @Success      200  {object}  api.Response[map[string]string]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/refresh [post]
-func (a *App) apiV2WorkoutRefreshHandler(c echo.Context) error {
-	workout, err := a.getWorkout(c)
+func (wc *workoutController) RefreshWorkout(c echo.Context) error {
+	workout, err := wc.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	workout.Dirty = true
 
-	if err := workout.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := workout.Save(wc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[map[string]string]{
@@ -731,7 +703,7 @@ func (a *App) apiV2WorkoutRefreshHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutShareHandler generates or regenerates a public share link for a workout
+// CreateWorkoutShare generates or regenerates a public share link for a workout
 // @Summary      Create or regenerate share link
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -742,18 +714,17 @@ func (a *App) apiV2WorkoutRefreshHandler(c echo.Context) error {
 // @Success      200  {object}  api.Response[map[string]string]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/share [post]
-func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
-	workout, err := a.getWorkout(c)
+func (wc *workoutController) CreateWorkoutShare(c echo.Context) error {
+	workout, err := wc.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	// Generate new UUID
 	u := uuid.New()
 	workout.PublicUUID = &u
 
-	if err := workout.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := workout.Save(wc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[map[string]string]{
@@ -767,7 +738,7 @@ func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutShareDeleteHandler deletes the public share link for a workout
+// DeleteWorkoutShare deletes the public share link for a workout
 // @Summary      Delete workout share link
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -778,18 +749,16 @@ func (a *App) apiV2WorkoutShareHandler(c echo.Context) error {
 // @Success      200  {object}  api.Response[map[string]string]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/share [delete]
-func (a *App) apiV2WorkoutShareDeleteHandler(c echo.Context) error {
-	workout, err := a.getWorkout(c)
+func (wc *workoutController) DeleteWorkoutShare(c echo.Context) error {
+	workout, err := wc.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	// Remove share link
 	workout.PublicUUID = nil
 
-	// Save workout
-	if err := workout.Save(a.db); err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+	if err := workout.Save(wc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := api.Response[map[string]string]{
@@ -799,7 +768,7 @@ func (a *App) apiV2WorkoutShareDeleteHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutDownloadHandler downloads the original workout file
+// DownloadWorkout downloads the original workout file
 // @Summary      Download workout file
 // @Tags         workouts
 // @Security     ApiKeyAuth
@@ -810,30 +779,27 @@ func (a *App) apiV2WorkoutShareDeleteHandler(c echo.Context) error {
 // @Success      200  {string}  string  "binary workout file"
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/{id}/download [get]
-func (a *App) apiV2WorkoutDownloadHandler(c echo.Context) error {
-	workout, err := a.getWorkout(c)
+func (wc *workoutController) DownloadWorkout(c echo.Context) error {
+	workout, err := wc.getWorkout(c)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	// Check if workout has a file
 	if !workout.HasFile() {
-		return a.renderAPIV2Error(c, http.StatusNotFound, errors.New("workout has no file"))
+		return renderApiError(c, http.StatusNotFound, errors.New("workout has no file"))
 	}
 
-	// Get filename
 	basename := workout.GPX.Filename
 	if basename == "" {
 		basename = "workout_" + strconv.FormatUint(workout.ID, 10) + ".gpx"
 	}
 
-	// Set headers for download
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
 
 	return c.Blob(http.StatusOK, "application/binary", workout.GPX.Content)
 }
 
-// apiV2WorkoutPublicHandler returns a public workout by UUID
+// GetPublicWorkout returns a public workout by UUID
 // @Summary      Get public workout
 // @Tags         workouts
 // @Param        uuid  path  string  true  "Public UUID"
@@ -842,26 +808,23 @@ func (a *App) apiV2WorkoutDownloadHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/public/{uuid} [get]
-func (a *App) apiV2WorkoutPublicHandler(c echo.Context) error {
-	// Parse UUID
+func (wc *workoutController) GetPublicWorkout(c echo.Context) error {
 	uuidParam := c.Param("uuid")
 	u, err := uuid.Parse(uuidParam)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Get workout by UUID
-	workout, err := database.GetWorkoutDetailsByUUID(a.db, u)
+	workout, err := database.GetWorkoutDetailsByUUID(wc.context.GetDB(), u)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	records, err := database.GetWorkoutIntervalRecordsWithRank(a.db, workout.UserID, workout.Type, workout.ID)
+	records, err := database.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), workout.UserID, workout.Type, workout.ID)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Convert to API response
 	result := api.NewWorkoutDetailResponse(workout, records)
 
 	resp := api.Response[api.WorkoutDetailResponse]{
@@ -871,7 +834,7 @@ func (a *App) apiV2WorkoutPublicHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutPublicBreakdownHandler returns breakdown table data or laps for a public workout
+// GetPublicWorkoutBreakdown returns breakdown table data or laps for a public workout
 // @Summary      Get public workout breakdown
 // @Tags         workouts
 // @Param        uuid   path   string  true  "Public UUID"
@@ -882,12 +845,11 @@ func (a *App) apiV2WorkoutPublicHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/public/{uuid}/breakdown [get]
-func (a *App) apiV2WorkoutPublicBreakdownHandler(c echo.Context) error {
-	// Parse UUID
+func (wc *workoutController) GetPublicWorkoutBreakdown(c echo.Context) error {
 	uuidParam := c.Param("uuid")
 	u, err := uuid.Parse(uuidParam)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	params := struct {
@@ -899,22 +861,21 @@ func (a *App) apiV2WorkoutPublicBreakdownHandler(c echo.Context) error {
 	}
 
 	if err := c.Bind(&params); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	if params.Count <= 0 {
 		params.Count = 1.0
 	}
 
-	// Get workout by UUID
-	workout, err := database.GetWorkoutDetailsByUUID(a.db, u)
+	workout, err := database.GetWorkoutDetailsByUUID(wc.context.GetDB(), u)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	owner, err := database.GetUserByID(a.db, workout.UserID)
+	owner, err := database.GetUserByID(wc.context.GetDB(), workout.UserID)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	resp := api.Response[api.WorkoutBreakdownResponse]{}
@@ -931,12 +892,12 @@ func (a *App) apiV2WorkoutPublicBreakdownHandler(c echo.Context) error {
 	}
 
 	if workout.Data == nil || workout.Data.Details == nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
 	breakdown, err := workout.StatisticsPer(params.Count, owner.PreferredUnits().Distance())
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	resp.Results = api.WorkoutBreakdownResponse{
@@ -947,7 +908,7 @@ func (a *App) apiV2WorkoutPublicBreakdownHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// apiV2WorkoutPublicRangeStatsHandler returns aggregate statistics for a selection of map points in a public workout
+// GetPublicWorkoutRangeStats returns aggregate statistics for a selection of map points in a public workout
 // @Summary      Get public workout range statistics
 // @Tags         workouts
 // @Param        uuid         path   string  true  "Public UUID"
@@ -958,12 +919,11 @@ func (a *App) apiV2WorkoutPublicBreakdownHandler(c echo.Context) error {
 // @Failure      400  {object}  api.Response[any]
 // @Failure      404  {object}  api.Response[any]
 // @Router       /workouts/public/{uuid}/stats-range [get]
-func (a *App) apiV2WorkoutPublicRangeStatsHandler(c echo.Context) error {
-	// Parse UUID
+func (wc *workoutController) GetPublicWorkoutRangeStats(c echo.Context) error {
 	uuidParam := c.Param("uuid")
 	u, err := uuid.Parse(uuidParam)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	params := struct {
@@ -972,22 +932,21 @@ func (a *App) apiV2WorkoutPublicRangeStatsHandler(c echo.Context) error {
 	}{}
 
 	if err := c.Bind(&params); err != nil {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, err)
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	// Get workout by UUID
-	workout, err := database.GetWorkoutDetailsByUUID(a.db, u)
+	workout, err := database.GetWorkoutDetailsByUUID(wc.context.GetDB(), u)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	owner, err := database.GetUserByID(a.db, workout.UserID)
+	owner, err := database.GetUserByID(wc.context.GetDB(), workout.UserID)
 	if err != nil {
-		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	if workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("workout has no map data"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
 	points := workout.Data.Details.Points
@@ -1003,12 +962,12 @@ func (a *App) apiV2WorkoutPublicRangeStatsHandler(c echo.Context) error {
 	}
 
 	if startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
 	stats, ok := workout.Data.Details.StatsForRange(startIdx, endIdx)
 	if !ok {
-		return a.renderAPIV2Error(c, http.StatusBadRequest, errors.New("invalid range"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
 	resp := api.Response[api.WorkoutRangeStatsResponse]{
@@ -1016,4 +975,36 @@ func (a *App) apiV2WorkoutPublicRangeStatsHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func uploadedFile(file *multipart.FileHeader) ([]byte, error) {
+	src, err := file.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer src.Close()
+
+	content, err := io.ReadAll(src)
+	if err != nil {
+		return nil, err
+	}
+
+	return content, nil
+}
+
+func formatDistance(meters float64) string {
+	km := meters / 1000
+	if km < 10 {
+		return strconv.FormatFloat(km, 'f', 2, 64) + " km"
+	}
+	return strconv.FormatFloat(km, 'f', 1, 64) + " km"
+}
+
+func formatDuration(seconds int64) string {
+	hours := seconds / 3600
+	minutes := (seconds % 3600) / 60
+	if hours > 0 {
+		return strconv.FormatInt(hours, 10) + "h " + strconv.FormatInt(minutes, 10) + "m"
+	}
+	return strconv.FormatInt(minutes, 10) + "m"
 }
