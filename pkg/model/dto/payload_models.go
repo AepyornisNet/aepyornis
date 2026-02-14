@@ -3,28 +3,28 @@ package dto
 import (
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 )
 
 const htmlDateFormat = "2006-01-02T15:04"
 
 type ManualWorkout struct {
-	Name            *string               `form:"name" json:"name"`
-	Date            *string               `form:"date" json:"date"`
-	Timezone        *string               `form:"timezone" json:"timezone"`
-	Location        *string               `form:"location" json:"location"`
-	DurationHours   *int                  `form:"duration_hours" json:"duration_hours"`
-	DurationMinutes *int                  `form:"duration_minutes" json:"duration_minutes"`
-	DurationSeconds *int                  `form:"duration_seconds" json:"duration_seconds"`
-	Distance        *float64              `form:"distance" json:"distance"`
-	Repetitions     *int                  `form:"repetitions" json:"repetitions"`
-	Weight          *float64              `form:"weight" json:"weight"`
-	Notes           *string               `form:"notes" json:"notes"`
+	Name            *string            `form:"name" json:"name"`
+	Date            *string            `form:"date" json:"date"`
+	Timezone        *string            `form:"timezone" json:"timezone"`
+	Location        *string            `form:"location" json:"location"`
+	DurationHours   *int               `form:"duration_hours" json:"duration_hours"`
+	DurationMinutes *int               `form:"duration_minutes" json:"duration_minutes"`
+	DurationSeconds *int               `form:"duration_seconds" json:"duration_seconds"`
+	Distance        *float64           `form:"distance" json:"distance"`
+	Repetitions     *int               `form:"repetitions" json:"repetitions"`
+	Weight          *float64           `form:"weight" json:"weight"`
+	Notes           *string            `form:"notes" json:"notes"`
 	Type            *model.WorkoutType `form:"type" json:"type"`
-	CustomType      *string               `form:"custom_type" json:"custom_type"`
-	EquipmentIDs    []uint64              `form:"equipment_ids" json:"equipment_ids"`
+	CustomType      *string            `form:"custom_type" json:"custom_type"`
+	EquipmentIDs    []uint64           `form:"equipment_ids" json:"equipment_ids"`
 
 	Units *model.UserPreferredUnits `json:"-" form:"-"`
 }

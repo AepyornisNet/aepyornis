@@ -207,16 +207,16 @@ type ZoneRangeResponse struct {
 
 // ClimbSegmentResponse represents a climb or descent segment
 type ClimbSegmentResponse struct {
-	Index         int                `json:"index"`
+	Index         int             `json:"index"`
 	Type          model.SlopeKind `json:"type"`
-	StartDistance float64            `json:"start_distance"`
-	Length        float64            `json:"length"`
-	Elevation     float64            `json:"elevation"`
-	AvgSlope      float64            `json:"avg_slope"`
+	StartDistance float64         `json:"start_distance"`
+	Length        float64         `json:"length"`
+	Elevation     float64         `json:"elevation"`
+	AvgSlope      float64         `json:"avg_slope"`
 	Category      model.Category  `json:"category"`
-	StartIndex    int                `json:"start_index"`
-	EndIndex      int                `json:"end_index"`
-	Duration      float64            `json:"duration"`
+	StartIndex    int             `json:"start_index"`
+	EndIndex      int             `json:"end_index"`
+	Duration      float64         `json:"duration"`
 }
 
 // RouteSegmentMatchResponse represents a matched route segment
