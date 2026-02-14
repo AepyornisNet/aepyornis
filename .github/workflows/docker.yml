@@ -21,7 +21,7 @@ jobs:
       labels: ${{ steps.meta.outputs.labels }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -47,7 +47,7 @@ jobs:
       digest: ${{ steps.export.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
       - name: Set up Docker Buildx
@@ -94,7 +94,7 @@ jobs:
       digest: ${{ steps.export.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
       - name: Set up Docker Buildx
