@@ -75,10 +75,30 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 }
 
 func (ac *apUserController) Inbox(c echo.Context) error {
+	var it vocab.Activity
+
+	payload, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to read request body: %w", err))
+	} else {
+		err = jsonld.Unmarshal(payload, &it)
+		if err != nil {
+			return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to parse JSON-LD: %w", err))
+		}
+	}
+
+	fmt.Println("Received activity:", it.GetType(), "from", it.Actor)
+	fmt.Println(it)
+	fmt.Println(c.Request().Header)
+	fmt.Println(string(payload))
+
 	return c.NoContent(http.StatusNotImplemented)
 }
 
 func (ac *apUserController) Outbox(c echo.Context) error {
+	// Log the request for debugging purposes
+	fmt.Printf("Received request for Outbox: %s\n", c.Request().URL.Path)
+
 	return c.NoContent(http.StatusNotImplemented)
 }
 

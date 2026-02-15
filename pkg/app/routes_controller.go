@@ -13,6 +13,7 @@ func (a *App) registerActivityPubController(e *echo.Group) {
 
 	auc := controller.NewApUserController(a.getContainer())
 	apGroup := e.Group("/ap")
+	apGroup.Use(a.RequestingActorMiddleware)
 	apGroup.GET("/users/:username", auc.GetUser).Name = "ap-user"
 	apGroup.POST("/users/:username/inbox", auc.Inbox).Name = "ap-user-inbox"
 	apGroup.GET("/users/:username/outbox", auc.Outbox).Name = "ap-user-outbox"
