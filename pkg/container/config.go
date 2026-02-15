@@ -34,6 +34,7 @@ func (c *Config) Load() error {
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix("WT")
 
+	viper.SetDefault("host", "")
 	viper.SetDefault("bind", "[::]:8080")
 	viper.SetDefault("web_root", "")
 	viper.SetDefault("logging", true)
@@ -44,8 +45,10 @@ func (c *Config) Load() error {
 	viper.SetDefault("registration_disabled", false)
 	viper.SetDefault("socials_disabled", false)
 	viper.SetDefault("worker_delay_seconds", 60)
+	viper.SetDefault("activity_pub_active", false)
 
 	for _, envVar := range []string{
+		"host",
 		"bind",
 		"web_root",
 		"jwt_encryption_key",
@@ -59,6 +62,7 @@ func (c *Config) Load() error {
 		"registration_disabled",
 		"socials_disabled",
 		"worker_delay_seconds",
+		"activity_pub_active",
 	} {
 		if err := viper.BindEnv(envVar); err != nil {
 			return err

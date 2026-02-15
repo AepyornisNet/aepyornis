@@ -72,6 +72,7 @@ func (a *App) ConfigureWebserver() error {
 
 	publicGroup := e.Group(a.WebRoot())
 	a.apiV2Routes(publicGroup)
+	a.registerActivityPubController(publicGroup)
 
 	publicGroup.GET("/*", a.serveClientAppHandler).Name = "client-app"
 

@@ -5,6 +5,21 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func (a *App) registerActivityPubController(e *echo.Group) {
+	wfc := controller.NewWellKnownController(a.getContainer())
+	wellKnownGroup := e.Group("/.well-known")
+	wellKnownGroup.GET("/webfinger", wfc.WebFinger).Name = "webfinger"
+	wellKnownGroup.GET("/host-meta", wfc.HostMeta).Name = "host-meta"
+
+	auc := controller.NewApUserController(a.getContainer())
+	apGroup := e.Group("/ap")
+	apGroup.GET("/users/:username", auc.GetUser).Name = "ap-user"
+	apGroup.POST("/users/:username/inbox", auc.Inbox).Name = "ap-user-inbox"
+	apGroup.GET("/users/:username/outbox", auc.Outbox).Name = "ap-user-outbox"
+	apGroup.GET("/users/:username/following", auc.Following).Name = "ap-user-following"
+	apGroup.GET("/users/:username/followers", auc.Followers).Name = "ap-user-followers"
+}
+
 func (a *App) registerUserController(apiGroup *echo.Group) {
 	uc := controller.NewUserController(a.getContainer())
 
