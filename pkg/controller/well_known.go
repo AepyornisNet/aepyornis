@@ -63,7 +63,7 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 	}
 
 	user, err := model.GetUser(wc.context.GetDB(), handle)
-	if err != nil {
+	if err != nil || !user.ActivityPubEnabled() {
 		return renderApiError(c, http.StatusNotFound, fmt.Errorf("resource not found %s", res))
 	}
 

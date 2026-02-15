@@ -53,6 +53,7 @@ func (a *App) registerProfileController(apiGroup *echo.Group) {
 	profileGroup.GET("", pc.GetProfile).Name = "profile"
 	profileGroup.PUT("", pc.UpdateProfile).Name = "profile-update"
 	profileGroup.POST("/reset-api-key", pc.ResetAPIKey).Name = "profile-reset-api-key"
+	profileGroup.POST("/enable-activity-pub", pc.EnableActivityPub).Name = "profile-enable-activity-pub"
 	profileGroup.POST("/refresh-workouts", pc.RefreshWorkouts).Name = "profile-refresh-workouts"
 	profileGroup.POST("/update-version", pc.UpdateVersion).Name = "user-update-version"
 }

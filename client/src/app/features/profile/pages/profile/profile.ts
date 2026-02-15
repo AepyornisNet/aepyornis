@@ -165,6 +165,31 @@ export class Profile implements OnInit {
     }
   }
 
+  public async enableActivityPub(): Promise<void> {
+    if (!confirm(this.translate.instant('Enable ActivityPub for your account?'))) {
+      return;
+    }
+
+    this.error.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const response = await firstValueFrom(this.api.enableActivityPub());
+      if (response?.results) {
+        this.successMessage.set(
+          response.results.message ?? this.translate.instant('ActivityPub enabled'),
+        );
+        await this.loadProfile();
+      }
+    } catch (err) {
+      this.error.set(
+        this.translate.instant('Failed to enable ActivityPub: {{message}}', {
+          message: this.errorMessage(err),
+        }),
+      );
+    }
+  }
+
   public toggleAPIKeyVisibility(): void {
     this.apiKeyVisible.set(!this.apiKeyVisible());
   }

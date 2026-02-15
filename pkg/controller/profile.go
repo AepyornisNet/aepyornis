@@ -15,6 +15,7 @@ type ProfileController interface {
 	GetProfile(c echo.Context) error
 	UpdateProfile(c echo.Context) error
 	ResetAPIKey(c echo.Context) error
+	EnableActivityPub(c echo.Context) error
 	RefreshWorkouts(c echo.Context) error
 	UpdateVersion(c echo.Context) error
 }
@@ -134,6 +135,41 @@ func (pc *profileController) ResetAPIKey(c echo.Context) error {
 		Results: map[string]string{
 			"api_key": user.APIKey,
 			"message": "API key reset successfully",
+		},
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// EnableActivityPub toggles current user's ActivityPub setting and generates keys if needed
+// @Summary      Toggle ActivityPub support
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  api.Response[map[string]any]
+// @Failure      500  {object}  api.Response[any]
+// @Router       /profile/enable-activity-pub [post]
+func (pc *profileController) EnableActivityPub(c echo.Context) error {
+	user := pc.context.GetUser(c)
+
+	user.ActivityPub = !user.ActivityPub
+
+	if user.ActivityPub && (user.PublicKey == "" || user.PrivateKey == "") {
+		if err := user.GenerateActivityPubKeys(false); err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+	}
+
+	if err := user.Save(pc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	resp := dto.Response[map[string]any]{
+		Results: map[string]any{
+			"activity_pub": user.ActivityPub,
+			"message":      "ActivityPub setting enabled",
 		},
 	}
 

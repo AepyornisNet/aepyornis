@@ -2,12 +2,16 @@ package model
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/mail"
 	"time"
 
-	"github.com/cat-dealer/go-rand/v2"
+	gorand "github.com/cat-dealer/go-rand/v2"
 	"github.com/invopop/ctxi18n"
 	"github.com/invopop/ctxi18n/i18n"
 	"golang.org/x/crypto/bcrypt"
@@ -31,9 +35,11 @@ var (
 )
 
 type UserSecrets struct {
-	Password string `gorm:"type:varchar(128);not null"` // The user's password as bcrypt hash
-	Salt     string `gorm:"type:varchar(16);not null"`  // The salt used to hash the user's password
-	APIKey   string `gorm:"type:varchar(32)"`           // The user's API key
+	Password   string `gorm:"type:varchar(128);not null"` // The user's password as bcrypt hash
+	Salt       string `gorm:"type:varchar(16);not null"`  // The salt used to hash the user's password
+	APIKey     string `gorm:"type:varchar(32)"`           // The user's API key
+	PublicKey  string `gorm:"type:text"`                  // The user's public key for ActivityPub federation
+	PrivateKey string `gorm:"type:text"`                  // The user's private key for ActivityPub federation
 }
 
 type UserData struct {
@@ -44,8 +50,9 @@ type UserData struct {
 	Name      string          `form:"name" gorm:"type:varchar(64);not null" json:"name"`                     // The user's name
 	Birthdate *datatypes.Date `form:"birthdate" json:"birthdate,omitempty"`                                  // The user's birthdate
 
-	Active bool `form:"active" json:"active"` // Whether the user is active
-	Admin  bool `form:"admin" json:"admin"`   // Whether the user is an admin
+	ActivityPub bool `form:"activity_pub" json:"activity_pub"` // Whether the user has enabled ActivityPub federation
+	Active      bool `form:"active" json:"active"`             // Whether the user is active
+	Admin       bool `form:"admin" json:"admin"`               // Whether the user is an admin
 }
 
 type User struct {
@@ -82,6 +89,14 @@ func (u *User) GetTranslator() *i18n.Locale {
 
 func AnonymousUser() *User {
 	return &User{anonymous: true}
+}
+
+func (u *User) ActivityPubEnabled() bool {
+	if u == nil {
+		return false
+	}
+
+	return u.Active && u.ActivityPub
 }
 
 func (u *User) IsAnonymous() bool {
@@ -268,7 +283,43 @@ func (u *User) GenerateAPIKey(force bool) {
 		return
 	}
 
-	u.APIKey = rand.String(32, rand.GetAlphaNumericPool())
+	u.APIKey = gorand.String(32, gorand.GetAlphaNumericPool())
+}
+
+func (u *User) GenerateActivityPubKeys(force bool) error {
+	if !force && u.PublicKey != "" && u.PrivateKey != "" {
+		return nil
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return err
+	}
+
+	privatePEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})
+
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return err
+	}
+
+	publicPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: publicKeyBytes,
+	})
+
+	u.PrivateKey = string(privatePEM)
+	u.PublicKey = string(publicPEM)
+
+	return nil
 }
 
 func (u *User) GenerateSalt() {
@@ -276,7 +327,7 @@ func (u *User) GenerateSalt() {
 		return
 	}
 
-	u.Salt = rand.String(8, rand.GetAlphaNumericPool())
+	u.Salt = gorand.String(8, gorand.GetAlphaNumericPool())
 }
 
 func (u *User) Save(db *gorm.DB) error {

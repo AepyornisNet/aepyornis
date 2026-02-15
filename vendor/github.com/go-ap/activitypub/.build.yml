@@ -1,0 +1,18 @@
+image: archlinux
+packages:
+  - go
+sources:
+  - https://github.com/go-ap/activitypub
+secrets:
+  - b8faddab-aa0a-442c-96af-ead35b021146
+environment:
+  GO111MODULE: 'on'
+tasks:
+  - tests: |
+      cd activitypub && make test
+  - coverage: |
+      set -a +x
+      cd activitypub
+      git switch -C master origin/master
+      make coverage
+      go run github.com/mattn/goveralls@latest -flagname unit-tests -service=${CI_NAME} -coverprofile activitypub.coverprofile -repotokenfile ~/.coveralls.tok

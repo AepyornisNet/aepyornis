@@ -510,6 +510,13 @@ export class Api {
     );
   }
 
+  public enableActivityPub(): Observable<APIResponse<{ activity_pub: boolean; message: string }>> {
+    return this.http.post<APIResponse<{ activity_pub: boolean; message: string }>>(
+      `${this.baseUrl}/profile/enable-activity-pub`,
+      {},
+    );
+  }
+
   public refreshWorkouts(): Observable<APIResponse<{ message: string }>> {
     return this.http.post<APIResponse<{ message: string }>>(
       `${this.baseUrl}/profile/refresh-workouts`,
