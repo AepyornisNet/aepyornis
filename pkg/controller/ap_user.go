@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	vocab "github.com/go-ap/activitypub"
@@ -26,6 +27,8 @@ type ApUserController interface {
 type apUserController struct {
 	context *container.Container
 }
+
+const followersPageSize = 20
 
 func NewApUserController(c *container.Container) ApUserController {
 	return &apUserController{context: c}
@@ -177,6 +180,14 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	page := 0
+	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
+		page, err = strconv.Atoi(rawPage)
+		if err != nil || page < 1 {
+			return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
+		}
+	}
+
 	followers, err := model.ListApprovedFollowers(ac.context.GetDB(), targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -190,17 +201,54 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		items = append(items, vocab.IRI(follower.ActorIRI))
 	}
 
-	path := strings.TrimSuffix(c.Request().URL.Path, "/")
-	collection := vocab.OrderedCollection{
-		ID:           vocab.ID(fmt.Sprintf("%s://%s%s", c.Scheme(), c.Request().Host, path)),
-		Type:         vocab.OrderedCollectionType,
-		TotalItems:   uint(len(items)),
-		OrderedItems: items,
+	followersURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+		Host:           ac.context.GetConfig().Host,
+		WebRoot:        ac.context.GetConfig().WebRoot,
+		FallbackHost:   c.Request().Host,
+		FallbackScheme: "https",
+	}, targetUser.Username) + "/followers"
+
+	totalItems := len(items)
+	collection := vocab.OrderedCollectionNew(vocab.ID(followersURL))
+	collection.TotalItems = uint(totalItems)
+	collection.First = vocab.IRI(followersURL + "?page=1")
+	if totalItems > 0 {
+		totalPages := (totalItems + followersPageSize - 1) / followersPageSize
+		collection.Last = vocab.IRI(fmt.Sprintf("%s?page=%d", followersURL, totalPages))
+	}
+
+	if page == 0 {
+		resp, err := jsonld.WithContext(
+			jsonld.IRI(vocab.ActivityBaseURI),
+		).Marshal(collection)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		return renderActivityPubResponse(c, http.StatusOK, resp)
+	}
+
+	start := min((page-1)*followersPageSize, totalItems)
+	end := min(start+followersPageSize, totalItems)
+
+	pageItems := items[start:end]
+	totalPages := (totalItems + followersPageSize - 1) / followersPageSize
+
+	collectionPage := vocab.OrderedCollectionPageNew(collection)
+	collectionPage.ID = vocab.ID(fmt.Sprintf("%s?page=%d", followersURL, page))
+	collectionPage.OrderedItems = pageItems
+	collectionPage.StartIndex = uint(start)
+
+	if page > 1 {
+		collectionPage.Prev = vocab.IRI(fmt.Sprintf("%s?page=%d", followersURL, page-1))
+	}
+	if page < totalPages {
+		collectionPage.Next = vocab.IRI(fmt.Sprintf("%s?page=%d", followersURL, page+1))
 	}
 
 	resp, err := jsonld.WithContext(
 		jsonld.IRI(vocab.ActivityBaseURI),
-	).Marshal(collection)
+	).Marshal(collectionPage)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
