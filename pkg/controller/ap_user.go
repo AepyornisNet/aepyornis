@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,16 +11,20 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
+	"github.com/google/uuid"
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 type ApUserController interface {
 	GetUser(c echo.Context) error
 	Inbox(c echo.Context) error
 	Outbox(c echo.Context) error
+	OutboxItem(c echo.Context) error
+	OutboxFit(c echo.Context) error
 	Following(c echo.Context) error
 	Followers(c echo.Context) error
 }
@@ -29,6 +34,7 @@ type apUserController struct {
 }
 
 const followersPageSize = 20
+const outboxPageSize = 20
 
 func NewApUserController(c *container.Container) ApUserController {
 	return &apUserController{context: c}
@@ -162,12 +168,153 @@ func (ac *apUserController) Inbox(c echo.Context) error {
 }
 
 func (ac *apUserController) Outbox(c echo.Context) error {
-	// TODO: Implement listing of user's created activities as an OrderedCollection.
-	// TODO: Support POST to outbox for local activity creation and fan-out delivery.
-	// TODO: Return paginated OrderedCollectionPage responses for large result sets.
-	// TODO: Persist outbox activities so they can be redelivered and audited.
+	targetUser, err := ac.targetActivityPubUser(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
 
-	return c.NoContent(http.StatusNotImplemented)
+	page := 0
+	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
+		page, err = strconv.Atoi(rawPage)
+		if err != nil || page < 1 {
+			return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
+		}
+	}
+
+	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+		Host:           ac.context.GetConfig().Host,
+		WebRoot:        ac.context.GetConfig().WebRoot,
+		FallbackHost:   c.Request().Host,
+		FallbackScheme: c.Scheme(),
+	}, targetUser.Username)
+	outboxURL := actorURL + "/outbox"
+
+	total, err := model.CountAPOutboxEntriesByUser(ac.context.GetDB(), targetUser.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if page == 0 {
+		resp := map[string]any{
+			"@context":   "https://www.w3.org/ns/activitystreams",
+			"id":         outboxURL,
+			"type":       "OrderedCollection",
+			"totalItems": total,
+			"first":      outboxURL + "?page=1",
+		}
+
+		if total > 0 {
+			totalPages := (int(total) + outboxPageSize - 1) / outboxPageSize
+			resp["last"] = fmt.Sprintf("%s?page=%d", outboxURL, totalPages)
+		}
+
+		payload, err := json.Marshal(resp)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		return renderActivityPubResponse(c, http.StatusOK, payload)
+	}
+
+	offset := (page - 1) * outboxPageSize
+	entries, err := model.GetAPOutboxEntriesByUser(ac.context.GetDB(), targetUser.ID, outboxPageSize, offset)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	orderedItems := make([]any, 0, len(entries))
+	for _, entry := range entries {
+		if len(entry.Activity) == 0 {
+			continue
+		}
+
+		item := map[string]any{}
+		if err := json.Unmarshal(entry.Activity, &item); err != nil {
+			continue
+		}
+
+		orderedItems = append(orderedItems, item)
+	}
+
+	totalPages := 0
+	if total > 0 {
+		totalPages = (int(total) + outboxPageSize - 1) / outboxPageSize
+	}
+
+	resp := map[string]any{
+		"@context":     "https://www.w3.org/ns/activitystreams",
+		"id":           fmt.Sprintf("%s?page=%d", outboxURL, page),
+		"type":         "OrderedCollectionPage",
+		"partOf":       outboxURL,
+		"startIndex":   offset,
+		"orderedItems": orderedItems,
+	}
+
+	if page > 1 {
+		resp["prev"] = fmt.Sprintf("%s?page=%d", outboxURL, page-1)
+	}
+
+	if page < totalPages {
+		resp["next"] = fmt.Sprintf("%s?page=%d", outboxURL, page+1)
+	}
+
+	payload, err := json.Marshal(resp)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	return renderActivityPubResponse(c, http.StatusOK, payload)
+}
+
+func (ac *apUserController) OutboxItem(c echo.Context) error {
+	targetUser, err := ac.targetActivityPubUser(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	outboxID, err := uuid.Parse(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	entry, err := model.GetAPOutboxEntryByUUIDAndUser(ac.context.GetDB(), targetUser.ID, outboxID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	return renderActivityPubResponse(c, http.StatusOK, entry.Activity)
+}
+
+func (ac *apUserController) OutboxFit(c echo.Context) error {
+	targetUser, err := ac.targetActivityPubUser(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	outboxID, err := uuid.Parse(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	entry, err := model.GetAPOutboxEntryByUUIDAndUser(ac.context.GetDB(), targetUser.ID, outboxID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if entry.APOutboxWorkout == nil || len(entry.APOutboxWorkout.FitContent) == 0 {
+		return renderApiError(c, http.StatusNotFound, errors.New("fit file not found"))
+	}
+
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", entry.APOutboxWorkout.FitFilename))
+	return c.Blob(http.StatusOK, entry.APOutboxWorkout.FitContentType, entry.APOutboxWorkout.FitContent)
 }
 
 func (ac *apUserController) Following(c echo.Context) error {

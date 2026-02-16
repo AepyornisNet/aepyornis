@@ -17,6 +17,8 @@ require (
 	github.com/fsouza/slognil v0.4.3
 	github.com/galeone/tcx v1.0.1-0.20230114151622-8168e1e47884
 	github.com/glebarez/sqlite v1.11.0
+	github.com/go-ap/activitypub v0.0.0-20260208110334-902f6cf8c2cc
+	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/go-querystring v1.2.0
 	github.com/google/uuid v1.6.0
@@ -59,9 +61,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
-	github.com/go-ap/activitypub v0.0.0-20260208110334-902f6cf8c2cc // indirect
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966 // indirect
-	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77 // indirect
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect
 	github.com/go-openapi/jsonreference v0.21.4 // indirect
 	github.com/go-openapi/spec v0.22.3 // indirect

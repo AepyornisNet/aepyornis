@@ -17,6 +17,8 @@ func (a *App) registerActivityPubController(e *echo.Group) {
 	apGroup.GET("/users/:username", auc.GetUser).Name = "ap-user"
 	apGroup.POST("/users/:username/inbox", auc.Inbox).Name = "ap-user-inbox"
 	apGroup.GET("/users/:username/outbox", auc.Outbox).Name = "ap-user-outbox"
+	apGroup.GET("/users/:username/outbox/:id", auc.OutboxItem).Name = "ap-user-outbox-item"
+	apGroup.GET("/users/:username/outbox/:id/fit", auc.OutboxFit).Name = "ap-user-outbox-fit"
 	apGroup.GET("/users/:username/following", auc.Following).Name = "ap-user-following"
 	apGroup.GET("/users/:username/followers", auc.Followers).Name = "ap-user-followers"
 }
@@ -102,6 +104,8 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group, apiGroupPublic *ec
 	workoutGroup.PUT("/:id", wc.UpdateWorkout).Name = "workout-update"
 	workoutGroup.POST("/:id/toggle-lock", wc.ToggleWorkoutLock).Name = "workout-toggle-lock"
 	workoutGroup.POST("/:id/refresh", wc.RefreshWorkout).Name = "workout-refresh"
+	workoutGroup.POST("/:id/activity-pub/publish", wc.PublishWorkoutToActivityPub).Name = "workout-activity-pub-publish"
+	workoutGroup.DELETE("/:id/activity-pub/publish", wc.UnpublishWorkoutFromActivityPub).Name = "workout-activity-pub-unpublish"
 	workoutGroup.POST("/:id/share", wc.CreateWorkoutShare).Name = "workout-share"
 	workoutGroup.DELETE("/:id", wc.DeleteWorkout).Name = "workout-delete"
 	workoutGroup.DELETE("/:id/share", wc.DeleteWorkoutShare).Name = "workout-share-delete"

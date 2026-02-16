@@ -22,6 +22,7 @@ export type Workout = {
   updated_at: string;
   has_file: boolean;
   has_tracks: boolean;
+  activity_pub_published: boolean;
 
   // Optional map data
   address_string?: string;

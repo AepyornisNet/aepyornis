@@ -200,10 +200,12 @@ github.com/mitchellh/mapstructure
 # github.com/muktihari/fit v0.27.1
 ## explicit; go 1.24.0
 github.com/muktihari/fit/decoder
+github.com/muktihari/fit/encoder
 github.com/muktihari/fit/internal/sliceutil
 github.com/muktihari/fit/kit/datetime
 github.com/muktihari/fit/kit/hash
 github.com/muktihari/fit/kit/hash/crc16
+github.com/muktihari/fit/kit/scaleoffset
 github.com/muktihari/fit/kit/semicircles
 github.com/muktihari/fit/profile
 github.com/muktihari/fit/profile/basetype

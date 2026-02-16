@@ -11,22 +11,23 @@ import (
 
 // WorkoutResponse represents a workout in API v2 responses
 type WorkoutResponse struct {
-	ID         uint64               `json:"id"`
-	Date       time.Time            `json:"date"`
-	Dirty      bool                 `json:"dirty"`
-	Name       string               `json:"name"`
-	Notes      string               `json:"notes"`
-	Type       string               `json:"type"`
-	SubType    string               `json:"sub_type"`
-	CustomType string               `json:"custom_type,omitempty"`
-	UserID     uint64               `json:"user_id"`
-	User       *UserProfileResponse `json:"user,omitempty"`
-	PublicUUID *uuid.UUID           `json:"public_uuid,omitempty"`
-	Locked     bool                 `json:"locked"`
-	CreatedAt  time.Time            `json:"created_at"`
-	UpdatedAt  time.Time            `json:"updated_at"`
-	HasFile    bool                 `json:"has_file"`
-	HasTracks  bool                 `json:"has_tracks"`
+	ID                   uint64               `json:"id"`
+	Date                 time.Time            `json:"date"`
+	Dirty                bool                 `json:"dirty"`
+	Name                 string               `json:"name"`
+	Notes                string               `json:"notes"`
+	Type                 string               `json:"type"`
+	SubType              string               `json:"sub_type"`
+	CustomType           string               `json:"custom_type,omitempty"`
+	UserID               uint64               `json:"user_id"`
+	User                 *UserProfileResponse `json:"user,omitempty"`
+	PublicUUID           *uuid.UUID           `json:"public_uuid,omitempty"`
+	Locked               bool                 `json:"locked"`
+	CreatedAt            time.Time            `json:"created_at"`
+	UpdatedAt            time.Time            `json:"updated_at"`
+	HasFile              bool                 `json:"has_file"`
+	HasTracks            bool                 `json:"has_tracks"`
+	ActivityPubPublished bool                 `json:"activity_pub_published"`
 
 	// MapData fields (when available)
 	AddressString       string   `json:"address_string,omitempty"`
