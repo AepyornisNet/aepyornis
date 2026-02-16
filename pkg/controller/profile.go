@@ -2,8 +2,10 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
+	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
@@ -16,6 +18,8 @@ type ProfileController interface {
 	UpdateProfile(c echo.Context) error
 	ResetAPIKey(c echo.Context) error
 	EnableActivityPub(c echo.Context) error
+	ListFollowRequests(c echo.Context) error
+	AcceptFollowRequest(c echo.Context) error
 	RefreshWorkouts(c echo.Context) error
 	UpdateVersion(c echo.Context) error
 }
@@ -174,6 +178,53 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (pc *profileController) ListFollowRequests(c echo.Context) error {
+	user := pc.context.GetUser(c)
+
+	requests, err := model.ListFollowerRequests(pc.context.GetDB(), user.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	results := make([]dto.FollowRequestResponse, 0, len(requests))
+	for _, req := range requests {
+		results = append(results, dto.NewFollowRequestResponse(req))
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[[]dto.FollowRequestResponse]{
+		Results: results,
+	})
+}
+
+func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
+	user := pc.context.GetUser(c)
+
+	rawID := c.Param("id")
+	id, err := strconv.ParseUint(rawID, 10, 64)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	follower, err := model.ApproveFollowerRequest(pc.context.GetDB(), user.ID, id)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+		Host:           pc.context.GetConfig().Host,
+		WebRoot:        pc.context.GetConfig().WebRoot,
+		FallbackHost:   c.Request().Host,
+		FallbackScheme: c.Scheme(),
+	}, user.Username)
+	if err := ap.SendFollowAccept(c.Request().Context(), actorURL, user.PrivateKey, *follower); err != nil {
+		return renderApiError(c, http.StatusBadGateway, err)
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[dto.FollowRequestResponse]{
+		Results: dto.NewFollowRequestResponse(*follower),
+	})
 }
 
 // RefreshWorkouts marks all workouts for refresh

@@ -9,6 +9,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
+	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
@@ -74,30 +75,94 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 	return renderActivityPubResponse(c, http.StatusOK, resp)
 }
 
+func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, error) {
+	username := c.Param("username")
+	if username == "" {
+		return nil, errors.New("username not found")
+	}
+
+	user, err := model.GetUser(ac.context.GetDB(), username)
+	if err != nil || !user.ActivityPubEnabled() {
+		return nil, errors.New("resource not found")
+	}
+
+	return user, nil
+}
+
+func requestingActor(c echo.Context) (*vocab.Actor, error) {
+	actor, ok := c.Get(ap.RequestingActorContextKey).(*vocab.Actor)
+	if ok && actor != nil {
+		return actor, nil
+	}
+
+	return nil, errors.New("requesting actor invalid")
+}
+
+func actorInboxIRI(actor *vocab.Actor) string {
+	if actor == nil || vocab.IsNil(actor.Inbox) {
+		return ""
+	}
+
+	if vocab.IsIRI(actor.Inbox) {
+		return actor.Inbox.GetLink().String()
+	}
+
+	var iri string
+	_ = vocab.OnLink(actor.Inbox, func(link *vocab.Link) error {
+		iri = link.Href.String()
+		return nil
+	})
+
+	return iri
+}
+
 func (ac *apUserController) Inbox(c echo.Context) error {
-	var it vocab.Activity
+	targetUser, err := ac.targetActivityPubUser(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
 
 	payload, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to read request body: %w", err))
-	} else {
-		err = jsonld.Unmarshal(payload, &it)
-		if err != nil {
-			return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to parse JSON-LD: %w", err))
-		}
 	}
 
-	fmt.Println("Received activity:", it.GetType(), "from", it.Actor)
-	fmt.Println(it)
-	fmt.Println(c.Request().Header)
-	fmt.Println(string(payload))
+	var it vocab.Activity
+	err = jsonld.Unmarshal(payload, &it)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to parse JSON-LD: %w", err))
+	}
 
-	return c.NoContent(http.StatusNotImplemented)
+	actor, err := requestingActor(c)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	switch it.GetType() {
+	case vocab.FollowType:
+		_, err := model.UpsertFollowerRequest(
+			ac.context.GetDB(),
+			targetUser.ID,
+			actor.ID.String(),
+			actorInboxIRI(actor),
+		)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		return c.NoContent(http.StatusAccepted)
+	case vocab.UndoType:
+		return c.NoContent(http.StatusNotImplemented)
+	default:
+		return c.NoContent(http.StatusNotImplemented)
+	}
 }
 
 func (ac *apUserController) Outbox(c echo.Context) error {
-	// Log the request for debugging purposes
-	fmt.Printf("Received request for Outbox: %s\n", c.Request().URL.Path)
+	// TODO: Implement listing of user's created activities as an OrderedCollection.
+	// TODO: Support POST to outbox for local activity creation and fan-out delivery.
+	// TODO: Return paginated OrderedCollectionPage responses for large result sets.
+	// TODO: Persist outbox activities so they can be redelivered and audited.
 
 	return c.NoContent(http.StatusNotImplemented)
 }
@@ -107,5 +172,38 @@ func (ac *apUserController) Following(c echo.Context) error {
 }
 
 func (ac *apUserController) Followers(c echo.Context) error {
-	return c.NoContent(http.StatusNotImplemented)
+	targetUser, err := ac.targetActivityPubUser(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	followers, err := model.ListApprovedFollowers(ac.context.GetDB(), targetUser.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	items := make(vocab.ItemCollection, 0, len(followers))
+	for _, follower := range followers {
+		if follower.ActorIRI == "" {
+			continue
+		}
+		items = append(items, vocab.IRI(follower.ActorIRI))
+	}
+
+	path := strings.TrimSuffix(c.Request().URL.Path, "/")
+	collection := vocab.OrderedCollection{
+		ID:           vocab.ID(fmt.Sprintf("%s://%s%s", c.Scheme(), c.Request().Host, path)),
+		Type:         vocab.OrderedCollectionType,
+		TotalItems:   uint(len(items)),
+		OrderedItems: items,
+	}
+
+	resp, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(collection)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	return renderActivityPubResponse(c, http.StatusOK, resp)
 }

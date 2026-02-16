@@ -129,7 +129,7 @@ func newLogger(enabled bool) *slog.Logger {
 
 func newLogHandler() slog.Handler {
 	w := os.Stderr
-	if isatty.IsTerminal(w.Fd()) {
+	if !isatty.IsTerminal(w.Fd()) {
 		return tint.NewHandler(os.Stderr, &tint.Options{
 			Level:      slog.LevelDebug,
 			TimeFormat: time.Kitchen,
