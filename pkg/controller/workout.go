@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
@@ -782,41 +783,58 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 	entryURL := fmt.Sprintf("%s/outbox/%s", actorURL, entryUUID.String())
 	objectURL := entryURL + "#object"
 	fitURL := entryURL + "/fit"
+	routeImageURL := entryURL + "/route-image"
 	publishedAt := time.Now().UTC()
 	noteContent := ap.WorkoutNoteContent(workout)
 
-	note := map[string]any{
-		"@context":     "https://www.w3.org/ns/activitystreams",
-		"id":           objectURL,
-		"type":         "Note",
-		"attributedTo": actorURL,
-		"published":    publishedAt.Format(time.RFC3339),
-		"content":      noteContent,
-		"attachment": []map[string]any{{
-			"type":      "Document",
-			"name":      ap.WorkoutFITFilename(workout),
-			"mediaType": ap.FitMIMEType,
-			"url":       fitURL,
-		}},
+	attachments := vocab.ItemCollection{&vocab.Object{
+		Type:      vocab.DocumentType,
+		Name:      vocab.DefaultNaturalLanguage(ap.WorkoutFITFilename(workout)),
+		MediaType: vocab.MimeType(ap.FitMIMEType),
+		URL:       vocab.IRI(fitURL),
+	}}
+
+	routeImageContent, routeImageErr := ap.GenerateWorkoutRouteImage(workout)
+	if routeImageErr == nil && len(routeImageContent) > 0 {
+		attachments = append(attachments, &vocab.Object{
+			Type:      vocab.ImageType,
+			Name:      vocab.DefaultNaturalLanguage(ap.WorkoutRouteImageFilename(workout)),
+			MediaType: vocab.MimeType(ap.RouteImageMIMEType),
+			URL:       vocab.IRI(routeImageURL),
+		})
+	} else {
+		fmt.Println(routeImageErr)
 	}
 
-	activity := map[string]any{
-		"@context":  "https://www.w3.org/ns/activitystreams",
-		"id":        entryURL,
-		"type":      "Create",
-		"actor":     actorURL,
-		"published": publishedAt.Format(time.RFC3339),
-		"to":        []string{"https://www.w3.org/ns/activitystreams#Public"},
-		"cc":        []string{actorURL + "/followers"},
-		"object":    note,
+	note := vocab.Object{
+		ID:           vocab.ID(objectURL),
+		Type:         vocab.NoteType,
+		AttributedTo: vocab.IRI(actorURL),
+		Published:    publishedAt,
+		Content:      vocab.DefaultNaturalLanguage(noteContent),
+		Attachment:   attachments,
 	}
 
-	activityJSON, err := json.Marshal(activity)
+	activity := vocab.Activity{
+		ID:        vocab.ID(entryURL),
+		Type:      vocab.CreateType,
+		Actor:     vocab.IRI(actorURL),
+		Published: publishedAt,
+		To:        vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")},
+		CC:        vocab.ItemCollection{vocab.IRI(actorURL + "/followers")},
+		Object:    note,
+	}
+
+	activityJSON, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(activity)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	noteJSON, err := json.Marshal(note)
+	noteJSON, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(note)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -827,6 +845,12 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 		FitFilename:    ap.WorkoutFITFilename(workout),
 		FitContent:     fitContent,
 		FitContentType: ap.FitMIMEType,
+	}
+
+	if len(routeImageContent) > 0 {
+		outboxWorkout.RouteImageFilename = ap.WorkoutRouteImageFilename(workout)
+		outboxWorkout.RouteImageContent = routeImageContent
+		outboxWorkout.RouteImageContentType = ap.RouteImageMIMEType
 	}
 
 	if err := model.CreateAPOutboxWorkout(wc.context.GetDB(), outboxWorkout); err != nil {

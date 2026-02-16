@@ -19,6 +19,7 @@ func (a *App) registerActivityPubController(e *echo.Group) {
 	apGroup.GET("/users/:username/outbox", auc.Outbox).Name = "ap-user-outbox"
 	apGroup.GET("/users/:username/outbox/:id", auc.OutboxItem).Name = "ap-user-outbox-item"
 	apGroup.GET("/users/:username/outbox/:id/fit", auc.OutboxFit).Name = "ap-user-outbox-fit"
+	apGroup.GET("/users/:username/outbox/:id/route-image", auc.OutboxRouteImage).Name = "ap-user-outbox-route-image"
 	apGroup.GET("/users/:username/following", auc.Following).Name = "ap-user-following"
 	apGroup.GET("/users/:username/followers", auc.Followers).Name = "ap-user-followers"
 }

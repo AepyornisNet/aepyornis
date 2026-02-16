@@ -48,6 +48,11 @@ type APOutboxWorkout struct {
 	FitContent     []byte `gorm:"type:bytes;not null" json:"-"`
 	FitChecksum    []byte `gorm:"type:bytes;not null" json:"-"`
 	FitContentType string `gorm:"type:varchar(128);not null;default:application/vnd.ant.fit" json:"fit_content_type"`
+
+	RouteImageFilename    string `gorm:"type:varchar(255)" json:"route_image_filename,omitempty"`
+	RouteImageContent     []byte `gorm:"type:bytes" json:"-"`
+	RouteImageChecksum    []byte `gorm:"type:bytes" json:"-"`
+	RouteImageContentType string `gorm:"type:varchar(128);default:image/png" json:"route_image_content_type,omitempty"`
 }
 
 func (APOutboxEntry) TableName() string {
@@ -76,8 +81,17 @@ func (w *APOutboxWorkout) BeforeCreate(_ *gorm.DB) error {
 		w.FitChecksum = h[:]
 	}
 
+	if len(w.RouteImageContent) > 0 {
+		h := sha256.Sum256(w.RouteImageContent)
+		w.RouteImageChecksum = h[:]
+	}
+
 	if w.FitContentType == "" {
 		w.FitContentType = "application/vnd.ant.fit"
+	}
+
+	if len(w.RouteImageContent) > 0 && w.RouteImageContentType == "" {
+		w.RouteImageContentType = "image/png"
 	}
 
 	return nil

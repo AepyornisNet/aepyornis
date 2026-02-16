@@ -24,6 +24,7 @@ type ApUserController interface {
 	Outbox(c echo.Context) error
 	OutboxItem(c echo.Context) error
 	OutboxFit(c echo.Context) error
+	OutboxRouteImage(c echo.Context) error
 	Following(c echo.Context) error
 	Followers(c echo.Context) error
 }
@@ -337,6 +338,44 @@ func (ac *apUserController) OutboxFit(c echo.Context) error {
 
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", entry.APOutboxWorkout.FitFilename))
 	return c.Blob(http.StatusOK, entry.APOutboxWorkout.FitContentType, entry.APOutboxWorkout.FitContent)
+}
+
+func (ac *apUserController) OutboxRouteImage(c echo.Context) error {
+	targetUser, err := ac.targetActivityPubUser(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	outboxID, err := uuid.Parse(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	entry, err := model.GetAPOutboxEntryByUUIDAndUser(ac.context.GetDB(), targetUser.ID, outboxID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if entry.APOutboxWorkout == nil || len(entry.APOutboxWorkout.RouteImageContent) == 0 {
+		return renderApiError(c, http.StatusNotFound, errors.New("route image not found"))
+	}
+
+	filename := entry.APOutboxWorkout.RouteImageFilename
+	if filename == "" {
+		filename = "workout-route.png"
+	}
+
+	contentType := entry.APOutboxWorkout.RouteImageContentType
+	if contentType == "" {
+		contentType = ap.RouteImageMIMEType
+	}
+
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
+	return c.Blob(http.StatusOK, contentType, entry.APOutboxWorkout.RouteImageContent)
 }
 
 func (ac *apUserController) Following(c echo.Context) error {
