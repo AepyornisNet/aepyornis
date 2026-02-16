@@ -49,6 +49,35 @@ func LocalActorURL(cfg LocalActorURLConfig, username string) string {
 	return fmt.Sprintf("%s://%s%s/ap/users/%s", scheme, host, root, username)
 }
 
+func SendSignedActivity(ctx context.Context, actorURL, privateKeyPEM, inbox string, payload []byte) error {
+	if inbox == "" {
+		return fmt.Errorf("inbox is empty")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, inbox, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", ContentType)
+	req.Header.Set("Accept", ContentType)
+
+	if err := SignRequest(req, privateKeyPEM, actorURL+"#main-key"); err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("remote inbox rejected activity: %s", resp.Status)
+	}
+
+	return nil
+}
+
 func SendFollowAccept(ctx context.Context, actorURL, privateKeyPEM string, follower model.Follower) error {
 	if follower.ActorInbox == "" {
 		return fmt.Errorf("follower inbox is empty")
@@ -74,26 +103,5 @@ func SendFollowAccept(ctx context.Context, actorURL, privateKeyPEM string, follo
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, follower.ActorInbox, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", ContentType)
-	req.Header.Set("Accept", ContentType)
-
-	if err := SignRequest(req, privateKeyPEM, actorURL+"#main-key"); err != nil {
-		return err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("remote inbox rejected accept: %s", resp.Status)
-	}
-
-	return nil
+	return SendSignedActivity(ctx, actorURL, privateKeyPEM, follower.ActorInbox, payload)
 }

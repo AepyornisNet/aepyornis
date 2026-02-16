@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/alitto/pond/v2"
+	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"gorm.io/gorm"
@@ -25,6 +27,7 @@ var (
 const (
 	FileAddDelay            = -1 * time.Minute
 	workerWorkoutsBatchSize = 10
+	workerAPDeliveryBatch   = 25
 )
 
 func (a *App) BackgroundWorker() {
@@ -56,6 +59,7 @@ func (a *App) bgLoop() {
 		a.updateWorkouts(l.With("update", "workouts"))
 		a.updateRouteSegments(l.With("update", "route_segments"))
 		a.autoImports(l.With("update", "imports"))
+		a.deliverActivityPubOutbox(l.With("update", "activitypub"))
 	}
 
 	if a.workerPoolGeo.WaitingTasks() > 0 {
@@ -65,6 +69,63 @@ func (a *App) bgLoop() {
 	}
 
 	l.Info("Worker finished...")
+}
+
+func (a *App) deliverActivityPubOutbox(l *slog.Logger) {
+	pending, err := model.ListPendingAPOutboxDeliveries(a.db, workerAPDeliveryBatch)
+	if err != nil {
+		l.Error("Error fetching pending ActivityPub deliveries", "error", err)
+		return
+	}
+
+	if len(pending) == 0 {
+		return
+	}
+
+	userCache := map[uint64]*model.User{}
+
+	for _, item := range pending {
+		u, ok := userCache[item.UserID]
+		if !ok {
+			u, err = model.GetUserByID(a.db, item.UserID)
+			if err != nil {
+				l.Error("Error loading user for ActivityPub delivery", "user_id", item.UserID, "error", err)
+				continue
+			}
+
+			userCache[item.UserID] = u
+		}
+
+		if u.PrivateKey == "" {
+			l.Warn("Skipping ActivityPub delivery due to missing private key", "user_id", u.ID)
+			continue
+		}
+
+		if a.Config.Host == "" {
+			l.Warn("Skipping ActivityPub delivery due to missing host configuration", "user_id", u.ID)
+			continue
+		}
+
+		actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+			Host:           a.Config.Host,
+			WebRoot:        a.Config.WebRoot,
+			FallbackHost:   "",
+			FallbackScheme: "https",
+		}, u.Username)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		err := ap.SendSignedActivity(ctx, actorURL, u.PrivateKey, item.ActorInbox, item.Activity)
+		cancel()
+		if err != nil {
+			l.Warn("Failed to deliver ActivityPub activity", "entry_id", item.EntryID, "actor", item.ActorIRI, "error", err)
+			continue
+		}
+
+		if err := model.RecordAPOutboxDelivery(a.db, item.EntryID, item.ActorIRI); err != nil {
+			l.Error("Failed to record ActivityPub delivery", "entry_id", item.EntryID, "actor", item.ActorIRI, "error", err)
+			continue
+		}
+	}
 }
 
 func (a *App) autoImports(l *slog.Logger) {
