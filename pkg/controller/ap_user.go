@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -125,6 +124,25 @@ func actorInboxIRI(actor *vocab.Actor) string {
 	return iri
 }
 
+func isUndoFollowActivity(it vocab.Activity) bool {
+	if !vocab.UndoType.Match(it.GetType()) {
+		return false
+	}
+
+	isFollow := false
+	if err := vocab.OnActivity(it.Object, func(object *vocab.Activity) error {
+		if vocab.FollowType.Match(object.GetType()) {
+			isFollow = true
+		}
+
+		return nil
+	}); err != nil {
+		return false
+	}
+
+	return isFollow
+}
+
 func (ac *apUserController) Inbox(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
@@ -161,7 +179,16 @@ func (ac *apUserController) Inbox(c echo.Context) error {
 
 		return c.NoContent(http.StatusAccepted)
 	case vocab.UndoType:
-		return c.NoContent(http.StatusNotImplemented)
+		if !isUndoFollowActivity(it) {
+			return c.NoContent(http.StatusNotImplemented)
+		}
+
+		err := model.DeleteFollowerByActorIRI(ac.context.GetDB(), targetUser.ID, actor.ID.String())
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		return c.NoContent(http.StatusAccepted)
 	default:
 		return c.NoContent(http.StatusNotImplemented)
 	}
@@ -194,21 +221,18 @@ func (ac *apUserController) Outbox(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	collection := vocab.OrderedCollectionNew(vocab.ID(outboxURL))
+	collection.TotalItems = uint(total)
+	collection.First = vocab.IRI(outboxURL + "?page=1")
+	if total > 0 {
+		totalPages := (int(total) + outboxPageSize - 1) / outboxPageSize
+		collection.Last = vocab.IRI(fmt.Sprintf("%s?page=%d", outboxURL, totalPages))
+	}
+
 	if page == 0 {
-		resp := map[string]any{
-			"@context":   "https://www.w3.org/ns/activitystreams",
-			"id":         outboxURL,
-			"type":       "OrderedCollection",
-			"totalItems": total,
-			"first":      outboxURL + "?page=1",
-		}
-
-		if total > 0 {
-			totalPages := (int(total) + outboxPageSize - 1) / outboxPageSize
-			resp["last"] = fmt.Sprintf("%s?page=%d", outboxURL, totalPages)
-		}
-
-		payload, err := json.Marshal(resp)
+		payload, err := jsonld.WithContext(
+			jsonld.IRI(vocab.ActivityBaseURI),
+		).Marshal(collection)
 		if err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
@@ -222,18 +246,18 @@ func (ac *apUserController) Outbox(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	orderedItems := make([]any, 0, len(entries))
+	orderedItems := make(vocab.ItemCollection, 0, len(entries))
 	for _, entry := range entries {
 		if len(entry.Activity) == 0 {
 			continue
 		}
 
-		item := map[string]any{}
-		if err := json.Unmarshal(entry.Activity, &item); err != nil {
+		activity := vocab.Activity{}
+		if err := jsonld.Unmarshal(entry.Activity, &activity); err != nil {
 			continue
 		}
 
-		orderedItems = append(orderedItems, item)
+		orderedItems = append(orderedItems, activity)
 	}
 
 	totalPages := 0
@@ -241,24 +265,22 @@ func (ac *apUserController) Outbox(c echo.Context) error {
 		totalPages = (int(total) + outboxPageSize - 1) / outboxPageSize
 	}
 
-	resp := map[string]any{
-		"@context":     "https://www.w3.org/ns/activitystreams",
-		"id":           fmt.Sprintf("%s?page=%d", outboxURL, page),
-		"type":         "OrderedCollectionPage",
-		"partOf":       outboxURL,
-		"startIndex":   offset,
-		"orderedItems": orderedItems,
-	}
+	collectionPage := vocab.OrderedCollectionPageNew(collection)
+	collectionPage.ID = vocab.ID(fmt.Sprintf("%s?page=%d", outboxURL, page))
+	collectionPage.OrderedItems = orderedItems
+	collectionPage.StartIndex = uint(offset)
 
 	if page > 1 {
-		resp["prev"] = fmt.Sprintf("%s?page=%d", outboxURL, page-1)
+		collectionPage.Prev = vocab.IRI(fmt.Sprintf("%s?page=%d", outboxURL, page-1))
 	}
 
 	if page < totalPages {
-		resp["next"] = fmt.Sprintf("%s?page=%d", outboxURL, page+1)
+		collectionPage.Next = vocab.IRI(fmt.Sprintf("%s?page=%d", outboxURL, page+1))
 	}
 
-	payload, err := json.Marshal(resp)
+	payload, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(collectionPage)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

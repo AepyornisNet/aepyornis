@@ -88,3 +88,9 @@ export type AppConfig = {
   registration_disabled: boolean;
   socials_disabled: boolean;
 };
+
+export type FollowRequest = {
+  id: number;
+  actor_iri: string;
+  created_at: string;
+};

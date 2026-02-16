@@ -293,6 +293,44 @@
                 </div>
               }
 
+              @if (profile()!.activity_pub) {
+                <div class="mb-3 pb-3 border-bottom">
+                  <div class="fw-medium mb-2">{{ 'Follow requests' | translate }}</div>
+
+                  @if (loadingFollowRequests()) {
+                    <div class="small text-muted">{{ 'Loading...' | translate }}</div>
+                  } @else if (followRequests().length === 0) {
+                    <p class="small text-muted mb-0">{{ 'No pending follow requests' | translate }}</p>
+                  } @else {
+                    <div class="d-flex flex-column gap-2">
+                      @for (request of followRequests(); track request.id) {
+                        <div
+                          class="d-flex align-items-center justify-content-between gap-2 border rounded p-2"
+                        >
+                          <div class="small text-break">{{ request.actor_iri }}</div>
+                          <button
+                            class="btn btn-sm btn-outline-primary"
+                            type="button"
+                            [disabled]="acceptingRequestIds()[request.id]"
+                            (click)="acceptFollowRequest(request)"
+                          >
+                            @if (acceptingRequestIds()[request.id]) {
+                              <span
+                                aria-hidden="true"
+                                class="spinner-border spinner-border-sm"
+                                role="status"
+                              ></span>
+                            } @else {
+                              {{ 'Accept' | translate }}
+                            }
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
               <div class="d-flex align-items-center justify-content-between gap-3">
                 <div>
                   <div class="fw-medium">{{ 'Refresh all your workouts' | translate }}</div>

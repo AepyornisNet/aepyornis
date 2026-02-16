@@ -77,3 +77,7 @@ func ApproveFollowerRequest(db *gorm.DB, userID uint64, requestID uint64) (*Foll
 
 	return f, nil
 }
+
+func DeleteFollowerByActorIRI(db *gorm.DB, userID uint64, actorIRI string) error {
+	return db.Where("user_id = ? AND actor_iri = ?", userID, actorIRI).Delete(&Follower{}).Error
+}

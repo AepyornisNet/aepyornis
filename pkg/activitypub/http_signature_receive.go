@@ -1,6 +1,7 @@
 package activitypub
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/rsa"
@@ -187,6 +188,25 @@ func actorIRIFromBody(body []byte) (string, error) {
 	return "", errors.New("invalid actor value")
 }
 
+func actorIRIFromKeyID(keyID string) (string, error) {
+	if keyID == "" {
+		return "", errors.New("signature keyId is empty")
+	}
+
+	parsed, err := url.Parse(keyID)
+	if err != nil {
+		return "", err
+	}
+
+	parsed.Fragment = ""
+	actorIRI := parsed.String()
+	if actorIRI == "" {
+		return "", errors.New("invalid signature keyId")
+	}
+
+	return actorIRI, nil
+}
+
 func headerValueForSignature(req *http.Request, header string) string {
 	header = strings.ToLower(header)
 	if header == "(request-target)" {
@@ -258,9 +278,17 @@ func VerifyRequest(req *http.Request, httpClient *http.Client) (*vocab.Actor, er
 		return nil, err
 	}
 
-	actorIRI, err := actorIRIFromBody(body)
-	if err != nil {
-		return nil, err
+	actorIRI := ""
+	if len(bytes.TrimSpace(body)) > 0 {
+		actorIRI, err = actorIRIFromBody(body)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		actorIRI, err = actorIRIFromKeyID(parts.keyID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if _, err := url.ParseRequestURI(actorIRI); err != nil {
 		return nil, err

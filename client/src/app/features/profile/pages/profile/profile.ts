@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Api } from '../../../../core/services/api';
-import { FullUserProfile } from '../../../../core/types/user';
+import { FollowRequest, FullUserProfile } from '../../../../core/types/user';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -25,6 +25,9 @@ export class Profile implements OnInit {
   public readonly error = signal<string | null>(null);
   public readonly successMessage = signal<string | null>(null);
   public readonly apiKeyVisible = signal(false);
+  public readonly followRequests = signal<FollowRequest[]>([]);
+  public readonly loadingFollowRequests = signal(false);
+  public readonly acceptingRequestIds = signal<Record<number, boolean>>({});
 
   // Reactive form
   public profileForm!: FormGroup;
@@ -61,6 +64,13 @@ export class Profile implements OnInit {
       const response = await firstValueFrom(this.api.getProfile());
       if (response?.results) {
         this.profile.set(response.results);
+
+        if (response.results.activity_pub) {
+          await this.loadFollowRequests();
+        } else {
+          this.followRequests.set([]);
+        }
+
         // Update form with loaded profile data
         this.profileForm.patchValue({
           birthdate: response.results.birthdate ? response.results.birthdate.split('T')[0] : '',
@@ -187,6 +197,42 @@ export class Profile implements OnInit {
           message: this.errorMessage(err),
         }),
       );
+    }
+  }
+
+  public async loadFollowRequests(): Promise<void> {
+    this.loadingFollowRequests.set(true);
+
+    try {
+      const response = await firstValueFrom(this.api.getFollowRequests());
+      this.followRequests.set(response?.results ?? []);
+    } catch (err) {
+      this.error.set(
+        this.translate.instant('Failed to load follow requests: {{message}}', {
+          message: this.errorMessage(err),
+        }),
+      );
+    } finally {
+      this.loadingFollowRequests.set(false);
+    }
+  }
+
+  public async acceptFollowRequest(request: FollowRequest): Promise<void> {
+    this.acceptingRequestIds.update((value) => ({ ...value, [request.id]: true }));
+
+    try {
+      await firstValueFrom(this.api.acceptFollowRequest(request.id));
+      this.followRequests.update((value) => value.filter((item) => item.id !== request.id));
+      this.successMessage.set(this.translate.instant('Follow request accepted'));
+      setTimeout(() => this.successMessage.set(null), 3000);
+    } catch (err) {
+      this.error.set(
+        this.translate.instant('Failed to accept follow request: {{message}}', {
+          message: this.errorMessage(err),
+        }),
+      );
+    } finally {
+      this.acceptingRequestIds.update((value) => ({ ...value, [request.id]: false }));
     }
   }
 

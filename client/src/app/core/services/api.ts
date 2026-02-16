@@ -9,6 +9,7 @@ import {
 import {
   AppConfig,
   AppInfo,
+  FollowRequest,
   FullUserProfile,
   ProfileUpdateRequest,
   UserProfile,
@@ -513,6 +514,17 @@ export class Api {
   public enableActivityPub(): Observable<APIResponse<{ activity_pub: boolean; message: string }>> {
     return this.http.post<APIResponse<{ activity_pub: boolean; message: string }>>(
       `${this.baseUrl}/profile/enable-activity-pub`,
+      {},
+    );
+  }
+
+  public getFollowRequests(): Observable<APIResponse<FollowRequest[]>> {
+    return this.http.get<APIResponse<FollowRequest[]>>(`${this.baseUrl}/profile/follow-requests`);
+  }
+
+  public acceptFollowRequest(id: number): Observable<APIResponse<FollowRequest>> {
+    return this.http.post<APIResponse<FollowRequest>>(
+      `${this.baseUrl}/profile/follow-requests/${id}/accept`,
       {},
     );
   }
