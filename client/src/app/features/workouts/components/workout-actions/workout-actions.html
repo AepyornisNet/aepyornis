@@ -119,7 +119,7 @@
         @if (isActivityPubProcessing()) {
           <span aria-hidden="true" class="spinner-border spinner-border-sm"></span>
         } @else {
-          <app-icon size="16" name="share" />
+          <app-icon name="share" size="16" />
         }
         <span class="ms-1">
           {{ workout().activity_pub_published ? ('Unpublish' | translate) : ('Publish' | translate) }}
