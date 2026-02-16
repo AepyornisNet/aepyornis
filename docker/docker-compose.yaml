@@ -77,6 +77,7 @@ services:
     profiles:
       - do-not-use-directly
     extends: workout-tracker
+    tty: true
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
