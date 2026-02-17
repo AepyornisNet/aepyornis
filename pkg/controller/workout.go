@@ -803,6 +803,7 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 			URL:       vocab.IRI(routeImageURL),
 		})
 	} else {
+		// TODO: Use logger
 		fmt.Println(routeImageErr)
 	}
 
