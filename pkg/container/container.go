@@ -1,6 +1,8 @@
 package container
 
 import (
+	"log/slog"
+
 	"github.com/alexedwards/scs/v2"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
@@ -13,14 +15,19 @@ type Container struct {
 	config         *Config
 	version        *version.Version
 	sessionManager *scs.SessionManager
+	logger         *slog.Logger
 }
 
-func NewContainer(db *gorm.DB, config *Config, v *version.Version, sessionManager *scs.SessionManager) *Container {
+func NewContainer(db *gorm.DB, config *Config, v *version.Version, sessionManager *scs.SessionManager, logger *slog.Logger) *Container {
 	return &Container{db: db, config: config, version: v, sessionManager: sessionManager}
 }
 
 func (c *Container) GetDB() *gorm.DB {
 	return c.db
+}
+
+func (c *Container) Logger() *slog.Logger {
+	return c.logger
 }
 
 func (c *Container) GetConfig() *Config {

@@ -189,7 +189,7 @@ func (a *App) Logger() *slog.Logger {
 
 func (a *App) getContainer() *container.Container {
 	if a.container == nil {
-		a.container = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager)
+		a.container = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager, a.logger)
 	}
 
 	return a.container
