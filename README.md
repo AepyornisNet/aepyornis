@@ -20,3 +20,7 @@ Self-hosted, everything included.
 - [API](https://join-aepyornis.org/api)
 - [Screenshots](https://join-aepyornis.org/screenshots)
 - [Development](https://join-aepyornis.org/development)
+
+## Credits
+
+This project is based on [Workout Tracker](https://github.com/jovandeginste/workout-tracker)
