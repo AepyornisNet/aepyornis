@@ -134,6 +134,11 @@ func (ac *authController) Register(c echo.Context) error {
 	u.Profile.Theme = "browser"
 	u.Profile.TotalsShow = model.WorkoutTypeRunning
 	u.Profile.Language = "browser"
+	u.Profile.PreferredUnits.SpeedRaw = "km/h"
+	u.Profile.PreferredUnits.DistanceRaw = "km"
+	u.Profile.PreferredUnits.ElevationRaw = "m"
+	u.Profile.PreferredUnits.WeightRaw = "kg"
+	u.Profile.PreferredUnits.HeightRaw = "cm"
 
 	if err := u.Create(ac.context.GetDB()); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
