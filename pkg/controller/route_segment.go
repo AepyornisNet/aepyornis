@@ -10,6 +10,7 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cast"
 )
@@ -161,6 +162,10 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 
 		resp := dto.NewRouteSegmentResponse(w)
 		segments = append(segments, &resp)
+
+		if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), w.ID); err != nil {
+			rc.context.Logger().Error("Failed to enqueue route segment update", "route_segment_id", w.ID, "error", err)
+		}
 	}
 
 	resp := dto.Response[dto.RouteSegmentsDetailResponse]{
@@ -208,6 +213,10 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 	rs, err := model.AddRouteSegment(rc.context.GetDB(), "", params.Filename(), content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), rs.ID); err != nil {
+		rc.context.Logger().Error("Failed to enqueue route segment update", "route_segment_id", rs.ID, "error", err)
 	}
 
 	resp := dto.Response[dto.RouteSegmentDetailResponse]{
@@ -321,6 +330,10 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), rs.ID); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
 	resp := dto.Response[dto.RouteSegmentDetailResponse]{
 		Results: dto.NewRouteSegmentDetailResponse(rs),
 	}
@@ -371,6 +384,10 @@ func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error 
 
 	rs.Dirty = true
 	if err := rs.Save(rc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), rs.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

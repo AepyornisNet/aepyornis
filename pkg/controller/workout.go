@@ -17,6 +17,7 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
@@ -479,6 +480,10 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 
 		for _, w := range ws {
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
+
+			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context.GetGueClient(), w.ID); err != nil {
+				wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
+			}
 		}
 	}
 
@@ -730,6 +735,10 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context.GetGueClient(), workout.ID); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
 	resp := dto.Response[map[string]string]{
 		Results: map[string]string{"message": "Workout will be refreshed soon"},
 	}
@@ -873,6 +882,10 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 
 	if err := model.CreateAPOutboxEntry(wc.context.GetDB(), entry); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if err := worker.EnqueueAPDeliveriesForEntry(c.Request().Context(), wc.context.GetGueClient(), wc.context.GetDB(), entry.ID); err != nil {
+		wc.context.Logger().Error("Failed to enqueue ActivityPub deliveries", "entry_id", entry.ID, "error", err)
 	}
 
 	return c.JSON(http.StatusOK, dto.Response[map[string]any]{

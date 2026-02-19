@@ -1,0 +1,518 @@
+package gue
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"runtime"
+	"sync"
+	"time"
+
+	"github.com/cappuccinotm/slogx"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	noopM "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/trace"
+	noopT "go.opentelemetry.io/otel/trace/noop"
+	"golang.org/x/sync/errgroup"
+)
+
+// PollStrategy determines how the DB is queried for the next job to work on
+type PollStrategy string
+
+const (
+	defaultPollInterval = 5 * time.Second
+	defaultQueueName    = ""
+
+	defaultPanicStackBufSize = 1024
+
+	// PriorityPollStrategy cares about the priority first to lock top priority jobs first even if there are available
+	// ones that should be executed earlier but with lower priority.
+	PriorityPollStrategy PollStrategy = "OrderByPriority"
+	// RunAtPollStrategy cares about the scheduled time first to lock earliest to execute jobs first even if there
+	// are ones with a higher priority scheduled to a later time but already eligible for execution
+	RunAtPollStrategy PollStrategy = "OrderByRunAtPriority"
+)
+
+// WorkFunc is the handler function that performs the Job. If an error is returned, the Job
+// is either re-enqueued with the given backoff or is discarded based on the worker backoff strategy
+// and returned error.
+//
+// Modifying Job fields and calling any methods that are modifying its state within the handler may lead to undefined
+// behaviour. Please never do this.
+type WorkFunc func(ctx context.Context, j *Job) error
+
+// HookFunc is a function that may react to a Job lifecycle events. All the callbacks are being executed synchronously,
+// so be careful with the long-running locking operations. Hooks do not return an error, therefore they can not and
+// must not be used to affect the Job execution flow, e.g. cancel it - this is the WorkFunc responsibility.
+// Modifying Job fields and calling any methods that are modifying its state within hooks may lead to undefined
+// behaviour. Please never do this.
+//
+// Depending on the event err parameter may be empty or not - check the event description for its meaning.
+type HookFunc func(ctx context.Context, j *Job, err error)
+
+// WorkMap is a map of Job names to WorkFuncs that are used to perform Jobs of a
+// given type.
+type WorkMap map[string]WorkFunc
+
+// pollFunc is a function that queries the DB for the next job to work on
+type pollFunc func(context.Context, string) (*Job, error)
+
+// Worker is a single worker that pulls jobs off the specified queue. If no Job
+// is found, the Worker will sleep for interval seconds.
+type Worker struct {
+	wm           WorkMap
+	interval     time.Duration
+	queue        string
+	c            *Client
+	id           string
+	logger       *slog.Logger
+	mu           sync.Mutex
+	running      bool
+	pollStrategy PollStrategy
+	pollFunc     pollFunc
+	jobTTL       time.Duration
+	ctxFactory   func(context.Context) context.Context
+
+	tracer trace.Tracer
+	meter  metric.Meter
+
+	unknownJobTypeWF WorkFunc
+
+	hooksJobLocked      []HookFunc
+	hooksUnknownJobType []HookFunc
+	hooksJobDone        []HookFunc
+	hooksJobUndone      []HookFunc
+
+	mWorked   metric.Int64Counter
+	mDuration metric.Int64Histogram
+
+	panicStackBufSize int
+	spanWorkOneNoJob  bool
+}
+
+// NewWorker returns a Worker that fetches Jobs from the Client and executes
+// them using WorkMap. If the type of Job is not registered in the WorkMap, it's
+// considered an error and the job is re-enqueued with a backoff.
+//
+// Worker defaults to a poll interval of 5 seconds, which can be overridden by
+// WithWorkerPollInterval option.
+// The default queue is the nameless queue "", which can be overridden by
+// WithWorkerQueue option.
+func NewWorker(c *Client, wm WorkMap, options ...WorkerOption) (*Worker, error) {
+	w := Worker{
+		interval:     defaultPollInterval,
+		queue:        defaultQueueName,
+		c:            c,
+		id:           RandomStringID(),
+		wm:           wm,
+		logger:       slog.New(slogx.NopHandler()),
+		pollStrategy: PriorityPollStrategy,
+		tracer:       noopT.NewTracerProvider().Tracer("noop"),
+		meter:        noopM.NewMeterProvider().Meter("noop"),
+
+		panicStackBufSize: defaultPanicStackBufSize,
+	}
+
+	for _, option := range options {
+		option(&w)
+	}
+
+	if w.ctxFactory == nil {
+		w.ctxFactory = func(c context.Context) context.Context { return c }
+	}
+
+	switch w.pollStrategy {
+	case RunAtPollStrategy:
+		w.pollFunc = w.c.LockNextScheduledJob
+	default:
+		w.pollFunc = w.c.LockJob
+	}
+
+	w.logger = w.logger.With(slog.String("worker-id", w.id))
+
+	return &w, w.initMetrics()
+}
+
+// Run pulls jobs off the Worker's queue at its interval. This function does
+// not run in its own goroutine, so it’s possible to wait for completion. Use
+// context cancellation to shut it down.
+func (w *Worker) Run(ctx context.Context) error {
+	return RunLock(ctx, w.runLoop, &w.mu, &w.running, w.id)
+}
+
+// runLoop pulls jobs off the Worker's queue at its interval.
+func (w *Worker) runLoop(ctx context.Context) error {
+	defer w.logger.InfoContext(ctx, "Worker finished")
+
+	timer := time.NewTimer(w.interval)
+	defer timer.Stop()
+
+	for {
+		// Try to work a job
+		if w.WorkOne(w.ctxFactory(ctx)) {
+			// Since we just did work, non-blocking check whether we should exit
+			select {
+			case <-ctx.Done():
+				return nil
+			default:
+				continue
+			}
+		}
+
+		// Reset or create the timer; time.After is leaky
+		// on context cancellation since we can’t stop it.
+		timer.Reset(w.interval)
+
+		// No work found, block until exit or timer expires
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-timer.C:
+			continue
+		}
+	}
+}
+
+// WorkOne tries to consume single message from the queue.
+func (w *Worker) WorkOne(ctx context.Context) (didWork bool) {
+	ctx, span := w.tracer.Start(ctx, "Worker.WorkOne")
+	// worker option is set to generate spans even when no job is found - let it be
+	if w.spanWorkOneNoJob {
+		defer span.End()
+	}
+
+	j, err := w.pollFunc(ctx, w.queue)
+	if err != nil {
+		span.RecordError(fmt.Errorf("worker failed to lock a job: %w", err))
+		w.mWorked.Add(ctx, 1, metric.WithAttributes(attrJobType.String(""), attrSuccess.Bool(false)))
+		w.logger.ErrorContext(ctx, "Worker failed to lock a job", slogx.Error(err))
+
+		for _, hook := range w.hooksJobLocked {
+			hook(ctx, nil, err)
+		}
+		return
+	}
+	if j == nil {
+		return // no job was available
+	}
+
+	// at this point we have a job, so we need to ensure that span will be generated
+	if !w.spanWorkOneNoJob {
+		defer span.End()
+	}
+
+	processingStartedAt := time.Now()
+	span.SetAttributes(
+		attribute.String("job_id", j.ID.String()),
+		attribute.String("job_queue", j.Queue),
+		attribute.String("job_type", j.Type),
+	)
+
+	logger := w.logger.With(slog.String("job-id", j.ID.String()), slog.String("job-type", j.Type))
+
+	defer w.markJobDone(ctx, j, processingStartedAt, span, logger)
+	defer w.recoverPanic(ctx, j, logger)
+
+	for _, hook := range w.hooksJobLocked {
+		hook(ctx, j, nil)
+	}
+
+	didWork = true
+
+	wf, ok := w.wm[j.Type]
+	if !ok {
+		if w.unknownJobTypeWF == nil {
+			w.handleUnknownJobType(ctx, j, span, logger)
+			return
+		}
+
+		wf = w.unknownJobTypeWF
+	}
+
+	handlerCtx := ctx
+	cancel := context.CancelFunc(func() {})
+	if w.jobTTL > 0 {
+		handlerCtx, cancel = context.WithTimeout(ctx, w.jobTTL)
+	}
+	defer cancel()
+
+	if err = wf(handlerCtx, j); err != nil {
+		w.mWorked.Add(ctx, 1, metric.WithAttributes(attrJobType.String(j.Type), attrSuccess.Bool(false)))
+
+		for _, hook := range w.hooksJobDone {
+			hook(ctx, j, err)
+		}
+
+		if jErr := j.Error(ctx, err); jErr != nil {
+			span.RecordError(fmt.Errorf("failed to mark job as error: %w", err))
+			logger.ErrorContext(ctx, "Got an error on setting an error to an errored job", slogx.Error(jErr), slog.Any("job-error", err))
+		}
+
+		return
+	}
+
+	for _, hook := range w.hooksJobDone {
+		hook(ctx, j, nil)
+	}
+
+	err = j.Delete(ctx)
+	if err != nil {
+		span.RecordError(fmt.Errorf("failed to delete finished job: %w", err))
+		logger.ErrorContext(ctx, "Got an error on deleting a job", slogx.Error(err))
+	}
+
+	w.mWorked.Add(ctx, 1, metric.WithAttributes(attrJobType.String(j.Type), attrSuccess.Bool(err == nil)))
+	logger.DebugContext(ctx, "Job finished")
+	return
+}
+
+func (w *Worker) handleUnknownJobType(ctx context.Context, j *Job, span trace.Span, logger *slog.Logger) {
+	w.mWorked.Add(ctx, 1, metric.WithAttributes(attrJobType.String(j.Type), attrSuccess.Bool(false)))
+
+	span.RecordError(fmt.Errorf("job with unknown type: %q", j.Type))
+	logger.ErrorContext(ctx, "Got a job with unknown type")
+
+	errUnknownType := fmt.Errorf("worker[id=%s] unknown job type: %q", w.id, j.Type)
+	if err := j.Error(ctx, errUnknownType); err != nil {
+		span.RecordError(fmt.Errorf("failed to mark job as error: %w", err))
+		logger.ErrorContext(ctx, "Got an error on setting an error to unknown job", slogx.Error(err))
+	}
+
+	for _, hook := range w.hooksUnknownJobType {
+		hook(ctx, j, errUnknownType)
+	}
+}
+
+func (w *Worker) initMetrics() (err error) {
+	if w.mWorked, err = w.meter.Int64Counter(
+		"gue_worker_jobs_worked",
+		metric.WithDescription("Number of jobs processed"),
+		metric.WithUnit("1"),
+	); err != nil {
+		return fmt.Errorf("could not register mWorked metric: %w", err)
+	}
+
+	if w.mDuration, err = w.meter.Int64Histogram(
+		"gue_worker_jobs_duration",
+		metric.WithDescription("Duration of the single locked job to be processed with all the hooks"),
+		metric.WithUnit("ms"),
+	); err != nil {
+		return fmt.Errorf("could not register mDuration metric: %w", err)
+	}
+
+	return nil
+}
+
+func (w *Worker) markJobDone(ctx context.Context, j *Job, processingStartedAt time.Time, span trace.Span, logger *slog.Logger) {
+	if err := j.Done(ctx); err != nil {
+		span.RecordError(fmt.Errorf("failed to mark job as done: %w", err))
+		logger.ErrorContext(ctx, "Failed to mark job as done", slogx.Error(err))
+
+		// let user handle critical job failure
+		for _, hook := range w.hooksJobUndone {
+			hook(ctx, j, err)
+		}
+	}
+
+	w.mDuration.Record(
+		ctx,
+		time.Since(processingStartedAt).Milliseconds(),
+		metric.WithAttributes(attrJobType.String(j.Type)),
+	)
+}
+
+// recoverPanic tries to handle panics in job execution.
+// A stacktrace is stored into Job last_error.
+func (w *Worker) recoverPanic(ctx context.Context, j *Job, logger *slog.Logger) {
+	r := recover()
+	if r == nil {
+		return
+	}
+
+	defer w.recoverPanicRecovery(ctx, j, logger)
+
+	ctx, span := w.tracer.Start(ctx, "Worker.recoverPanic")
+	defer span.End()
+
+	stacktrace := buildStackTrace(ctx, r, w.panicStackBufSize, logger)
+
+	w.mWorked.Add(ctx, 1, metric.WithAttributes(attrJobType.String(j.Type), attrSuccess.Bool(false)))
+	span.RecordError(ErrJobPanicked, trace.WithAttributes(attribute.String("stacktrace", stacktrace)))
+	logger.ErrorContext(ctx, "Job panicked", slog.String("stacktrace", stacktrace))
+
+	errPanic := fmt.Errorf("%w:\n%s", ErrJobPanicked, stacktrace)
+	for _, hook := range w.hooksJobDone {
+		hook(ctx, j, errPanic)
+	}
+
+	// record an error on the job with panic message and stacktrace
+	if err := j.Error(ctx, errPanic); err != nil {
+		span.RecordError(fmt.Errorf("failed to mark panicked job as error: %w", err))
+		logger.ErrorContext(ctx, "Got an error on setting an error to a panicked job", slogx.Error(err))
+	}
+}
+
+// recoverPanicRecovery tries to handle panics in hook job done thrown in the process of panicked job recovery.
+// A stacktrace is stored into Job last_error.
+func (w *Worker) recoverPanicRecovery(ctx context.Context, j *Job, logger *slog.Logger) {
+	r := recover()
+	if r == nil {
+		return
+	}
+
+	ctx, span := w.tracer.Start(ctx, "Worker.recoverPanicRecovery")
+	defer span.End()
+
+	stacktrace := buildStackTrace(ctx, r, w.panicStackBufSize, logger)
+
+	span.RecordError(ErrHookJobDonePanicked, trace.WithAttributes(attribute.String("stacktrace", stacktrace)))
+	logger.ErrorContext(ctx, "Job panicked during the panic recovery", slog.String("stacktrace", stacktrace))
+
+	errPanic := fmt.Errorf("%w (%w):\n%s", ErrHookJobDonePanicked, ErrJobPanicked, stacktrace)
+	// record an error on the job with panic message and stacktrace
+	if err := j.Error(ctx, errPanic); err != nil {
+		span.RecordError(fmt.Errorf("failed to mark panicked job (hook job done) as error: %w", err))
+		logger.ErrorContext(ctx, "Got an error on setting an error to a panicked job (hook job done)", slogx.Error(err))
+	}
+}
+
+func buildStackTrace(ctx context.Context, r any, bufSize int, logger *slog.Logger) string {
+	stackBuf := make([]byte, bufSize)
+	n := runtime.Stack(stackBuf, false)
+
+	buf := new(bytes.Buffer)
+	_, printRErr := fmt.Fprintf(buf, "%v\n", r)
+	_, printStackErr := fmt.Fprintln(buf, string(stackBuf[:n]))
+	_, printEllipsisErr := fmt.Fprintln(buf, "[...]")
+
+	if err := errors.Join(printRErr, printStackErr, printEllipsisErr); err != nil {
+		logger.ErrorContext(ctx, "Could not build panicked job stacktrace", slogx.Error(err), slog.String("runtime-stack", string(stackBuf[:n])))
+	}
+
+	return buf.String()
+}
+
+// WorkerPool is a pool of Workers, each working jobs from the queue
+// at the specified interval using the WorkMap.
+type WorkerPool struct {
+	wm           WorkMap
+	interval     time.Duration
+	queue        string
+	c            *Client
+	workers      []*Worker
+	id           string
+	logger       *slog.Logger
+	mu           sync.Mutex
+	running      bool
+	pollStrategy PollStrategy
+	jobTTL       time.Duration
+	ctxFactory   func(context.Context) context.Context
+
+	tracer trace.Tracer
+	meter  metric.Meter
+
+	unknownJobTypeWF WorkFunc
+
+	hooksJobLocked      []HookFunc
+	hooksUnknownJobType []HookFunc
+	hooksJobDone        []HookFunc
+	hooksJobUndone      []HookFunc
+
+	panicStackBufSize int
+	spanWorkOneNoJob  bool
+}
+
+// NewWorkerPool creates a new WorkerPool with count workers using the Client c.
+//
+// Each Worker in the pool default to a poll interval of 5 seconds, which can be
+// overridden by WithPoolPollInterval option. The default queue is the
+// nameless queue "", which can be overridden by WithPoolQueue option.
+func NewWorkerPool(c *Client, wm WorkMap, poolSize int, options ...WorkerPoolOption) (*WorkerPool, error) {
+	w := WorkerPool{
+		wm:           wm,
+		interval:     defaultPollInterval,
+		queue:        defaultQueueName,
+		c:            c,
+		id:           RandomStringID(),
+		workers:      make([]*Worker, poolSize),
+		logger:       slog.New(slogx.NopHandler()),
+		pollStrategy: PriorityPollStrategy,
+		tracer:       noopT.NewTracerProvider().Tracer("noop"),
+		meter:        noopM.NewMeterProvider().Meter("noop"),
+
+		panicStackBufSize: defaultPanicStackBufSize,
+	}
+
+	for _, option := range options {
+		option(&w)
+	}
+
+	if w.ctxFactory == nil {
+		w.ctxFactory = func(c context.Context) context.Context { return c }
+	}
+
+	w.logger = w.logger.With(slog.String("worker-pool-id", w.id))
+
+	var err error
+	for i := range w.workers {
+		w.workers[i], err = NewWorker(
+			w.c,
+			w.wm,
+			WithWorkerPollInterval(w.interval),
+			WithWorkerQueue(w.queue),
+			WithWorkerID(fmt.Sprintf("%s/worker-%d", w.id, i)),
+			WithWorkerLogger(w.logger),
+			WithWorkerPollStrategy(w.pollStrategy),
+			WithWorkerTracer(w.tracer),
+			WithWorkerMeter(w.meter),
+			WithWorkerHooksJobLocked(w.hooksJobLocked...),
+			WithWorkerHooksUnknownJobType(w.hooksUnknownJobType...),
+			WithWorkerHooksJobDone(w.hooksJobDone...),
+			WithWorkerHooksJobUndone(w.hooksJobUndone...),
+			WithWorkerPanicStackBufSize(w.panicStackBufSize),
+			WithWorkerSpanWorkOneNoJob(w.spanWorkOneNoJob),
+			WithWorkerJobTTL(w.jobTTL),
+			WithWorkerUnknownJobWorkFunc(w.unknownJobTypeWF),
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("could not init worker instance: %w", err)
+		}
+
+		w.workers[i].ctxFactory = w.ctxFactory
+	}
+
+	return &w, nil
+}
+
+// Run runs all the Workers in the WorkerPool in own goroutines.
+// Run blocks until all workers exit. Use context cancellation for
+// shutdown.
+func (w *WorkerPool) Run(ctx context.Context) error {
+	return RunLock(ctx, w.runGroup, &w.mu, &w.running, w.id)
+}
+
+// WorkOne tries to consume single message from the queue.
+func (w *WorkerPool) WorkOne(ctx context.Context) (didWork bool) {
+	return w.workers[0].WorkOne(ctx)
+}
+
+// runGroup starts all the Workers in the WorkerPool in own goroutines
+// managed by errgroup.Group.
+func (w *WorkerPool) runGroup(ctx context.Context) error {
+	defer w.logger.InfoContext(ctx, "Worker pool finished")
+
+	grp, ctx := errgroup.WithContext(ctx)
+	for i := range w.workers {
+		idx := i
+		worker := w.workers[idx]
+		grp.Go(func() error {
+			return worker.Run(setWorkerIdx(ctx, idx))
+		})
+	}
+
+	return grp.Wait()
+}
