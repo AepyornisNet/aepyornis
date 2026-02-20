@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -9,12 +10,17 @@ import (
 	"strings"
 	"time"
 
+	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
+	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cast"
+	"gorm.io/gorm"
 )
 
 type WorkoutController interface {
@@ -29,6 +35,8 @@ type WorkoutController interface {
 	UpdateWorkout(c echo.Context) error
 	ToggleWorkoutLock(c echo.Context) error
 	RefreshWorkout(c echo.Context) error
+	PublishWorkoutToActivityPub(c echo.Context) error
+	UnpublishWorkoutFromActivityPub(c echo.Context) error
 	CreateWorkoutShare(c echo.Context) error
 	DeleteWorkoutShare(c echo.Context) error
 	DownloadWorkout(c echo.Context) error
@@ -45,6 +53,25 @@ var _ WorkoutController = (*workoutController)(nil)
 
 func NewWorkoutController(c *container.Container) WorkoutController {
 	return &workoutController{context: c}
+}
+
+func workoutIDs(ws []*model.Workout) []uint64 {
+	ids := make([]uint64, 0, len(ws))
+	for _, w := range ws {
+		if w == nil {
+			continue
+		}
+
+		ids = append(ids, w.ID)
+	}
+
+	return ids
+}
+
+func applyPublishedFlags(results []dto.WorkoutResponse, published map[uint64]bool) {
+	for i := range results {
+		results[i].ActivityPubPublished = published[results[i].ID]
+	}
 }
 
 func (wc *workoutController) getWorkout(c echo.Context) (*model.Workout, error) {
@@ -70,9 +97,9 @@ func (wc *workoutController) getWorkout(c echo.Context) (*model.Workout, error) 
 // @Param        page      query     int    false "Page"
 // @Param        per_page  query     int    false "Per page"
 // @Produce      json
-// @Success      200  {object}  api.PaginatedResponse[dto.WorkoutResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.PaginatedResponse[dto.WorkoutResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts [get]
 func (wc *workoutController) GetWorkouts(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -105,6 +132,10 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 	}
 
 	results := dto.NewWorkoutsResponse(workouts)
+	published, err := model.APOutboxPublishedMap(wc.context.GetDB(), user.ID, workoutIDs(workouts))
+	if err == nil {
+		applyPublishedFlags(results, published)
+	}
 
 	resp := dto.PaginatedResponse[dto.WorkoutResponse]{
 		Results:    results,
@@ -125,9 +156,9 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path      int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutDetailResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutDetailResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id} [get]
 func (wc *workoutController) GetWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -156,6 +187,10 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 	}
 
 	result := dto.NewWorkoutDetailResponse(&workout, records)
+	published, err := model.APOutboxPublishedMap(wc.context.GetDB(), user.ID, []uint64{workout.ID})
+	if err == nil {
+		result.ActivityPubPublished = published[workout.ID]
+	}
 
 	resp := dto.Response[dto.WorkoutDetailResponse]{
 		Results: result,
@@ -174,9 +209,9 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 // @Param        unit   query  string  false "Unit"
 // @Param        count  query  number  false "Count"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutBreakdownResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutBreakdownResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/breakdown [get]
 func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -249,9 +284,9 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 // @Param        start_index  query  int  false "Start point index (inclusive)"
 // @Param        end_index    query  int  false "End point index (inclusive)"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutRangeStatsResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutRangeStatsResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/stats-range [get]
 func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -314,9 +349,9 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[[]api.CalendarEventResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]dto.CalendarEventResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/calendar [get]
 func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -393,9 +428,9 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 // @Accept       multipart/form-data
 // @Accept       json
 // @Produce      json
-// @Success      201  {object}  api.Response[dto.WorkoutResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      201  {object}  dto.Response[dto.WorkoutResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts [post]
 func (wc *workoutController) CreateWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -445,6 +480,10 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 
 		for _, w := range ws {
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
+
+			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, w.ID); err != nil {
+				wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
+			}
 		}
 	}
 
@@ -510,8 +549,8 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 // @Produce      json
 // @Param        limit   query  int false "Limit"
 // @Param        offset  query  int false "Offset"
-// @Success      200  {object}  api.Response[[]api.WorkoutResponse]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]dto.WorkoutResponse]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/recent [get]
 func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	limit := 20
@@ -554,14 +593,20 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/{id} [delete]
 func (wc *workoutController) DeleteWorkout(c echo.Context) error {
+	user := wc.context.GetUser(c)
+
 	workout, err := wc.getWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if err := model.DeleteAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	if err := workout.Delete(wc.context.GetDB()); err != nil {
@@ -584,9 +629,9 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id} [put]
 func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -637,9 +682,9 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutResponse]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      403  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutResponse]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      403  {object}  dto.Response[any]
 // @Router       /workouts/{id}/toggle-lock [post]
 func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -675,8 +720,8 @@ func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/refresh [post]
 func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -690,11 +735,202 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
 	resp := dto.Response[map[string]string]{
 		Results: map[string]string{"message": "Workout will be refreshed soon"},
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// PublishWorkoutToActivityPub publishes a workout as an ActivityPub outbox entry
+// @Summary      Publish workout to ActivityPub
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Workout ID"
+// @Produce      json
+// @Success      200  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      409  {object}  dto.Response[any]
+// @Router       /workouts/{id}/activity-pub/publish [post]
+func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
+	user := wc.context.GetUser(c)
+	if !user.ActivityPubEnabled() {
+		return renderApiError(c, http.StatusBadRequest, errors.New("activitypub is not enabled"))
+	}
+
+	workout, err := wc.getWorkout(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if _, err := model.GetAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err == nil {
+		return renderApiError(c, http.StatusConflict, errors.New("workout is already published"))
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	fitContent, err := ap.GenerateWorkoutFIT(workout)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	entryUUID := uuid.New()
+	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+		Host:           wc.context.GetConfig().Host,
+		WebRoot:        wc.context.GetConfig().WebRoot,
+		FallbackHost:   c.Request().Host,
+		FallbackScheme: c.Scheme(),
+	}, user.Username)
+
+	entryURL := fmt.Sprintf("%s/outbox/%s", actorURL, entryUUID.String())
+	objectURL := entryURL + "#object"
+	fitURL := entryURL + "/fit"
+	routeImageURL := entryURL + "/route-image"
+	publishedAt := time.Now().UTC()
+	noteContent := ap.WorkoutNoteContent(workout)
+
+	attachments := vocab.ItemCollection{&vocab.Object{
+		Type:      vocab.DocumentType,
+		Name:      vocab.DefaultNaturalLanguage(ap.WorkoutFITFilename(workout)),
+		MediaType: vocab.MimeType(ap.FitMIMEType),
+		URL:       vocab.IRI(fitURL),
+	}}
+
+	routeImageContent, routeImageErr := ap.GenerateWorkoutRouteImage(workout)
+	if routeImageErr == nil && len(routeImageContent) > 0 {
+		attachments = append(attachments, &vocab.Object{
+			Type:      vocab.ImageType,
+			Name:      vocab.DefaultNaturalLanguage(ap.WorkoutRouteImageFilename(workout)),
+			MediaType: vocab.MimeType(ap.RouteImageMIMEType),
+			URL:       vocab.IRI(routeImageURL),
+		})
+	} else {
+		// TODO: Use logger
+		fmt.Println(routeImageErr)
+	}
+
+	note := vocab.Object{
+		ID:           vocab.ID(objectURL),
+		Type:         vocab.NoteType,
+		AttributedTo: vocab.IRI(actorURL),
+		Published:    publishedAt,
+		Content:      vocab.DefaultNaturalLanguage(noteContent),
+		Attachment:   attachments,
+	}
+
+	activity := vocab.Activity{
+		ID:        vocab.ID(entryURL),
+		Type:      vocab.CreateType,
+		Actor:     vocab.IRI(actorURL),
+		Published: publishedAt,
+		To:        vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")},
+		CC:        vocab.ItemCollection{vocab.IRI(actorURL + "/followers")},
+		Object:    note,
+	}
+
+	activityJSON, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(activity)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	noteJSON, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(note)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	outboxWorkout := &model.APOutboxWorkout{
+		UserID:         user.ID,
+		WorkoutID:      workout.ID,
+		FitFilename:    ap.WorkoutFITFilename(workout),
+		FitContent:     fitContent,
+		FitContentType: ap.FitMIMEType,
+	}
+
+	if len(routeImageContent) > 0 {
+		outboxWorkout.RouteImageFilename = ap.WorkoutRouteImageFilename(workout)
+		outboxWorkout.RouteImageContent = routeImageContent
+		outboxWorkout.RouteImageContentType = ap.RouteImageMIMEType
+	}
+
+	if err := model.CreateAPOutboxWorkout(wc.context.GetDB(), outboxWorkout); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	entry := &model.APOutboxEntry{
+		PublicUUID:        entryUUID,
+		UserID:            user.ID,
+		APOutboxWorkoutID: &outboxWorkout.ID,
+		Kind:              model.APOutboxWorkoutKind,
+		ActivityID:        entryURL,
+		ObjectID:          objectURL,
+		Activity:          activityJSON,
+		Payload:           noteJSON,
+		NoteText:          noteContent,
+		PublishedAt:       publishedAt,
+	}
+
+	if err := model.CreateAPOutboxEntry(wc.context.GetDB(), entry); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if err := worker.EnqueueAPDeliveriesForEntry(c.Request().Context(), wc.context, entry.ID); err != nil {
+		wc.context.Logger().Error("Failed to enqueue ActivityPub deliveries", "entry_id", entry.ID, "error", err)
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[map[string]any]{
+		Results: map[string]any{
+			"message":                "workout published",
+			"activity_pub_published": true,
+			"outbox_id":              entry.PublicUUID.String(),
+		},
+	})
+}
+
+// UnpublishWorkoutFromActivityPub removes a workout ActivityPub outbox entry
+// @Summary      Unpublish workout from ActivityPub
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Workout ID"
+// @Produce      json
+// @Success      200  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/activity-pub/publish [delete]
+func (wc *workoutController) UnpublishWorkoutFromActivityPub(c echo.Context) error {
+	user := wc.context.GetUser(c)
+
+	workout, err := wc.getWorkout(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if err := model.DeleteAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[map[string]any]{
+		Results: map[string]any{
+			"message":                "workout unpublished",
+			"activity_pub_published": false,
+		},
+	})
 }
 
 // CreateWorkoutShare generates or regenerates a public share link for a workout
@@ -705,8 +941,8 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/share [post]
 func (wc *workoutController) CreateWorkoutShare(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -740,8 +976,8 @@ func (wc *workoutController) CreateWorkoutShare(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/share [delete]
 func (wc *workoutController) DeleteWorkoutShare(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -771,7 +1007,7 @@ func (wc *workoutController) DeleteWorkoutShare(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      octet-stream
 // @Success      200  {string}  string  "binary workout file"
-// @Failure      404  {object}  api.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/download [get]
 func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -798,9 +1034,9 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 // @Tags         workouts
 // @Param        uuid  path  string  true  "Public UUID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutDetailResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutDetailResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/public/{uuid} [get]
 func (wc *workoutController) GetPublicWorkout(c echo.Context) error {
 	uuidParam := c.Param("uuid")
@@ -835,9 +1071,9 @@ func (wc *workoutController) GetPublicWorkout(c echo.Context) error {
 // @Param        unit   query  string  false "Unit"
 // @Param        count  query  number  false "Count"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutBreakdownResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutBreakdownResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/public/{uuid}/breakdown [get]
 func (wc *workoutController) GetPublicWorkoutBreakdown(c echo.Context) error {
 	uuidParam := c.Param("uuid")
@@ -909,9 +1145,9 @@ func (wc *workoutController) GetPublicWorkoutBreakdown(c echo.Context) error {
 // @Param        start_index  query  int  false "Start point index (inclusive)"
 // @Param        end_index    query  int  false "End point index (inclusive)"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutRangeStatsResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutRangeStatsResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/public/{uuid}/stats-range [get]
 func (wc *workoutController) GetPublicWorkoutRangeStats(c echo.Context) error {
 	uuidParam := c.Param("uuid")

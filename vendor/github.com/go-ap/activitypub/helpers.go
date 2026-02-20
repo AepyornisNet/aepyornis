@@ -1,0 +1,329 @@
+package activitypub
+
+import (
+	"fmt"
+	"time"
+)
+
+// WithLinkFn represents a function type that can be used as a parameter for OnLink helper function
+type WithLinkFn func(*Link) error
+
+// WithObjectFn represents a function type that can be used as a parameter for OnObject helper function
+type WithObjectFn func(*Object) error
+
+// WithActivityFn represents a function type that can be used as a parameter for OnActivity helper function
+type WithActivityFn func(*Activity) error
+
+// WithIntransitiveActivityFn represents a function type that can be used as a parameter for OnIntransitiveActivity helper function
+type WithIntransitiveActivityFn func(*IntransitiveActivity) error
+
+// WithCollectionInterfaceFn represents a function type that can be used as a parameter for OnCollectionIntf helper function
+type WithCollectionInterfaceFn func(CollectionInterface) error
+
+// WithCollectionFn represents a function type that can be used as a parameter for OnCollection helper function
+type WithCollectionFn func(*Collection) error
+
+// WithCollectionPageFn represents a function type that can be used as a parameter for OnCollectionPage helper function
+type WithCollectionPageFn func(*CollectionPage) error
+
+// WithOrderedCollectionFn represents a function type that can be used as a parameter for OnOrderedCollection helper function
+type WithOrderedCollectionFn func(*OrderedCollection) error
+
+// WithOrderedCollectionPageFn represents a function type that can be used as a parameter for OnOrderedCollectionPage helper function
+type WithOrderedCollectionPageFn func(*OrderedCollectionPage) error
+
+// WithItemCollectionFn represents a function type that can be used as a parameter for OnItemCollection helper function
+type WithItemCollectionFn func(*ItemCollection) error
+
+// WithIRIsFn represents a function type that can be used as a parameter for OnIRIs helper function
+type WithIRIsFn func(*IRIs) error
+
+func To[T Item](it Item) (*T, error) {
+	if ob, ok := it.(T); ok {
+		return &ob, nil
+	}
+	return nil, fmt.Errorf("invalid cast for object %T", it)
+}
+
+// On handles in a generic way the call to fn(*T) if the "it" Item can be asserted to one of the Objects type.
+// It also covers the case where "it" is a collection of items that match the assertion.
+func On[T Item](it Item, fn func(*T) error) error {
+	if !IsItemCollection(it) {
+		ob, err := To[T](it)
+		if err != nil {
+			return err
+		}
+		return fn(ob)
+	}
+	return OnItemCollection(it, func(col *ItemCollection) error {
+		for _, it := range *col {
+			if err := On[T](it, fn); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// OnCollectionIntf calls function fn on it Item if it can be asserted to a type
+// that implements the CollectionInterface
+//
+// This function should be called if Item represents a collection of ActivityPub
+// objects. It basically wraps functionality for the different collection types
+// supported by the package.
+func OnCollectionIntf(it Item, fn WithCollectionInterfaceFn) error {
+	if it == nil {
+		return nil
+	}
+	typ := it.GetType()
+	switch {
+	case CollectionOfItems.Match(typ):
+		col, err := ToItemCollection(it)
+		if err != nil {
+			return err
+		}
+		return fn(col)
+	case CollectionOfIRIs.Match(typ):
+		col, err := ToIRIs(it)
+		if err != nil {
+			return err
+		}
+		itCol := col.Collection()
+		return fn(&itCol)
+	case CollectionType.Match(typ):
+		col, err := ToCollection(it)
+		if err != nil {
+			return err
+		}
+		return fn(col)
+	case CollectionPageType.Match(typ):
+		return OnCollectionPage(it, func(p *CollectionPage) error {
+			col, err := ToCollectionPage(p)
+			if err != nil {
+				return err
+			}
+			return fn(col)
+		})
+	case OrderedCollectionType.Match(typ):
+		col, err := ToOrderedCollection(it)
+		if err != nil {
+			return err
+		}
+		return fn(col)
+	case OrderedCollectionPageType.Match(typ):
+		return OnOrderedCollectionPage(it, func(p *OrderedCollectionPage) error {
+			col, err := ToOrderedCollectionPage(p)
+			if err != nil {
+				return err
+			}
+			return fn(col)
+		})
+	default:
+		return fmt.Errorf("%T[%s] can't be converted to a Collection type", it, it.GetType())
+	}
+}
+
+// ItemOrderTimestamp is used for ordering a ItemCollection slice using the slice.Sort function
+// It orders i1 and i2 based on their Published and Updated timestamps, whichever is later.
+func ItemOrderTimestamp(i1, i2 LinkOrIRI) bool {
+	if IsNil(i1) {
+		return !IsNil(i2)
+	} else if IsNil(i2) {
+		return false
+	}
+
+	var t1 time.Time
+	var t2 time.Time
+	if IsObject(i1) {
+		o1, e1 := ToObject(i1)
+		if e1 != nil {
+			return false
+		}
+		t1 = o1.Published
+		if o1.Updated.After(t1) {
+			t1 = o1.Updated
+		}
+	}
+	if IsObject(i2) {
+		o2, e2 := ToObject(i2)
+		if e2 != nil {
+			return false
+		}
+		t2 = o2.Published
+		if o2.Updated.After(t2) {
+			t2 = o2.Updated
+		}
+	}
+	return t1.After(t2)
+}
+
+func notEmptyLink(l *Link) bool {
+	return len(l.ID) > 0 ||
+		LinkTypes.Match(l.GetType()) ||
+		len(l.MediaType) > 0 ||
+		l.Preview != nil ||
+		l.Name != nil ||
+		len(l.Href) > 0 ||
+		len(l.Rel) > 0 ||
+		l.HrefLang.Valid() ||
+		l.Height > 0 ||
+		l.Width > 0
+}
+
+func notEmptyObject(o *Object) bool {
+	if o == nil {
+		return false
+	}
+	return len(o.ID) > 0 ||
+		HasTypes(o) ||
+		ActivityTypes.Match(o.GetType()) ||
+		o.Attachment != nil ||
+		o.AttributedTo != nil ||
+		o.Audience != nil ||
+		o.BCC != nil ||
+		o.Bto != nil ||
+		o.CC != nil ||
+		o.Context != nil ||
+		o.Duration > 0 ||
+		!o.EndTime.IsZero() ||
+		o.Generator != nil ||
+		o.Icon != nil ||
+		o.Image != nil ||
+		o.InReplyTo != nil ||
+		o.Likes != nil ||
+		o.Location != nil ||
+		len(o.MediaType) > 0 ||
+		len(o.Name) > 0 ||
+		len(o.Content) > 0 ||
+		len(o.Summary) > 0 ||
+		o.Preview != nil ||
+		!o.Published.IsZero() ||
+		o.Replies != nil ||
+		o.Shares != nil ||
+		o.Source.MediaType != "" ||
+		len(o.Source.Content) > 0 ||
+		!o.StartTime.IsZero() ||
+		o.Tag != nil ||
+		o.To != nil ||
+		!o.Updated.IsZero() ||
+		o.URL != nil
+}
+
+func notEmptyInstransitiveActivity(i *IntransitiveActivity) bool {
+	notEmpty := i.Actor != nil ||
+		i.Target != nil ||
+		i.Result != nil ||
+		i.Origin != nil ||
+		i.Instrument != nil
+	if notEmpty {
+		return true
+	}
+	_ = OnObject(i, func(ob *Object) error {
+		notEmpty = notEmptyObject(ob)
+		return nil
+	})
+	return notEmpty
+}
+
+func notEmptyActivity(a *Activity) bool {
+	var notEmpty bool
+	_ = OnIntransitiveActivity(a, func(i *IntransitiveActivity) error {
+		notEmpty = notEmptyInstransitiveActivity(i)
+		return nil
+	})
+	return notEmpty || a.Object != nil
+}
+
+func notEmptyActor(a *Actor) bool {
+	var notEmpty bool
+	_ = OnObject(a, func(o *Object) error {
+		notEmpty = notEmptyObject(o)
+		return nil
+	})
+	return notEmpty ||
+		a.Inbox != nil ||
+		a.Outbox != nil ||
+		a.Following != nil ||
+		a.Followers != nil ||
+		a.Liked != nil ||
+		a.PreferredUsername != nil ||
+		a.Endpoints != nil ||
+		a.Streams != nil ||
+		len(a.PublicKey.ID)+len(a.PublicKey.Owner)+len(a.PublicKey.PublicKeyPem) > 0
+}
+
+// NotEmpty tells us if a Item interface value has a non nil value for various types
+// that implement
+func NotEmpty(i Item) bool {
+	if IsNil(i) {
+		return false
+	}
+	var notEmpty bool
+	if IsIRI(i) {
+		notEmpty = len(i.GetLink()) > 0
+	}
+	if i.IsCollection() {
+		_ = OnCollectionIntf(i, func(c CollectionInterface) error {
+			notEmpty = c != nil || len(c.Collection()) > 0
+			return nil
+		})
+	}
+	if ActivityTypes.Match(i.GetType()) {
+		_ = OnActivity(i, func(a *Activity) error {
+			notEmpty = notEmptyActivity(a)
+			return nil
+		})
+	} else if ActorTypes.Match(i.GetType()) {
+		_ = OnActor(i, func(a *Actor) error {
+			notEmpty = notEmptyActor(a)
+			return nil
+		})
+	} else if i.IsLink() {
+		_ = OnLink(i, func(l *Link) error {
+			notEmpty = notEmptyLink(l)
+			return nil
+		})
+	} else {
+		_ = OnObject(i, func(o *Object) error {
+			notEmpty = notEmptyObject(o)
+			return nil
+		})
+	}
+	return notEmpty
+}
+
+// DerefItem unpacks an Item into an ItemCollection.
+// If the Item is a slice type, like [IRIs], or [ItemCollection], it returns an [ItemCollection] corresponding to that
+func DerefItem(it Item) ItemCollection {
+	if IsNil(it) {
+		return nil
+	}
+
+	var items ItemCollection
+	if IsIRIs(it) {
+		if col, err := ToIRIs(it); err == nil {
+			items = col.Collection()
+		}
+	} else if IsItemCollection(it) {
+		if col, err := ToItemCollection(it); err == nil {
+			items = *col
+		}
+	} else {
+		items = ItemCollection{it}
+	}
+	return items
+}
+
+func callOnItemCollection[T Objects | Links, F func(*T) error](it LinkOrIRI, callFn func(LinkOrIRI, F) error, fn F) error {
+	return OnItemCollection(it, func(col *ItemCollection) error {
+		for _, ob := range *col {
+			if IsLink(ob) {
+				continue
+			}
+			if err := callFn(ob, fn); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}

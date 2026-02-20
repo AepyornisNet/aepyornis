@@ -34,9 +34,9 @@ func NewAdminController(c *container.Container, resetConfiguration func() error)
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[[]api.UserProfileResponse]
-// @Failure      403  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]dto.UserProfileResponse]
+// @Failure      403  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /admin/users [get]
 func (ac *adminController) GetUsers(c echo.Context) error {
 	users, err := model.GetUsers(ac.context.GetDB())
@@ -64,9 +64,9 @@ func (ac *adminController) GetUsers(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "User ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.UserProfileResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.UserProfileResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /admin/users/{id} [get]
 func (ac *adminController) GetUser(c echo.Context) error {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -95,9 +95,9 @@ func (ac *adminController) GetUser(c echo.Context) error {
 // @Param        id   path  int  true  "User ID"
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.UserProfileResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.UserProfileResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /admin/users/{id} [put]
 func (ac *adminController) UpdateUser(c echo.Context) error {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -145,9 +145,9 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "User ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[any]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /admin/users/{id} [delete]
 func (ac *adminController) DeleteUser(c echo.Context) error {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -179,9 +179,9 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 // @Security     CookieAuth
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.AppInfoResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.AppInfoResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /admin/config [put]
 func (ac *adminController) UpdateConfig(c echo.Context) error {
 	var cnf container.Config

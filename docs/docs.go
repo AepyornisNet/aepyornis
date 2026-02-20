@@ -15,6 +15,75 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/.well-known/host-meta": {
+            "get": {
+                "produces": [
+                    "text/xml"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get host-meta document",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/.well-known/webfinger": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Resolve ActivityPub actor via WebFinger",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource URI (for example acct:user@example.com)",
+                        "name": "resource",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Optional relation filter",
+                        "name": "rel",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WellKnownNode"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/config": {
             "put": {
                 "security": [
@@ -42,19 +111,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_AppInfoResponse"
+                            "$ref": "#/definitions/dto.Response-dto_AppInfoResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -84,19 +153,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-array_api_UserProfileResponse"
+                            "$ref": "#/definitions/dto.Response-array_dto_UserProfileResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -135,19 +204,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
+                            "$ref": "#/definitions/dto.Response-dto_UserProfileResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -187,19 +256,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
+                            "$ref": "#/definitions/dto.Response-dto_UserProfileResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -236,19 +305,364 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get ActivityPub actor",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/followers": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get ActivityPub followers collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (1-based)",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/following": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get ActivityPub following collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/inbox": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Post ActivityPub inbox activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/outbox": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get ActivityPub outbox collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (1-based)",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/outbox/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get ActivityPub outbox item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Outbox entry UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/outbox/{id}/fit": {
+            "get": {
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Download ActivityPub outbox FIT file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Outbox entry UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "binary FIT content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/outbox/{id}/route-image": {
+            "get": {
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get ActivityPub outbox route image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Outbox entry UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "binary image content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -267,7 +681,112 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_AppInfoResponse"
+                            "$ref": "#/definitions/dto.Response-dto_AppInfoResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register account",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signin": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Sign in",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_UserProfileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signout": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Sign out",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-map_string_string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -311,19 +830,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.PaginatedResponse-api_EquipmentResponse"
+                            "$ref": "#/definitions/dto.PaginatedResponse-dto_EquipmentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -354,19 +873,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_EquipmentResponse"
+                            "$ref": "#/definitions/dto.Response-dto_EquipmentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -405,13 +924,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_EquipmentResponse"
+                            "$ref": "#/definitions/dto.Response-dto_EquipmentResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -451,25 +970,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_EquipmentResponse"
+                            "$ref": "#/definitions/dto.Response-dto_EquipmentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -506,13 +1025,13 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -551,13 +1070,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-array_string"
+                            "$ref": "#/definitions/dto.Response-array_string"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -601,19 +1120,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.PaginatedResponse-api_MeasurementResponse"
+                            "$ref": "#/definitions/dto.PaginatedResponse-dto_MeasurementResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -644,19 +1163,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_MeasurementResponse"
+                            "$ref": "#/definitions/dto.Response-dto_MeasurementResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -701,13 +1220,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -737,7 +1256,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
+                            "$ref": "#/definitions/dto.Response-dto_UserProfileResponse"
                         }
                     }
                 }
@@ -768,19 +1287,148 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
+                            "$ref": "#/definitions/dto.Response-dto_UserProfileResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/enable-activity-pub": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Toggle ActivityPub support",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/follow-requests": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "List ActivityPub follow requests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-array_dto_FollowRequestResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/follow-requests/{id}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Accept ActivityPub follow request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Follow request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_FollowRequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -810,13 +1458,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -846,13 +1494,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -932,13 +1580,170 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-array_api_WorkoutRecordResponse"
+                            "$ref": "#/definitions/dto.Response-array_dto_WorkoutRecordResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/records/climbs/ranking": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get ranked climb records",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workout type (e.g. cycling)",
+                        "name": "workout_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD, inclusive)",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PaginatedResponse-dto_ClimbRecordResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/records/ranking": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get ranked distance records",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workout type (e.g. running)",
+                        "name": "workout_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Distance label (e.g. 10 km)",
+                        "name": "label",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD, inclusive)",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PaginatedResponse-dto_DistanceRecordResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -982,19 +1787,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.PaginatedResponse-api_RouteSegmentResponse"
+                            "$ref": "#/definitions/dto.PaginatedResponse-dto_RouteSegmentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1040,19 +1845,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_RouteSegmentsDetailResponse"
+                            "$ref": "#/definitions/dto.Response-dto_RouteSegmentsDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1091,13 +1896,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_RouteSegmentDetailResponse"
+                            "$ref": "#/definitions/dto.Response-dto_RouteSegmentDetailResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1137,25 +1942,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_RouteSegmentDetailResponse"
+                            "$ref": "#/definitions/dto.Response-dto_RouteSegmentDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1192,19 +1997,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1249,7 +2054,7 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1288,19 +2093,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1339,19 +2144,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1395,19 +2200,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_StatisticsResponse"
+                            "$ref": "#/definitions/dto.Response-dto_StatisticsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1451,13 +2256,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_TotalsResponse"
+                            "$ref": "#/definitions/dto.Response-dto_TotalsResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1487,13 +2292,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_UserProfileResponse"
+                            "$ref": "#/definitions/dto.Response-dto_UserProfileResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1537,19 +2342,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.PaginatedResponse-api_WorkoutResponse"
+                            "$ref": "#/definitions/dto.PaginatedResponse-dto_WorkoutResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1581,19 +2386,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_WorkoutResponse"
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1623,19 +2428,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-array_api_CalendarEventResponse"
+                            "$ref": "#/definitions/dto.Response-array_dto_CalendarEventResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1665,13 +2470,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-geojson_FeatureCollection"
+                            "$ref": "#/definitions/dto.Response-geojson_FeatureCollection"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1701,13 +2506,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-geojson_FeatureCollection"
+                            "$ref": "#/definitions/dto.Response-array_array_float64"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1735,19 +2540,123 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_WorkoutDetailResponse"
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/public/{uuid}/breakdown": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get public workout breakdown",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Unit",
+                        "name": "unit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Count",
+                        "name": "count",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutBreakdownResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/public/{uuid}/stats-range": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get public workout range statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Start point index (inclusive)",
+                        "name": "start_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End point index (inclusive)",
+                        "name": "end_index",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutRangeStatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1780,13 +2689,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-array_api_WorkoutResponse"
+                            "$ref": "#/definitions/dto.Response-array_dto_WorkoutResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1825,19 +2734,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_WorkoutDetailResponse"
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1877,19 +2786,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_WorkoutResponse"
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1926,19 +2835,125 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/activity-pub/publish": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Publish workout to ActivityPub",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Unpublish workout from ActivityPub",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -1989,19 +3004,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_WorkoutBreakdownResponse"
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutBreakdownResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2046,7 +3061,7 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2085,13 +3100,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2133,19 +3148,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_RouteSegmentDetailResponse"
+                            "$ref": "#/definitions/dto.Response-dto_RouteSegmentDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2184,13 +3199,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2227,13 +3242,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-map_string_string"
+                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2284,19 +3299,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_WorkoutRangeStatsResponse"
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutRangeStatsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2335,19 +3350,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-api_WorkoutResponse"
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2398,19 +3413,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-array_api_WorkoutRecordResponse"
+                            "$ref": "#/definitions/dto.Response-array_dto_WorkoutRecordResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response-any"
+                            "$ref": "#/definitions/dto.Response-any"
                         }
                     }
                 }
@@ -2418,9 +3433,12 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.AppInfoResponse": {
+        "dto.AppInfoResponse": {
             "type": "object",
             "properties": {
+                "auto_import_enabled": {
+                    "type": "boolean"
+                },
                 "registration_disabled": {
                     "type": "boolean"
                 },
@@ -2435,7 +3453,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.CalendarEventResponse": {
+        "dto.CalendarEventResponse": {
             "type": "object",
             "properties": {
                 "end": {
@@ -2452,14 +3470,40 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ClimbSegmentResponse": {
+        "dto.ClimbRecordResponse": {
+            "type": "object",
+            "properties": {
+                "average_slope": {
+                    "type": "number"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "elevation_gain": {
+                    "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
+                },
+                "start_index": {
+                    "type": "integer"
+                },
+                "workout_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ClimbSegmentResponse": {
             "type": "object",
             "properties": {
                 "avg_slope": {
                     "type": "number"
                 },
                 "category": {
-                    "type": "string"
+                    "$ref": "#/definitions/model.Category"
                 },
                 "duration": {
                     "type": "number"
@@ -2483,11 +3527,43 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/model.SlopeKind"
                 }
             }
         },
-        "api.EquipmentResponse": {
+        "dto.DistanceRecordResponse": {
+            "type": "object",
+            "properties": {
+                "average_speed": {
+                    "type": "number"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration_seconds": {
+                    "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "start_index": {
+                    "type": "integer"
+                },
+                "target_distance": {
+                    "type": "number"
+                },
+                "workout_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.EquipmentResponse": {
             "type": "object",
             "properties": {
                 "active": {
@@ -2517,12 +3593,49 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string"
                 },
+                "usage": {
+                    "$ref": "#/definitions/dto.EquipmentUsageStats"
+                },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "api.MapCenterResponse": {
+        "dto.EquipmentUsageStats": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "duration_seconds": {
+                    "type": "number"
+                },
+                "last_used_at": {
+                    "type": "string"
+                },
+                "repetitions": {
+                    "type": "integer"
+                },
+                "workouts": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.FollowRequestResponse": {
+            "type": "object",
+            "properties": {
+                "actor_iri": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.MapCenterResponse": {
             "type": "object",
             "properties": {
                 "lat": {
@@ -2536,7 +3649,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.MapDataDetailsResponse": {
+        "dto.MapDataDetailsResponse": {
             "type": "object",
             "properties": {
                 "distance": {
@@ -2602,23 +3715,23 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/definitions/api.ZoneRangeResponse"
+                            "$ref": "#/definitions/dto.ZoneRangeResponse"
                         }
                     }
                 }
             }
         },
-        "api.MapDataResponse": {
+        "dto.MapDataResponse": {
             "type": "object",
             "properties": {
                 "center": {
-                    "$ref": "#/definitions/api.MapCenterResponse"
+                    "$ref": "#/definitions/dto.MapCenterResponse"
                 },
                 "creator": {
                     "type": "string"
                 },
                 "details": {
-                    "$ref": "#/definitions/api.MapDataDetailsResponse"
+                    "$ref": "#/definitions/dto.MapDataDetailsResponse"
                 },
                 "extra_metrics": {
                     "type": "array",
@@ -2628,7 +3741,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.MapPoint": {
+        "dto.MapPoint": {
             "type": "object",
             "properties": {
                 "elevation": {
@@ -2645,7 +3758,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.MeasurementResponse": {
+        "dto.MeasurementResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2683,7 +3796,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.PaginatedResponse-api_EquipmentResponse": {
+        "dto.PaginatedResponse-dto_ClimbRecordResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -2701,7 +3814,7 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.EquipmentResponse"
+                        "$ref": "#/definitions/dto.ClimbRecordResponse"
                     }
                 },
                 "total_count": {
@@ -2712,7 +3825,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.PaginatedResponse-api_MeasurementResponse": {
+        "dto.PaginatedResponse-dto_DistanceRecordResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -2730,7 +3843,7 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.MeasurementResponse"
+                        "$ref": "#/definitions/dto.DistanceRecordResponse"
                     }
                 },
                 "total_count": {
@@ -2741,7 +3854,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.PaginatedResponse-api_RouteSegmentResponse": {
+        "dto.PaginatedResponse-dto_EquipmentResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -2759,7 +3872,7 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.RouteSegmentResponse"
+                        "$ref": "#/definitions/dto.EquipmentResponse"
                     }
                 },
                 "total_count": {
@@ -2770,7 +3883,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.PaginatedResponse-api_WorkoutResponse": {
+        "dto.PaginatedResponse-dto_MeasurementResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -2788,7 +3901,7 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.WorkoutResponse"
+                        "$ref": "#/definitions/dto.MeasurementResponse"
                     }
                 },
                 "total_count": {
@@ -2799,7 +3912,65 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ProfileSettings": {
+        "dto.PaginatedResponse-dto_RouteSegmentResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RouteSegmentResponse"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PaginatedResponse-dto_WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutResponse"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ProfileSettings": {
             "type": "object",
             "properties": {
                 "api_active": {
@@ -2818,7 +3989,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "preferred_units": {
-                    "$ref": "#/definitions/database.UserPreferredUnits"
+                    "$ref": "#/definitions/model.UserPreferredUnits"
                 },
                 "socials_disabled": {
                     "type": "boolean"
@@ -2834,7 +4005,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.RecordResponse": {
+        "dto.RecordResponse": {
             "type": "object",
             "properties": {
                 "date": {
@@ -2848,7 +4019,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.Response-any": {
+        "dto.Response-any": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -2860,63 +4031,7 @@ const docTemplate = `{
                 "results": {}
             }
         },
-        "api.Response-api_AppInfoResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.AppInfoResponse"
-                }
-            }
-        },
-        "api.Response-api_EquipmentResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.EquipmentResponse"
-                }
-            }
-        },
-        "api.Response-api_MeasurementResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.MeasurementResponse"
-                }
-            }
-        },
-        "api.Response-api_RouteSegmentDetailResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.RouteSegmentDetailResponse"
-                }
-            }
-        },
-        "api.Response-api_RouteSegmentsDetailResponse": {
+        "dto.Response-array_array_float64": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -2928,110 +4043,16 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.RouteSegmentResponse"
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "float64"
+                        }
                     }
                 }
             }
         },
-        "api.Response-api_StatisticsResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.StatisticsResponse"
-                }
-            }
-        },
-        "api.Response-api_TotalsResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.TotalsResponse"
-                }
-            }
-        },
-        "api.Response-api_UserProfileResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.UserProfileResponse"
-                }
-            }
-        },
-        "api.Response-api_WorkoutBreakdownResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.WorkoutBreakdownResponse"
-                }
-            }
-        },
-        "api.Response-api_WorkoutDetailResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.WorkoutDetailResponse"
-                }
-            }
-        },
-        "api.Response-api_WorkoutRangeStatsResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.WorkoutRangeStatsResponse"
-                }
-            }
-        },
-        "api.Response-api_WorkoutResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "$ref": "#/definitions/api.WorkoutResponse"
-                }
-            }
-        },
-        "api.Response-array_api_CalendarEventResponse": {
+        "dto.Response-array_dto_CalendarEventResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -3043,12 +4064,12 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.CalendarEventResponse"
+                        "$ref": "#/definitions/dto.CalendarEventResponse"
                     }
                 }
             }
         },
-        "api.Response-array_api_UserProfileResponse": {
+        "dto.Response-array_dto_FollowRequestResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -3060,12 +4081,12 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.UserProfileResponse"
+                        "$ref": "#/definitions/dto.FollowRequestResponse"
                     }
                 }
             }
         },
-        "api.Response-array_api_WorkoutRecordResponse": {
+        "dto.Response-array_dto_UserProfileResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -3077,12 +4098,12 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.WorkoutRecordResponse"
+                        "$ref": "#/definitions/dto.UserProfileResponse"
                     }
                 }
             }
         },
-        "api.Response-array_api_WorkoutResponse": {
+        "dto.Response-array_dto_WorkoutRecordResponse": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -3094,12 +4115,29 @@ const docTemplate = `{
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.WorkoutResponse"
+                        "$ref": "#/definitions/dto.WorkoutRecordResponse"
                     }
                 }
             }
         },
-        "api.Response-array_string": {
+        "dto.Response-array_dto_WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutResponse"
+                    }
+                }
+            }
+        },
+        "dto.Response-array_string": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -3116,7 +4154,192 @@ const docTemplate = `{
                 }
             }
         },
-        "api.Response-geojson_FeatureCollection": {
+        "dto.Response-dto_AppInfoResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.AppInfoResponse"
+                }
+            }
+        },
+        "dto.Response-dto_EquipmentResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.EquipmentResponse"
+                }
+            }
+        },
+        "dto.Response-dto_FollowRequestResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.FollowRequestResponse"
+                }
+            }
+        },
+        "dto.Response-dto_MeasurementResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.MeasurementResponse"
+                }
+            }
+        },
+        "dto.Response-dto_RouteSegmentDetailResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.RouteSegmentDetailResponse"
+                }
+            }
+        },
+        "dto.Response-dto_RouteSegmentsDetailResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RouteSegmentResponse"
+                    }
+                }
+            }
+        },
+        "dto.Response-dto_StatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.StatisticsResponse"
+                }
+            }
+        },
+        "dto.Response-dto_TotalsResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.TotalsResponse"
+                }
+            }
+        },
+        "dto.Response-dto_UserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.UserProfileResponse"
+                }
+            }
+        },
+        "dto.Response-dto_WorkoutBreakdownResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.WorkoutBreakdownResponse"
+                }
+            }
+        },
+        "dto.Response-dto_WorkoutDetailResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.WorkoutDetailResponse"
+                }
+            }
+        },
+        "dto.Response-dto_WorkoutRangeStatsResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.WorkoutRangeStatsResponse"
+                }
+            }
+        },
+        "dto.Response-dto_WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.WorkoutResponse"
+                }
+            }
+        },
+        "dto.Response-geojson_FeatureCollection": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -3130,7 +4353,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.Response-map_string_string": {
+        "dto.Response-map_string_string": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -3144,7 +4367,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.RouteSegmentDetailResponse": {
+        "dto.RouteSegmentDetailResponse": {
             "type": "object",
             "properties": {
                 "address_string": {
@@ -3182,7 +4405,7 @@ const docTemplate = `{
                 "matches": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.RouteSegmentMatch"
+                        "$ref": "#/definitions/dto.RouteSegmentMatch"
                     }
                 },
                 "max_elevation": {
@@ -3200,7 +4423,7 @@ const docTemplate = `{
                 "points": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.MapPoint"
+                        "$ref": "#/definitions/dto.MapPoint"
                     }
                 },
                 "total_distance": {
@@ -3217,7 +4440,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.RouteSegmentMatch": {
+        "dto.RouteSegmentMatch": {
             "type": "object",
             "properties": {
                 "average_speed": {
@@ -3243,7 +4466,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.RouteSegmentMatchResponse": {
+        "dto.RouteSegmentMatchResponse": {
             "type": "object",
             "properties": {
                 "distance": {
@@ -3256,7 +4479,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "route_segment": {
-                    "$ref": "#/definitions/api.RouteSegmentResponse"
+                    "$ref": "#/definitions/dto.RouteSegmentResponse"
                 },
                 "route_segment_id": {
                     "type": "integer"
@@ -3269,7 +4492,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.RouteSegmentResponse": {
+        "dto.RouteSegmentResponse": {
             "type": "object",
             "properties": {
                 "bidirectional": {
@@ -3316,13 +4539,13 @@ const docTemplate = `{
                 }
             }
         },
-        "api.StatisticBuckets": {
+        "dto.StatisticBuckets": {
             "type": "object",
             "properties": {
                 "buckets": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/api.StatisticData"
+                        "$ref": "#/definitions/dto.StatisticData"
                     }
                 },
                 "local_workout_type": {
@@ -3333,7 +4556,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.StatisticData": {
+        "dto.StatisticData": {
             "type": "object",
             "properties": {
                 "average_speed": {
@@ -3362,7 +4585,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.StatisticsResponse": {
+        "dto.StatisticsResponse": {
             "type": "object",
             "properties": {
                 "bucket_format": {
@@ -3371,7 +4594,7 @@ const docTemplate = `{
                 "buckets": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/api.StatisticBuckets"
+                        "$ref": "#/definitions/dto.StatisticBuckets"
                     }
                 },
                 "user_id": {
@@ -3379,7 +4602,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.TotalsResponse": {
+        "dto.TotalsResponse": {
             "type": "object",
             "properties": {
                 "distance": {
@@ -3400,10 +4623,13 @@ const docTemplate = `{
                 }
             }
         },
-        "api.UserProfileResponse": {
+        "dto.UserProfileResponse": {
             "type": "object",
             "properties": {
                 "active": {
+                    "type": "boolean"
+                },
+                "activity_pub": {
                     "type": "boolean"
                 },
                 "admin": {
@@ -3431,10 +4657,10 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "preferred_units": {
-                    "$ref": "#/definitions/database.UserPreferredUnits"
+                    "$ref": "#/definitions/model.UserPreferredUnits"
                 },
                 "profile": {
-                    "$ref": "#/definitions/api.ProfileSettings"
+                    "$ref": "#/definitions/dto.ProfileSettings"
                 },
                 "socials_disabled": {
                     "type": "boolean"
@@ -3453,7 +4679,44 @@ const docTemplate = `{
                 }
             }
         },
-        "api.WorkoutBreakdownItemResponse": {
+        "dto.WellKnownLink": {
+            "type": "object",
+            "properties": {
+                "href": {
+                    "type": "string"
+                },
+                "rel": {
+                    "type": "string"
+                },
+                "template": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.WellKnownNode": {
+            "type": "object",
+            "properties": {
+                "aliases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WellKnownLink"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.WorkoutBreakdownItemResponse": {
             "type": "object",
             "properties": {
                 "average_cadence": {
@@ -3521,13 +4784,13 @@ const docTemplate = `{
                 }
             }
         },
-        "api.WorkoutBreakdownResponse": {
+        "dto.WorkoutBreakdownResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.WorkoutBreakdownItemResponse"
+                        "$ref": "#/definitions/dto.WorkoutBreakdownItemResponse"
                     }
                 },
                 "mode": {
@@ -3536,9 +4799,12 @@ const docTemplate = `{
                 }
             }
         },
-        "api.WorkoutDetailResponse": {
+        "dto.WorkoutDetailResponse": {
             "type": "object",
             "properties": {
+                "activity_pub_published": {
+                    "type": "boolean"
+                },
                 "address_string": {
                     "description": "MapData fields (when available)",
                     "type": "string"
@@ -3561,7 +4827,7 @@ const docTemplate = `{
                 "climbs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.ClimbSegmentResponse"
+                        "$ref": "#/definitions/dto.ClimbSegmentResponse"
                     }
                 },
                 "created_at": {
@@ -3573,10 +4839,13 @@ const docTemplate = `{
                 "date": {
                     "type": "string"
                 },
+                "dirty": {
+                    "type": "boolean"
+                },
                 "equipment": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.EquipmentResponse"
+                        "$ref": "#/definitions/dto.EquipmentResponse"
                     }
                 },
                 "has_file": {
@@ -3591,14 +4860,14 @@ const docTemplate = `{
                 "laps": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.WorkoutLapResponse"
+                        "$ref": "#/definitions/dto.WorkoutLapResponse"
                     }
                 },
                 "locked": {
                     "type": "boolean"
                 },
                 "map_data": {
-                    "$ref": "#/definitions/api.MapDataResponse"
+                    "$ref": "#/definitions/dto.MapDataResponse"
                 },
                 "max_cadence": {
                     "type": "number"
@@ -3631,10 +4900,16 @@ const docTemplate = `{
                 "public_uuid": {
                     "type": "string"
                 },
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutIntervalRecordResponse"
+                    }
+                },
                 "route_segment_matches": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.RouteSegmentMatchResponse"
+                        "$ref": "#/definitions/dto.RouteSegmentMatchResponse"
                     }
                 },
                 "sub_type": {
@@ -3666,14 +4941,43 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/api.UserProfileResponse"
+                    "$ref": "#/definitions/dto.UserProfileResponse"
                 },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "api.WorkoutLapResponse": {
+        "dto.WorkoutIntervalRecordResponse": {
+            "type": "object",
+            "properties": {
+                "average_speed": {
+                    "type": "number"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration_seconds": {
+                    "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "start_index": {
+                    "type": "integer"
+                },
+                "target_distance": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.WorkoutLapResponse": {
             "type": "object",
             "properties": {
                 "average_cadence": {
@@ -3732,7 +5036,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.WorkoutRangeStatsResponse": {
+        "dto.WorkoutRangeStatsResponse": {
             "type": "object",
             "properties": {
                 "average_cadence": {
@@ -3742,6 +5046,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "average_power": {
+                    "type": "number"
+                },
+                "average_respiration_rate": {
                     "type": "number"
                 },
                 "average_slope": {
@@ -3777,6 +5084,9 @@ const docTemplate = `{
                 "max_power": {
                     "type": "number"
                 },
+                "max_respiration_rate": {
+                    "type": "number"
+                },
                 "max_slope": {
                     "type": "number"
                 },
@@ -3796,6 +5106,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "min_power": {
+                    "type": "number"
+                },
+                "min_respiration_rate": {
                     "type": "number"
                 },
                 "min_slope": {
@@ -3823,11 +5136,11 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "units": {
-                    "$ref": "#/definitions/api.WorkoutRangeStatsUnitsResponse"
+                    "$ref": "#/definitions/dto.WorkoutRangeStatsUnitsResponse"
                 }
             }
         },
-        "api.WorkoutRangeStatsUnitsResponse": {
+        "dto.WorkoutRangeStatsUnitsResponse": {
             "type": "object",
             "properties": {
                 "distance": {
@@ -3844,38 +5157,50 @@ const docTemplate = `{
                 }
             }
         },
-        "api.WorkoutRecordResponse": {
+        "dto.WorkoutRecordResponse": {
             "type": "object",
             "properties": {
                 "active": {
                     "type": "boolean"
                 },
                 "average_speed": {
-                    "$ref": "#/definitions/api.RecordResponse"
+                    "$ref": "#/definitions/dto.RecordResponse"
                 },
                 "average_speed_no_pause": {
-                    "$ref": "#/definitions/api.RecordResponse"
+                    "$ref": "#/definitions/dto.RecordResponse"
+                },
+                "biggest_climb": {
+                    "$ref": "#/definitions/dto.ClimbRecordResponse"
                 },
                 "distance": {
-                    "$ref": "#/definitions/api.RecordResponse"
+                    "$ref": "#/definitions/dto.RecordResponse"
+                },
+                "distance_records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DistanceRecordResponse"
+                    }
                 },
                 "duration": {
-                    "$ref": "#/definitions/api.RecordResponse"
+                    "$ref": "#/definitions/dto.RecordResponse"
                 },
                 "max_speed": {
-                    "$ref": "#/definitions/api.RecordResponse"
+                    "$ref": "#/definitions/dto.RecordResponse"
                 },
                 "total_up": {
-                    "$ref": "#/definitions/api.RecordResponse"
+                    "$ref": "#/definitions/dto.RecordResponse"
                 },
                 "workout_type": {
                     "type": "string"
                 }
             }
         },
-        "api.WorkoutResponse": {
+        "dto.WorkoutResponse": {
             "type": "object",
             "properties": {
+                "activity_pub_published": {
+                    "type": "boolean"
+                },
                 "address_string": {
                     "description": "MapData fields (when available)",
                     "type": "string"
@@ -3903,6 +5228,9 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string"
+                },
+                "dirty": {
+                    "type": "boolean"
                 },
                 "has_file": {
                     "type": "boolean"
@@ -3976,14 +5304,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/api.UserProfileResponse"
+                    "$ref": "#/definitions/dto.UserProfileResponse"
                 },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "api.ZoneRangeResponse": {
+        "dto.ZoneRangeResponse": {
             "type": "object",
             "properties": {
                 "max": {
@@ -3994,31 +5322,6 @@ const docTemplate = `{
                 },
                 "zone": {
                     "type": "integer"
-                }
-            }
-        },
-        "database.UserPreferredUnits": {
-            "type": "object",
-            "properties": {
-                "distance": {
-                    "description": "The user's preferred distance unit",
-                    "type": "string"
-                },
-                "elevation": {
-                    "description": "The user's preferred elevation unit",
-                    "type": "string"
-                },
-                "height": {
-                    "description": "The user's preferred height unit",
-                    "type": "string"
-                },
-                "speed": {
-                    "description": "The user's preferred speed unit",
-                    "type": "string"
-                },
-                "weight": {
-                    "description": "The user's preferred weight unit",
-                    "type": "string"
                 }
             }
         },
@@ -4069,6 +5372,65 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": {
                 "type": "string"
+            }
+        },
+        "model.Category": {
+            "type": "string",
+            "enum": [
+                "Hors Catégorie",
+                "Category 1",
+                "Category 2",
+                "Category 3",
+                "Category 4",
+                "Category 5",
+                "Category 6",
+                "Uncategorized"
+            ],
+            "x-enum-varnames": [
+                "CategoryHorsCategorie",
+                "Category1",
+                "Category2",
+                "Category3",
+                "Category4",
+                "Category5",
+                "Category6",
+                "CategoryUncategorized"
+            ]
+        },
+        "model.SlopeKind": {
+            "type": "string",
+            "enum": [
+                "climb",
+                "descent"
+            ],
+            "x-enum-varnames": [
+                "SlopeKindClimb",
+                "SlopeKindDescent"
+            ]
+        },
+        "model.UserPreferredUnits": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "description": "The user's preferred distance unit",
+                    "type": "string"
+                },
+                "elevation": {
+                    "description": "The user's preferred elevation unit",
+                    "type": "string"
+                },
+                "height": {
+                    "description": "The user's preferred height unit",
+                    "type": "string"
+                },
+                "speed": {
+                    "description": "The user's preferred speed unit",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "The user's preferred weight unit",
+                    "type": "string"
+                }
             }
         }
     },

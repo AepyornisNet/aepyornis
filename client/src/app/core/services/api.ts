@@ -9,6 +9,7 @@ import {
 import {
   AppConfig,
   AppInfo,
+  FollowRequest,
   FullUserProfile,
   ProfileUpdateRequest,
   UserProfile,
@@ -507,6 +508,41 @@ export class Api {
     return this.http.post<APIResponse<{ api_key: string; message: string }>>(
       `${this.baseUrl}/profile/reset-api-key`,
       {},
+    );
+  }
+
+  public enableActivityPub(): Observable<APIResponse<{ activity_pub: boolean; message: string }>> {
+    return this.http.post<APIResponse<{ activity_pub: boolean; message: string }>>(
+      `${this.baseUrl}/profile/enable-activity-pub`,
+      {},
+    );
+  }
+
+  public getFollowRequests(): Observable<APIResponse<FollowRequest[]>> {
+    return this.http.get<APIResponse<FollowRequest[]>>(`${this.baseUrl}/profile/follow-requests`);
+  }
+
+  public acceptFollowRequest(id: number): Observable<APIResponse<FollowRequest>> {
+    return this.http.post<APIResponse<FollowRequest>>(
+      `${this.baseUrl}/profile/follow-requests/${id}/accept`,
+      {},
+    );
+  }
+
+  public publishWorkoutToActivityPub(
+    id: number,
+  ): Observable<APIResponse<{ activity_pub_published: boolean; message: string; outbox_id?: string }>> {
+    return this.http.post<APIResponse<{ activity_pub_published: boolean; message: string; outbox_id?: string }>>(
+      `${this.baseUrl}/workouts/${id}/activity-pub/publish`,
+      {},
+    );
+  }
+
+  public unpublishWorkoutFromActivityPub(
+    id: number,
+  ): Observable<APIResponse<{ activity_pub_published: boolean; message: string }>> {
+    return this.http.delete<APIResponse<{ activity_pub_published: boolean; message: string }>>(
+      `${this.baseUrl}/workouts/${id}/activity-pub/publish`,
     );
   }
 

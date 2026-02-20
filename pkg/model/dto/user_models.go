@@ -12,6 +12,7 @@ type UserProfileResponse struct {
 	Username        string                   `json:"username"`
 	Name            string                   `json:"name"`
 	Birthdate       *time.Time               `json:"birthdate,omitempty"`
+	ActivityPub     bool                     `json:"activity_pub"`
 	Active          bool                     `json:"active"`
 	Admin           bool                     `json:"admin"`
 	LastVersion     string                   `json:"last_version"`
@@ -48,6 +49,7 @@ type AppInfoResponse struct {
 	VersionSha           string `json:"version_sha"`
 	RegistrationDisabled bool   `json:"registration_disabled"`
 	SocialsDisabled      bool   `json:"socials_disabled"`
+	AutoImportEnabled    bool   `json:"auto_import_enabled"`
 }
 
 // NewUserProfileResponse converts a database user to API response
@@ -56,6 +58,7 @@ func NewUserProfileResponse(u *model.User) UserProfileResponse {
 		ID:              u.ID,
 		Username:        u.Username,
 		Name:            u.Name,
+		ActivityPub:     u.ActivityPub,
 		Active:          u.Active,
 		Admin:           u.Admin,
 		LastVersion:     u.LastVersion,

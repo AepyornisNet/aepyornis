@@ -30,9 +30,9 @@ func NewStatisticsController(c *container.Container) StatisticsController {
 // @Produce      json
 // @Param        since  query  string false "Relative start (e.g. '1 year')"
 // @Param        per    query  string false "Aggregation period (day|week|month|year)"
-// @Success      200  {object}  api.Response[dto.StatisticsResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.StatisticsResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /statistics [get]
 func (sc *statisticsController) GetStatistics(c echo.Context) error {
 	user := sc.context.GetUser(c)

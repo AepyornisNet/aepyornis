@@ -77,6 +77,7 @@ services:
     profiles:
       - do-not-use-directly
     extends: workout-tracker
+    tty: true
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
@@ -92,6 +93,8 @@ services:
     environment:
       APP_ENV: development
       WT_WORKER_DELAY_SECONDS: 5
+      WT_ACTIVITY_PUB_ACTIVE: true
+      WT_HOST: localhost:4200
 
   app-workout-tracker-postgres:
     profiles:

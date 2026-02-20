@@ -36,8 +36,8 @@ func NewUserController(c *container.Container) UserController {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.UserProfileResponse]
-// @Failure      401  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.UserProfileResponse]
+// @Failure      401  {object}  dto.Response[any]
 // @Router       /whoami [get]
 func (uc *userController) GetWhoami(c echo.Context) error {
 	user := uc.context.GetUser(c)
@@ -58,8 +58,8 @@ func (uc *userController) GetWhoami(c echo.Context) error {
 // @Param        start  query     string  false  "Start date (YYYY-MM-DD)"
 // @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.TotalsResponse]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.TotalsResponse]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /totals [get]
 func (uc *userController) GetTotals(c echo.Context) error {
 	user := uc.context.GetUser(c)
@@ -90,8 +90,8 @@ func (uc *userController) GetTotals(c echo.Context) error {
 // @Param        start  query     string  false  "Start date (YYYY-MM-DD)"
 // @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Produce      json
-// @Success      200  {object}  api.Response[[]api.WorkoutRecordResponse]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]dto.WorkoutRecordResponse]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /records [get]
 func (uc *userController) GetRecords(c echo.Context) error {
 	user := uc.context.GetUser(c)
@@ -126,9 +126,9 @@ func (uc *userController) GetRecords(c echo.Context) error {
 // @Param        page          query     int     false  "Page"
 // @Param        per_page      query     int     false  "Per page"
 // @Produce      json
-// @Success      200  {object}  api.PaginatedResponse[dto.DistanceRecordResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.PaginatedResponse[dto.DistanceRecordResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /records/ranking [get]
 func (uc *userController) GetRecordsRanking(c echo.Context) error {
 	user := uc.context.GetUser(c)
@@ -181,9 +181,9 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 // @Param        page          query     int     false  "Page"
 // @Param        per_page      query     int     false  "Per page"
 // @Produce      json
-// @Success      200  {object}  api.PaginatedResponse[dto.ClimbRecordResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.PaginatedResponse[dto.ClimbRecordResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /records/climbs/ranking [get]
 func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 	user := uc.context.GetUser(c)
@@ -232,9 +232,9 @@ func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 // @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Param        id   path      int  true  "User ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[[]api.WorkoutRecordResponse]
-// @Failure      403  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]dto.WorkoutRecordResponse]
+// @Failure      403  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /{id} [get]
 // TODO: Add more data. This will be used for public profiles.
 func (uc *userController) GetUserByID(c echo.Context) error {

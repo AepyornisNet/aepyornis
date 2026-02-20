@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"log/slog"
@@ -8,13 +9,13 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alitto/pond/v2"
 	"github.com/fsouza/slognil"
 	"github.com/invopop/ctxi18n/i18n"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
@@ -34,13 +35,16 @@ type App struct {
 	translator     *i18n.Locale
 	Version        version.Version
 	Config         *container.Config
-	container      *container.Container
-	workerPool     pond.Pool
-	workerPoolGeo  pond.Pool
+	container      container.Container
 }
 
 func (a *App) Serve() error {
-	go a.BackgroundWorker()
+	w, err := worker.New(&a.container)
+	if err != nil {
+		return err
+	}
+
+	go w.Start(context.Background())
 
 	a.logger.Info("Starting web server on " + a.Config.Bind)
 
@@ -185,12 +189,4 @@ func (a *App) DB() *gorm.DB {
 
 func (a *App) Logger() *slog.Logger {
 	return a.logger
-}
-
-func (a *App) getContainer() *container.Container {
-	if a.container == nil {
-		a.container = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager, a.logger)
-	}
-
-	return a.container
 }

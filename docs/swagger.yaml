@@ -1,7 +1,9 @@
 basePath: /api/v2
 definitions:
-  api.AppInfoResponse:
+  dto.AppInfoResponse:
     properties:
+      auto_import_enabled:
+        type: boolean
       registration_disabled:
         type: boolean
       socials_disabled:
@@ -11,7 +13,7 @@ definitions:
       version_sha:
         type: string
     type: object
-  api.CalendarEventResponse:
+  dto.CalendarEventResponse:
     properties:
       end:
         type: string
@@ -22,12 +24,29 @@ definitions:
       url:
         type: string
     type: object
-  api.ClimbSegmentResponse:
+  dto.ClimbRecordResponse:
+    properties:
+      average_slope:
+        type: number
+      date:
+        type: string
+      distance:
+        type: number
+      elevation_gain:
+        type: number
+      end_index:
+        type: integer
+      start_index:
+        type: integer
+      workout_id:
+        type: integer
+    type: object
+  dto.ClimbSegmentResponse:
     properties:
       avg_slope:
         type: number
       category:
-        type: string
+        $ref: '#/definitions/model.Category'
       duration:
         type: number
       elevation:
@@ -43,9 +62,30 @@ definitions:
       start_index:
         type: integer
       type:
-        type: string
+        $ref: '#/definitions/model.SlopeKind'
     type: object
-  api.EquipmentResponse:
+  dto.DistanceRecordResponse:
+    properties:
+      average_speed:
+        type: number
+      date:
+        type: string
+      distance:
+        type: number
+      duration_seconds:
+        type: number
+      end_index:
+        type: integer
+      label:
+        type: string
+      start_index:
+        type: integer
+      target_distance:
+        type: number
+      workout_id:
+        type: integer
+    type: object
+  dto.EquipmentResponse:
     properties:
       active:
         type: boolean
@@ -65,10 +105,34 @@ definitions:
         type: string
       updated_at:
         type: string
+      usage:
+        $ref: '#/definitions/dto.EquipmentUsageStats'
       user_id:
         type: integer
     type: object
-  api.MapCenterResponse:
+  dto.EquipmentUsageStats:
+    properties:
+      distance:
+        type: number
+      duration_seconds:
+        type: number
+      last_used_at:
+        type: string
+      repetitions:
+        type: integer
+      workouts:
+        type: integer
+    type: object
+  dto.FollowRequestResponse:
+    properties:
+      actor_iri:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+    type: object
+  dto.MapCenterResponse:
     properties:
       lat:
         type: number
@@ -77,7 +141,7 @@ definitions:
       tz:
         type: string
     type: object
-  api.MapDataDetailsResponse:
+  dto.MapDataDetailsResponse:
     properties:
       distance:
         description: in km
@@ -123,24 +187,24 @@ definitions:
       zone_ranges:
         additionalProperties:
           items:
-            $ref: '#/definitions/api.ZoneRangeResponse'
+            $ref: '#/definitions/dto.ZoneRangeResponse'
           type: array
         type: object
     type: object
-  api.MapDataResponse:
+  dto.MapDataResponse:
     properties:
       center:
-        $ref: '#/definitions/api.MapCenterResponse'
+        $ref: '#/definitions/dto.MapCenterResponse'
       creator:
         type: string
       details:
-        $ref: '#/definitions/api.MapDataDetailsResponse'
+        $ref: '#/definitions/dto.MapDataDetailsResponse'
       extra_metrics:
         items:
           type: string
         type: array
     type: object
-  api.MapPoint:
+  dto.MapPoint:
     properties:
       elevation:
         type: number
@@ -151,7 +215,7 @@ definitions:
       total_distance:
         type: number
     type: object
-  api.MeasurementResponse:
+  dto.MeasurementResponse:
     properties:
       created_at:
         type: string
@@ -176,7 +240,7 @@ definitions:
       weight:
         type: number
     type: object
-  api.PaginatedResponse-api_EquipmentResponse:
+  dto.PaginatedResponse-dto_ClimbRecordResponse:
     properties:
       errors:
         items:
@@ -188,14 +252,14 @@ definitions:
         type: integer
       results:
         items:
-          $ref: '#/definitions/api.EquipmentResponse'
+          $ref: '#/definitions/dto.ClimbRecordResponse'
         type: array
       total_count:
         type: integer
       total_pages:
         type: integer
     type: object
-  api.PaginatedResponse-api_MeasurementResponse:
+  dto.PaginatedResponse-dto_DistanceRecordResponse:
     properties:
       errors:
         items:
@@ -207,14 +271,14 @@ definitions:
         type: integer
       results:
         items:
-          $ref: '#/definitions/api.MeasurementResponse'
+          $ref: '#/definitions/dto.DistanceRecordResponse'
         type: array
       total_count:
         type: integer
       total_pages:
         type: integer
     type: object
-  api.PaginatedResponse-api_RouteSegmentResponse:
+  dto.PaginatedResponse-dto_EquipmentResponse:
     properties:
       errors:
         items:
@@ -226,14 +290,14 @@ definitions:
         type: integer
       results:
         items:
-          $ref: '#/definitions/api.RouteSegmentResponse'
+          $ref: '#/definitions/dto.EquipmentResponse'
         type: array
       total_count:
         type: integer
       total_pages:
         type: integer
     type: object
-  api.PaginatedResponse-api_WorkoutResponse:
+  dto.PaginatedResponse-dto_MeasurementResponse:
     properties:
       errors:
         items:
@@ -245,14 +309,52 @@ definitions:
         type: integer
       results:
         items:
-          $ref: '#/definitions/api.WorkoutResponse'
+          $ref: '#/definitions/dto.MeasurementResponse'
         type: array
       total_count:
         type: integer
       total_pages:
         type: integer
     type: object
-  api.ProfileSettings:
+  dto.PaginatedResponse-dto_RouteSegmentResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/dto.RouteSegmentResponse'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  dto.PaginatedResponse-dto_WorkoutResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/dto.WorkoutResponse'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  dto.ProfileSettings:
     properties:
       api_active:
         type: boolean
@@ -265,7 +367,7 @@ definitions:
       prefer_full_date:
         type: boolean
       preferred_units:
-        $ref: '#/definitions/database.UserPreferredUnits'
+        $ref: '#/definitions/model.UserPreferredUnits'
       socials_disabled:
         type: boolean
       theme:
@@ -275,7 +377,7 @@ definitions:
       totals_show:
         type: string
     type: object
-  api.RecordResponse:
+  dto.RecordResponse:
     properties:
       date:
         type: string
@@ -284,7 +386,7 @@ definitions:
       workout_id:
         type: integer
     type: object
-  api.Response-any:
+  dto.Response-any:
     properties:
       errors:
         items:
@@ -292,43 +394,7 @@ definitions:
         type: array
       results: {}
     type: object
-  api.Response-api_AppInfoResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.AppInfoResponse'
-    type: object
-  api.Response-api_EquipmentResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.EquipmentResponse'
-    type: object
-  api.Response-api_MeasurementResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.MeasurementResponse'
-    type: object
-  api.Response-api_RouteSegmentDetailResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.RouteSegmentDetailResponse'
-    type: object
-  api.Response-api_RouteSegmentsDetailResponse:
+  dto.Response-array_array_float64:
     properties:
       errors:
         items:
@@ -336,73 +402,13 @@ definitions:
         type: array
       results:
         items:
-          $ref: '#/definitions/api.RouteSegmentResponse'
+          items:
+            format: float64
+            type: number
+          type: array
         type: array
     type: object
-  api.Response-api_StatisticsResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.StatisticsResponse'
-    type: object
-  api.Response-api_TotalsResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.TotalsResponse'
-    type: object
-  api.Response-api_UserProfileResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.UserProfileResponse'
-    type: object
-  api.Response-api_WorkoutBreakdownResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.WorkoutBreakdownResponse'
-    type: object
-  api.Response-api_WorkoutDetailResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.WorkoutDetailResponse'
-    type: object
-  api.Response-api_WorkoutRangeStatsResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.WorkoutRangeStatsResponse'
-    type: object
-  api.Response-api_WorkoutResponse:
-    properties:
-      errors:
-        items:
-          type: string
-        type: array
-      results:
-        $ref: '#/definitions/api.WorkoutResponse'
-    type: object
-  api.Response-array_api_CalendarEventResponse:
+  dto.Response-array_dto_CalendarEventResponse:
     properties:
       errors:
         items:
@@ -410,10 +416,10 @@ definitions:
         type: array
       results:
         items:
-          $ref: '#/definitions/api.CalendarEventResponse'
+          $ref: '#/definitions/dto.CalendarEventResponse'
         type: array
     type: object
-  api.Response-array_api_UserProfileResponse:
+  dto.Response-array_dto_FollowRequestResponse:
     properties:
       errors:
         items:
@@ -421,10 +427,10 @@ definitions:
         type: array
       results:
         items:
-          $ref: '#/definitions/api.UserProfileResponse'
+          $ref: '#/definitions/dto.FollowRequestResponse'
         type: array
     type: object
-  api.Response-array_api_WorkoutRecordResponse:
+  dto.Response-array_dto_UserProfileResponse:
     properties:
       errors:
         items:
@@ -432,10 +438,10 @@ definitions:
         type: array
       results:
         items:
-          $ref: '#/definitions/api.WorkoutRecordResponse'
+          $ref: '#/definitions/dto.UserProfileResponse'
         type: array
     type: object
-  api.Response-array_api_WorkoutResponse:
+  dto.Response-array_dto_WorkoutRecordResponse:
     properties:
       errors:
         items:
@@ -443,10 +449,21 @@ definitions:
         type: array
       results:
         items:
-          $ref: '#/definitions/api.WorkoutResponse'
+          $ref: '#/definitions/dto.WorkoutRecordResponse'
         type: array
     type: object
-  api.Response-array_string:
+  dto.Response-array_dto_WorkoutResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/dto.WorkoutResponse'
+        type: array
+    type: object
+  dto.Response-array_string:
     properties:
       errors:
         items:
@@ -457,7 +474,126 @@ definitions:
           type: string
         type: array
     type: object
-  api.Response-geojson_FeatureCollection:
+  dto.Response-dto_AppInfoResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.AppInfoResponse'
+    type: object
+  dto.Response-dto_EquipmentResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.EquipmentResponse'
+    type: object
+  dto.Response-dto_FollowRequestResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.FollowRequestResponse'
+    type: object
+  dto.Response-dto_MeasurementResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.MeasurementResponse'
+    type: object
+  dto.Response-dto_RouteSegmentDetailResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.RouteSegmentDetailResponse'
+    type: object
+  dto.Response-dto_RouteSegmentsDetailResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/dto.RouteSegmentResponse'
+        type: array
+    type: object
+  dto.Response-dto_StatisticsResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.StatisticsResponse'
+    type: object
+  dto.Response-dto_TotalsResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.TotalsResponse'
+    type: object
+  dto.Response-dto_UserProfileResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.UserProfileResponse'
+    type: object
+  dto.Response-dto_WorkoutBreakdownResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.WorkoutBreakdownResponse'
+    type: object
+  dto.Response-dto_WorkoutDetailResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.WorkoutDetailResponse'
+    type: object
+  dto.Response-dto_WorkoutRangeStatsResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.WorkoutRangeStatsResponse'
+    type: object
+  dto.Response-dto_WorkoutResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/dto.WorkoutResponse'
+    type: object
+  dto.Response-geojson_FeatureCollection:
     properties:
       errors:
         items:
@@ -466,7 +602,7 @@ definitions:
       results:
         $ref: '#/definitions/geojson.FeatureCollection'
     type: object
-  api.Response-map_string_string:
+  dto.Response-map_string_string:
     properties:
       errors:
         items:
@@ -475,7 +611,7 @@ definitions:
       results:
         $ref: '#/definitions/map_string_string'
     type: object
-  api.RouteSegmentDetailResponse:
+  dto.RouteSegmentDetailResponse:
     properties:
       address_string:
         type: string
@@ -500,7 +636,7 @@ definitions:
         type: integer
       matches:
         items:
-          $ref: '#/definitions/api.RouteSegmentMatch'
+          $ref: '#/definitions/dto.RouteSegmentMatch'
         type: array
       max_elevation:
         type: number
@@ -512,7 +648,7 @@ definitions:
         type: string
       points:
         items:
-          $ref: '#/definitions/api.MapPoint'
+          $ref: '#/definitions/dto.MapPoint'
         type: array
       total_distance:
         type: number
@@ -523,7 +659,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  api.RouteSegmentMatch:
+  dto.RouteSegmentMatch:
     properties:
       average_speed:
         type: number
@@ -540,7 +676,7 @@ definitions:
       workout_name:
         type: string
     type: object
-  api.RouteSegmentMatchResponse:
+  dto.RouteSegmentMatchResponse:
     properties:
       distance:
         type: number
@@ -549,7 +685,7 @@ definitions:
       end_index:
         type: integer
       route_segment:
-        $ref: '#/definitions/api.RouteSegmentResponse'
+        $ref: '#/definitions/dto.RouteSegmentResponse'
       route_segment_id:
         type: integer
       start_index:
@@ -557,7 +693,7 @@ definitions:
       workout_id:
         type: integer
     type: object
-  api.RouteSegmentResponse:
+  dto.RouteSegmentResponse:
     properties:
       bidirectional:
         type: boolean
@@ -588,18 +724,18 @@ definitions:
       updated_at:
         type: string
     type: object
-  api.StatisticBuckets:
+  dto.StatisticBuckets:
     properties:
       buckets:
         additionalProperties:
-          $ref: '#/definitions/api.StatisticData'
+          $ref: '#/definitions/dto.StatisticData'
         type: object
       local_workout_type:
         type: string
       workout_type:
         type: string
     type: object
-  api.StatisticData:
+  dto.StatisticData:
     properties:
       average_speed:
         type: number
@@ -618,18 +754,18 @@ definitions:
       workouts:
         type: integer
     type: object
-  api.StatisticsResponse:
+  dto.StatisticsResponse:
     properties:
       bucket_format:
         type: string
       buckets:
         additionalProperties:
-          $ref: '#/definitions/api.StatisticBuckets'
+          $ref: '#/definitions/dto.StatisticBuckets'
         type: object
       user_id:
         type: integer
     type: object
-  api.TotalsResponse:
+  dto.TotalsResponse:
     properties:
       distance:
         type: number
@@ -643,9 +779,11 @@ definitions:
       workouts:
         type: integer
     type: object
-  api.UserProfileResponse:
+  dto.UserProfileResponse:
     properties:
       active:
+        type: boolean
+      activity_pub:
         type: boolean
       admin:
         type: boolean
@@ -664,9 +802,9 @@ definitions:
       prefer_full_date:
         type: boolean
       preferred_units:
-        $ref: '#/definitions/database.UserPreferredUnits'
+        $ref: '#/definitions/model.UserPreferredUnits'
       profile:
-        $ref: '#/definitions/api.ProfileSettings'
+        $ref: '#/definitions/dto.ProfileSettings'
       socials_disabled:
         type: boolean
       theme:
@@ -678,7 +816,31 @@ definitions:
       username:
         type: string
     type: object
-  api.WorkoutBreakdownItemResponse:
+  dto.WellKnownLink:
+    properties:
+      href:
+        type: string
+      rel:
+        type: string
+      template:
+        type: string
+      type:
+        type: string
+    type: object
+  dto.WellKnownNode:
+    properties:
+      aliases:
+        items:
+          type: string
+        type: array
+      links:
+        items:
+          $ref: '#/definitions/dto.WellKnownLink'
+        type: array
+      subject:
+        type: string
+    type: object
+  dto.WorkoutBreakdownItemResponse:
     properties:
       average_cadence:
         type: number
@@ -724,18 +886,20 @@ definitions:
       total_up:
         type: number
     type: object
-  api.WorkoutBreakdownResponse:
+  dto.WorkoutBreakdownResponse:
     properties:
       items:
         items:
-          $ref: '#/definitions/api.WorkoutBreakdownItemResponse'
+          $ref: '#/definitions/dto.WorkoutBreakdownItemResponse'
         type: array
       mode:
         description: '"laps" or "unit"'
         type: string
     type: object
-  api.WorkoutDetailResponse:
+  dto.WorkoutDetailResponse:
     properties:
+      activity_pub_published:
+        type: boolean
       address_string:
         description: MapData fields (when available)
         type: string
@@ -751,7 +915,7 @@ definitions:
         type: number
       climbs:
         items:
-          $ref: '#/definitions/api.ClimbSegmentResponse'
+          $ref: '#/definitions/dto.ClimbSegmentResponse'
         type: array
       created_at:
         type: string
@@ -759,9 +923,11 @@ definitions:
         type: string
       date:
         type: string
+      dirty:
+        type: boolean
       equipment:
         items:
-          $ref: '#/definitions/api.EquipmentResponse'
+          $ref: '#/definitions/dto.EquipmentResponse'
         type: array
       has_file:
         type: boolean
@@ -771,12 +937,12 @@ definitions:
         type: integer
       laps:
         items:
-          $ref: '#/definitions/api.WorkoutLapResponse'
+          $ref: '#/definitions/dto.WorkoutLapResponse'
         type: array
       locked:
         type: boolean
       map_data:
-        $ref: '#/definitions/api.MapDataResponse'
+        $ref: '#/definitions/dto.MapDataResponse'
       max_cadence:
         type: number
       max_elevation:
@@ -798,9 +964,13 @@ definitions:
         type: integer
       public_uuid:
         type: string
+      records:
+        items:
+          $ref: '#/definitions/dto.WorkoutIntervalRecordResponse'
+        type: array
       route_segment_matches:
         items:
-          $ref: '#/definitions/api.RouteSegmentMatchResponse'
+          $ref: '#/definitions/dto.RouteSegmentMatchResponse'
         type: array
       sub_type:
         type: string
@@ -822,11 +992,30 @@ definitions:
       updated_at:
         type: string
       user:
-        $ref: '#/definitions/api.UserProfileResponse'
+        $ref: '#/definitions/dto.UserProfileResponse'
       user_id:
         type: integer
     type: object
-  api.WorkoutLapResponse:
+  dto.WorkoutIntervalRecordResponse:
+    properties:
+      average_speed:
+        type: number
+      distance:
+        type: number
+      duration_seconds:
+        type: number
+      end_index:
+        type: integer
+      label:
+        type: string
+      rank:
+        type: integer
+      start_index:
+        type: integer
+      target_distance:
+        type: number
+    type: object
+  dto.WorkoutLapResponse:
     properties:
       average_cadence:
         type: number
@@ -865,13 +1054,15 @@ definitions:
       total_up:
         type: number
     type: object
-  api.WorkoutRangeStatsResponse:
+  dto.WorkoutRangeStatsResponse:
     properties:
       average_cadence:
         type: number
       average_heart_rate:
         type: number
       average_power:
+        type: number
+      average_respiration_rate:
         type: number
       average_slope:
         type: number
@@ -895,6 +1086,8 @@ definitions:
         type: number
       max_power:
         type: number
+      max_respiration_rate:
+        type: number
       max_slope:
         type: number
       max_speed:
@@ -908,6 +1101,8 @@ definitions:
       min_heart_rate:
         type: number
       min_power:
+        type: number
+      min_respiration_rate:
         type: number
       min_slope:
         type: number
@@ -926,9 +1121,9 @@ definitions:
       total_up:
         type: number
       units:
-        $ref: '#/definitions/api.WorkoutRangeStatsUnitsResponse'
+        $ref: '#/definitions/dto.WorkoutRangeStatsUnitsResponse'
     type: object
-  api.WorkoutRangeStatsUnitsResponse:
+  dto.WorkoutRangeStatsUnitsResponse:
     properties:
       distance:
         type: string
@@ -939,27 +1134,35 @@ definitions:
       temperature:
         type: string
     type: object
-  api.WorkoutRecordResponse:
+  dto.WorkoutRecordResponse:
     properties:
       active:
         type: boolean
       average_speed:
-        $ref: '#/definitions/api.RecordResponse'
+        $ref: '#/definitions/dto.RecordResponse'
       average_speed_no_pause:
-        $ref: '#/definitions/api.RecordResponse'
+        $ref: '#/definitions/dto.RecordResponse'
+      biggest_climb:
+        $ref: '#/definitions/dto.ClimbRecordResponse'
       distance:
-        $ref: '#/definitions/api.RecordResponse'
+        $ref: '#/definitions/dto.RecordResponse'
+      distance_records:
+        items:
+          $ref: '#/definitions/dto.DistanceRecordResponse'
+        type: array
       duration:
-        $ref: '#/definitions/api.RecordResponse'
+        $ref: '#/definitions/dto.RecordResponse'
       max_speed:
-        $ref: '#/definitions/api.RecordResponse'
+        $ref: '#/definitions/dto.RecordResponse'
       total_up:
-        $ref: '#/definitions/api.RecordResponse'
+        $ref: '#/definitions/dto.RecordResponse'
       workout_type:
         type: string
     type: object
-  api.WorkoutResponse:
+  dto.WorkoutResponse:
     properties:
+      activity_pub_published:
+        type: boolean
       address_string:
         description: MapData fields (when available)
         type: string
@@ -979,6 +1182,8 @@ definitions:
         type: string
       date:
         type: string
+      dirty:
+        type: boolean
       has_file:
         type: boolean
       has_tracks:
@@ -1028,11 +1233,11 @@ definitions:
       updated_at:
         type: string
       user:
-        $ref: '#/definitions/api.UserProfileResponse'
+        $ref: '#/definitions/dto.UserProfileResponse'
       user_id:
         type: integer
     type: object
-  api.ZoneRangeResponse:
+  dto.ZoneRangeResponse:
     properties:
       max:
         type: number
@@ -1040,24 +1245,6 @@ definitions:
         type: number
       zone:
         type: integer
-    type: object
-  database.UserPreferredUnits:
-    properties:
-      distance:
-        description: The user's preferred distance unit
-        type: string
-      elevation:
-        description: The user's preferred elevation unit
-        type: string
-      height:
-        description: The user's preferred height unit
-        type: string
-      speed:
-        description: The user's preferred speed unit
-        type: string
-      weight:
-        description: The user's preferred weight unit
-        type: string
     type: object
   geojson.Feature:
     properties:
@@ -1092,12 +1279,103 @@ definitions:
     additionalProperties:
       type: string
     type: object
+  model.Category:
+    enum:
+    - Hors Catégorie
+    - Category 1
+    - Category 2
+    - Category 3
+    - Category 4
+    - Category 5
+    - Category 6
+    - Uncategorized
+    type: string
+    x-enum-varnames:
+    - CategoryHorsCategorie
+    - Category1
+    - Category2
+    - Category3
+    - Category4
+    - Category5
+    - Category6
+    - CategoryUncategorized
+  model.SlopeKind:
+    enum:
+    - climb
+    - descent
+    type: string
+    x-enum-varnames:
+    - SlopeKindClimb
+    - SlopeKindDescent
+  model.UserPreferredUnits:
+    properties:
+      distance:
+        description: The user's preferred distance unit
+        type: string
+      elevation:
+        description: The user's preferred elevation unit
+        type: string
+      height:
+        description: The user's preferred height unit
+        type: string
+      speed:
+        description: The user's preferred speed unit
+        type: string
+      weight:
+        description: The user's preferred weight unit
+        type: string
+    type: object
 info:
   contact: {}
   description: Workout Tracker HTTP API (v2).
   title: Workout Tracker API
   version: "2.0"
 paths:
+  /.well-known/host-meta:
+    get:
+      produces:
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Get host-meta document
+      tags:
+      - activity-pub
+  /.well-known/webfinger:
+    get:
+      parameters:
+      - description: Resource URI (for example acct:user@example.com)
+        in: query
+        name: resource
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Optional relation filter
+        in: query
+        items:
+          type: string
+        name: rel
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WellKnownNode'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Resolve ActivityPub actor via WebFinger
+      tags:
+      - activity-pub
   /{id}:
     get:
       parameters:
@@ -1120,15 +1398,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-array_api_WorkoutRecordResponse'
+            $ref: '#/definitions/dto.Response-array_dto_WorkoutRecordResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1146,15 +1424,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_AppInfoResponse'
+            $ref: '#/definitions/dto.Response-dto_AppInfoResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1170,15 +1448,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-array_api_UserProfileResponse'
+            $ref: '#/definitions/dto.Response-array_dto_UserProfileResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1200,15 +1478,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1229,15 +1507,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+            $ref: '#/definitions/dto.Response-dto_UserProfileResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1260,15 +1538,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+            $ref: '#/definitions/dto.Response-dto_UserProfileResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1276,6 +1554,233 @@ paths:
       summary: Update user (admin)
       tags:
       - admin
+  /ap/users/{username}:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Get ActivityPub actor
+      tags:
+      - activity-pub
+  /ap/users/{username}/followers:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Page number (1-based)
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Get ActivityPub followers collection
+      tags:
+      - activity-pub
+  /ap/users/{username}/following:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            type: string
+      summary: Get ActivityPub following collection
+      tags:
+      - activity-pub
+  /ap/users/{username}/inbox:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Post ActivityPub inbox activity
+      tags:
+      - activity-pub
+  /ap/users/{username}/outbox:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Page number (1-based)
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Get ActivityPub outbox collection
+      tags:
+      - activity-pub
+  /ap/users/{username}/outbox/{id}:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Outbox entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Get ActivityPub outbox item
+      tags:
+      - activity-pub
+  /ap/users/{username}/outbox/{id}/fit:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Outbox entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: binary FIT content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Download ActivityPub outbox FIT file
+      tags:
+      - activity-pub
+  /ap/users/{username}/outbox/{id}/route-image:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Outbox entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: binary image content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Get ActivityPub outbox route image
+      tags:
+      - activity-pub
   /app-info:
     get:
       produces:
@@ -1284,10 +1789,78 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_AppInfoResponse'
+            $ref: '#/definitions/dto.Response-dto_AppInfoResponse'
       summary: Get application info
       tags:
       - meta
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.Response-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Register account
+      tags:
+      - auth
+  /auth/signin:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-dto_UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Sign in
+      tags:
+      - auth
+  /auth/signout:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-map_string_string'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Sign out
+      tags:
+      - auth
   /equipment:
     get:
       parameters:
@@ -1305,15 +1878,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.PaginatedResponse-api_EquipmentResponse'
+            $ref: '#/definitions/dto.PaginatedResponse-dto_EquipmentResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1330,15 +1903,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/api.Response-api_EquipmentResponse'
+            $ref: '#/definitions/dto.Response-dto_EquipmentResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1360,11 +1933,11 @@ paths:
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1385,11 +1958,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_EquipmentResponse'
+            $ref: '#/definitions/dto.Response-dto_EquipmentResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1412,19 +1985,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_EquipmentResponse'
+            $ref: '#/definitions/dto.Response-dto_EquipmentResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1446,11 +2019,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-array_string'
+            $ref: '#/definitions/dto.Response-array_string'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1475,15 +2048,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.PaginatedResponse-api_MeasurementResponse'
+            $ref: '#/definitions/dto.PaginatedResponse-dto_MeasurementResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1500,15 +2073,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_MeasurementResponse'
+            $ref: '#/definitions/dto.Response-dto_MeasurementResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1534,11 +2107,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1554,7 +2127,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+            $ref: '#/definitions/dto.Response-dto_UserProfileResponse'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1571,20 +2144,94 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+            $ref: '#/definitions/dto.Response-dto_UserProfileResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
       - CookieAuth: []
       summary: Update profile
+      tags:
+      - profile
+  /profile/enable-activity-pub:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Toggle ActivityPub support
+      tags:
+      - profile
+  /profile/follow-requests:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-array_dto_FollowRequestResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: List ActivityPub follow requests
+      tags:
+      - profile
+  /profile/follow-requests/{id}/accept:
+    post:
+      parameters:
+      - description: Follow request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-dto_FollowRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Accept ActivityPub follow request
       tags:
       - profile
   /profile/refresh-workouts:
@@ -1595,11 +2242,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1615,11 +2262,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1664,16 +2311,113 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-array_api_WorkoutRecordResponse'
+            $ref: '#/definitions/dto.Response-array_dto_WorkoutRecordResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
       - CookieAuth: []
       summary: Get workout records
+      tags:
+      - user
+  /records/climbs/ranking:
+    get:
+      parameters:
+      - description: Workout type (e.g. cycling)
+        in: query
+        name: workout_type
+        required: true
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start
+        type: string
+      - description: End date (YYYY-MM-DD, inclusive)
+        in: query
+        name: end
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PaginatedResponse-dto_ClimbRecordResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get ranked climb records
+      tags:
+      - user
+  /records/ranking:
+    get:
+      parameters:
+      - description: Workout type (e.g. running)
+        in: query
+        name: workout_type
+        required: true
+        type: string
+      - description: Distance label (e.g. 10 km)
+        in: query
+        name: label
+        required: true
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start
+        type: string
+      - description: End date (YYYY-MM-DD, inclusive)
+        in: query
+        name: end
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PaginatedResponse-dto_DistanceRecordResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get ranked distance records
       tags:
       - user
   /route-segments:
@@ -1693,15 +2437,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.PaginatedResponse-api_RouteSegmentResponse'
+            $ref: '#/definitions/dto.PaginatedResponse-dto_RouteSegmentResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1728,15 +2472,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/api.Response-api_RouteSegmentsDetailResponse'
+            $ref: '#/definitions/dto.Response-dto_RouteSegmentsDetailResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1758,15 +2502,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1787,11 +2531,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_RouteSegmentDetailResponse'
+            $ref: '#/definitions/dto.Response-dto_RouteSegmentDetailResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1814,19 +2558,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_RouteSegmentDetailResponse'
+            $ref: '#/definitions/dto.Response-dto_RouteSegmentDetailResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1852,7 +2596,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1874,15 +2618,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1904,15 +2648,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1937,15 +2681,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_StatisticsResponse'
+            $ref: '#/definitions/dto.Response-dto_StatisticsResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1970,11 +2714,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_TotalsResponse'
+            $ref: '#/definitions/dto.Response-dto_TotalsResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -1990,11 +2734,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_UserProfileResponse'
+            $ref: '#/definitions/dto.Response-dto_UserProfileResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2019,15 +2763,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.PaginatedResponse-api_WorkoutResponse'
+            $ref: '#/definitions/dto.PaginatedResponse-dto_WorkoutResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2045,15 +2789,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/api.Response-api_WorkoutResponse'
+            $ref: '#/definitions/dto.Response-dto_WorkoutResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2075,15 +2819,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2104,15 +2848,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_WorkoutDetailResponse'
+            $ref: '#/definitions/dto.Response-dto_WorkoutDetailResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2135,20 +2879,83 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_WorkoutResponse'
+            $ref: '#/definitions/dto.Response-dto_WorkoutResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
       - CookieAuth: []
       summary: Update workout
+      tags:
+      - workouts
+  /workouts/{id}/activity-pub/publish:
+    delete:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Unpublish workout from ActivityPub
+      tags:
+      - workouts
+    post:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Publish workout to ActivityPub
       tags:
       - workouts
   /workouts/{id}/breakdown:
@@ -2173,15 +2980,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_WorkoutBreakdownResponse'
+            $ref: '#/definitions/dto.Response-dto_WorkoutBreakdownResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2207,7 +3014,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2229,11 +3036,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2257,15 +3064,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/api.Response-api_RouteSegmentDetailResponse'
+            $ref: '#/definitions/dto.Response-dto_RouteSegmentDetailResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2287,11 +3094,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2312,11 +3119,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-map_string_string'
+            $ref: '#/definitions/dto.Response-map_string_string'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2346,15 +3153,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_WorkoutRangeStatsResponse'
+            $ref: '#/definitions/dto.Response-dto_WorkoutRangeStatsResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2376,15 +3183,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_WorkoutResponse'
+            $ref: '#/definitions/dto.Response-dto_WorkoutResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2400,15 +3207,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-array_api_CalendarEventResponse'
+            $ref: '#/definitions/dto.Response-array_dto_CalendarEventResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2424,11 +3231,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-geojson_FeatureCollection'
+            $ref: '#/definitions/dto.Response-geojson_FeatureCollection'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2444,11 +3251,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-geojson_FeatureCollection'
+            $ref: '#/definitions/dto.Response-array_array_float64'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       security:
       - ApiKeyAuth: []
       - ApiKeyQuery: []
@@ -2470,16 +3277,84 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-api_WorkoutDetailResponse'
+            $ref: '#/definitions/dto.Response-dto_WorkoutDetailResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       summary: Get public workout
+      tags:
+      - workouts
+  /workouts/public/{uuid}/breakdown:
+    get:
+      parameters:
+      - description: Public UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Unit
+        in: query
+        name: unit
+        type: string
+      - description: Count
+        in: query
+        name: count
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-dto_WorkoutBreakdownResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Get public workout breakdown
+      tags:
+      - workouts
+  /workouts/public/{uuid}/stats-range:
+    get:
+      parameters:
+      - description: Public UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Start point index (inclusive)
+        in: query
+        name: start_index
+        type: integer
+      - description: End point index (inclusive)
+        in: query
+        name: end_index
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-dto_WorkoutRangeStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-any'
+      summary: Get public workout range statistics
       tags:
       - workouts
   /workouts/recent:
@@ -2499,11 +3374,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Response-array_api_WorkoutResponse'
+            $ref: '#/definitions/dto.Response-array_dto_WorkoutResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.Response-any'
+            $ref: '#/definitions/dto.Response-any'
       summary: List recent workouts
       tags:
       - workouts
