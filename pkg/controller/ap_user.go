@@ -12,8 +12,11 @@ import (
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
+
+type _swaggerApUserErrorResponse = dto.Response[any]
 
 type ApUserController interface {
 	GetUser(c echo.Context) error
@@ -31,6 +34,14 @@ func NewApUserController(c *container.Container) ApUserController {
 	return &apUserController{context: c}
 }
 
+// GetUser returns the ActivityPub actor for a local user
+// @Summary      Get ActivityPub actor
+// @Tags         activity-pub
+// @Param        username  path  string  true  "Username"
+// @Produce      json
+// @Success      200  {object}  map[string]any
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /ap/users/{username} [get]
 func (ac *apUserController) GetUser(c echo.Context) error {
 	username := c.Param("username")
 	if username == "" {
@@ -89,10 +100,27 @@ func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, 
 	return user, nil
 }
 
+// Following returns the ActivityPub following collection for a local user
+// @Summary      Get ActivityPub following collection
+// @Tags         activity-pub
+// @Param        username  path  string  true  "Username"
+// @Produce      json
+// @Failure      501  {string}  string
+// @Router       /ap/users/{username}/following [get]
 func (ac *apUserController) Following(c echo.Context) error {
 	return c.NoContent(http.StatusNotImplemented)
 }
 
+// Followers returns the ActivityPub followers collection for a local user
+// @Summary      Get ActivityPub followers collection
+// @Tags         activity-pub
+// @Param        username  path   string  true   "Username"
+// @Param        page      query  int     false  "Page number (1-based)"
+// @Produce      json
+// @Success      200  {object}  map[string]any
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /ap/users/{username}/followers [get]
 func (ac *apUserController) Followers(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {

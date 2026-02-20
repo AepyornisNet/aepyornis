@@ -58,9 +58,9 @@ func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteS
 // @Produce      json
 // @Param        page      query  int false "Page"
 // @Param        per_page  query  int false "Items per page"
-// @Success      200  {object}  api.PaginatedResponse[dto.RouteSegmentResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.PaginatedResponse[dto.RouteSegmentResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /route-segments [get]
 func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 	var pagination dto.PaginationParams
@@ -105,8 +105,8 @@ func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Route segment ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.RouteSegmentDetailResponse]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.RouteSegmentDetailResponse]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /route-segments/{id} [get]
 func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
@@ -131,9 +131,9 @@ func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
 // @Produce      json
 // @Param        file   formData  file   true  "GPX file"
 // @Param        notes  formData  string false "Notes"
-// @Success      201  {object}  api.Response[dto.RouteSegmentsDetailResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      201  {object}  dto.Response[dto.RouteSegmentsDetailResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /route-segments [post]
 func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 	form, err := c.MultipartForm()
@@ -185,9 +185,9 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Accept       json
 // @Produce      json
-// @Success      201  {object}  api.Response[dto.RouteSegmentDetailResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      201  {object}  dto.Response[dto.RouteSegmentDetailResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/route-segment [post]
 func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) error {
 	workoutID, err := cast.ToUint64E(c.Param("id"))
@@ -234,9 +234,9 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Route segment ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /route-segments/{id} [delete]
 func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
@@ -263,9 +263,9 @@ func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Route segment ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /route-segments/{id}/refresh [post]
 func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
@@ -297,10 +297,10 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 // @Param        id   path  int  true  "Route segment ID"
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.RouteSegmentDetailResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.RouteSegmentDetailResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /route-segments/{id} [put]
 func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
@@ -350,7 +350,7 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 // @Param        id   path  int  true  "Route segment ID"
 // @Produce      octet-stream
 // @Success      200  {string}  string  "binary GPX content"
-// @Failure      404  {object}  api.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /route-segments/{id}/download [get]
 func (rc *routeSegmentController) DownloadRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
@@ -372,9 +372,9 @@ func (rc *routeSegmentController) DownloadRouteSegment(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Route segment ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /route-segments/{id}/matches [post]
 func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)

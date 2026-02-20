@@ -231,8 +231,8 @@ func (a *App) apiV2Routes(e *echo.Group) {
 // @Security     CookieAuth
 // @Produce      json
 // @Param        location  query  string true "Free text address"
-// @Success      200  {object}  api.Response[[]string]
-// @Failure      400  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]string]
+// @Failure      400  {object}  dto.Response[any]
 // @Router       /lookup-address [post]
 func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 	q := c.Param("location")
@@ -251,7 +251,7 @@ func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 // @Summary      Get application info
 // @Tags         meta
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.AppInfoResponse]
+// @Success      200  {object}  dto.Response[dto.AppInfoResponse]
 // @Router       /app-info [get]
 func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 	resp := dto.Response[dto.AppInfoResponse]{

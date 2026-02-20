@@ -97,9 +97,9 @@ func (wc *workoutController) getWorkout(c echo.Context) (*model.Workout, error) 
 // @Param        page      query     int    false "Page"
 // @Param        per_page  query     int    false "Per page"
 // @Produce      json
-// @Success      200  {object}  api.PaginatedResponse[dto.WorkoutResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.PaginatedResponse[dto.WorkoutResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts [get]
 func (wc *workoutController) GetWorkouts(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -156,9 +156,9 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path      int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutDetailResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutDetailResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id} [get]
 func (wc *workoutController) GetWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -209,9 +209,9 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 // @Param        unit   query  string  false "Unit"
 // @Param        count  query  number  false "Count"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutBreakdownResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutBreakdownResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/breakdown [get]
 func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -284,9 +284,9 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 // @Param        start_index  query  int  false "Start point index (inclusive)"
 // @Param        end_index    query  int  false "End point index (inclusive)"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutRangeStatsResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutRangeStatsResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/stats-range [get]
 func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -349,9 +349,9 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[[]api.CalendarEventResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]dto.CalendarEventResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/calendar [get]
 func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -428,9 +428,9 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 // @Accept       multipart/form-data
 // @Accept       json
 // @Produce      json
-// @Success      201  {object}  api.Response[dto.WorkoutResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      201  {object}  dto.Response[dto.WorkoutResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts [post]
 func (wc *workoutController) CreateWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -549,8 +549,8 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 // @Produce      json
 // @Param        limit   query  int false "Limit"
 // @Param        offset  query  int false "Offset"
-// @Success      200  {object}  api.Response[[]api.WorkoutResponse]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[]dto.WorkoutResponse]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/recent [get]
 func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	limit := 20
@@ -593,9 +593,9 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/{id} [delete]
 func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -629,9 +629,9 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id} [put]
 func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -682,9 +682,9 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutResponse]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      403  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutResponse]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      403  {object}  dto.Response[any]
 // @Router       /workouts/{id}/toggle-lock [post]
 func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -720,8 +720,8 @@ func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/refresh [post]
 func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -754,10 +754,10 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]any]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
-// @Failure      409  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      409  {object}  dto.Response[any]
 // @Router       /workouts/{id}/activity-pub/publish [post]
 func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -905,9 +905,9 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]any]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/activity-pub/publish [delete]
 func (wc *workoutController) UnpublishWorkoutFromActivityPub(c echo.Context) error {
 	user := wc.context.GetUser(c)
@@ -941,8 +941,8 @@ func (wc *workoutController) UnpublishWorkoutFromActivityPub(c echo.Context) err
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/share [post]
 func (wc *workoutController) CreateWorkoutShare(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -976,8 +976,8 @@ func (wc *workoutController) CreateWorkoutShare(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/share [delete]
 func (wc *workoutController) DeleteWorkoutShare(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -1007,7 +1007,7 @@ func (wc *workoutController) DeleteWorkoutShare(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      octet-stream
 // @Success      200  {string}  string  "binary workout file"
-// @Failure      404  {object}  api.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/download [get]
 func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 	workout, err := wc.getWorkout(c)
@@ -1034,9 +1034,9 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 // @Tags         workouts
 // @Param        uuid  path  string  true  "Public UUID"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutDetailResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutDetailResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/public/{uuid} [get]
 func (wc *workoutController) GetPublicWorkout(c echo.Context) error {
 	uuidParam := c.Param("uuid")
@@ -1071,9 +1071,9 @@ func (wc *workoutController) GetPublicWorkout(c echo.Context) error {
 // @Param        unit   query  string  false "Unit"
 // @Param        count  query  number  false "Count"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutBreakdownResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutBreakdownResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/public/{uuid}/breakdown [get]
 func (wc *workoutController) GetPublicWorkoutBreakdown(c echo.Context) error {
 	uuidParam := c.Param("uuid")
@@ -1145,9 +1145,9 @@ func (wc *workoutController) GetPublicWorkoutBreakdown(c echo.Context) error {
 // @Param        start_index  query  int  false "Start point index (inclusive)"
 // @Param        end_index    query  int  false "End point index (inclusive)"
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.WorkoutRangeStatsResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      404  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.WorkoutRangeStatsResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/public/{uuid}/stats-range [get]
 func (wc *workoutController) GetPublicWorkoutRangeStats(c echo.Context) error {
 	uuidParam := c.Param("uuid")

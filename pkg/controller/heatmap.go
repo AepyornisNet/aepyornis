@@ -29,8 +29,8 @@ func NewHeatmapController(c *container.Container) HeatmapController {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[[][]float64]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[[][]float64]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/coordinates [get]
 func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 	coords := [][]float64{}
@@ -67,8 +67,8 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[geojson.FeatureCollection]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[geojson.FeatureCollection]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/centers [get]
 func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()

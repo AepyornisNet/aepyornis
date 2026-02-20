@@ -11,8 +11,11 @@ import (
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
+
+type _swaggerApInboxErrorResponse = dto.Response[any]
 
 type ApInboxController interface {
 	Inbox(c echo.Context) error
@@ -86,6 +89,16 @@ func isUndoFollowActivity(it vocab.Activity) bool {
 	return isFollow
 }
 
+// Inbox handles incoming ActivityPub activities for a local user inbox
+// @Summary      Post ActivityPub inbox activity
+// @Tags         activity-pub
+// @Param        username  path  string  true  "Username"
+// @Accept       json
+// @Success      202  {string}  string
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
+// @Router       /ap/users/{username}/inbox [post]
 func (ac *apInboxController) Inbox(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {

@@ -40,7 +40,7 @@ func NewProfileController(c *container.Container) ProfileController {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.UserProfileResponse]
+// @Success      200  {object}  dto.Response[dto.UserProfileResponse]
 // @Router       /profile [get]
 func (pc *profileController) GetProfile(c echo.Context) error {
 	user := pc.context.GetUser(c)
@@ -68,9 +68,9 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 // @Security     CookieAuth
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  api.Response[dto.UserProfileResponse]
-// @Failure      400  {object}  api.Response[any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[dto.UserProfileResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /profile [put]
 func (pc *profileController) UpdateProfile(c echo.Context) error {
 	user := pc.context.GetUser(c)
@@ -140,8 +140,8 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/reset-api-key [post]
 func (pc *profileController) ResetAPIKey(c echo.Context) error {
 	user := pc.context.GetUser(c)
@@ -169,8 +169,8 @@ func (pc *profileController) ResetAPIKey(c echo.Context) error {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]any]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/enable-activity-pub [post]
 func (pc *profileController) EnableActivityPub(c echo.Context) error {
 	user := pc.context.GetUser(c)
@@ -197,6 +197,16 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+// ListFollowRequests returns pending ActivityPub follow requests for the current user
+// @Summary      List ActivityPub follow requests
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  dto.Response[[]dto.FollowRequestResponse]
+// @Failure      500  {object}  dto.Response[any]
+// @Router       /profile/follow-requests [get]
 func (pc *profileController) ListFollowRequests(c echo.Context) error {
 	user := pc.context.GetUser(c)
 
@@ -215,6 +225,19 @@ func (pc *profileController) ListFollowRequests(c echo.Context) error {
 	})
 }
 
+// AcceptFollowRequest approves a pending ActivityPub follow request and sends Accept
+// @Summary      Accept ActivityPub follow request
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Follow request ID"
+// @Produce      json
+// @Success      200  {object}  dto.Response[dto.FollowRequestResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
+// @Failure      502  {object}  dto.Response[any]
+// @Router       /profile/follow-requests/{id}/accept [post]
 func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 	user := pc.context.GetUser(c)
 
@@ -251,8 +274,8 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  api.Response[map[string]string]
-// @Failure      500  {object}  api.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/refresh-workouts [post]
 func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 	user := pc.context.GetUser(c)

@@ -27,6 +27,15 @@ func NewWellKnownController(c *container.Container) WellKnownController {
 }
 
 // WebFinger implementation based on https://github.com/go-ap/webfinger/blob/master/handlers.go
+// @Summary      Resolve ActivityPub actor via WebFinger
+// @Tags         activity-pub
+// @Param        resource  query  string  true   "Resource URI (for example acct:user@example.com)"
+// @Param        rel       query  []string  false  "Optional relation filter"
+// @Produce      json
+// @Success      200  {object}  dto.WellKnownNode
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /.well-known/webfinger [get]
 func (wc *wellKnownController) WebFinger(c echo.Context) error {
 	res := c.QueryParam("resource")
 	if res == "" {
@@ -98,6 +107,12 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 	return json.NewEncoder(c.Response()).Encode(resp)
 }
 
+// HostMeta returns host-meta with the WebFinger LRDD template
+// @Summary      Get host-meta document
+// @Tags         activity-pub
+// @Produce      xml
+// @Success      200  {string}  string
+// @Router       /.well-known/host-meta [get]
 func (wc *wellKnownController) HostMeta(c echo.Context) error {
 	host := wc.context.GetConfig().Host
 	template := fmt.Sprintf("https://%s/.well-known/webfinger?resource={uri}", host)

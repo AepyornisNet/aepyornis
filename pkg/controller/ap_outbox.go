@@ -13,9 +13,12 @@ import (
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
+
+type _swaggerApOutboxErrorResponse = dto.Response[any]
 
 type ApOutboxController interface {
 	Outbox(c echo.Context) error
@@ -48,6 +51,16 @@ func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User
 	return user, nil
 }
 
+// Outbox returns the ActivityPub outbox collection for a local user
+// @Summary      Get ActivityPub outbox collection
+// @Tags         activity-pub
+// @Param        username  path   string  true   "Username"
+// @Param        page      query  int     false  "Page number (1-based)"
+// @Produce      json
+// @Success      200  {object}  map[string]any
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /ap/users/{username}/outbox [get]
 func (ac *apOutboxController) Outbox(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
@@ -142,6 +155,16 @@ func (ac *apOutboxController) Outbox(c echo.Context) error {
 	return renderActivityPubResponse(c, http.StatusOK, payload)
 }
 
+// OutboxItem returns a single ActivityPub outbox activity by UUID
+// @Summary      Get ActivityPub outbox item
+// @Tags         activity-pub
+// @Param        username  path  string  true  "Username"
+// @Param        id        path  string  true  "Outbox entry UUID"
+// @Produce      json
+// @Success      200  {object}  map[string]any
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /ap/users/{username}/outbox/{id} [get]
 func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
@@ -165,6 +188,16 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 	return renderActivityPubResponse(c, http.StatusOK, entry.Activity)
 }
 
+// OutboxFit downloads the FIT attachment for an ActivityPub outbox entry
+// @Summary      Download ActivityPub outbox FIT file
+// @Tags         activity-pub
+// @Param        username  path  string  true  "Username"
+// @Param        id        path  string  true  "Outbox entry UUID"
+// @Produce      octet-stream
+// @Success      200  {string}  string  "binary FIT content"
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /ap/users/{username}/outbox/{id}/fit [get]
 func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
@@ -193,6 +226,16 @@ func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 	return c.Blob(http.StatusOK, entry.APOutboxWorkout.FitContentType, entry.APOutboxWorkout.FitContent)
 }
 
+// OutboxRouteImage returns the route image attachment for an outbox entry
+// @Summary      Get ActivityPub outbox route image
+// @Tags         activity-pub
+// @Param        username  path  string  true  "Username"
+// @Param        id        path  string  true  "Outbox entry UUID"
+// @Produce      octet-stream
+// @Success      200  {string}  string  "binary image content"
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /ap/users/{username}/outbox/{id}/route-image [get]
 func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
