@@ -30,12 +30,12 @@ func NewWellKnownController(c *container.Container) WellKnownController {
 func (wc *wellKnownController) WebFinger(c echo.Context) error {
 	res := c.QueryParam("resource")
 	if res == "" {
-		return renderApiError(c, http.StatusNotFound, errors.New("resource not found"))
+		return renderApiError(c, http.StatusBadRequest, errors.New("missing resource parameter"))
 	}
 
 	typ, handle := splitResourceString(res)
 	if typ == "" || handle == "" {
-		return renderApiError(c, http.StatusNotFound, fmt.Errorf("invalid resource: %s", res))
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid resource: %s", res))
 	}
 
 	var host string
@@ -55,7 +55,7 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 	case "https", "http":
 		host = handle
 	default:
-		return renderApiError(c, http.StatusNotFound, fmt.Errorf("unsupported resource type: %s", typ))
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("unsupported resource type: %s", typ))
 	}
 
 	if host != wc.context.GetConfig().Host {
@@ -76,6 +76,21 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 				Href: fmt.Sprintf("https://%s/ap/users/%s", wc.context.GetConfig().Host, user.Username),
 			},
 		},
+	}
+
+	if rels, hasRel := c.QueryParams()["rel"]; hasRel && len(rels) > 0 {
+		allowed := make(map[string]struct{}, len(rels))
+		for _, rel := range rels {
+			allowed[rel] = struct{}{}
+		}
+
+		filtered := make([]dto.WellKnownLink, 0, len(resp.Links))
+		for _, link := range resp.Links {
+			if _, ok := allowed[link.Rel]; ok {
+				filtered = append(filtered, link)
+			}
+		}
+		resp.Links = filtered
 	}
 
 	c.Response().Header().Set(echo.HeaderContentType, "application/jrd+json")
@@ -108,6 +123,9 @@ func splitResourceString(res string) (string, string) {
 	}
 	typ := ar[0]
 	handle := ar[1]
+	if len(handle) == 0 {
+		return "", ""
+	}
 	if handle[0] == '@' && len(handle) > 1 {
 		handle = handle[1:]
 	}
