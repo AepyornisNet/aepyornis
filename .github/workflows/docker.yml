@@ -10,23 +10,26 @@ on:
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 # There is a single job in this workflow. It's configured to run on the latest available version of Ubuntu.
 jobs:
   metadata:
     runs-on: ubuntu-latest
     outputs:
+      image_name: ${{ steps.image_name.outputs.image_name }}
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
+      - name: Normalize image name
+        id: image_name
+        run: echo "image_name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -68,7 +71,7 @@ jobs:
           cache-from: type=gha,scope=linux-amd64
           cache-to: type=gha,mode=max,scope=linux-amd64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64
+          tags: ${{ env.REGISTRY }}/${{ needs.metadata.outputs.image_name }}:${{ github.sha }}-amd64
           build-args: |
             BUILD_TIME=${{ env.BUILD_TIME }}
             GIT_COMMIT=${{ github.sha }}
@@ -79,7 +82,7 @@ jobs:
       - name: Export image reference
         id: export
         run: |
-          IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64
+          IMAGE_TAG=${{ env.REGISTRY }}/${{ needs.metadata.outputs.image_name }}:${{ github.sha }}-amd64
           echo "image=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
           echo "digest=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
 
@@ -115,7 +118,7 @@ jobs:
           cache-from: type=gha,scope=linux-arm64
           cache-to: type=gha,mode=max,scope=linux-arm64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
+          tags: ${{ env.REGISTRY }}/${{ needs.metadata.outputs.image_name }}:${{ github.sha }}-arm64
           build-args: |
             BUILD_TIME=${{ env.BUILD_TIME }}
             GIT_COMMIT=${{ github.sha }}
@@ -126,7 +129,7 @@ jobs:
       - name: Export image reference
         id: export
         run: |
-          IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
+          IMAGE_TAG=${{ env.REGISTRY }}/${{ needs.metadata.outputs.image_name }}:${{ github.sha }}-arm64
           echo "image=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
           echo "digest=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
 
