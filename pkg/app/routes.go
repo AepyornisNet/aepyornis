@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"path"
@@ -10,12 +11,14 @@ import (
 
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/vgarvardt/gue/v6"
 
 	slogecho "github.com/samber/slog-echo"
 
@@ -60,6 +63,18 @@ func (a *App) ConfigureWebserver() error {
 	if a.sessionManager.Store, err = gormstore.New(a.db); err != nil {
 		return err
 	}
+
+	sqlDB, err := a.db.DB()
+	if err != nil {
+		return fmt.Errorf("configure webserver: getting sql.DB from gorm: %w", err)
+	}
+
+	gc, err := gue.NewClient(sqlDB, gue.WithClientLogger(a.logger.With("module", "worker")))
+	if err != nil {
+		return fmt.Errorf("configure webserver: creating gue client: %w", err)
+	}
+
+	a.container = *container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc)
 
 	e.Use(session.LoadAndSave(a.sessionManager))
 	e.Use(a.ContextValueMiddleware)
@@ -245,6 +260,7 @@ func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 			VersionSha:           a.Version.Sha,
 			RegistrationDisabled: a.Config.RegistrationDisabled,
 			SocialsDisabled:      a.Config.SocialsDisabled,
+			AutoImportEnabled:    a.Config.AutoImportEnabled,
 		},
 	}
 

@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/vgarvardt/gue/v6"
-	"gorm.io/gorm"
 )
 
 const JobAutoImport = "auto_import"
@@ -24,18 +24,25 @@ const fileAddDelay = -1 * time.Minute
 
 var ErrNothingImported = errors.New("nothing imported")
 
-func makeAutoImportHandler(db *gorm.DB, gc *gue.Client, logger *slog.Logger) gue.WorkFunc {
+func makeAutoImportHandler(c *container.Container, logger *slog.Logger) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
+		if !c.GetConfig().AutoImportEnabled {
+			logger.Debug("Skipping auto-import job because auto import is disabled")
+			return nil
+		}
+
 		var args idArgs
 		if err := json.Unmarshal(j.Args, &args); err != nil {
 			return fmt.Errorf("auto_import: unmarshal args: %w", err)
 		}
 
-		return autoImportForUser(ctx, db, gc, logger.With("user_id", args.ID), args.ID)
+		return autoImportForUser(ctx, c, logger.With("user_id", args.ID), args.ID)
 	}
 }
 
-func autoImportForUser(ctx context.Context, db *gorm.DB, gc *gue.Client, l *slog.Logger, userID uint64) error {
+func autoImportForUser(ctx context.Context, c *container.Container, l *slog.Logger, userID uint64) error {
+	db := c.GetDB()
+
 	u, err := model.GetUserByID(db, userID)
 	if err != nil {
 		return err
@@ -60,7 +67,7 @@ func autoImportForUser(ctx context.Context, db *gorm.DB, gc *gue.Client, l *slog
 
 	for _, path := range files {
 		pl := l.With("path", path)
-		if err := importForUser(ctx, db, gc, pl, u, path); err != nil {
+		if err := importForUser(ctx, c, pl, u, path); err != nil {
 			pl.Error("Could not import: " + err.Error())
 		}
 	}
@@ -68,7 +75,7 @@ func autoImportForUser(ctx context.Context, db *gorm.DB, gc *gue.Client, l *slog
 	return nil
 }
 
-func importForUser(ctx context.Context, db *gorm.DB, gc *gue.Client, logger *slog.Logger, u *model.User, path string) error {
+func importForUser(ctx context.Context, c *container.Container, logger *slog.Logger, u *model.User, path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -78,7 +85,7 @@ func importForUser(ctx context.Context, db *gorm.DB, gc *gue.Client, logger *slo
 		return nil
 	}
 
-	if importErr := importFile(ctx, db, gc, logger, u, path); importErr != nil {
+	if importErr := importFile(ctx, c, logger, u, path); importErr != nil {
 		logger.Error("Could not import: " + importErr.Error())
 		return moveImportFile(logger, u.Profile.AutoImportDirectory, path, "failed")
 	}
@@ -86,7 +93,9 @@ func importForUser(ctx context.Context, db *gorm.DB, gc *gue.Client, logger *slo
 	return moveImportFile(logger, u.Profile.AutoImportDirectory, path, "done")
 }
 
-func importFile(ctx context.Context, db *gorm.DB, gc *gue.Client, logger *slog.Logger, u *model.User, path string) error {
+func importFile(ctx context.Context, c *container.Container, logger *slog.Logger, u *model.User, path string) error {
+	db := c.GetDB()
+
 	logger.Info("Importing path")
 
 	dat, err := os.ReadFile(path)
@@ -104,7 +113,7 @@ func importFile(ctx context.Context, db *gorm.DB, gc *gue.Client, logger *slog.L
 	}
 
 	for _, w := range ws {
-		if err := EnqueueWorkoutUpdate(ctx, gc, w.ID); err != nil {
+		if err := EnqueueWorkoutUpdate(ctx, c, w.ID); err != nil {
 			logger.Error("Failed to enqueue workout update after import", "workout_id", w.ID, "error", err)
 		}
 	}

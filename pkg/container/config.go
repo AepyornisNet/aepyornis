@@ -45,6 +45,7 @@ func (c *Config) Load() error {
 	viper.SetDefault("registration_disabled", false)
 	viper.SetDefault("socials_disabled", false)
 	viper.SetDefault("worker_delay_seconds", 60)
+	viper.SetDefault("auto_import_enabled", false)
 	viper.SetDefault("activity_pub_active", false)
 
 	for _, envVar := range []string{
@@ -62,6 +63,7 @@ func (c *Config) Load() error {
 		"registration_disabled",
 		"socials_disabled",
 		"worker_delay_seconds",
+		"auto_import_enabled",
 		"activity_pub_active",
 	} {
 		if err := viper.BindEnv(envVar); err != nil {

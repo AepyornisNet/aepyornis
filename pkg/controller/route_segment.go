@@ -163,7 +163,7 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 		resp := dto.NewRouteSegmentResponse(w)
 		segments = append(segments, &resp)
 
-		if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), w.ID); err != nil {
+		if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, w.ID); err != nil {
 			rc.context.Logger().Error("Failed to enqueue route segment update", "route_segment_id", w.ID, "error", err)
 		}
 	}
@@ -215,7 +215,7 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), rs.ID); err != nil {
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, rs.ID); err != nil {
 		rc.context.Logger().Error("Failed to enqueue route segment update", "route_segment_id", rs.ID, "error", err)
 	}
 
@@ -330,7 +330,7 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), rs.ID); err != nil {
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, rs.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -387,7 +387,7 @@ func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error 
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context.GetGueClient(), rs.ID); err != nil {
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, rs.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

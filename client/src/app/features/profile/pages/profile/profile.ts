@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Api } from '../../../../core/services/api';
+import { AppConfig } from '../../../../core/services/app-config';
 import { FollowRequest, FullUserProfile } from '../../../../core/types/user';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -16,6 +17,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 })
 export class Profile implements OnInit {
   private api = inject(Api);
+  protected appConfig = inject(AppConfig);
   private fb = inject(FormBuilder);
   private translate = inject(TranslateService);
 
@@ -106,7 +108,14 @@ export class Profile implements OnInit {
     this.successMessage.set(null);
 
     try {
-      const response = await firstValueFrom(this.api.updateProfile(this.profileForm.value));
+      const payload = {
+        ...this.profileForm.value,
+        auto_import_directory: this.appConfig.isAutoImportEnabled()
+          ? this.profileForm.value.auto_import_directory
+          : '',
+      };
+
+      const response = await firstValueFrom(this.api.updateProfile(payload));
       if (response?.results) {
         this.profile.set(response.results);
         this.successMessage.set(

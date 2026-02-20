@@ -26,6 +26,7 @@ export type AppInfo = {
   version_sha: string;
   registration_disabled: boolean;
   socials_disabled: boolean;
+  auto_import_enabled: boolean;
 };
 
 export type UserPreferredUnits = {

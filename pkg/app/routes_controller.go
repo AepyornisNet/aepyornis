@@ -6,12 +6,12 @@ import (
 )
 
 func (a *App) registerActivityPubController(e *echo.Group) {
-	wfc := controller.NewWellKnownController(a.getContainer())
+	wfc := controller.NewWellKnownController(&a.container)
 	wellKnownGroup := e.Group("/.well-known")
 	wellKnownGroup.GET("/webfinger", wfc.WebFinger).Name = "webfinger"
 	wellKnownGroup.GET("/host-meta", wfc.HostMeta).Name = "host-meta"
 
-	auc := controller.NewApUserController(a.getContainer())
+	auc := controller.NewApUserController(&a.container)
 	apGroup := e.Group("/ap")
 	apGroup.Use(a.RequestingActorMiddleware)
 	apGroup.GET("/users/:username", auc.GetUser).Name = "ap-user"
@@ -25,7 +25,7 @@ func (a *App) registerActivityPubController(e *echo.Group) {
 }
 
 func (a *App) registerUserController(apiGroup *echo.Group) {
-	uc := controller.NewUserController(a.getContainer())
+	uc := controller.NewUserController(&a.container)
 
 	apiGroup.GET("/whoami", uc.GetWhoami).Name = "whoami"
 	apiGroup.GET("/totals", uc.GetTotals).Name = "totals"
@@ -36,7 +36,7 @@ func (a *App) registerUserController(apiGroup *echo.Group) {
 }
 
 func (a *App) registerAuthController(apiGroupPublic *echo.Group) {
-	ac := controller.NewAuthController(a.getContainer())
+	ac := controller.NewAuthController(&a.container)
 
 	authGroup := apiGroupPublic.Group("/auth")
 	authGroup.POST("/signin", ac.SignIn).Name = "auth-signin"
@@ -45,13 +45,13 @@ func (a *App) registerAuthController(apiGroupPublic *echo.Group) {
 }
 
 func (a *App) registerStatisticsController(apiGroup *echo.Group) {
-	sc := controller.NewStatisticsController(a.getContainer())
+	sc := controller.NewStatisticsController(&a.container)
 
 	apiGroup.GET("/statistics", sc.GetStatistics).Name = "statistics"
 }
 
 func (a *App) registerProfileController(apiGroup *echo.Group) {
-	pc := controller.NewProfileController(a.getContainer())
+	pc := controller.NewProfileController(&a.container)
 
 	profileGroup := apiGroup.Group("/profile")
 	profileGroup.GET("", pc.GetProfile).Name = "profile"
@@ -66,7 +66,7 @@ func (a *App) registerProfileController(apiGroup *echo.Group) {
 
 func (a *App) registerAdminController(apiGroup *echo.Group) {
 	ac := controller.NewAdminController(
-		a.getContainer(),
+		&a.container,
 		a.ResetConfiguration,
 	)
 
@@ -81,7 +81,7 @@ func (a *App) registerAdminController(apiGroup *echo.Group) {
 }
 
 func (a *App) registerEquipmentController(apiGroup *echo.Group) {
-	ec := controller.NewEquipmentController(a.getContainer())
+	ec := controller.NewEquipmentController(&a.container)
 
 	apiGroup.GET("/equipment", ec.GetEquipmentList).Name = "equipment-list"
 	apiGroup.GET("/equipment/:id", ec.GetEquipment).Name = "equipment-get"
@@ -91,7 +91,7 @@ func (a *App) registerEquipmentController(apiGroup *echo.Group) {
 }
 
 func (a *App) registerWorkoutController(apiGroup *echo.Group, apiGroupPublic *echo.Group) {
-	wc := controller.NewWorkoutController(a.getContainer())
+	wc := controller.NewWorkoutController(&a.container)
 
 	workoutGroup := apiGroup.Group("/workouts")
 	workoutGroup.GET("", wc.GetWorkouts).Name = "workouts-list"
@@ -117,14 +117,14 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group, apiGroupPublic *ec
 }
 
 func (a *App) registerHeatmapController(apiGroup *echo.Group) {
-	hc := controller.NewHeatmapController(a.getContainer())
+	hc := controller.NewHeatmapController(&a.container)
 
 	apiGroup.GET("/workouts/coordinates", hc.GetWorkoutCoordinates).Name = "workouts-coordinates"
 	apiGroup.GET("/workouts/centers", hc.GetWorkoutCenters).Name = "workouts-centers"
 }
 
 func (a *App) registerMeasurementController(apiGroup *echo.Group) {
-	mc := controller.NewMeasurementController(a.getContainer())
+	mc := controller.NewMeasurementController(&a.container)
 
 	apiGroup.GET("/measurements", mc.GetMeasurements).Name = "measurements-list"
 	apiGroup.POST("/measurements", mc.CreateMeasurement).Name = "measurements-create"
@@ -132,7 +132,7 @@ func (a *App) registerMeasurementController(apiGroup *echo.Group) {
 }
 
 func (a *App) registerRouteSegmentController(apiGroup *echo.Group) {
-	rsc := controller.NewRouteSegmentController(a.getContainer())
+	rsc := controller.NewRouteSegmentController(&a.container)
 
 	routeSegmentsGroup := apiGroup.Group("/route-segments")
 	routeSegmentsGroup.GET("", rsc.GetRouteSegments).Name = "route-segments-list"

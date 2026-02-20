@@ -47,6 +47,10 @@ export class AppConfig {
     return this.appInfo()?.socials_disabled ?? false;
   }
 
+  public isAutoImportEnabled(): boolean {
+    return this.appInfo()?.auto_import_enabled ?? false;
+  }
+
   public getVersion(): string {
     return this.appInfo()?.version ?? '';
   }

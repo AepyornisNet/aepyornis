@@ -158,19 +158,21 @@
             </select>
           </div>
 
-          <!-- Auto Import Directory -->
-          <div class="mb-3">
-            <label class="form-label" for="auto_import_directory">
-              {{ 'Auto import directory' | translate }}
-            </label>
-            <input
-              class="form-control"
-              formControlName="auto_import_directory"
-              id="auto_import_directory"
-              type="text"
-              [placeholder]="'/imports/' + profile()!.username + '/'"
-            />
-          </div>
+          @if (appConfig.isAutoImportEnabled()) {
+            <!-- Auto Import Directory -->
+            <div class="mb-3">
+              <label class="form-label" for="auto_import_directory">
+                {{ 'Auto import directory' | translate }}
+              </label>
+              <input
+                class="form-control"
+                formControlName="auto_import_directory"
+                id="auto_import_directory"
+                type="text"
+                [placeholder]="'/imports/' + profile()!.username + '/'"
+              />
+            </div>
+          }
 
           <!-- Prefer Full Date -->
           <div class="mb-3 form-check">

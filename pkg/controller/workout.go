@@ -481,7 +481,7 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 		for _, w := range ws {
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
 
-			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context.GetGueClient(), w.ID); err != nil {
+			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, w.ID); err != nil {
 				wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
 			}
 		}
@@ -735,7 +735,7 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context.GetGueClient(), workout.ID); err != nil {
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -884,7 +884,7 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueAPDeliveriesForEntry(c.Request().Context(), wc.context.GetGueClient(), wc.context.GetDB(), entry.ID); err != nil {
+	if err := worker.EnqueueAPDeliveriesForEntry(c.Request().Context(), wc.context, entry.ID); err != nil {
 		wc.context.Logger().Error("Failed to enqueue ActivityPub deliveries", "entry_id", entry.ID, "error", err)
 	}
 

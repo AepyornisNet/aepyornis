@@ -52,36 +52,30 @@ type Worker struct {
 }
 
 // New creates a Worker using dependencies from the provided Container.
-// It migrates the gue_jobs schema, builds the work map, and registers the
-// gue.Client back on the container so controllers can enqueue jobs.
+// It migrates the gue_jobs schema and builds the work maps.
 func New(c *container.Container) (*Worker, error) {
 	db := c.GetDB()
 	cfg := c.GetConfig()
 	logger := c.Logger().With("module", "worker")
 
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, fmt.Errorf("worker: getting sql.DB from gorm: %w", err)
-	}
-
 	if err := db.Exec(gueJobsSchema).Error; err != nil {
 		return nil, fmt.Errorf("worker: migrating gue_jobs schema: %w", err)
 	}
 
-	gc, err := gue.NewClient(sqlDB, gue.WithClientLogger(logger))
-	if err != nil {
-		return nil, fmt.Errorf("worker: creating gue client: %w", err)
+	gc := c.GetGueClient()
+	if gc == nil {
+		return nil, fmt.Errorf("worker: missing gue client on container")
 	}
 
 	wm := gue.WorkMap{
-		JobUpdateWorkout:      makeUpdateWorkoutHandler(db, gc, logger),
-		JobUpdateRouteSegment: makeUpdateRouteSegmentHandler(db, logger),
-		JobAutoImport:         makeAutoImportHandler(db, gc, logger),
-		JobDeliverActivityPub: makeDeliverActivityPubHandler(db, cfg, logger),
+		JobUpdateWorkout:      makeUpdateWorkoutHandler(c, logger),
+		JobUpdateRouteSegment: makeUpdateRouteSegmentHandler(c, logger),
+		JobAutoImport:         makeAutoImportHandler(c, logger),
+		JobDeliverActivityPub: makeDeliverActivityPubHandler(c, logger),
 	}
 
 	geoWM := gue.WorkMap{
-		JobUpdateAddress: makeUpdateAddressHandler(db, logger),
+		JobUpdateAddress: makeUpdateAddressHandler(c, logger),
 	}
 
 	mainPool, err := gue.NewWorkerPool(gc, wm, mainWorkerCount)
@@ -128,6 +122,12 @@ func (w *Worker) Start(ctx context.Context) {
 		}
 	}()
 
+	if !w.cfg.AutoImportEnabled {
+		w.logger.Info("Auto-import scheduler disabled", "auto_import_enabled", false)
+		<-ctx.Done()
+		return
+	}
+
 	w.runScheduler(ctx)
 }
 
@@ -153,9 +153,9 @@ func (w *Worker) scheduleOnce(ctx context.Context) {
 		}
 	}()
 
-	w.logger.Info("Scheduler run started")
+	w.logger.Info("Auto import check started")
 	w.enqueueAutoImports(ctx)
-	w.logger.Info("Scheduler run finished")
+	w.logger.Info("Auto import check finished")
 }
 
 func (w *Worker) enqueueAutoImports(ctx context.Context) {

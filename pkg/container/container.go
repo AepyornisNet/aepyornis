@@ -27,6 +27,7 @@ func NewContainer(
 	v *version.Version,
 	sessionManager *scs.SessionManager,
 	logger *slog.Logger,
+	gueClient *gue.Client,
 ) *Container {
 	return &Container{
 		db:             db,
@@ -34,6 +35,7 @@ func NewContainer(
 		version:        v,
 		sessionManager: sessionManager,
 		logger:         logger,
+		gueClient:      gueClient,
 	}
 }
 
@@ -55,10 +57,6 @@ func (c *Container) GetVersion() *version.Version {
 
 func (c *Container) GetSessionManager() *scs.SessionManager {
 	return c.sessionManager
-}
-
-func (c *Container) SetGueClient(client *gue.Client) {
-	c.gueClient = client
 }
 
 func (c *Container) GetGueClient() *gue.Client {

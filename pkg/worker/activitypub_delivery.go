@@ -11,14 +11,15 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/vgarvardt/gue/v6"
-	"gorm.io/gorm"
 )
 
 const JobDeliverActivityPub = "deliver_activitypub"
 
 // EnqueueAPDeliveriesForEntry queries all pending follower deliveries for the given outbox entry
 // and enqueues one job per follower. Call this immediately after creating an AP outbox entry.
-func EnqueueAPDeliveriesForEntry(ctx context.Context, gc *gue.Client, db *gorm.DB, entryID uint64) error {
+func EnqueueAPDeliveriesForEntry(ctx context.Context, c *container.Container, entryID uint64) error {
+	db := c.GetDB()
+
 	pending, err := model.ListPendingAPOutboxDeliveriesForEntry(db, entryID)
 	if err != nil {
 		return fmt.Errorf("EnqueueAPDeliveriesForEntry: list deliveries: %w", err)
@@ -30,7 +31,7 @@ func EnqueueAPDeliveriesForEntry(ctx context.Context, gc *gue.Client, db *gorm.D
 			return fmt.Errorf("EnqueueAPDeliveriesForEntry: marshal delivery: %w", err)
 		}
 
-		if err := gc.Enqueue(ctx, &gue.Job{Queue: MainQueue, Type: JobDeliverActivityPub, Args: raw}); err != nil {
+		if err := c.Enqueue(ctx, &gue.Job{Queue: MainQueue, Type: JobDeliverActivityPub, Args: raw}); err != nil {
 			return fmt.Errorf("EnqueueAPDeliveriesForEntry: enqueue delivery for %s: %w", pending[i].ActorIRI, err)
 		}
 	}
@@ -38,8 +39,11 @@ func EnqueueAPDeliveriesForEntry(ctx context.Context, gc *gue.Client, db *gorm.D
 	return nil
 }
 
-func makeDeliverActivityPubHandler(db *gorm.DB, cfg *container.Config, logger *slog.Logger) gue.WorkFunc {
+func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
+		db := c.GetDB()
+		cfg := c.GetConfig()
+
 		var item model.APPendingOutboxDelivery
 		if err := json.Unmarshal(j.Args, &item); err != nil {
 			return fmt.Errorf("deliver_activitypub: unmarshal args: %w", err)

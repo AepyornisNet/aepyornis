@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
@@ -17,17 +18,19 @@ const workerWorkoutsBatchSize = 10
 
 // EnqueueRouteSegmentUpdate enqueues a job to re-match the given route segment.
 // Call this wherever a route segment is created or marked dirty.
-func EnqueueRouteSegmentUpdate(ctx context.Context, client *gue.Client, segmentID uint64) error {
+func EnqueueRouteSegmentUpdate(ctx context.Context, c *container.Container, segmentID uint64) error {
 	raw, err := json.Marshal(idArgs{ID: segmentID})
 	if err != nil {
 		return err
 	}
 
-	return client.Enqueue(ctx, &gue.Job{Queue: MainQueue, Type: JobUpdateRouteSegment, Args: raw})
+	return c.Enqueue(ctx, &gue.Job{Queue: MainQueue, Type: JobUpdateRouteSegment, Args: raw})
 }
 
-func makeUpdateRouteSegmentHandler(db *gorm.DB, logger *slog.Logger) gue.WorkFunc {
+func makeUpdateRouteSegmentHandler(c *container.Container, logger *slog.Logger) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
+		db := c.GetDB()
+
 		var args idArgs
 		if err := json.Unmarshal(j.Args, &args); err != nil {
 			return fmt.Errorf("update_route_segment: unmarshal args: %w", err)

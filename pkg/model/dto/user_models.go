@@ -49,6 +49,7 @@ type AppInfoResponse struct {
 	VersionSha           string `json:"version_sha"`
 	RegistrationDisabled bool   `json:"registration_disabled"`
 	SocialsDisabled      bool   `json:"socials_disabled"`
+	AutoImportEnabled    bool   `json:"auto_import_enabled"`
 }
 
 // NewUserProfileResponse converts a database user to API response

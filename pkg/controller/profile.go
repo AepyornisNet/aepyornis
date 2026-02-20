@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -48,6 +49,10 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 		Results: dto.NewUserProfileResponse(user),
 	}
 
+	if !pc.context.GetConfig().AutoImportEnabled {
+		resp.Results.Profile.AutoImportDirectory = ""
+	}
+
 	if user.Profile.APIActive {
 		resp.Results.Profile.APIKey = user.APIKey
 	}
@@ -91,7 +96,15 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 	user.Profile.Theme = updateData.Theme
 	user.Profile.TotalsShow = model.WorkoutType(updateData.TotalsShow)
 	user.Profile.Timezone = updateData.Timezone
-	user.Profile.AutoImportDirectory = updateData.AutoImportDirectory
+	if !pc.context.GetConfig().AutoImportEnabled {
+		if updateData.AutoImportDirectory != "" {
+			return renderApiError(c, http.StatusBadRequest, errors.New("auto import is disabled"))
+		}
+
+		user.Profile.AutoImportDirectory = ""
+	} else {
+		user.Profile.AutoImportDirectory = updateData.AutoImportDirectory
+	}
 	user.Profile.APIActive = updateData.APIActive
 	user.Profile.SocialsDisabled = updateData.SocialsDisabled
 	user.Profile.PreferFullDate = updateData.PreferFullDate
@@ -107,6 +120,10 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 
 	resp := dto.Response[dto.UserProfileResponse]{
 		Results: dto.NewUserProfileResponse(user),
+	}
+
+	if !pc.context.GetConfig().AutoImportEnabled {
+		resp.Results.Profile.AutoImportDirectory = ""
 	}
 
 	if user.Profile.APIActive {

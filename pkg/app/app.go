@@ -35,11 +35,11 @@ type App struct {
 	translator     *i18n.Locale
 	Version        version.Version
 	Config         *container.Config
-	container      *container.Container
+	container      container.Container
 }
 
 func (a *App) Serve() error {
-	w, err := worker.New(a.getContainer())
+	w, err := worker.New(&a.container)
 	if err != nil {
 		return err
 	}
@@ -189,12 +189,4 @@ func (a *App) DB() *gorm.DB {
 
 func (a *App) Logger() *slog.Logger {
 	return a.logger
-}
-
-func (a *App) getContainer() *container.Container {
-	if a.container == nil {
-		a.container = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager, a.logger)
-	}
-
-	return a.container
 }
