@@ -21,8 +21,20 @@ type Container struct {
 	gueClient      *gue.Client
 }
 
-func NewContainer(db *gorm.DB, config *Config, v *version.Version, sessionManager *scs.SessionManager, logger *slog.Logger) *Container {
-	return &Container{db: db, config: config, version: v, sessionManager: sessionManager, logger: logger}
+func NewContainer(
+	db *gorm.DB,
+	config *Config,
+	v *version.Version,
+	sessionManager *scs.SessionManager,
+	logger *slog.Logger,
+) *Container {
+	return &Container{
+		db:             db,
+		config:         config,
+		version:        v,
+		sessionManager: sessionManager,
+		logger:         logger,
+	}
 }
 
 func (c *Container) GetDB() *gorm.DB {
@@ -45,17 +57,14 @@ func (c *Container) GetSessionManager() *scs.SessionManager {
 	return c.sessionManager
 }
 
-// SetGueClient stores the gue client so controllers can dispatch jobs.
 func (c *Container) SetGueClient(client *gue.Client) {
 	c.gueClient = client
 }
 
-// GetGueClient returns the gue client for enqueueing background jobs.
 func (c *Container) GetGueClient() *gue.Client {
 	return c.gueClient
 }
 
-// Enqueue is a convenience wrapper around gue.Client.Enqueue.
 func (c *Container) Enqueue(ctx context.Context, j *gue.Job) error {
 	return c.gueClient.Enqueue(ctx, j)
 }
