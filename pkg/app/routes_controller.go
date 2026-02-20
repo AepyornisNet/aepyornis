@@ -12,14 +12,16 @@ func (a *App) registerActivityPubController(e *echo.Group) {
 	wellKnownGroup.GET("/host-meta", wfc.HostMeta).Name = "host-meta"
 
 	auc := controller.NewApUserController(&a.container)
+	aic := controller.NewApInboxController(&a.container)
+	aoc := controller.NewApOutboxController(&a.container)
 	apGroup := e.Group("/ap")
 	apGroup.Use(a.RequestingActorMiddleware)
 	apGroup.GET("/users/:username", auc.GetUser).Name = "ap-user"
-	apGroup.POST("/users/:username/inbox", auc.Inbox).Name = "ap-user-inbox"
-	apGroup.GET("/users/:username/outbox", auc.Outbox).Name = "ap-user-outbox"
-	apGroup.GET("/users/:username/outbox/:id", auc.OutboxItem).Name = "ap-user-outbox-item"
-	apGroup.GET("/users/:username/outbox/:id/fit", auc.OutboxFit).Name = "ap-user-outbox-fit"
-	apGroup.GET("/users/:username/outbox/:id/route-image", auc.OutboxRouteImage).Name = "ap-user-outbox-route-image"
+	apGroup.POST("/users/:username/inbox", aic.Inbox).Name = "ap-user-inbox"
+	apGroup.GET("/users/:username/outbox", aoc.Outbox).Name = "ap-user-outbox"
+	apGroup.GET("/users/:username/outbox/:id", aoc.OutboxItem).Name = "ap-user-outbox-item"
+	apGroup.GET("/users/:username/outbox/:id/fit", aoc.OutboxFit).Name = "ap-user-outbox-fit"
+	apGroup.GET("/users/:username/outbox/:id/route-image", aoc.OutboxRouteImage).Name = "ap-user-outbox-route-image"
 	apGroup.GET("/users/:username/following", auc.Following).Name = "ap-user-following"
 	apGroup.GET("/users/:username/followers", auc.Followers).Name = "ap-user-followers"
 }
