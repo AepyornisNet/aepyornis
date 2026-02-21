@@ -1,379 +1,49 @@
 <div class="container my-5">
-  @if (error()) {
+  @if (store.error()) {
     <div class="alert alert-danger" role="alert">
-      {{ error() }}
+      {{ store.error() }}
     </div>
   }
 
-  @if (successMessage()) {
+  @if (store.successMessage()) {
     <div class="alert alert-success" role="alert">
-      {{ successMessage() }}
+      {{ store.successMessage() }}
     </div>
   }
 
-  @if (loading()) {
+  @if (store.loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">{{ 'Loading' | translate }}</span>
       </div>
     </div>
-  } @else if (profile()) {
-    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-      <div class="row g-4">
-        <div class="col-lg-7">
-          <!-- User Settings Section -->
-          <div class="card shadow-sm h-100">
-            <div class="card-header">
-              <h3 class="h5 mb-0 d-flex align-items-center gap-2">
-                <app-icon name="person" size="24" />
-                {{ 'Your settings' | translate }}
-              </h3>
-            </div>
-            <div class="card-body">
-          <!-- API Access -->
-          <div class="mb-3 pb-3 border-bottom">
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                formControlName="api_active"
-                id="api_active"
-                type="checkbox"
-              />
-              <label class="form-check-label" for="api_active">
-                {{ 'Enable API access' | translate }}
-                <a
-                  class="link-primary ms-1"
-                  href="https://github.com/jovandeginste/workout-tracker?tab=readme-ov-file#api-usage"
-                  target="_blank"
-                >
-                  <app-icon name="info" size="16" />
-                </a>
-              </label>
-            </div>
-            @if (profileForm.value.api_active && profile() && profile()!.profile.api_key) {
-              <div class="mt-2 d-flex align-items-center gap-2">
-                <input
-                  class="form-control form-control-sm"
-                  readonly
-                  [type]="apiKeyVisible() ? 'text' : 'password'"
-                  [value]="profile()!.profile.api_key!"
-                />
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  type="button"
-                  [title]="'show/hide' | translate"
-                  (click)="toggleAPIKeyVisibility()"
-                >
-                  <app-icon size="20" [name]="apiKeyVisible() ? 'visibility-off' : 'visibility'" />
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  type="button"
-                  [title]="'Copy to clipboard' | translate"
-                  (click)="copyToClipboard(profile()!.profile.api_key!)"
-                >
-                  <app-icon name="content-copy" size="20" />
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  type="button"
-                  [title]="'Generate a new API key' | translate"
-                  (click)="resetAPIKey()"
-                >
-                  <app-icon name="refresh" size="20" />
-                </button>
-              </div>
-            }
-          </div>
+  } @else {
+    <div class="row g-4">
+      <div class="col-lg-8 order-2 order-lg-1">
+        <router-outlet />
+      </div>
 
-          <!-- Totals Show -->
-          <div class="mb-3">
-            <label class="form-label" for="totals_show">
-              {{ 'Totals to show on dashboard' | translate }}
-            </label>
-            <select class="form-select" formControlName="totals_show" id="totals_show">
-              <option value="all">{{ 'All' | translate }}</option>
-              <option value="running">{{ 'running' | translate }}</option>
-              <option value="cycling">{{ 'cycling' | translate }}</option>
-              <option value="walking">{{ 'walking' | translate }}</option>
-            </select>
+      <div class="col-lg-4 order-1 order-lg-2">
+        <div class="card shadow-sm profile-nav-card">
+          <div class="card-header">
+            <h2 class="h6 mb-0 text-uppercase">{{ 'Profile navigation' | translate }}</h2>
           </div>
-
-          <!-- Timezone -->
-          <div class="mb-3">
-            <label class="form-label" for="timezone">
-              {{ 'Time zone' | translate }}
-            </label>
-            <input
-              class="form-control"
-              formControlName="timezone"
-              id="timezone"
-              placeholder="UTC"
-              type="text"
-            />
-          </div>
-
-          <!-- Birthdate -->
-          <div class="mb-3">
-            <label class="form-label" for="birthdate">
-              {{ 'Birthdate' | translate }}
-              <small class="text-muted">{{ '(used to estimate max heart rate)' | translate }}</small>
-            </label>
-            <input
-              class="form-control"
-              formControlName="birthdate"
-              id="birthdate"
-              type="date"
-            />
-          </div>
-
-          <!-- Language -->
-          <div class="mb-3">
-            <label class="form-label" for="language">
-              {{ 'Language' | translate }}
+          <div class="list-group list-group-flush">
+            @for (item of navigationItems; track item.route) {
               <a
-                class="link-primary ms-1"
-                href="https://hosted.weblate.org/projects/workout-tracker/"
-                target="_blank"
-                [title]="'Please help translate via Weblate' | translate"
+                class="list-group-item list-group-item-action d-flex align-items-center justify-content-between"
+                routerLinkActive="active"
+                [routerLink]="item.route"
               >
-                <app-icon name="translate" size="16" />
+                <span>{{ item.label | translate }}</span>
+                @if (item.route === '/profile/followers') {
+                  <span class="badge text-bg-primary rounded-pill">{{ store.followRequests().length }}</span>
+                }
               </a>
-            </label>
-            <select class="form-select" formControlName="language" id="language">
-              <option value="browser">{{ 'Browser / System' | translate }}</option>
-              <option value="en">{{ 'English' | translate }}</option>
-              <option value="de">{{ 'German' | translate }}</option>
-              <option value="fr">{{ 'French' | translate }}</option>
-            </select>
-          </div>
-
-          <!-- Theme -->
-          <div class="mb-3">
-            <label class="form-label" for="theme"> {{ 'Theme' | translate }} </label>
-            <select class="form-select" formControlName="theme" id="theme">
-              <option value="light">{{ 'Light' | translate }}</option>
-              <option value="dark">{{ 'Dark' | translate }}</option>
-              <option value="browser">{{ 'Browser / System' | translate }}</option>
-            </select>
-          </div>
-
-          @if (appConfig.isAutoImportEnabled()) {
-            <!-- Auto Import Directory -->
-            <div class="mb-3">
-              <label class="form-label" for="auto_import_directory">
-                {{ 'Auto import directory' | translate }}
-              </label>
-              <input
-                class="form-control"
-                formControlName="auto_import_directory"
-                id="auto_import_directory"
-                type="text"
-                [placeholder]="'/imports/' + profile()!.username + '/'"
-              />
-            </div>
-          }
-
-          <!-- Prefer Full Date -->
-          <div class="mb-3 form-check">
-            <input
-              class="form-check-input"
-              formControlName="prefer_full_date"
-              id="prefer_full_date"
-              type="checkbox"
-            />
-            <label class="form-check-label" for="prefer_full_date">
-              {{ 'Show full date by default' | translate }}
-            </label>
-          </div>
-
-          <!-- Disable Social Sharing Buttons -->
-          <div class="mb-3 form-check">
-            <input
-              class="form-check-input"
-              formControlName="socials_disabled"
-              id="socials_disabled"
-              type="checkbox"
-            />
-            <label class="form-check-label" for="socials_disabled">
-              {{ 'Disable social sharing buttons' | translate }}
-            </label>
-          </div>
-
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-5">
-          <!-- Preferred Units Section -->
-          <div class="card shadow-sm mb-4">
-            <div class="card-header">
-              <h3 class="h5 mb-0 d-flex align-items-center gap-2">
-                <app-icon name="straighten" size="24" />
-                {{ 'Preferred units' | translate }}
-              </h3>
-            </div>
-            <div class="card-body">
-              <div [formGroup]="profileForm">
-                <div class="row g-3" formGroupName="preferred_units">
-                  <!-- Speed -->
-                  <div class="col-md-6">
-                    <label class="form-label" for="speed"> {{ 'Speed' | translate }} </label>
-                    <select class="form-select" formControlName="speed" id="speed">
-                      <option value="km/h">{{ 'km/h' | translate }}</option>
-                      <option value="mph">{{ 'mph' | translate }}</option>
-                    </select>
-                  </div>
-
-                  <!-- Distance -->
-                  <div class="col-md-6">
-                    <label class="form-label" for="distance">
-                      {{ 'Distance' | translate }}
-                    </label>
-                    <select class="form-select" formControlName="distance" id="distance">
-                      <option value="km">{{ 'km' | translate }}</option>
-                      <option value="mi">{{ 'mi' | translate }}</option>
-                    </select>
-                  </div>
-
-                  <!-- Elevation -->
-                  <div class="col-md-6">
-                    <label class="form-label" for="elevation">
-                      {{ 'Elevation' | translate }}
-                    </label>
-                    <select class="form-select" formControlName="elevation" id="elevation">
-                      <option value="m">{{ 'm' | translate }}</option>
-                      <option value="ft">{{ 'ft' | translate }}</option>
-                    </select>
-                  </div>
-
-                  <!-- Weight -->
-                  <div class="col-md-6">
-                    <label class="form-label" for="weight"> {{ 'Weight' | translate }} </label>
-                    <select class="form-select" formControlName="weight" id="weight">
-                      <option value="kg">{{ 'kg' | translate }}</option>
-                      <option value="lbs">{{ 'lbs' | translate }}</option>
-                    </select>
-                  </div>
-
-                  <!-- Height -->
-                  <div class="col-md-6">
-                    <label class="form-label" for="height"> {{ 'Height' | translate }} </label>
-                    <select class="form-select" formControlName="height" id="height">
-                      <option value="cm">{{ 'cm' | translate }}</option>
-                      <option value="in">{{ 'in' | translate }}</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Actions Section -->
-          <div class="card border-0 shadow-sm bg-body-tertiary">
-            <div class="card-header bg-transparent">
-              <h3 class="h6 mb-0 text-uppercase tracking-wide">
-                {{ 'Actions' | translate }}
-              </h3>
-            </div>
-            <div class="card-body">
-              @if (!profile()!.activity_pub) {
-                <div class="d-flex align-items-center justify-content-between gap-3 mb-3 pb-3 border-bottom">
-                  <div>
-                    <div class="fw-medium">{{ 'Enable activity pub' | translate }}</div>
-                    <p class="small text-muted mb-0">
-                      {{ 'It cannot be disabled afterwards.' | translate }}
-                    </p>
-                  </div>
-                  <button
-                    class="btn btn-primary d-flex align-items-center gap-2"
-                    type="button"
-                    (click)="enableActivityPub()"
-                  >
-                    {{ 'Enable' | translate }}
-                  </button>
-                </div>
-              }
-
-              @if (profile()!.activity_pub) {
-                <div class="mb-3 pb-3 border-bottom">
-                  <div class="fw-medium mb-2">{{ 'Follow requests' | translate }}</div>
-
-                  @if (loadingFollowRequests()) {
-                    <div class="small text-muted">{{ 'Loading...' | translate }}</div>
-                  } @else if (followRequests().length === 0) {
-                    <p class="small text-muted mb-0">{{ 'No pending follow requests' | translate }}</p>
-                  } @else {
-                    <div class="d-flex flex-column gap-2">
-                      @for (request of followRequests(); track request.id) {
-                        <div
-                          class="d-flex align-items-center justify-content-between gap-2 border rounded p-2"
-                        >
-                          <div class="small text-break">{{ request.actor_iri }}</div>
-                          <button
-                            class="btn btn-sm btn-outline-primary"
-                            type="button"
-                            [disabled]="acceptingRequestIds()[request.id]"
-                            (click)="acceptFollowRequest(request)"
-                          >
-                            @if (acceptingRequestIds()[request.id]) {
-                              <span
-                                aria-hidden="true"
-                                class="spinner-border spinner-border-sm"
-                                role="status"
-                              ></span>
-                            } @else {
-                              {{ 'Accept' | translate }}
-                            }
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              }
-
-              <div class="d-flex align-items-center justify-content-between gap-3">
-                <div>
-                  <div class="fw-medium">{{ 'Refresh all your workouts' | translate }}</div>
-                  <p class="small text-muted mb-0">
-                    {{ 'This will recalculate statistics for all your workouts' | translate }}
-                  </p>
-                </div>
-                <button
-                  class="btn btn-primary d-flex align-items-center gap-2"
-                  type="button"
-                  (click)="refreshWorkouts()"
-                >
-                  <app-icon name="refresh" size="20" />
-                  {{ 'Refresh' | translate }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row mt-4">
-        <div class="col-lg-6">
-          <button
-            class="btn btn-primary"
-            type="submit"
-            [disabled]="saving() || profileForm.invalid"
-          >
-            @if (saving()) {
-              <span
-                aria-hidden="true"
-                class="spinner-border spinner-border-sm me-2"
-                role="status"
-              ></span>
-              {{ 'Saving...' | translate }}
-            } @else {
-              {{ 'Update profile' | translate }}
             }
-          </button>
+          </div>
         </div>
       </div>
-    </form>
+    </div>
   }
 </div>

@@ -1,0 +1,123 @@
+<form [formGroup]="store.profileForm" (ngSubmit)="store.saveProfile()">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h3 class="h5 mb-0">{{ 'General settings' | translate }}</h3>
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label" for="totals_show">{{ 'Totals to show on dashboard' | translate }}</label>
+        <select class="form-select" formControlName="totals_show" id="totals_show">
+          <option value="all">{{ 'All' | translate }}</option>
+          <option value="running">{{ 'running' | translate }}</option>
+          <option value="cycling">{{ 'cycling' | translate }}</option>
+          <option value="walking">{{ 'walking' | translate }}</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="timezone">{{ 'Time zone' | translate }}</label>
+        <input class="form-control" formControlName="timezone" id="timezone" placeholder="UTC" type="text" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="language">
+          {{ 'Language' | translate }}
+          <a
+            class="link-primary ms-1"
+            href="https://hosted.weblate.org/projects/workout-tracker/"
+            target="_blank"
+            [title]="'Please help translate via Weblate' | translate"
+          >
+            <app-icon name="translate" size="16" />
+          </a>
+        </label>
+        <select class="form-select" formControlName="language" id="language">
+          <option value="browser">{{ 'Browser / System' | translate }}</option>
+          <option value="en">{{ 'English' | translate }}</option>
+          <option value="de">{{ 'German' | translate }}</option>
+          <option value="fr">{{ 'French' | translate }}</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="theme">{{ 'Theme' | translate }}</label>
+        <select class="form-select" formControlName="theme" id="theme">
+          <option value="light">{{ 'Light' | translate }}</option>
+          <option value="dark">{{ 'Dark' | translate }}</option>
+          <option value="browser">{{ 'Browser / System' | translate }}</option>
+        </select>
+      </div>
+
+      @if (store.appConfig.isAutoImportEnabled()) {
+        <div class="mb-3">
+          <label class="form-label" for="auto_import_directory">{{ 'Auto import directory' | translate }}</label>
+          <input
+            class="form-control"
+            formControlName="auto_import_directory"
+            id="auto_import_directory"
+            type="text"
+            [placeholder]="'/imports/' + store.profile()?.username + '/'"
+          />
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h3 class="h5 mb-0">{{ 'Preferred units' | translate }}</h3>
+    </div>
+    <div class="card-body" [formGroup]="store.profileForm">
+      <div class="row g-3" formGroupName="preferred_units">
+        <div class="col-md-6">
+          <label class="form-label" for="speed">{{ 'Speed' | translate }}</label>
+          <select class="form-select" formControlName="speed" id="speed">
+            <option value="km/h">{{ 'km/h' | translate }}</option>
+            <option value="mph">{{ 'mph' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" for="distance">{{ 'Distance' | translate }}</label>
+          <select class="form-select" formControlName="distance" id="distance">
+            <option value="km">{{ 'km' | translate }}</option>
+            <option value="mi">{{ 'mi' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" for="elevation">{{ 'Elevation' | translate }}</label>
+          <select class="form-select" formControlName="elevation" id="elevation">
+            <option value="m">{{ 'm' | translate }}</option>
+            <option value="ft">{{ 'ft' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" for="weight">{{ 'Weight' | translate }}</label>
+          <select class="form-select" formControlName="weight" id="weight">
+            <option value="kg">{{ 'kg' | translate }}</option>
+            <option value="lbs">{{ 'lbs' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" for="height">{{ 'Height' | translate }}</label>
+          <select class="form-select" formControlName="height" id="height">
+            <option value="cm">{{ 'cm' | translate }}</option>
+            <option value="in">{{ 'in' | translate }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" type="submit" [disabled]="store.saving() || store.profileForm.invalid">
+    @if (store.saving()) {
+      <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+      {{ 'Saving...' | translate }}
+    } @else {
+      {{ 'Update profile' | translate }}
+    }
+  </button>
+</form>

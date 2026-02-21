@@ -1,1 +1,6 @@
-// Profile page styles
+.profile-nav-card {
+	@media (min-width: 992px) {
+		position: sticky;
+		top: 1rem;
+	}
+}

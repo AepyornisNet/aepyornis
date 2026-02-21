@@ -1,0 +1,89 @@
+<form [formGroup]="store.profileForm" (ngSubmit)="store.saveProfile()">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h3 class="h5 mb-0">{{ 'Privacy' | translate }}</h3>
+    </div>
+    <div class="card-body">
+      <div class="mb-3 pb-3 border-bottom">
+        <div class="form-check">
+          <input class="form-check-input" formControlName="api_active" id="api_active" type="checkbox" />
+          <label class="form-check-label" for="api_active">
+            {{ 'Enable API access' | translate }}
+            <a
+              class="link-primary ms-1"
+              href="https://github.com/jovandeginste/workout-tracker?tab=readme-ov-file#api-usage"
+              target="_blank"
+            >
+              <app-icon name="info" size="16" />
+            </a>
+          </label>
+        </div>
+
+        @if (store.profileForm.value.api_active && store.profile() && store.profile()!.profile.api_key) {
+          <div class="mt-2 d-flex align-items-center gap-2">
+            <input
+              class="form-control form-control-sm"
+              readonly
+              [type]="store.apiKeyVisible() ? 'text' : 'password'"
+              [value]="store.profile()!.profile.api_key!"
+            />
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [title]="'show/hide' | translate"
+              (click)="store.toggleAPIKeyVisibility()"
+            >
+              <app-icon size="20" [name]="store.apiKeyVisible() ? 'visibility-off' : 'visibility'" />
+            </button>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [title]="'Copy to clipboard' | translate"
+              (click)="store.copyToClipboard(store.profile()!.profile.api_key!)"
+            >
+              <app-icon name="content-copy" size="20" />
+            </button>
+            <button
+              class="btn btn-sm btn-outline-danger"
+              type="button"
+              [title]="'Generate a new API key' | translate"
+              (click)="store.resetAPIKey()"
+            >
+              <app-icon name="refresh" size="20" />
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="mb-3 form-check">
+        <input class="form-check-input" formControlName="socials_disabled" id="socials_disabled" type="checkbox" />
+        <label class="form-check-label" for="socials_disabled">
+          {{ 'Disable social sharing buttons' | translate }}
+        </label>
+      </div>
+
+      @if (!store.profile()!.activity_pub) {
+        <div class="d-flex align-items-center justify-content-between gap-3 mt-3 pt-3 border-top">
+          <div>
+            <div class="fw-medium">{{ 'Enable activity pub' | translate }}</div>
+            <p class="small text-muted mb-0">{{ 'It cannot be disabled afterwards.' | translate }}</p>
+          </div>
+          <button class="btn btn-primary" type="button" (click)="store.enableActivityPub()">
+            {{ 'Enable' | translate }}
+          </button>
+        </div>
+      } @else {
+        <div class="small text-success mt-3 pt-3 border-top">{{ 'ActivityPub is enabled' | translate }}</div>
+      }
+    </div>
+  </div>
+
+  <button class="btn btn-primary" type="submit" [disabled]="store.saving() || store.profileForm.invalid">
+    @if (store.saving()) {
+      <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+      {{ 'Saving...' | translate }}
+    } @else {
+      {{ 'Update profile' | translate }}
+    }
+  </button>
+</form>
