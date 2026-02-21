@@ -17,7 +17,7 @@ export type UserProfile = {
   language: string;
   theme: string;
   timezone: string;
-  socials_disabled: boolean;
+  default_workout_visibility: '' | 'followers' | 'public';
   prefer_full_date: boolean;
 };
 
@@ -44,9 +44,9 @@ export type ProfileSettings = {
   totals_show: string;
   timezone: string;
   auto_import_directory: string;
+  default_workout_visibility: '' | 'followers' | 'public';
   api_active: boolean;
   api_key?: string;
-  socials_disabled: boolean;
   prefer_full_date: boolean;
 };
 
@@ -81,7 +81,7 @@ export type ProfileUpdateRequest = {
   timezone: string;
   auto_import_directory: string;
   api_active: boolean;
-  socials_disabled: boolean;
+  default_workout_visibility: '' | 'followers' | 'public';
   prefer_full_date: boolean;
 };
 

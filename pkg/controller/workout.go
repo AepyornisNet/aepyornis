@@ -556,6 +556,9 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 	if err := d.Update(workout); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	if d.Visibility == nil {
+		workout.Visibility = user.Profile.EffectiveDefaultWorkoutVisibility()
+	}
 
 	workout.User = user
 	workout.UserID = user.ID

@@ -32,7 +32,7 @@ export class ProfileStore {
     theme: ['browser'],
     auto_import_directory: [''],
     prefer_full_date: [false],
-    socials_disabled: [false],
+    default_workout_visibility: [''],
     preferred_units: this.fb.group({
       speed: ['km/h'],
       distance: ['km'],
@@ -66,7 +66,7 @@ export class ProfileStore {
           theme: response.results.profile.theme,
           auto_import_directory: response.results.profile.auto_import_directory,
           prefer_full_date: response.results.profile.prefer_full_date,
-          socials_disabled: response.results.profile.socials_disabled,
+          default_workout_visibility: response.results.profile.default_workout_visibility,
           preferred_units: response.results.profile.preferred_units,
         });
       }

@@ -100,8 +100,20 @@ export class WorkoutCreate implements OnInit {
       this.editMode.set(true);
       this.workoutId.set(parseInt(id, 10));
       this.loadWorkoutForEdit(parseInt(id, 10));
+    } else {
+      this.loadDefaultWorkoutVisibility();
     }
     this.loadEquipment();
+  }
+
+  private async loadDefaultWorkoutVisibility(): Promise<void> {
+    try {
+      const profileResponse = await firstValueFrom(this.api.getProfile());
+      const defaultVisibility = profileResponse?.results?.profile?.default_workout_visibility ?? '';
+      this.manualWorkoutForm.patchValue({ visibility: defaultVisibility });
+    } catch (err) {
+      console.error('Failed to load default workout visibility:', err);
+    }
   }
 
   public async loadWorkoutForEdit(id: number): Promise<void> {

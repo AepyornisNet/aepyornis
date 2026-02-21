@@ -284,16 +284,16 @@ type AdminUserUpdateData struct {
 }
 
 type ProfileUpdateData struct {
-	Birthdate           *string                  `json:"birthdate"`
-	PreferredUnits      model.UserPreferredUnits `json:"preferred_units"`
-	Language            string                   `json:"language"`
-	Theme               string                   `json:"theme"`
-	TotalsShow          string                   `json:"totals_show"`
-	Timezone            string                   `json:"timezone"`
-	AutoImportDirectory string                   `json:"auto_import_directory"`
-	APIActive           bool                     `json:"api_active"`
-	SocialsDisabled     bool                     `json:"socials_disabled"`
-	PreferFullDate      bool                     `json:"prefer_full_date"`
+	Birthdate                *string                  `json:"birthdate"`
+	PreferredUnits           model.UserPreferredUnits `json:"preferred_units"`
+	Language                 string                   `json:"language"`
+	Theme                    string                   `json:"theme"`
+	TotalsShow               string                   `json:"totals_show"`
+	Timezone                 string                   `json:"timezone"`
+	AutoImportDirectory      string                   `json:"auto_import_directory"`
+	DefaultWorkoutVisibility model.WorkoutVisibility  `json:"default_workout_visibility"`
+	APIActive                bool                     `json:"api_active"`
+	PreferFullDate           bool                     `json:"prefer_full_date"`
 }
 
 type CalendarQueryParams struct {

@@ -55,11 +55,19 @@
         }
       </div>
 
-      <div class="mb-3 form-check">
-        <input class="form-check-input" formControlName="socials_disabled" id="socials_disabled" type="checkbox" />
-        <label class="form-check-label" for="socials_disabled">
-          {{ 'Disable social sharing buttons' | translate }}
+      <div class="mb-3">
+        <label class="form-label" for="default_workout_visibility">
+          {{ 'Default workout visibility' | translate }}
         </label>
+        <select
+          class="form-select"
+          formControlName="default_workout_visibility"
+          id="default_workout_visibility"
+        >
+          <option value="">{{ 'Private' | translate }}</option>
+          <option value="followers">{{ 'Followers' | translate }}</option>
+          <option value="public">{{ 'Public' | translate }}</option>
+        </select>
       </div>
 
       @if (!store.profile()!.activity_pub) {
