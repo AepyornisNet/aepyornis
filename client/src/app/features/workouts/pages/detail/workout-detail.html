@@ -302,12 +302,14 @@
           </div>
         }
 
-        <app-workout-actions
-          [hasMapData]="dataService.hasTrack()!"
-          [workout]="dataService.workout()!"
-          (workoutDeleted)="onWorkoutDeleted()"
-          (workoutUpdated)="onWorkoutUpdated($event)"
-        />
+        @if (isWorkoutOwner()) {
+          <app-workout-actions
+            [hasMapData]="dataService.hasTrack()!"
+            [workout]="dataService.workout()!"
+            (workoutDeleted)="onWorkoutDeleted()"
+            (workoutUpdated)="onWorkoutUpdated($event)"
+          />
+        }
       </div>
     </div>
   }
