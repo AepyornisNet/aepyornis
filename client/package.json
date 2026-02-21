@@ -34,7 +34,7 @@
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/interaction": "^6.1.20",
-    "@ng-bootstrap/ng-bootstrap": "^20.0.0-rc.0",
+    "@ng-bootstrap/ng-bootstrap": "^20.0.0",
     "@ng-icons/core": "^33.1.0",
     "@ng-icons/font-awesome": "^33.1.0",
     "@ng-icons/heroicons": "^33.1.0",
