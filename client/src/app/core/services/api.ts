@@ -472,23 +472,6 @@ export class Api {
     );
   }
 
-  public publishWorkoutToActivityPub(
-    id: number,
-  ): Observable<APIResponse<{ activity_pub_published: boolean; message: string; outbox_id?: string }>> {
-    return this.http.post<APIResponse<{ activity_pub_published: boolean; message: string; outbox_id?: string }>>(
-      `${this.baseUrl}/workouts/${id}/activity-pub/publish`,
-      {},
-    );
-  }
-
-  public unpublishWorkoutFromActivityPub(
-    id: number,
-  ): Observable<APIResponse<{ activity_pub_published: boolean; message: string }>> {
-    return this.http.delete<APIResponse<{ activity_pub_published: boolean; message: string }>>(
-      `${this.baseUrl}/workouts/${id}/activity-pub/publish`,
-    );
-  }
-
   public refreshWorkouts(): Observable<APIResponse<{ message: string }>> {
     return this.http.post<APIResponse<{ message: string }>>(
       `${this.baseUrl}/profile/refresh-workouts`,

@@ -70,30 +70,6 @@
       </button>
     }
 
-    @if (activityPubEnabled()) {
-      <button
-        class="btn btn-sm"
-        [class.btn-outline-danger]="workout().activity_pub_published"
-        [class.btn-outline-primary]="!workout().activity_pub_published"
-        [disabled]="isActivityPubProcessing()"
-        [title]="
-          workout().activity_pub_published
-            ? ('Unpublish from ActivityPub' | translate)
-            : ('Publish to ActivityPub' | translate)
-        "
-        (click)="toggleActivityPubPublishing()"
-      >
-        @if (isActivityPubProcessing()) {
-          <span aria-hidden="true" class="spinner-border spinner-border-sm"></span>
-        } @else {
-          <app-icon name="share" size="16" />
-        }
-        <span class="ms-1">
-          {{ workout().activity_pub_published ? ('Unpublish' | translate) : ('Publish' | translate) }}
-        </span>
-      </button>
-    }
-
     @if (hasMapData()) {
       <button
         class="btn btn-sm btn-outline-primary"

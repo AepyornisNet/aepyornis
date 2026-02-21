@@ -11,8 +11,8 @@ import (
 type APOutboxDelivery struct {
 	Model
 
-	APOutboxEntryID uint64 `gorm:"uniqueIndex:idx_ap_outbox_delivery_entry_actor;not null" json:"ap_outbox_entry_id"`
-	APOutboxEntry   *APOutboxEntry
+	APOutboxEntryID uint64         `gorm:"uniqueIndex:idx_ap_outbox_delivery_entry_actor;not null" json:"ap_outbox_entry_id"`
+	APOutboxEntry   *APOutboxEntry `gorm:"constraint:OnDelete:CASCADE"`
 
 	ActorIRI    string    `gorm:"type:text;uniqueIndex:idx_ap_outbox_delivery_entry_actor;not null" json:"actor_iri"`
 	DeliveredAt time.Time `gorm:"index;not null" json:"delivered_at"`

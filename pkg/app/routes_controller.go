@@ -107,8 +107,6 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group) {
 	workoutGroup.PUT("/:id", wc.UpdateWorkout).Name = "workout-update"
 	workoutGroup.POST("/:id/toggle-lock", wc.ToggleWorkoutLock).Name = "workout-toggle-lock"
 	workoutGroup.POST("/:id/refresh", wc.RefreshWorkout).Name = "workout-refresh"
-	workoutGroup.POST("/:id/activity-pub/publish", wc.PublishWorkoutToActivityPub).Name = "workout-activity-pub-publish"
-	workoutGroup.DELETE("/:id/activity-pub/publish", wc.UnpublishWorkoutFromActivityPub).Name = "workout-activity-pub-unpublish"
 	workoutGroup.DELETE("/:id", wc.DeleteWorkout).Name = "workout-delete"
 }
 
