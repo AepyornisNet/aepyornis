@@ -15,7 +15,6 @@ import { _, TranslatePipe } from '@ngx-translate/core';
 import { Api } from '../../../../core/services/api';
 import { WorkoutDetail, WorkoutRangeStats, WorkoutRangeStatsUnits } from '../../../../core/types/workout';
 import { IntervalSelection, WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
-import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 
 type NumericRangeStatKey = {
 	[K in keyof WorkoutRangeStats]: WorkoutRangeStats[K] extends number | undefined ? K : never;
@@ -131,7 +130,6 @@ export class WorkoutStatisticsComponent {
 	public readonly workout = input<WorkoutDetail | null>(null);
 	private readonly locale = inject(LOCALE_ID);
 	private readonly api = inject(Api);
-		private readonly dataService = inject(WorkoutDetailDataService);
 	private readonly coordinator = inject(WorkoutDetailCoordinatorService);
 
 	private readonly stats = signal<WorkoutRangeStats | null>(null);
@@ -204,10 +202,7 @@ export class WorkoutStatisticsComponent {
 		this.loading.set(true);
 
 		try {
-				const publicUuid = this.dataService.publicUuid();
-				const response = publicUuid
-					? await firstValueFrom(this.api.getPublicWorkoutRangeStats(publicUuid, params))
-					: await firstValueFrom(this.api.getWorkoutRangeStats(workout.id, params));
+			const response = await firstValueFrom(this.api.getWorkoutRangeStats(workout.id, params));
 			if (this.requestId !== currentRequest) {
 				return;
 			}

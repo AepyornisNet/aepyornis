@@ -9,13 +9,6 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login),
   },
   {
-    path: 'share/:uuid',
-    loadComponent: () =>
-      import('./features/workouts/pages/detail/workout-detail').then(
-        (m) => m.WorkoutDetailPage,
-      ),
-  },
-  {
     path: '',
     loadComponent: () =>
       import('./layouts/authenticated-layout/authenticated-layout').then(

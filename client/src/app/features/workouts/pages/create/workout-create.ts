@@ -81,6 +81,7 @@ export class WorkoutCreate implements OnInit {
     this.manualWorkoutForm = this.fb.group({
       name: ['', Validators.required],
       date: [this.getDefaultDateTime(), Validators.required],
+      visibility: [''],
       location: [''],
       duration_hours: [0, [Validators.required, Validators.min(0)]],
       duration_minutes: [0, [Validators.required, Validators.min(0), Validators.max(59)]],
@@ -135,6 +136,7 @@ export class WorkoutCreate implements OnInit {
         this.manualWorkoutForm.patchValue({
           name: workout.name,
           date: formattedDate,
+          visibility: workout.visibility ?? '',
           location: workout.address_string || '',
           duration_hours: durationHours,
           duration_minutes: durationMinutes,
@@ -288,6 +290,7 @@ export class WorkoutCreate implements OnInit {
         date: string;
         timezone: string;
         type: string;
+        visibility: '' | 'followers' | 'public';
         notes: string;
         equipment_ids: number[];
         location?: string;
@@ -303,6 +306,7 @@ export class WorkoutCreate implements OnInit {
         date: formValue.date,
         timezone: this.getTimezone(),
         type,
+        visibility: formValue.visibility,
         notes: formValue.notes,
         equipment_ids: formValue.equipment_ids,
       };

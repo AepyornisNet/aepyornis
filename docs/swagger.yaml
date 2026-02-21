@@ -962,8 +962,6 @@ definitions:
       pause_duration:
         description: Duration in seconds
         type: integer
-      public_uuid:
-        type: string
       records:
         items:
           $ref: '#/definitions/dto.WorkoutIntervalRecordResponse'
@@ -995,6 +993,8 @@ definitions:
         $ref: '#/definitions/dto.UserProfileResponse'
       user_id:
         type: integer
+      visibility:
+        $ref: '#/definitions/model.WorkoutVisibility'
     type: object
   dto.WorkoutIntervalRecordResponse:
     properties:
@@ -1211,8 +1211,6 @@ definitions:
       pause_duration:
         description: Duration in seconds
         type: integer
-      public_uuid:
-        type: string
       sub_type:
         type: string
       total_distance:
@@ -1236,6 +1234,8 @@ definitions:
         $ref: '#/definitions/dto.UserProfileResponse'
       user_id:
         type: integer
+      visibility:
+        $ref: '#/definitions/model.WorkoutVisibility'
     type: object
   dto.ZoneRangeResponse:
     properties:
@@ -1325,6 +1325,16 @@ definitions:
         description: The user's preferred weight unit
         type: string
     type: object
+  model.WorkoutVisibility:
+    enum:
+    - ""
+    - followers
+    - public
+    type: string
+    x-enum-varnames:
+    - WorkoutVisibilityPrivate
+    - WorkoutVisibilityFollowers
+    - WorkoutVisibilityPublic
 info:
   contact: {}
   description: Workout Tracker HTTP API (v2).
@@ -3080,57 +3090,6 @@ paths:
       summary: Create route segment from workout
       tags:
       - route-segments
-  /workouts/{id}/share:
-    delete:
-      parameters:
-      - description: Workout ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.Response-map_string_string'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-      security:
-      - ApiKeyAuth: []
-      - ApiKeyQuery: []
-      - CookieAuth: []
-      summary: Delete workout share link
-      tags:
-      - workouts
-    post:
-      parameters:
-      - description: Workout ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.Response-map_string_string'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-      security:
-      - ApiKeyAuth: []
-      - ApiKeyQuery: []
-      - CookieAuth: []
-      summary: Create or regenerate share link
-      tags:
-      - workouts
   /workouts/{id}/stats-range:
     get:
       parameters:
@@ -3263,100 +3222,6 @@ paths:
       summary: Get workout coordinates
       tags:
       - heatmap
-  /workouts/public/{uuid}:
-    get:
-      parameters:
-      - description: Public UUID
-        in: path
-        name: uuid
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.Response-dto_WorkoutDetailResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-      summary: Get public workout
-      tags:
-      - workouts
-  /workouts/public/{uuid}/breakdown:
-    get:
-      parameters:
-      - description: Public UUID
-        in: path
-        name: uuid
-        required: true
-        type: string
-      - description: Unit
-        in: query
-        name: unit
-        type: string
-      - description: Count
-        in: query
-        name: count
-        type: number
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.Response-dto_WorkoutBreakdownResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-      summary: Get public workout breakdown
-      tags:
-      - workouts
-  /workouts/public/{uuid}/stats-range:
-    get:
-      parameters:
-      - description: Public UUID
-        in: path
-        name: uuid
-        required: true
-        type: string
-      - description: Start point index (inclusive)
-        in: query
-        name: start_index
-        type: integer
-      - description: End point index (inclusive)
-        in: query
-        name: end_index
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.Response-dto_WorkoutRangeStatsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.Response-any'
-      summary: Get public workout range statistics
-      tags:
-      - workouts
   /workouts/recent:
     get:
       parameters:

@@ -5,7 +5,6 @@ import {
   effect,
   inject,
   OnInit,
-  signal,
 } from '@angular/core';
 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -61,7 +60,6 @@ export class WorkoutDetailPage implements OnInit {
   public readonly hasWorkoutStatisticsTab = computed(() =>
     hasWorkoutStatistics(this.dataService.workout()),
   );
-  public readonly viewMode = signal(false);
   public readonly sportLabel = getSportLabel;
   public readonly sportSubtypeLabel = getSportSubtypeLabel;
 
@@ -77,15 +75,6 @@ export class WorkoutDetailPage implements OnInit {
 
   public ngOnInit(): void {
     this.dataService.clearWorkout();
-
-    const uuid = this.route.snapshot.paramMap.get('uuid');
-    if (uuid) {
-      this.viewMode.set(true);
-      void this.dataService.loadPublicWorkout(uuid);
-      return;
-    }
-
-    this.viewMode.set(false);
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {

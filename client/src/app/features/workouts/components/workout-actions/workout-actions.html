@@ -70,39 +70,6 @@
       </button>
     }
 
-    <!-- Share -->
-    <div ngbDropdown>
-      <button
-        class="btn btn-sm btn-outline-secondary dropdown-toggle w-100"
-        ngbDropdownToggle
-        [disabled]="isProcessing()"
-        [title]="'Share Workout' | translate"
-        (click)="toggleShareMenu()"
-      >
-        <app-icon name="share" size="16" />
-        <span class="ms-1">{{ 'Share' | translate }}</span>
-      </button>
-      @if (showShareMenu()) {
-        <div class="dropdown-menu show position-absolute" ngbDropdownMenu>
-          @if (workout().public_uuid) {
-            <button class="dropdown-item" (click)="copyShareLink()">
-              <app-icon name="copy" size="16" />
-              <span class="ms-1">{{ 'Copy Share Link' | translate }}</span>
-            </button>
-            <button class="dropdown-item text-danger" (click)="deleteShareLink()">
-              <app-icon name="delete" size="16" />
-              <span class="ms-1">{{ 'Delete Share Link' | translate }}</span>
-            </button>
-          } @else {
-            <button class="dropdown-item" (click)="generateShareLink()">
-              <app-icon name="generate-share" size="16" />
-              <span class="ms-1">{{ 'Generate Share Link' | translate }}</span>
-            </button>
-          }
-        </div>
-      }
-    </div>
-
     @if (activityPubEnabled()) {
       <button
         class="btn btn-sm"

@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/tkrajina/gpxgo/gpx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -24,47 +23,27 @@ var (
 	ErrWorkoutParserMissing = errors.New("workout parser is not configured")
 )
 
-func init() {
-	WorkoutParser = defaultWorkoutParser
+type WorkoutVisibility string
+
+const (
+	WorkoutVisibilityPrivate   WorkoutVisibility = ""
+	WorkoutVisibilityFollowers WorkoutVisibility = "followers"
+	WorkoutVisibilityPublic    WorkoutVisibility = "public"
+)
+
+func (v WorkoutVisibility) IsValid() bool {
+	switch v {
+	case WorkoutVisibilityPrivate, WorkoutVisibilityFollowers, WorkoutVisibilityPublic:
+		return true
+	default:
+		return false
+	}
 }
-
-func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
-	gpxContent, err := gpx.ParseBytes(content)
-	if err != nil {
-		return nil, err
-	}
-
-	data := MapDataFromGPX(gpxContent)
-	w := &Workout{
-		Data: data,
-		Name: data.WorkoutData.Name,
-	}
-
-	if date := GPXDate(gpxContent); date != nil {
-		w.Date = *date
-	}
-
-	if filename == "" {
-		filename = w.Name
-	}
-
-	w.SetContent(filename, content)
-	w.UpdateAverages()
-	w.UpdateExtraMetrics()
-
-	return []*Workout{w}, nil
-}
-
-const minEventDuration = 1 * time.Second
-
-// WorkoutParser is configured by the converters package to parse file content into Workout models.
-// It is left nil in tests that do not require parsing.
-var WorkoutParser func(filename string, content []byte) ([]*Workout, error)
 
 type Workout struct {
 	Model
 	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`                                    // The timestamp the workout was recorded
-	PublicUUID          *uuid.UUID           `gorm:"type:uuid;uniqueIndex" json:"publicUUID"`                                            // UUID to publicly share a workout - this UUID can be rotated
+	Visibility          WorkoutVisibility    `json:"visibility"`                                                                         // The visibility of the workout (private, followers, public)
 	User                *User                `gorm:"foreignKey:UserID" json:"user"`                                                      // The user who owns the workout
 	Data                *MapData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"data,omitempty"`             // The map data associated with the workout
 	GPX                 *GPXData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"gpx,omitempty"`              // The file data associated with the workout
@@ -528,35 +507,8 @@ func GetWorkouts(db *gorm.DB) ([]*Workout, error) {
 	return w, nil
 }
 
-func GetWorkoutDetailsByUUID(db *gorm.DB, u uuid.UUID) (*Workout, error) {
-	return GetWorkoutByUUID(db.Preload("GPX").Preload("Data.Details"), u)
-}
-
 func GetWorkoutDetails(db *gorm.DB, id uint64) (*Workout, error) {
 	return GetWorkout(db.Preload("GPX").Preload("Data.Details"), id)
-}
-
-func GetWorkoutByUUID(db *gorm.DB, u uuid.UUID) (*Workout, error) {
-	w := Workout{
-		PublicUUID: &u,
-	}
-
-	if err := db.
-		Preload("RouteSegmentMatches.RouteSegment").
-		Preload("Data").
-		Preload("User").
-		Preload("Equipment").
-		Where(&w).
-		First(&w).
-		Error; err != nil {
-		return nil, err
-	}
-
-	sort.Slice(w.RouteSegmentMatches, func(i, j int) bool {
-		return w.RouteSegmentMatches[i].Distance > w.RouteSegmentMatches[j].Distance
-	})
-
-	return &w, nil
 }
 
 func GetMapData(db *gorm.DB, id uint64) (*MapData, error) {
@@ -959,3 +911,40 @@ func (w *Workout) Export() ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+func init() {
+	WorkoutParser = defaultWorkoutParser
+}
+
+func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
+	gpxContent, err := gpx.ParseBytes(content)
+	if err != nil {
+		return nil, err
+	}
+
+	data := MapDataFromGPX(gpxContent)
+	w := &Workout{
+		Data: data,
+		Name: data.WorkoutData.Name,
+	}
+
+	if date := GPXDate(gpxContent); date != nil {
+		w.Date = *date
+	}
+
+	if filename == "" {
+		filename = w.Name
+	}
+
+	w.SetContent(filename, content)
+	w.UpdateAverages()
+	w.UpdateExtraMetrics()
+
+	return []*Workout{w}, nil
+}
+
+const minEventDuration = 1 * time.Second
+
+// WorkoutParser is configured by the converters package to parse file content into Workout models.
+// It is left nil in tests that do not require parsing.
+var WorkoutParser func(filename string, content []byte) ([]*Workout, error)

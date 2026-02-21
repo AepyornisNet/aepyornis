@@ -124,6 +124,18 @@ func preMigrationActions(db *gorm.DB) error {
 }
 
 func postMigrationActions(db *gorm.DB) error {
+	if db.Migrator().HasColumn(&Workout{}, "public_uuid") {
+		if err := db.Model(&Workout{}).
+			Where("public_uuid IS NOT NULL").
+			Update("visibility", WorkoutVisibilityPublic).Error; err != nil {
+			return err
+		}
+
+		if err := db.Migrator().DropColumn(&Workout{}, "public_uuid"); err != nil {
+			return err
+		}
+	}
+
 	workouts, err := GetWorkouts(db)
 	if err != nil {
 		return err

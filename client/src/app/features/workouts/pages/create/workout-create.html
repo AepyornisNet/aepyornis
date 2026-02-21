@@ -221,6 +221,20 @@
                 />
               </div>
 
+              <div class="mb-3">
+                <label class="form-label" for="visibility">{{ 'Visibility' | translate }}</label>
+                <select
+                  class="form-select"
+                  formControlName="visibility"
+                  id="visibility"
+                  [disabled]="loading()"
+                >
+                  <option value="">{{ 'Private' | translate }}</option>
+                  <option value="followers">{{ 'Followers' | translate }}</option>
+                  <option value="public">{{ 'Public' | translate }}</option>
+                </select>
+              </div>
+
               @if (showLocation()) {
                 <div class="mb-3">
                   <label class="form-label" for="location">{{

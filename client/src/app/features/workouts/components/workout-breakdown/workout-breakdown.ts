@@ -23,7 +23,6 @@ export class WorkoutBreakdownComponent {
   public readonly workoutId = input<number | undefined>();
   public readonly totalDistance = input<number | undefined>();
   public readonly extraMetrics = input<string[]>([]);
-  public readonly publicUuid = input<string | null>(null);
 
   public readonly breakdown = signal<WorkoutBreakdown | null>(null);
   public readonly loading = signal(false);
@@ -106,21 +105,15 @@ export class WorkoutBreakdownComponent {
     count?: number;
   }): void {
     const workoutId = this.workoutId();
-    const publicUuid = this.publicUuid();
     if (!workoutId) {
       return;
     }
 
     this.loading.set(true);
-    const request$ = publicUuid
-      ? this.api.getPublicWorkoutBreakdown(publicUuid, {
-          mode: params.mode,
-          count: params.count,
-        })
-      : this.api.getWorkoutBreakdown(workoutId, {
-          mode: params.mode,
-          count: params.count,
-        });
+    const request$ = this.api.getWorkoutBreakdown(workoutId, {
+      mode: params.mode,
+      count: params.count,
+    });
 
     request$.subscribe({
         next: (response) => {
