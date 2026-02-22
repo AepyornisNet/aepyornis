@@ -11,11 +11,9 @@
     <div class="alert alert-danger" role="alert">
       {{ dataService.error() }}
     </div>
-    @if (!viewMode()) {
-      <button class="btn btn-primary" (click)="goBack()">
-        {{ 'Workouts' | translate }}
-      </button>
-    }
+    <button class="btn btn-primary" (click)="goBack()">
+      {{ 'Workouts' | translate }}
+    </button>
   }
 
   @if (!dataService.loading() && !dataService.error() && dataService.workout()) {
@@ -182,7 +180,6 @@
                   <ng-template ngbNavContent>
                     <app-workout-breakdown
                       [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                      [publicUuid]="dataService.publicUuid()"
                       [totalDistance]="dataService.workout()!.total_distance"
                       [workoutId]="dataService.workout()!.id"
                     />
@@ -196,7 +193,7 @@
                     <ng-template ngbNavContent>
                       <app-route-segment-matches
                         [matches]="dataService.workout()!.route_segment_matches!"
-                        [viewMode]="viewMode()"
+                        [viewMode]="false"
                       />
                     </ng-template>
                   </li>
@@ -293,28 +290,19 @@
             <div class="card-body">
               <div class="list-group">
                 @for (equip of dataService.workout()!.equipment; track equip.id) {
-                  @if (viewMode()) {
-                    <div class="list-group-item">
-                      <h6 class="mb-1">{{ equip.name }}</h6>
-                      @if (equip.description) {
-                        <p class="mb-0 text-muted">{{ equip.description }}</p>
-                      }
-                    </div>
-                  } @else {
-                    <a class="list-group-item" [routerLink]="['/equipment', equip.id]">
-                      <h6 class="mb-1">{{ equip.name }}</h6>
-                      @if (equip.description) {
-                        <p class="mb-0 text-muted">{{ equip.description }}</p>
-                      }
-                    </a>
-                  }
+                  <a class="list-group-item" [routerLink]="['/equipment', equip.id]">
+                    <h6 class="mb-1">{{ equip.name }}</h6>
+                    @if (equip.description) {
+                      <p class="mb-0 text-muted">{{ equip.description }}</p>
+                    }
+                  </a>
                 }
               </div>
             </div>
           </div>
         }
 
-        @if (!viewMode()) {
+        @if (isWorkoutOwner()) {
           <app-workout-actions
             [hasMapData]="dataService.hasTrack()!"
             [workout]="dataService.workout()!"

@@ -14,16 +14,16 @@ type Profile struct {
 
 	PreferredUnits UserPreferredUnits `gorm:"serializer:json" json:"preferredUnits"` // The user's preferred units
 
-	Language            string      `form:"language" json:"language"`                           // The user's preferred language
-	Theme               string      `form:"theme" json:"theme"`                                 // The user's preferred color scheme
-	TotalsShow          WorkoutType `form:"totals_show" json:"totals_show"`                     // What workout type of totals to show
-	Timezone            string      `form:"timezone" json:"timezone"`                           // The user's preferred timezone
-	AutoImportDirectory string      `form:"auto_import_directory" json:"auto_import_directory"` // The user's preferred directory for auto-import
-	UserID              uint64      `json:"userID"`                                             // The ID of the user who owns this profile
-	APIActive           bool        `form:"api_active" json:"api_active"`                       // Whether the user's API key is active
-	SocialsDisabled     bool        `form:"socials_disabled" json:"socials_disabled"`           // Whether social sharing buttons are disabled when viewing a workout
-	PreferFullDate      bool        `form:"prefer_full_date" json:"prefer_full_date"`           // Whether to show full dates in the workout details
-	ShowTabs            bool        `form:"show_tabs" json:"show_tabs"`                         // Whether to show tabs in web UI
+	Language                 string            `form:"language" json:"language"`                                     // The user's preferred language
+	Theme                    string            `form:"theme" json:"theme"`                                           // The user's preferred color scheme
+	TotalsShow               WorkoutType       `form:"totals_show" json:"totals_show"`                               // What workout type of totals to show
+	Timezone                 string            `form:"timezone" json:"timezone"`                                     // The user's preferred timezone
+	AutoImportDirectory      string            `form:"auto_import_directory" json:"auto_import_directory"`           // The user's preferred directory for auto-import
+	DefaultWorkoutVisibility WorkoutVisibility `form:"default_workout_visibility" json:"default_workout_visibility"` // Default visibility for newly created workouts
+	UserID                   uint64            `json:"userID"`                                                       // The ID of the user who owns this profile
+	APIActive                bool              `form:"api_active" json:"api_active"`                                 // Whether the user's API key is active
+	PreferFullDate           bool              `form:"prefer_full_date" json:"prefer_full_date"`                     // Whether to show full dates in the workout details
+	ShowTabs                 bool              `form:"show_tabs" json:"show_tabs"`                                   // Whether to show tabs in web UI
 }
 
 type UserPreferredUnits struct {
@@ -99,7 +99,14 @@ func (p *Profile) ResetBools() {
 	p.PreferFullDate = false
 	p.ShowTabs = false
 	p.APIActive = false
-	p.SocialsDisabled = false
+}
+
+func (p *Profile) EffectiveDefaultWorkoutVisibility() WorkoutVisibility {
+	if p == nil || !p.DefaultWorkoutVisibility.IsValid() {
+		return WorkoutVisibilityPrivate
+	}
+
+	return p.DefaultWorkoutVisibility
 }
 
 func (p *Profile) Save(db *gorm.DB) error {

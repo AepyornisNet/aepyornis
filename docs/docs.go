@@ -2518,150 +2518,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/workouts/public/{uuid}": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "Get public workout",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Public UUID",
-                        "name": "uuid",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-dto_WorkoutDetailResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/public/{uuid}/breakdown": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "Get public workout breakdown",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Public UUID",
-                        "name": "uuid",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Unit",
-                        "name": "unit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Count",
-                        "name": "count",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-dto_WorkoutBreakdownResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/public/{uuid}/stats-range": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "Get public workout range statistics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Public UUID",
-                        "name": "uuid",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Start point index (inclusive)",
-                        "name": "start_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "End point index (inclusive)",
-                        "name": "end_index",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-dto_WorkoutRangeStatsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    }
-                }
-            }
-        },
         "/workouts/recent": {
             "get": {
                 "produces": [
@@ -2846,112 +2702,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/{id}/activity-pub/publish": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyQuery": []
-                    },
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "Publish workout to ActivityPub",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Workout ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyQuery": []
-                    },
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "Unpublish workout from ActivityPub",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Workout ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/dto.Response-any"
                         }
@@ -3155,94 +2905,6 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/dto.Response-any"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/{id}/share": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyQuery": []
-                    },
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "Create or regenerate share link",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Workout ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-map_string_string"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyQuery": []
-                    },
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "Delete workout share link",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Workout ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-map_string_string"
                         }
                     },
                     "404": {
@@ -4897,9 +4559,6 @@ const docTemplate = `{
                     "description": "Duration in seconds",
                     "type": "integer"
                 },
-                "public_uuid": {
-                    "type": "string"
-                },
                 "records": {
                     "type": "array",
                     "items": {
@@ -4945,6 +4604,9 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                },
+                "visibility": {
+                    "$ref": "#/definitions/model.WorkoutVisibility"
                 }
             }
         },
@@ -5272,9 +4934,6 @@ const docTemplate = `{
                     "description": "Duration in seconds",
                     "type": "integer"
                 },
-                "public_uuid": {
-                    "type": "string"
-                },
                 "sub_type": {
                     "type": "string"
                 },
@@ -5308,6 +4967,9 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                },
+                "visibility": {
+                    "$ref": "#/definitions/model.WorkoutVisibility"
                 }
             }
         },
@@ -5432,6 +5094,19 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "model.WorkoutVisibility": {
+            "type": "string",
+            "enum": [
+                "",
+                "followers",
+                "public"
+            ],
+            "x-enum-varnames": [
+                "WorkoutVisibilityPrivate",
+                "WorkoutVisibilityFollowers",
+                "WorkoutVisibilityPublic"
+            ]
         }
     },
     "securityDefinitions": {

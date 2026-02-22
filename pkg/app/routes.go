@@ -211,7 +211,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	}))
 
 	a.registerUserController(apiGroup)
-	a.registerWorkoutController(apiGroup, apiGroupPublic)
+	a.registerWorkoutController(apiGroup)
 	a.registerHeatmapController(apiGroup)
 	a.registerRouteSegmentController(apiGroup)
 	a.registerMeasurementController(apiGroup)

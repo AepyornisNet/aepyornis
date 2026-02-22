@@ -96,6 +96,10 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 	user.Profile.Theme = updateData.Theme
 	user.Profile.TotalsShow = model.WorkoutType(updateData.TotalsShow)
 	user.Profile.Timezone = updateData.Timezone
+	if !updateData.DefaultWorkoutVisibility.IsValid() {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid default workout visibility"))
+	}
+	user.Profile.DefaultWorkoutVisibility = updateData.DefaultWorkoutVisibility
 	if !pc.context.GetConfig().AutoImportEnabled {
 		if updateData.AutoImportDirectory != "" {
 			return renderApiError(c, http.StatusBadRequest, errors.New("auto import is disabled"))
@@ -106,7 +110,6 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 		user.Profile.AutoImportDirectory = updateData.AutoImportDirectory
 	}
 	user.Profile.APIActive = updateData.APIActive
-	user.Profile.SocialsDisabled = updateData.SocialsDisabled
 	user.Profile.PreferFullDate = updateData.PreferFullDate
 	user.Profile.UserID = user.ID
 

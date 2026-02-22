@@ -81,6 +81,7 @@ export class WorkoutCreate implements OnInit {
     this.manualWorkoutForm = this.fb.group({
       name: ['', Validators.required],
       date: [this.getDefaultDateTime(), Validators.required],
+      visibility: [''],
       location: [''],
       duration_hours: [0, [Validators.required, Validators.min(0)]],
       duration_minutes: [0, [Validators.required, Validators.min(0), Validators.max(59)]],
@@ -99,8 +100,20 @@ export class WorkoutCreate implements OnInit {
       this.editMode.set(true);
       this.workoutId.set(parseInt(id, 10));
       this.loadWorkoutForEdit(parseInt(id, 10));
+    } else {
+      this.loadDefaultWorkoutVisibility();
     }
     this.loadEquipment();
+  }
+
+  private async loadDefaultWorkoutVisibility(): Promise<void> {
+    try {
+      const profileResponse = await firstValueFrom(this.api.getProfile());
+      const defaultVisibility = profileResponse?.results?.profile?.default_workout_visibility ?? '';
+      this.manualWorkoutForm.patchValue({ visibility: defaultVisibility });
+    } catch (err) {
+      console.error('Failed to load default workout visibility:', err);
+    }
   }
 
   public async loadWorkoutForEdit(id: number): Promise<void> {
@@ -135,6 +148,7 @@ export class WorkoutCreate implements OnInit {
         this.manualWorkoutForm.patchValue({
           name: workout.name,
           date: formattedDate,
+          visibility: workout.visibility ?? '',
           location: workout.address_string || '',
           duration_hours: durationHours,
           duration_minutes: durationMinutes,
@@ -288,6 +302,7 @@ export class WorkoutCreate implements OnInit {
         date: string;
         timezone: string;
         type: string;
+        visibility: '' | 'followers' | 'public';
         notes: string;
         equipment_ids: number[];
         location?: string;
@@ -303,6 +318,7 @@ export class WorkoutCreate implements OnInit {
         date: formValue.date,
         timezone: this.getTimezone(),
         type,
+        visibility: formValue.visibility,
         notes: formValue.notes,
         equipment_ids: formValue.equipment_ids,
       };

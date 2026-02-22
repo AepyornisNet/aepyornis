@@ -9,13 +9,6 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login),
   },
   {
-    path: 'share/:uuid',
-    loadComponent: () =>
-      import('./features/workouts/pages/detail/workout-detail').then(
-        (m) => m.WorkoutDetailPage,
-      ),
-  },
-  {
     path: '',
     loadComponent: () =>
       import('./layouts/authenticated-layout/authenticated-layout').then(
@@ -139,7 +132,44 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/pages/profile/profile').then((m) => m.Profile),
-        canActivate: [authGuard],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'general',
+          },
+          {
+            path: 'general',
+            loadComponent: () =>
+              import('./features/profile/pages/general/general').then(
+                (m) => m.ProfileGeneralPage,
+              ),
+          },
+          {
+            path: 'infos',
+            loadComponent: () =>
+              import('./features/profile/pages/infos/infos').then((m) => m.ProfileInfosPage),
+          },
+          {
+            path: 'privacy',
+            loadComponent: () =>
+              import('./features/profile/pages/privacy/privacy').then((m) => m.ProfilePrivacyPage),
+          },
+          {
+            path: 'followers',
+            loadComponent: () =>
+              import('./features/profile/pages/followers/followers').then(
+                (m) => m.ProfileFollowersPage,
+              ),
+          },
+          {
+            path: 'actions',
+            loadComponent: () =>
+              import('./features/profile/pages/actions/actions').then(
+                (m) => m.ProfileActionsPage,
+              ),
+          },
+        ],
       },
       {
         path: 'admin',

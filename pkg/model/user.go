@@ -439,8 +439,11 @@ func (u *User) AddWorkout(db *gorm.DB, workoutType WorkoutType, notes string, fi
 	}
 
 	errs := []error{}
+	defaultVisibility := u.Profile.EffectiveDefaultWorkoutVisibility()
 
 	for _, w := range ws {
+		w.Visibility = defaultVisibility
+
 		if err := w.Create(db); err != nil {
 			errs = append(errs, err)
 		}

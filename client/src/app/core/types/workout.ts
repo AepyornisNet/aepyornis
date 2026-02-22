@@ -16,7 +16,7 @@ export type Workout = {
   custom_type?: string;
   user_id: number;
   user?: UserProfile;
-  public_uuid?: string;
+  visibility?: '' | 'followers' | 'public';
   locked: boolean;
   created_at: string;
   updated_at: string;

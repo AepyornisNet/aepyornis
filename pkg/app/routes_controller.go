@@ -92,7 +92,7 @@ func (a *App) registerEquipmentController(apiGroup *echo.Group) {
 	apiGroup.DELETE("/equipment/:id", ec.DeleteEquipment).Name = "equipment-delete"
 }
 
-func (a *App) registerWorkoutController(apiGroup *echo.Group, apiGroupPublic *echo.Group) {
+func (a *App) registerWorkoutController(apiGroup *echo.Group) {
 	wc := controller.NewWorkoutController(&a.container)
 
 	workoutGroup := apiGroup.Group("/workouts")
@@ -107,15 +107,7 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group, apiGroupPublic *ec
 	workoutGroup.PUT("/:id", wc.UpdateWorkout).Name = "workout-update"
 	workoutGroup.POST("/:id/toggle-lock", wc.ToggleWorkoutLock).Name = "workout-toggle-lock"
 	workoutGroup.POST("/:id/refresh", wc.RefreshWorkout).Name = "workout-refresh"
-	workoutGroup.POST("/:id/activity-pub/publish", wc.PublishWorkoutToActivityPub).Name = "workout-activity-pub-publish"
-	workoutGroup.DELETE("/:id/activity-pub/publish", wc.UnpublishWorkoutFromActivityPub).Name = "workout-activity-pub-unpublish"
-	workoutGroup.POST("/:id/share", wc.CreateWorkoutShare).Name = "workout-share"
 	workoutGroup.DELETE("/:id", wc.DeleteWorkout).Name = "workout-delete"
-	workoutGroup.DELETE("/:id/share", wc.DeleteWorkoutShare).Name = "workout-share-delete"
-
-	apiGroupPublic.GET("/workouts/public/:uuid", wc.GetPublicWorkout).Name = "workout-public"
-	apiGroupPublic.GET("/workouts/public/:uuid/breakdown", wc.GetPublicWorkoutBreakdown).Name = "workout-public-breakdown"
-	apiGroupPublic.GET("/workouts/public/:uuid/stats-range", wc.GetPublicWorkoutRangeStats).Name = "workout-public-range-stats"
 }
 
 func (a *App) registerHeatmapController(apiGroup *echo.Group) {

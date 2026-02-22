@@ -1,16 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 
 import { Router, RouterLink } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { Workout, WorkoutDetail } from '../../../../core/types/workout';
 import { TranslatePipe } from '@ngx-translate/core';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
-import { User } from '../../../../core/services/user';
 
 @Component({
   selector: 'app-workout-actions',
-  imports: [AppIcon, TranslatePipe, NgbDropdownModule, RouterLink],
+  imports: [AppIcon, TranslatePipe, RouterLink],
   templateUrl: './workout-actions.html',
   styleUrl: './workout-actions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,25 +22,11 @@ export class WorkoutActions {
 
   protected api = inject(Api);
   protected router = inject(Router);
-  protected userService = inject(User);
 
   public readonly showDeleteConfirm = signal(false);
-  public readonly showShareMenu = signal(false);
   public readonly isProcessing = signal(false);
-  public readonly isActivityPubProcessing = signal(false);
   public readonly errorMessage = signal<string | null>(null);
   public readonly successMessage = signal<string | null>(null);
-
-  // Check if socials are disabled from user profile
-  public readonly socialsDisabled = computed(() => {
-    const userInfo = this.userService.getUserInfo()();
-    return userInfo?.profile?.socials_disabled ?? false;
-  });
-
-  public readonly activityPubEnabled = computed(() => {
-    const userInfo = this.userService.getUserInfo()();
-    return userInfo?.profile?.activity_pub ?? false;
-  });
 
   public toggleLock(): void {
     if (this.isProcessing()) {
@@ -132,41 +116,6 @@ export class WorkoutActions {
     });
   }
 
-  public toggleActivityPubPublishing(): void {
-    if (this.isActivityPubProcessing()) {
-      return;
-    }
-
-    this.isActivityPubProcessing.set(true);
-    this.errorMessage.set(null);
-
-    const request$ = this.workout().activity_pub_published
-      ? this.api.unpublishWorkoutFromActivityPub(this.workout().id)
-      : this.api.publishWorkoutToActivityPub(this.workout().id);
-
-    request$.subscribe({
-      next: (response) => {
-        this.isActivityPubProcessing.set(false);
-        this.successMessage.set(response.results.message);
-
-        const updatedWorkout = {
-          ...this.workout(),
-          activity_pub_published: response.results.activity_pub_published,
-        };
-        this.workoutUpdated.emit(updatedWorkout as Workout);
-
-        setTimeout(() => this.successMessage.set(null), 3000);
-      },
-      error: (err) => {
-        this.isActivityPubProcessing.set(false);
-        this.errorMessage.set(
-          'Failed to update ActivityPub publication: ' + (err.error?.errors?.[0] || err.message),
-        );
-        setTimeout(() => this.errorMessage.set(null), 5000);
-      },
-    });
-  }
-
   public confirmDelete(): void {
     this.showDeleteConfirm.set(true);
   }
@@ -198,90 +147,4 @@ export class WorkoutActions {
     });
   }
 
-  public toggleShareMenu(): void {
-    this.showShareMenu.update((value) => !value);
-  }
-
-  public generateShareLink(): void {
-    if (this.isProcessing()) {
-      return;
-    }
-
-    this.closeShareMenu();
-    this.isProcessing.set(true);
-    this.errorMessage.set(null);
-
-    this.api.shareWorkout(this.workout().id).subscribe({
-      next: (response) => {
-        this.isProcessing.set(false);
-        this.successMessage.set(response.results.message);
-
-        // Update workout with new public_uuid
-        const updatedWorkout = { ...this.workout(), public_uuid: response.results.public_uuid };
-        this.workoutUpdated.emit(updatedWorkout as Workout);
-
-        setTimeout(() => this.successMessage.set(null), 3000);
-      },
-      error: (err) => {
-        this.isProcessing.set(false);
-        this.errorMessage.set(
-          'Failed to generate share link: ' + (err.error?.errors?.[0] || err.message),
-        );
-        setTimeout(() => this.errorMessage.set(null), 5000);
-      },
-    });
-  }
-
-  public copyShareLink(): void {
-    if (!this.workout().public_uuid) {
-      return;
-    }
-
-    this.closeShareMenu();
-    const shareUrl = `${window.location.origin}/share/${this.workout().public_uuid}`;
-    navigator.clipboard
-      .writeText(shareUrl)
-      .then(() => {
-        this.successMessage.set('Share link copied to clipboard');
-        setTimeout(() => this.successMessage.set(null), 3000);
-      })
-      .catch((err) => {
-        this.errorMessage.set('Failed to copy to clipboard: ' + err.message);
-        setTimeout(() => this.errorMessage.set(null), 5000);
-      });
-  }
-
-  public deleteShareLink(): void {
-    if (this.isProcessing()) {
-      return;
-    }
-
-    this.closeShareMenu();
-    this.isProcessing.set(true);
-    this.errorMessage.set(null);
-
-    this.api.deleteWorkoutShare(this.workout().id).subscribe({
-      next: (response) => {
-        this.isProcessing.set(false);
-        this.successMessage.set(response.results.message);
-
-        // Update workout with removed public_uuid
-        const updatedWorkout = { ...this.workout(), public_uuid: undefined };
-        this.workoutUpdated.emit(updatedWorkout as Workout);
-
-        setTimeout(() => this.successMessage.set(null), 3000);
-      },
-      error: (err) => {
-        this.isProcessing.set(false);
-        this.errorMessage.set(
-          'Failed to delete share link: ' + (err.error?.errors?.[0] || err.message),
-        );
-        setTimeout(() => this.errorMessage.set(null), 5000);
-      },
-    });
-  }
-
-  private closeShareMenu(): void {
-    this.showShareMenu.set(false);
-  }
 }

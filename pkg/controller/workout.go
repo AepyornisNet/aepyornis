@@ -35,14 +35,7 @@ type WorkoutController interface {
 	UpdateWorkout(c echo.Context) error
 	ToggleWorkoutLock(c echo.Context) error
 	RefreshWorkout(c echo.Context) error
-	PublishWorkoutToActivityPub(c echo.Context) error
-	UnpublishWorkoutFromActivityPub(c echo.Context) error
-	CreateWorkoutShare(c echo.Context) error
-	DeleteWorkoutShare(c echo.Context) error
 	DownloadWorkout(c echo.Context) error
-	GetPublicWorkout(c echo.Context) error
-	GetPublicWorkoutBreakdown(c echo.Context) error
-	GetPublicWorkoutRangeStats(c echo.Context) error
 }
 
 type workoutController struct {
@@ -74,7 +67,7 @@ func applyPublishedFlags(results []dto.WorkoutResponse, published map[uint64]boo
 	}
 }
 
-func (wc *workoutController) getWorkout(c echo.Context) (*model.Workout, error) {
+func (wc *workoutController) getOwnedWorkout(c echo.Context) (*model.Workout, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return nil, err
@@ -86,6 +79,79 @@ func (wc *workoutController) getWorkout(c echo.Context) (*model.Workout, error) 
 	}
 
 	return w, nil
+}
+
+func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.User, workout *model.Workout) (bool, error) {
+	if requester == nil || workout == nil {
+		return false, nil
+	}
+
+	if requester.ID == workout.UserID {
+		return true, nil
+	}
+
+	switch workout.Visibility {
+	case model.WorkoutVisibilityPublic:
+		return true, nil
+	case model.WorkoutVisibilityFollowers:
+		requesterActorIRI := ap.LocalActorURL(ap.LocalActorURLConfig{
+			Host:           wc.context.GetConfig().Host,
+			WebRoot:        wc.context.GetConfig().WebRoot,
+			FallbackHost:   c.Request().Host,
+			FallbackScheme: c.Scheme(),
+		}, requester.Username)
+
+		if requesterActorIRI == "" {
+			return false, nil
+		}
+
+		var count int64
+		if err := wc.context.GetDB().
+			Model(&model.Follower{}).
+			Where("user_id = ? AND actor_iri = ? AND approved = ?", workout.UserID, requesterActorIRI, true).
+			Count(&count).Error; err != nil {
+			return false, err
+		}
+
+		return count > 0, nil
+	default:
+		return false, nil
+	}
+}
+
+func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool) (*model.Workout, error) {
+	id, err := cast.ToUint64E(c.Param("id"))
+	if err != nil {
+		return nil, err
+	}
+
+	db := wc.context.GetDB().
+		Preload("Data").
+		Preload("Data.Details").
+		Preload("GPX").
+		Preload("Equipment").
+		Preload("User").
+		Preload("User.Profile")
+
+	if withDetails {
+		db = db.Preload("RouteSegmentMatches.RouteSegment")
+	}
+
+	var workout model.Workout
+	if err := db.First(&workout, id).Error; err != nil {
+		return nil, err
+	}
+
+	allowed, err := wc.canReadWorkout(c, wc.context.GetUser(c), &workout)
+	if err != nil {
+		return nil, err
+	}
+
+	if !allowed {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return &workout, nil
 }
 
 // GetWorkouts returns a paginated list of workouts for the current user
@@ -161,33 +227,18 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id} [get]
 func (wc *workoutController) GetWorkout(c echo.Context) error {
-	user := wc.context.GetUser(c)
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	workout, err := wc.getReadableWorkout(c, true)
 	if err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-
-	var workout model.Workout
-	db := wc.context.GetDB().Preload("Data.Details").
-		Preload("Data").
-		Preload("GPX").
-		Preload("Equipment").
-		Preload("RouteSegmentMatches.RouteSegment").
-		Where("user_id = ? AND id = ?", user.ID, id)
-
-	if err := db.First(&workout).Error; err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	workout.User = user
-	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), user.ID, workout.Type, workout.ID)
+	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), workout.UserID, workout.Type, workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	result := dto.NewWorkoutDetailResponse(&workout, records)
-	published, err := model.APOutboxPublishedMap(wc.context.GetDB(), user.ID, []uint64{workout.ID})
+	result := dto.NewWorkoutDetailResponse(workout, records)
+	published, err := model.APOutboxPublishedMap(wc.context.GetDB(), workout.UserID, []uint64{workout.ID})
 	if err == nil {
 		result.ActivityPubPublished = published[workout.ID]
 	}
@@ -214,12 +265,7 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/breakdown [get]
 func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
-	user := wc.context.GetUser(c)
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
+	requester := wc.context.GetUser(c)
 
 	params := struct {
 		Count float64 `query:"count"`
@@ -237,12 +283,10 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 		params.Count = 1.0
 	}
 
-	var workout model.Workout
-	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Preload("GPX").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
-
-	workout.User = user
 
 	resp := dto.Response[dto.WorkoutBreakdownResponse]{}
 
@@ -251,7 +295,7 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 	if preferLaps {
 		resp.Results = dto.WorkoutBreakdownResponse{
 			Mode:  "laps",
-			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Details.Points, user.PreferredUnits()),
+			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Details.Points, requester.PreferredUnits()),
 		}
 
 		return c.JSON(http.StatusOK, resp)
@@ -261,14 +305,14 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
-	breakdown, err := workout.StatisticsPer(params.Count, user.PreferredUnits().Distance())
+	breakdown, err := workout.StatisticsPer(params.Count, requester.PreferredUnits().Distance())
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	resp.Results = dto.WorkoutBreakdownResponse{
 		Mode:  "unit",
-		Items: dto.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, user.PreferredUnits()),
+		Items: dto.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, requester.PreferredUnits()),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -289,12 +333,7 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/stats-range [get]
 func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
-	user := wc.context.GetUser(c)
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
+	requester := wc.context.GetUser(c)
 
 	params := struct {
 		StartIndex *int `query:"start_index"`
@@ -305,8 +344,8 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	var workout model.Workout
-	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Where("user_id = ? AND id = ?", user.ID, id).First(&workout).Error; err != nil {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
@@ -336,7 +375,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 	}
 
 	resp := dto.Response[dto.WorkoutRangeStatsResponse]{
-		Results: dto.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx, user.PreferredUnits()),
+		Results: dto.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx, requester.PreferredUnits()),
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -481,6 +520,8 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 		for _, w := range ws {
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
 
+			wc.syncWorkoutActivityPub(c, user, w, nil)
+
 			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, w.ID); err != nil {
 				wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
 			}
@@ -512,7 +553,12 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 	}
 
 	workout := &model.Workout{}
-	d.Update(workout)
+	if err := d.Update(workout); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if d.Visibility == nil {
+		workout.Visibility = user.Profile.EffectiveDefaultWorkoutVisibility()
+	}
 
 	workout.User = user
 	workout.UserID = user.ID
@@ -531,9 +577,11 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := wc.context.GetDB().Preload("Data").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
+
+	wc.syncWorkoutActivityPub(c, user, workout, nil)
 
 	result := dto.NewWorkoutResponse(workout)
 	resp := dto.Response[dto.WorkoutResponse]{
@@ -553,6 +601,8 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/recent [get]
 func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
+	requester := wc.context.GetUser(c)
+
 	limit := 20
 	if limitStr := c.QueryParam("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil {
@@ -571,7 +621,29 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		}
 	}
 
-	workouts, err := model.GetRecentWorkoutsWithOffset(wc.context.GetDB(), limit, offset)
+	requesterActorIRI := ap.LocalActorURL(ap.LocalActorURLConfig{
+		Host:           wc.context.GetConfig().Host,
+		WebRoot:        wc.context.GetConfig().WebRoot,
+		FallbackHost:   c.Request().Host,
+		FallbackScheme: c.Scheme(),
+	}, requester.Username)
+
+	var workouts []*model.Workout
+	err := wc.context.GetDB().
+		Preload("Data").
+		Preload("User").
+		Where(
+			"workouts.user_id = ? OR workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = workouts.user_id AND f.actor_iri = ? AND f.approved = ?))",
+			requester.ID,
+			model.WorkoutVisibilityPublic,
+			model.WorkoutVisibilityFollowers,
+			requesterActorIRI,
+			true,
+		).
+		Order("date DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&workouts).Error
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -600,7 +672,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
 
-	workout, err := wc.getWorkout(c)
+	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -636,7 +708,7 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 	user := wc.context.GetUser(c)
 
-	workout, err := wc.getWorkout(c)
+	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -646,7 +718,11 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	d.Update(workout)
+	previousVisibility := workout.Visibility
+
+	if err := d.Update(workout); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
 
 	if d.EquipmentIDs != nil {
 		equipment, err := model.GetEquipmentByIDs(wc.context.GetDB(), user.ID, d.EquipmentIDs)
@@ -662,9 +738,11 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := wc.context.GetDB().Preload("Data").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
+
+	wc.syncWorkoutActivityPub(c, user, workout, &previousVisibility)
 
 	result := dto.NewWorkoutResponse(workout)
 	resp := dto.Response[dto.WorkoutResponse]{
@@ -689,7 +767,7 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 	user := wc.context.GetUser(c)
 
-	workout, err := wc.getWorkout(c)
+	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -724,7 +802,7 @@ func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/refresh [post]
 func (wc *workoutController) RefreshWorkout(c echo.Context) error {
-	workout, err := wc.getWorkout(c)
+	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -746,39 +824,10 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// PublishWorkoutToActivityPub publishes a workout as an ActivityPub outbox entry
-// @Summary      Publish workout to ActivityPub
-// @Tags         workouts
-// @Security     ApiKeyAuth
-// @Security     ApiKeyQuery
-// @Security     CookieAuth
-// @Param        id   path  int  true  "Workout ID"
-// @Produce      json
-// @Success      200  {object}  dto.Response[any]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
-// @Failure      409  {object}  dto.Response[any]
-// @Router       /workouts/{id}/activity-pub/publish [post]
-func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
-	user := wc.context.GetUser(c)
-	if !user.ActivityPubEnabled() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("activitypub is not enabled"))
-	}
-
-	workout, err := wc.getWorkout(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	if _, err := model.GetAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err == nil {
-		return renderApiError(c, http.StatusConflict, errors.New("workout is already published"))
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
+func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *model.User, workout *model.Workout) error {
 	fitContent, err := ap.GenerateWorkoutFIT(workout)
 	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return err
 	}
 
 	entryUUID := uuid.New()
@@ -811,9 +860,8 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 			MediaType: vocab.MimeType(ap.RouteImageMIMEType),
 			URL:       vocab.IRI(routeImageURL),
 		})
-	} else {
-		// TODO: Use logger
-		fmt.Println(routeImageErr)
+	} else if routeImageErr != nil && !errors.Is(routeImageErr, ap.ErrWorkoutMissingCoordinates) {
+		wc.context.Logger().Warn("Failed to generate workout route image", "workout_id", workout.ID, "error", routeImageErr)
 	}
 
 	note := vocab.Object{
@@ -825,13 +873,20 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 		Attachment:   attachments,
 	}
 
+	to := vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
+	cc := vocab.ItemCollection{}
+	if workout.Visibility == model.WorkoutVisibilityPublic {
+		to = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
+		cc = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
+	}
+
 	activity := vocab.Activity{
 		ID:        vocab.ID(entryURL),
 		Type:      vocab.CreateType,
 		Actor:     vocab.IRI(actorURL),
 		Published: publishedAt,
-		To:        vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")},
-		CC:        vocab.ItemCollection{vocab.IRI(actorURL + "/followers")},
+		To:        to,
+		CC:        cc,
 		Object:    note,
 	}
 
@@ -839,14 +894,14 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 		jsonld.IRI(vocab.ActivityBaseURI),
 	).Marshal(activity)
 	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return err
 	}
 
 	noteJSON, err := jsonld.WithContext(
 		jsonld.IRI(vocab.ActivityBaseURI),
 	).Marshal(note)
 	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return err
 	}
 
 	outboxWorkout := &model.APOutboxWorkout{
@@ -864,7 +919,7 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 	}
 
 	if err := model.CreateAPOutboxWorkout(wc.context.GetDB(), outboxWorkout); err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return err
 	}
 
 	entry := &model.APOutboxEntry{
@@ -881,121 +936,93 @@ func (wc *workoutController) PublishWorkoutToActivityPub(c echo.Context) error {
 	}
 
 	if err := model.CreateAPOutboxEntry(wc.context.GetDB(), entry); err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return err
 	}
 
 	if err := worker.EnqueueAPDeliveriesForEntry(c.Request().Context(), wc.context, entry.ID); err != nil {
 		wc.context.Logger().Error("Failed to enqueue ActivityPub deliveries", "entry_id", entry.ID, "error", err)
 	}
 
-	return c.JSON(http.StatusOK, dto.Response[map[string]any]{
-		Results: map[string]any{
-			"message":                "workout published",
-			"activity_pub_published": true,
-			"outbox_id":              entry.PublicUUID.String(),
-		},
-	})
+	return nil
 }
 
-// UnpublishWorkoutFromActivityPub removes a workout ActivityPub outbox entry
-// @Summary      Unpublish workout from ActivityPub
-// @Tags         workouts
-// @Security     ApiKeyAuth
-// @Security     ApiKeyQuery
-// @Security     CookieAuth
-// @Param        id   path  int  true  "Workout ID"
-// @Produce      json
-// @Success      200  {object}  dto.Response[any]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
-// @Router       /workouts/{id}/activity-pub/publish [delete]
-func (wc *workoutController) UnpublishWorkoutFromActivityPub(c echo.Context) error {
-	user := wc.context.GetUser(c)
-
-	workout, err := wc.getWorkout(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+func (wc *workoutController) updateWorkoutActivityPubAudience(c echo.Context, user *model.User, entry *model.APOutboxEntry, workout *model.Workout) error {
+	if entry == nil {
+		return errors.New("outbox entry is nil")
 	}
 
-	if err := model.DeleteAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return renderApiError(c, http.StatusNotFound, err)
+	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+		Host:           wc.context.GetConfig().Host,
+		WebRoot:        wc.context.GetConfig().WebRoot,
+		FallbackHost:   c.Request().Host,
+		FallbackScheme: c.Scheme(),
+	}, user.Username)
+
+	activity := vocab.Activity{}
+	if err := jsonld.Unmarshal(entry.Activity, &activity); err != nil {
+		return err
+	}
+
+	activity.To = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
+	activity.CC = vocab.ItemCollection{}
+	if workout.Visibility == model.WorkoutVisibilityPublic {
+		activity.To = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
+		activity.CC = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
+	}
+
+	activityJSON, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(activity)
+	if err != nil {
+		return err
+	}
+
+	return wc.context.GetDB().Model(&model.APOutboxEntry{}).
+		Where("id = ?", entry.ID).
+		Update("activity", activityJSON).Error
+}
+
+func (wc *workoutController) syncWorkoutActivityPub(c echo.Context, user *model.User, workout *model.Workout, previousVisibility *model.WorkoutVisibility) {
+	if user == nil || workout == nil {
+		return
+	}
+
+	if previousVisibility != nil && *previousVisibility == workout.Visibility {
+		return
+	}
+
+	entry, err := model.GetAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID)
+	hasOutboxEntry := err == nil
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		wc.context.Logger().Warn("Failed to check ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
+		return
+	}
+
+	shouldPublish := user.ActivityPubEnabled() &&
+		(workout.Visibility == model.WorkoutVisibilityPublic || workout.Visibility == model.WorkoutVisibilityFollowers)
+
+	if !shouldPublish {
+		if hasOutboxEntry {
+			if err := model.DeleteAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				wc.context.Logger().Warn("Failed to remove ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
+			}
 		}
 
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return
 	}
 
-	return c.JSON(http.StatusOK, dto.Response[map[string]any]{
-		Results: map[string]any{
-			"message":                "workout unpublished",
-			"activity_pub_published": false,
-		},
-	})
-}
+	if hasOutboxEntry {
+		if err := wc.updateWorkoutActivityPubAudience(c, user, entry, workout); err != nil {
+			wc.context.Logger().Warn("Failed to update ActivityPub audience", "workout_id", workout.ID, "error", err)
+		}
 
-// CreateWorkoutShare generates or regenerates a public share link for a workout
-// @Summary      Create or regenerate share link
-// @Tags         workouts
-// @Security     ApiKeyAuth
-// @Security     ApiKeyQuery
-// @Security     CookieAuth
-// @Param        id   path  int  true  "Workout ID"
-// @Produce      json
-// @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      404  {object}  dto.Response[any]
-// @Router       /workouts/{id}/share [post]
-func (wc *workoutController) CreateWorkoutShare(c echo.Context) error {
-	workout, err := wc.getWorkout(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+		// Already published: do not repost existing workouts and avoid duplicate deliveries.
+		return
 	}
 
-	u := uuid.New()
-	workout.PublicUUID = &u
-
-	if err := workout.Save(wc.context.GetDB()); err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+	if err := wc.publishWorkoutToActivityPub(c, user, workout); err != nil {
+		wc.context.Logger().Warn("Failed to publish workout to ActivityPub", "workout_id", workout.ID, "error", err)
 	}
-
-	resp := dto.Response[map[string]string]{
-		Results: map[string]string{
-			"message":     "Public share link generated successfully",
-			"public_uuid": u.String(),
-			"share_url":   "/share/" + u.String(),
-		},
-	}
-
-	return c.JSON(http.StatusOK, resp)
-}
-
-// DeleteWorkoutShare deletes the public share link for a workout
-// @Summary      Delete workout share link
-// @Tags         workouts
-// @Security     ApiKeyAuth
-// @Security     ApiKeyQuery
-// @Security     CookieAuth
-// @Param        id   path  int  true  "Workout ID"
-// @Produce      json
-// @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      404  {object}  dto.Response[any]
-// @Router       /workouts/{id}/share [delete]
-func (wc *workoutController) DeleteWorkoutShare(c echo.Context) error {
-	workout, err := wc.getWorkout(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	workout.PublicUUID = nil
-
-	if err := workout.Save(wc.context.GetDB()); err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	resp := dto.Response[map[string]string]{
-		Results: map[string]string{"message": "Public share link deleted successfully"},
-	}
-
-	return c.JSON(http.StatusOK, resp)
 }
 
 // DownloadWorkout downloads the original workout file
@@ -1010,7 +1037,7 @@ func (wc *workoutController) DeleteWorkoutShare(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/download [get]
 func (wc *workoutController) DownloadWorkout(c echo.Context) error {
-	workout, err := wc.getWorkout(c)
+	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -1027,184 +1054,6 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
 
 	return c.Blob(http.StatusOK, "application/binary", workout.GPX.Content)
-}
-
-// GetPublicWorkout returns a public workout by UUID
-// @Summary      Get public workout
-// @Tags         workouts
-// @Param        uuid  path  string  true  "Public UUID"
-// @Produce      json
-// @Success      200  {object}  dto.Response[dto.WorkoutDetailResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
-// @Router       /workouts/public/{uuid} [get]
-func (wc *workoutController) GetPublicWorkout(c echo.Context) error {
-	uuidParam := c.Param("uuid")
-	u, err := uuid.Parse(uuidParam)
-	if err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-
-	workout, err := model.GetWorkoutDetailsByUUID(wc.context.GetDB(), u)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), workout.UserID, workout.Type, workout.ID)
-	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	result := dto.NewWorkoutDetailResponse(workout, records)
-
-	resp := dto.Response[dto.WorkoutDetailResponse]{
-		Results: result,
-	}
-
-	return c.JSON(http.StatusOK, resp)
-}
-
-// GetPublicWorkoutBreakdown returns breakdown table data or laps for a public workout
-// @Summary      Get public workout breakdown
-// @Tags         workouts
-// @Param        uuid   path   string  true  "Public UUID"
-// @Param        unit   query  string  false "Unit"
-// @Param        count  query  number  false "Count"
-// @Produce      json
-// @Success      200  {object}  dto.Response[dto.WorkoutBreakdownResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
-// @Router       /workouts/public/{uuid}/breakdown [get]
-func (wc *workoutController) GetPublicWorkoutBreakdown(c echo.Context) error {
-	uuidParam := c.Param("uuid")
-	u, err := uuid.Parse(uuidParam)
-	if err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-
-	params := struct {
-		Count float64 `query:"count"`
-		Mode  string  `query:"mode"`
-	}{
-		Count: 1.0,
-		Mode:  "auto",
-	}
-
-	if err := c.Bind(&params); err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-
-	if params.Count <= 0 {
-		params.Count = 1.0
-	}
-
-	workout, err := model.GetWorkoutDetailsByUUID(wc.context.GetDB(), u)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	owner, err := model.GetUserByID(wc.context.GetDB(), workout.UserID)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	resp := dto.Response[dto.WorkoutBreakdownResponse]{}
-
-	preferLaps := (params.Mode == "" || params.Mode == "auto" || params.Mode == "laps") && workout.Data != nil && len(workout.Data.Laps) > 1
-
-	if preferLaps {
-		resp.Results = dto.WorkoutBreakdownResponse{
-			Mode:  "laps",
-			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Details.Points, owner.PreferredUnits()),
-		}
-
-		return c.JSON(http.StatusOK, resp)
-	}
-
-	if workout.Data == nil || workout.Data.Details == nil {
-		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
-	}
-
-	breakdown, err := workout.StatisticsPer(params.Count, owner.PreferredUnits().Distance())
-	if err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-
-	resp.Results = dto.WorkoutBreakdownResponse{
-		Mode:  "unit",
-		Items: dto.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, owner.PreferredUnits()),
-	}
-
-	return c.JSON(http.StatusOK, resp)
-}
-
-// GetPublicWorkoutRangeStats returns aggregate statistics for a selection of map points in a public workout
-// @Summary      Get public workout range statistics
-// @Tags         workouts
-// @Param        uuid         path   string  true  "Public UUID"
-// @Param        start_index  query  int  false "Start point index (inclusive)"
-// @Param        end_index    query  int  false "End point index (inclusive)"
-// @Produce      json
-// @Success      200  {object}  dto.Response[dto.WorkoutRangeStatsResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
-// @Router       /workouts/public/{uuid}/stats-range [get]
-func (wc *workoutController) GetPublicWorkoutRangeStats(c echo.Context) error {
-	uuidParam := c.Param("uuid")
-	u, err := uuid.Parse(uuidParam)
-	if err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-
-	params := struct {
-		StartIndex *int `query:"start_index"`
-		EndIndex   *int `query:"end_index"`
-	}{}
-
-	if err := c.Bind(&params); err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-
-	workout, err := model.GetWorkoutDetailsByUUID(wc.context.GetDB(), u)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	owner, err := model.GetUserByID(wc.context.GetDB(), workout.UserID)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	if workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
-		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
-	}
-
-	points := workout.Data.Details.Points
-	startIdx := 0
-	endIdx := len(points) - 1
-
-	if params.StartIndex != nil {
-		startIdx = *params.StartIndex
-	}
-
-	if params.EndIndex != nil {
-		endIdx = *params.EndIndex
-	}
-
-	if startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
-		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
-	}
-
-	stats, ok := workout.Data.Details.StatsForRange(startIdx, endIdx)
-	if !ok {
-		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
-	}
-
-	resp := dto.Response[dto.WorkoutRangeStatsResponse]{
-		Results: dto.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx, owner.PreferredUnits()),
-	}
-
-	return c.JSON(http.StatusOK, resp)
 }
 
 func uploadedFile(file *multipart.FileHeader) ([]byte, error) {

@@ -1,0 +1,39 @@
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="h5 mb-0">{{ 'Followers' | translate }}</h3>
+    <span class="badge text-bg-primary rounded-pill">{{ store.followRequests().length }}</span>
+  </div>
+  <div class="card-body">
+    <p class="small text-muted">{{ 'Open follow requests' | translate }}</p>
+
+    @if (!store.profile()?.activity_pub) {
+      <div class="alert alert-secondary mb-0" role="alert">
+        {{ 'Enable ActivityPub in Privacy settings to receive follow requests.' | translate }}
+      </div>
+    } @else if (store.loadingFollowRequests()) {
+      <div class="small text-muted">{{ 'Loading...' | translate }}</div>
+    } @else if (store.followRequests().length === 0) {
+      <p class="small text-muted mb-0">{{ 'No pending follow requests' | translate }}</p>
+    } @else {
+      <div class="d-flex flex-column gap-2">
+        @for (request of store.followRequests(); track request.id) {
+          <div class="d-flex align-items-center justify-content-between gap-2 border rounded p-2">
+            <div class="small text-break">{{ request.actor_iri }}</div>
+            <button
+              class="btn btn-sm btn-outline-primary"
+              type="button"
+              [disabled]="store.acceptingRequestIds()[request.id]"
+              (click)="store.acceptFollowRequest(request)"
+            >
+              @if (store.acceptingRequestIds()[request.id]) {
+                <span aria-hidden="true" class="spinner-border spinner-border-sm" role="status"></span>
+              } @else {
+                {{ 'Accept' | translate }}
+              }
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

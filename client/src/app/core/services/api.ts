@@ -120,26 +120,6 @@ export class Api {
     );
   }
 
-  public getPublicWorkoutBreakdown(
-    uuid: string,
-    params?: { count?: number; mode?: 'auto' | 'laps' | 'unit' | string },
-  ): Observable<APIResponse<WorkoutBreakdown>> {
-    let httpParams = new HttpParams();
-
-    if (params?.count) {
-      httpParams = httpParams.set('count', params.count.toString());
-    }
-
-    if (params?.mode) {
-      httpParams = httpParams.set('mode', params.mode);
-    }
-
-    return this.http.get<APIResponse<WorkoutBreakdown>>(
-      `${this.baseUrl}/workouts/public/${uuid}/breakdown`,
-      { params: httpParams },
-    );
-  }
-
   public getWorkoutRangeStats(
     id: number,
     params?: { start_index?: number; end_index?: number },
@@ -158,30 +138,6 @@ export class Api {
       `${this.baseUrl}/workouts/${id}/stats-range`,
       { params: httpParams },
     );
-  }
-
-  public getPublicWorkoutRangeStats(
-    uuid: string,
-    params?: { start_index?: number; end_index?: number },
-  ): Observable<APIResponse<WorkoutRangeStats>> {
-    let httpParams = new HttpParams();
-
-    if (params?.start_index !== undefined) {
-      httpParams = httpParams.set('start_index', params.start_index.toString());
-    }
-
-    if (params?.end_index !== undefined) {
-      httpParams = httpParams.set('end_index', params.end_index.toString());
-    }
-
-    return this.http.get<APIResponse<WorkoutRangeStats>>(
-      `${this.baseUrl}/workouts/public/${uuid}/stats-range`,
-      { params: httpParams },
-    );
-  }
-
-  public getPublicWorkout(uuid: string): Observable<APIResponse<WorkoutDetail>> {
-    return this.http.get<APIResponse<WorkoutDetail>>(`${this.baseUrl}/workouts/public/${uuid}`);
   }
 
   public getRecentWorkouts(limit?: number, offset?: number): Observable<APIResponse<Workout[]>> {
@@ -214,6 +170,7 @@ export class Api {
     weight?: number;
     notes?: string;
     type: string;
+    visibility?: '' | 'followers' | 'public';
     custom_type?: string;
     equipment_ids?: number[];
   }): Observable<APIResponse<Workout>> {
@@ -235,6 +192,7 @@ export class Api {
       weight?: number;
       notes?: string;
       type?: string;
+      visibility?: '' | 'followers' | 'public';
       custom_type?: string;
       equipment_ids?: number[];
     },
@@ -254,21 +212,6 @@ export class Api {
     return this.http.post<APIResponse<{ message: string }>>(
       `${this.baseUrl}/workouts/${id}/refresh`,
       {},
-    );
-  }
-
-  public shareWorkout(
-    id: number,
-  ): Observable<APIResponse<{ message: string; public_uuid: string; share_url: string }>> {
-    return this.http.post<APIResponse<{ message: string; public_uuid: string; share_url: string }>>(
-      `${this.baseUrl}/workouts/${id}/share`,
-      {},
-    );
-  }
-
-  public deleteWorkoutShare(id: number): Observable<APIResponse<{ message: string }>> {
-    return this.http.delete<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/workouts/${id}/share`,
     );
   }
 
@@ -526,23 +469,6 @@ export class Api {
     return this.http.post<APIResponse<FollowRequest>>(
       `${this.baseUrl}/profile/follow-requests/${id}/accept`,
       {},
-    );
-  }
-
-  public publishWorkoutToActivityPub(
-    id: number,
-  ): Observable<APIResponse<{ activity_pub_published: boolean; message: string; outbox_id?: string }>> {
-    return this.http.post<APIResponse<{ activity_pub_published: boolean; message: string; outbox_id?: string }>>(
-      `${this.baseUrl}/workouts/${id}/activity-pub/publish`,
-      {},
-    );
-  }
-
-  public unpublishWorkoutFromActivityPub(
-    id: number,
-  ): Observable<APIResponse<{ activity_pub_published: boolean; message: string }>> {
-    return this.http.delete<APIResponse<{ activity_pub_published: boolean; message: string }>>(
-      `${this.baseUrl}/workouts/${id}/activity-pub/publish`,
     );
   }
 

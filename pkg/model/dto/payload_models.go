@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"errors"
 	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
@@ -11,20 +12,21 @@ import (
 const htmlDateFormat = "2006-01-02T15:04"
 
 type ManualWorkout struct {
-	Name            *string            `form:"name" json:"name"`
-	Date            *string            `form:"date" json:"date"`
-	Timezone        *string            `form:"timezone" json:"timezone"`
-	Location        *string            `form:"location" json:"location"`
-	DurationHours   *int               `form:"duration_hours" json:"duration_hours"`
-	DurationMinutes *int               `form:"duration_minutes" json:"duration_minutes"`
-	DurationSeconds *int               `form:"duration_seconds" json:"duration_seconds"`
-	Distance        *float64           `form:"distance" json:"distance"`
-	Repetitions     *int               `form:"repetitions" json:"repetitions"`
-	Weight          *float64           `form:"weight" json:"weight"`
-	Notes           *string            `form:"notes" json:"notes"`
-	Type            *model.WorkoutType `form:"type" json:"type"`
-	CustomType      *string            `form:"custom_type" json:"custom_type"`
-	EquipmentIDs    []uint64           `form:"equipment_ids" json:"equipment_ids"`
+	Name            *string                  `form:"name" json:"name"`
+	Date            *string                  `form:"date" json:"date"`
+	Timezone        *string                  `form:"timezone" json:"timezone"`
+	Visibility      *model.WorkoutVisibility `form:"visibility" json:"visibility"`
+	Location        *string                  `form:"location" json:"location"`
+	DurationHours   *int                     `form:"duration_hours" json:"duration_hours"`
+	DurationMinutes *int                     `form:"duration_minutes" json:"duration_minutes"`
+	DurationSeconds *int                     `form:"duration_seconds" json:"duration_seconds"`
+	Distance        *float64                 `form:"distance" json:"distance"`
+	Repetitions     *int                     `form:"repetitions" json:"repetitions"`
+	Weight          *float64                 `form:"weight" json:"weight"`
+	Notes           *string                  `form:"notes" json:"notes"`
+	Type            *model.WorkoutType       `form:"type" json:"type"`
+	CustomType      *string                  `form:"custom_type" json:"custom_type"`
+	EquipmentIDs    []uint64                 `form:"equipment_ids" json:"equipment_ids"`
 
 	Units *model.UserPreferredUnits `json:"-" form:"-"`
 }
@@ -108,9 +110,13 @@ func (m *ManualWorkout) ToDuration() *time.Duration {
 	return &totalDuration
 }
 
-func (m *ManualWorkout) Update(w *model.Workout) {
+func (m *ManualWorkout) Update(w *model.Workout) error {
 	if w.Data == nil {
 		w.Data = &model.MapData{}
+	}
+
+	if m.Visibility != nil && !m.Visibility.IsValid() {
+		return errors.New("invalid workout visibility")
 	}
 
 	dDate := m.ToDate()
@@ -118,6 +124,7 @@ func (m *ManualWorkout) Update(w *model.Workout) {
 	setIfNotNil(&w.Name, m.Name)
 	setIfNotNil(&w.Notes, m.Notes)
 	setIfNotNil(&w.Date, dDate)
+	setIfNotNil(&w.Visibility, m.Visibility)
 	setIfNotNil(&w.Type, m.Type)
 	setIfNotNil(&w.CustomType, m.CustomType)
 
@@ -131,13 +138,14 @@ func (m *ManualWorkout) Update(w *model.Workout) {
 		a, err := geocoder.Find(*m.Location)
 		if err != nil {
 			w.Data.Address = nil
-			return
+		} else {
+			w.Data.Address = a
 		}
-
-		w.Data.Address = a
 	}
 
 	w.Data.UpdateExtraMetrics()
+
+	return nil
 }
 
 type Measurement struct {
@@ -275,16 +283,16 @@ type AdminUserUpdateData struct {
 }
 
 type ProfileUpdateData struct {
-	Birthdate           *string                  `json:"birthdate"`
-	PreferredUnits      model.UserPreferredUnits `json:"preferred_units"`
-	Language            string                   `json:"language"`
-	Theme               string                   `json:"theme"`
-	TotalsShow          string                   `json:"totals_show"`
-	Timezone            string                   `json:"timezone"`
-	AutoImportDirectory string                   `json:"auto_import_directory"`
-	APIActive           bool                     `json:"api_active"`
-	SocialsDisabled     bool                     `json:"socials_disabled"`
-	PreferFullDate      bool                     `json:"prefer_full_date"`
+	Birthdate                *string                  `json:"birthdate"`
+	PreferredUnits           model.UserPreferredUnits `json:"preferred_units"`
+	Language                 string                   `json:"language"`
+	Theme                    string                   `json:"theme"`
+	TotalsShow               string                   `json:"totals_show"`
+	Timezone                 string                   `json:"timezone"`
+	AutoImportDirectory      string                   `json:"auto_import_directory"`
+	DefaultWorkoutVisibility model.WorkoutVisibility  `json:"default_workout_visibility"`
+	APIActive                bool                     `json:"api_active"`
+	PreferFullDate           bool                     `json:"prefer_full_date"`
 }
 
 type CalendarQueryParams struct {
