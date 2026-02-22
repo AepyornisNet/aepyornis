@@ -95,3 +95,27 @@ export type FollowRequest = {
   actor_iri: string;
   created_at: string;
 };
+
+export type ActivityPubProfileSummary = {
+  id: number;
+  username: string;
+  name: string;
+  handle: string;
+  actor_url: string;
+  icon_url: string;
+  is_external: boolean;
+  is_own: boolean;
+  is_following: boolean;
+  posts_count: number;
+  followers_count: number;
+  following_count: number;
+  member_since: string;
+};
+
+export type ActivityPubActor = {
+  id: string;
+  name?: string;
+  preferredUsername?: string;
+  published?: string;
+  icon?: string | { url?: string };
+};

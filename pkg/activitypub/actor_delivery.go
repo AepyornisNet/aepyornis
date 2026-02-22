@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
@@ -104,4 +105,46 @@ func SendFollowAccept(ctx context.Context, actorURL, privateKeyPEM string, follo
 	}
 
 	return SendSignedActivity(ctx, actorURL, privateKeyPEM, follower.ActorInbox, payload)
+}
+
+func SendFollow(ctx context.Context, actorURL, privateKeyPEM, inbox, targetActorIRI string) error {
+	follow := vocab.Activity{
+		ID:     vocab.ID(fmt.Sprintf("%s#follow-%d", actorURL, time.Now().UTC().UnixNano())),
+		Type:   vocab.FollowType,
+		Actor:  vocab.IRI(actorURL),
+		Object: vocab.IRI(targetActorIRI),
+	}
+
+	payload, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(follow)
+	if err != nil {
+		return err
+	}
+
+	return SendSignedActivity(ctx, actorURL, privateKeyPEM, inbox, payload)
+}
+
+func SendUndoFollow(ctx context.Context, actorURL, privateKeyPEM, inbox, targetActorIRI string) error {
+	follow := vocab.Activity{
+		Type:   vocab.FollowType,
+		Actor:  vocab.IRI(actorURL),
+		Object: vocab.IRI(targetActorIRI),
+	}
+
+	undo := vocab.Activity{
+		ID:     vocab.ID(fmt.Sprintf("%s#undo-follow-%d", actorURL, time.Now().UTC().UnixNano())),
+		Type:   vocab.UndoType,
+		Actor:  vocab.IRI(actorURL),
+		Object: follow,
+	}
+
+	payload, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(undo)
+	if err != nil {
+		return err
+	}
+
+	return SendSignedActivity(ctx, actorURL, privateKeyPEM, inbox, payload)
 }

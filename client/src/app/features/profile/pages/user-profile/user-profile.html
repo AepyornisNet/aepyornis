@@ -15,20 +15,104 @@
         </div>
       }
 
+      @if (successMessage()) {
+        <div class="alert alert-success" role="alert">
+          {{ successMessage() }}
+        </div>
+      }
+
       @if (!loading() && !error()) {
-        <div class="row mb-4">
-          <div class="col-lg-6 mb-4 mb-lg-0">
-            <app-key-metrics [totals]="totals()" />
+        @if (profileSummary(); as profile) {
+          <div class="card shadow-sm mb-4">
+            <div class="card-body">
+              <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div class="d-flex align-items-start gap-3">
+                  @if (profile.icon_url) {
+                    <img
+                      alt=""
+                      class="profile-avatar rounded-circle"
+                      [src]="profile.icon_url"
+                    />
+                  } @else {
+                    <div class="profile-avatar-placeholder rounded-circle d-flex align-items-center justify-content-center">
+                      <app-icon name="user" size="36" />
+                    </div>
+                  }
+
+                  <div>
+                    <h2 class="h4 mb-1">{{ profile.name || profile.username }}</h2>
+
+                    <div class="text-muted d-flex align-items-center flex-wrap gap-2 mb-1">
+                      <span>{{ profile.handle }}</span>
+                      <button
+                        class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        [title]="'Copy to clipboard' | translate"
+                        (click)="copyToClipboard(profile.handle)"
+                      >
+                        <app-icon name="content-copy" size="16" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  @if (!profile.is_external && profile.is_own) {
+                    <a class="btn btn-outline-primary" routerLink="/profile/settings/general">
+                      {{ 'Edit profile' | translate }}
+                    </a>
+                  } @else {
+                    <button
+                      class="btn"
+                      type="button"
+                      [class.btn-outline-secondary]="profile.is_following"
+                      [class.btn-primary]="!profile.is_following"
+                      [disabled]="followActionBusy()"
+                      (click)="toggleFollow()"
+                    >
+                      {{ (profile.is_following ? 'Unfollow' : 'Follow') | translate }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="row g-3 mt-2">
+                <div class="col-6 col-md-2">
+                  <div class="fw-semibold">{{ profile.posts_count }}</div>
+                  <small class="text-muted">{{ 'Posts' | translate }}</small>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="fw-semibold">{{ profile.followers_count }}</div>
+                  <small class="text-muted">{{ 'Followers' | translate }}</small>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="fw-semibold">{{ profile.following_count }}</div>
+                  <small class="text-muted">{{ 'Following' | translate }}</small>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="fw-semibold">{{ profile.member_since | date:'mediumDate' }}</div>
+                  <small class="text-muted">{{ 'Member since' | translate }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (!(profileSummary()?.is_external)) {
+          <div class="row mb-4">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+              <app-key-metrics [totals]="totals()" />
+            </div>
+
+            <div class="col-lg-6">
+              <app-workout-calendar [handle]="currentHandle()" />
+            </div>
           </div>
 
-          <div class="col-lg-6">
-            <app-workout-calendar />
+          <div class="mb-4">
+            <app-records [records]="records()" />
           </div>
-        </div>
-
-        <div class="mb-4">
-          <app-records [records]="records()" />
-        </div>
+        }
       }
     </div>
   </div>

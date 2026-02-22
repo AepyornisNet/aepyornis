@@ -61,6 +61,7 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 		ID:                vocab.ID(actorURL),
 		Name:              vocab.DefaultNaturalLanguage(user.Name),
 		PreferredUsername: vocab.DefaultNaturalLanguage(user.Username),
+		Published:         user.CreatedAt.UTC(),
 		Inbox:             vocab.IRI(actorURL + "/inbox"),
 		Outbox:            vocab.IRI(actorURL + "/outbox"),
 		Following:         vocab.IRI(actorURL + "/following"),

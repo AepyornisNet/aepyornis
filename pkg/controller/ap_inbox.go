@@ -13,6 +13,7 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 type _swaggerApInboxErrorResponse = dto.Response[any]
@@ -68,6 +69,55 @@ func actorInboxIRI(actor *vocab.Actor) string {
 	})
 
 	return iri
+}
+
+func actorIRIFromItem(item vocab.Item) string {
+	if vocab.IsNil(item) {
+		return ""
+	}
+
+	if vocab.IsIRI(item) {
+		return item.GetLink().String()
+	}
+
+	var actorIRI string
+	_ = vocab.OnActor(item, func(actor *vocab.Actor) error {
+		actorIRI = actor.ID.String()
+		return nil
+	})
+
+	if actorIRI != "" {
+		return actorIRI
+	}
+
+	_ = vocab.OnLink(item, func(link *vocab.Link) error {
+		actorIRI = link.Href.String()
+		return nil
+	})
+
+	return actorIRI
+}
+
+func isFollowLifecycleActivity(it vocab.Activity) bool {
+	return vocab.AcceptType.Match(it.GetType()) || vocab.RejectType.Match(it.GetType())
+}
+
+func extractFollowLifecycleTarget(it vocab.Activity) string {
+	if !isFollowLifecycleActivity(it) || vocab.IsNil(it.Object) {
+		return ""
+	}
+
+	targetIRI := ""
+	_ = vocab.OnActivity(it.Object, func(obj *vocab.Activity) error {
+		if !vocab.FollowType.Match(obj.GetType()) {
+			return nil
+		}
+
+		targetIRI = actorIRIFromItem(obj.Object)
+		return nil
+	})
+
+	return targetIRI
 }
 
 func isUndoFollowActivity(it vocab.Activity) bool {
@@ -131,6 +181,28 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 		)
 		if err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		return c.NoContent(http.StatusAccepted)
+	case vocab.AcceptType, vocab.RejectType:
+		if !isFollowLifecycleActivity(it) {
+			return c.NoContent(http.StatusAccepted)
+		}
+
+		followTargetIRI := extractFollowLifecycleTarget(it)
+		if followTargetIRI == "" {
+			return c.NoContent(http.StatusAccepted)
+		}
+
+		var lifecycleErr error
+		if vocab.AcceptType.Match(it.GetType()) {
+			_, lifecycleErr = model.MarkFollowingApprovedByActorIRI(ac.context.GetDB(), targetUser.ID, followTargetIRI)
+		} else {
+			_, lifecycleErr = model.MarkFollowingRejectedByActorIRI(ac.context.GetDB(), targetUser.ID, followTargetIRI)
+		}
+
+		if lifecycleErr != nil && !errors.Is(lifecycleErr, gorm.ErrRecordNotFound) {
+			return renderApiError(c, http.StatusInternalServerError, lifecycleErr)
 		}
 
 		return c.NoContent(http.StatusAccepted)

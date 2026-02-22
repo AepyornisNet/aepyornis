@@ -40,6 +40,26 @@ func (v WorkoutVisibility) IsValid() bool {
 	}
 }
 
+func ScopeVisibleWorkouts(query *gorm.DB, ownerID uint64, viewerID uint64, viewerActorIRI string) *gorm.DB {
+	if viewerID != 0 && viewerID == ownerID {
+		return query.Where("workouts.user_id = ?", ownerID)
+	}
+
+	if viewerActorIRI == "" {
+		return query.Where("workouts.user_id = ? AND workouts.visibility = ?", ownerID, WorkoutVisibilityPublic)
+	}
+
+	return query.Where(
+		"workouts.user_id = ? AND (workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers WHERE followers.user_id = ? AND followers.actor_iri = ? AND followers.approved = ?)))",
+		ownerID,
+		WorkoutVisibilityPublic,
+		WorkoutVisibilityFollowers,
+		ownerID,
+		viewerActorIRI,
+		true,
+	)
+}
+
 type Workout struct {
 	Model
 	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`                                    // The timestamp the workout was recorded

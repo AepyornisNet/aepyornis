@@ -183,6 +183,11 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'profile/:handle',
+        loadComponent: () =>
+          import('./features/profile/pages/user-profile/user-profile').then((m) => m.UserProfile),
+      },
+      {
         path: 'admin',
         loadComponent: () => import('./features/admin/pages/admin/admin').then((m) => m.Admin),
         canActivate: [adminGuard],
