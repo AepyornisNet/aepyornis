@@ -36,7 +36,7 @@ func (c actorHTTPClient) CtxGet(ctx context.Context, uri string) (*http.Response
 	}
 	req.Header.Set("Accept", ContentType)
 
-	return c.client.Do(req)
+	return c.client.Do(req) //nolint:gosec
 }
 
 func (c actorHTTPClient) LoadActor(ctx context.Context, actorIRI string) (*vocab.Actor, error) {
@@ -257,7 +257,7 @@ func decodeSignature(sigValue string) ([]byte, error) {
 	return base64.RawStdEncoding.DecodeString(sigValue)
 }
 
-func VerifyRequest(req *http.Request, httpClient *http.Client) (*vocab.Actor, error) {
+func VerifyRequest(req *http.Request, httpClient *http.Client) (*vocab.Actor, error) { //nolint:gocyclo
 	parts, err := extractSignatureParts(req)
 	if err != nil {
 		return nil, err
@@ -278,7 +278,7 @@ func VerifyRequest(req *http.Request, httpClient *http.Client) (*vocab.Actor, er
 		return nil, err
 	}
 
-	actorIRI := ""
+	var actorIRI string
 	if len(bytes.TrimSpace(body)) > 0 {
 		actorIRI, err = actorIRIFromBody(body)
 		if err != nil {

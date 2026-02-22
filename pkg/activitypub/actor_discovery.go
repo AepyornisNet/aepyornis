@@ -3,6 +3,7 @@ package activitypub
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,7 +26,7 @@ func ResolveActorIRIFromWebFinger(ctx context.Context, username, host string) (s
 	username = strings.TrimSpace(strings.TrimPrefix(username, "@"))
 	host = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(host, "https://"), "http://"))
 	if username == "" || host == "" {
-		return "", fmt.Errorf("invalid handle")
+		return "", errors.New("invalid handle")
 	}
 
 	resource := url.QueryEscape(fmt.Sprintf("acct:%s@%s", username, host))
@@ -77,11 +78,11 @@ func ResolveActorIRIFromWebFinger(ctx context.Context, username, host string) (s
 			}
 		}
 
-		lastErr = fmt.Errorf("no ActivityPub self link found")
+		lastErr = errors.New("no ActivityPub self link found")
 	}
 
 	if lastErr == nil {
-		lastErr = fmt.Errorf("could not resolve actor via webfinger")
+		lastErr = errors.New("could not resolve actor via webfinger")
 	}
 
 	return "", lastErr
@@ -128,5 +129,5 @@ func LoadCollectionTotalItems(ctx context.Context, collectionIRI string) (int64,
 		return int64(plain.TotalItems), nil
 	}
 
-	return 0, fmt.Errorf("could not parse collection")
+	return 0, errors.New("could not parse collection")
 }

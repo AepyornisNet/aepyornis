@@ -11,12 +11,9 @@ import (
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
-
-type _swaggerApInboxErrorResponse = dto.Response[any]
 
 type ApInboxController interface {
 	Inbox(c echo.Context) error

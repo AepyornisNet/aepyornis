@@ -35,11 +35,11 @@ var (
 )
 
 type UserSecrets struct {
-	Password   string `gorm:"type:varchar(128);not null"` // The user's password as bcrypt hash
+	Password   string `gorm:"type:varchar(128);not null"` //nolint:gosec // The user's password as bcrypt hash
 	Salt       string `gorm:"type:varchar(16);not null"`  // The salt used to hash the user's password
-	APIKey     string `gorm:"type:varchar(32)"`           // The user's API key
+	APIKey     string `gorm:"type:varchar(32)"`           //nolint:gosec // The user's API key
 	PublicKey  string `gorm:"type:text"`                  // The user's public key for ActivityPub federation
-	PrivateKey string `gorm:"type:text"`                  // The user's private key for ActivityPub federation
+	PrivateKey string `gorm:"type:text"`                  //nolint:gosec // The user's private key for ActivityPub federation
 }
 
 type UserData struct {

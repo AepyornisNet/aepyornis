@@ -106,8 +106,7 @@ func (uc *userController) GetTotals(c echo.Context) error {
 		viewerActorIRI,
 	)
 
-	totalsShow := model.WorkoutTypeRunning
-	totalsShow = targetUser.Profile.TotalsShow
+	totalsShow := targetUser.Profile.TotalsShow
 
 	if totalsShow == model.WorkoutTypeAutoDetect {
 		totalsShow = model.WorkoutTypeRunning
@@ -1046,7 +1045,14 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 	return r, nil
 }
 
-func (uc *userController) getVisibleDistanceRanking(targetUser, viewer *model.User, viewerActorIRI string, t model.WorkoutType, label string, startDate, endDate *time.Time, limit, offset int) ([]model.DistanceRecord, int64, error) {
+func (uc *userController) getVisibleDistanceRanking(
+	targetUser, viewer *model.User,
+	viewerActorIRI string,
+	t model.WorkoutType,
+	label string,
+	startDate, endDate *time.Time,
+	limit, offset int,
+) ([]model.DistanceRecord, int64, error) {
 	rows := []struct {
 		model.WorkoutIntervalRecord
 		Date time.Time

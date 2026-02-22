@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"runtime/debug"
@@ -64,7 +65,7 @@ func New(c *container.Container) (*Worker, error) {
 
 	gc := c.GetGueClient()
 	if gc == nil {
-		return nil, fmt.Errorf("worker: missing gue client on container")
+		return nil, errors.New("worker: missing gue client on container")
 	}
 
 	wm := gue.WorkMap{

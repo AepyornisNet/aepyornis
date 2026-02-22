@@ -17,7 +17,7 @@ type config struct {
 
 	FitbitConfig struct {
 		ClientID     string
-		ClientSecret string
+		ClientSecret string //nolint:gosec
 		UserID       string
 	}
 	Token *fitbit.Token

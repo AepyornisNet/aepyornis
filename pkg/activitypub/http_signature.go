@@ -10,8 +10,10 @@ import (
 	"net/http"
 )
 
-const RequestingActorContextKey = "requesting_actor"
-const ContentType = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
+const (
+	RequestingActorContextKey = "requesting_actor"
+	ContentType               = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
+)
 
 func readRequestBody(req *http.Request) ([]byte, error) {
 	if req.Body == nil {

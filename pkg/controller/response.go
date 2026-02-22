@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
@@ -31,6 +32,6 @@ func renderApiError(c echo.Context, status int, err error) error {
 	return c.JSON(status, resp)
 }
 
-func renderActivityPubResponse(c echo.Context, status int, payload []byte) error {
-	return c.Blob(status, activityPubContentType, payload)
+func renderActivityPubResponse(c echo.Context, payload []byte) error {
+	return c.Blob(http.StatusOK, activityPubContentType, payload)
 }

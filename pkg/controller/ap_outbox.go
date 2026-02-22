@@ -13,12 +13,9 @@ import (
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
-
-type _swaggerApOutboxErrorResponse = dto.Response[any]
 
 type ApOutboxController interface {
 	Outbox(c echo.Context) error
@@ -61,7 +58,7 @@ func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User
 // @Failure      400  {object}  dto.Response[any]
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /ap/users/{username}/outbox [get]
-func (ac *apOutboxController) Outbox(c echo.Context) error {
+func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -104,7 +101,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 
-		return renderActivityPubResponse(c, http.StatusOK, payload)
+		return renderActivityPubResponse(c, payload)
 	}
 
 	offset := (page - 1) * outboxPageSize
@@ -152,7 +149,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	return renderActivityPubResponse(c, http.StatusOK, payload)
+	return renderActivityPubResponse(c, payload)
 }
 
 // OutboxItem returns a single ActivityPub outbox activity by UUID
@@ -185,7 +182,7 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	return renderActivityPubResponse(c, http.StatusOK, entry.Activity)
+	return renderActivityPubResponse(c, entry.Activity)
 }
 
 // OutboxFit downloads the FIT attachment for an ActivityPub outbox entry

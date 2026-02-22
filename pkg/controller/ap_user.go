@@ -12,11 +12,8 @@ import (
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
-
-type _swaggerApUserErrorResponse = dto.Response[any]
 
 type ApUserController interface {
 	GetUser(c echo.Context) error
@@ -84,7 +81,7 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, fmt.Errorf("failed to marshal profile: %w", err))
 	}
 
-	return renderActivityPubResponse(c, http.StatusOK, resp)
+	return renderActivityPubResponse(c, resp)
 }
 
 func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, error) {
@@ -162,7 +159,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 
-		return renderActivityPubResponse(c, http.StatusOK, resp)
+		return renderActivityPubResponse(c, resp)
 	}
 
 	start := min((page-1)*followersPageSize, totalItems)
@@ -190,7 +187,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	return renderActivityPubResponse(c, http.StatusOK, resp)
+	return renderActivityPubResponse(c, resp)
 }
 
 // Followers returns the ActivityPub followers collection for a local user
@@ -254,7 +251,7 @@ func (ac *apUserController) Followers(c echo.Context) error {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 
-		return renderActivityPubResponse(c, http.StatusOK, resp)
+		return renderActivityPubResponse(c, resp)
 	}
 
 	start := min((page-1)*followersPageSize, totalItems)
@@ -282,5 +279,5 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	return renderActivityPubResponse(c, http.StatusOK, resp)
+	return renderActivityPubResponse(c, resp)
 }

@@ -3,6 +3,7 @@ package activitypub
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -52,7 +53,7 @@ func LocalActorURL(cfg LocalActorURLConfig, username string) string {
 
 func SendSignedActivity(ctx context.Context, actorURL, privateKeyPEM, inbox string, payload []byte) error {
 	if inbox == "" {
-		return fmt.Errorf("inbox is empty")
+		return errors.New("inbox is empty")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, inbox, bytes.NewReader(payload))
@@ -81,7 +82,7 @@ func SendSignedActivity(ctx context.Context, actorURL, privateKeyPEM, inbox stri
 
 func SendFollowAccept(ctx context.Context, actorURL, privateKeyPEM string, follower model.Follower) error {
 	if follower.ActorInbox == "" {
-		return fmt.Errorf("follower inbox is empty")
+		return errors.New("follower inbox is empty")
 	}
 
 	follow := vocab.Activity{

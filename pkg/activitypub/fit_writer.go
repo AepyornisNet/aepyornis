@@ -111,13 +111,13 @@ func WorkoutNoteContent(workout *model.Workout) string {
 		return "Workout"
 	}
 
-	parts := []string{fmt.Sprintf("%s", workout.Name)}
+	parts := []string{workout.Name}
 	if d := workout.TotalDistance(); d > 0 {
 		parts = append(parts, fmt.Sprintf("distance: %.2f km", d/1000.0))
 	}
 
 	if dur := workout.TotalDuration(); dur > 0 {
-		parts = append(parts, fmt.Sprintf("duration: %s", dur.Round(time.Second).String()))
+		parts = append(parts, "duration: "+dur.Round(time.Second).String())
 	}
 
 	if speed := workout.AverageSpeed(); speed > 0 {
@@ -139,7 +139,7 @@ func WorkoutNoteContent(workout *model.Workout) string {
 	return strings.Join(parts, "\n")
 }
 
-func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mesgdef.Record {
+func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mesgdef.Record { //nolint:gocyclo
 	if workout == nil || workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
 		return nil
 	}
