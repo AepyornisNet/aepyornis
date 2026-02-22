@@ -399,7 +399,7 @@ func (u *User) GetLatestMeasurement() (Measurement, error) {
 func (u *User) GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 	var w *Workout
 
-	db = db.Preload("Data").Preload("Data.Details").Preload("GPX").Preload("Equipment")
+	db = PreloadWorkoutDetails(db).Preload("GPX").Preload("Equipment")
 
 	if err := db.Where(&Workout{UserID: u.ID}).First(&w, id).Error; err != nil {
 		return nil, err
@@ -417,7 +417,7 @@ func (u *User) MarkWorkoutsDirty(db *gorm.DB) error {
 func (u *User) GetWorkouts(db *gorm.DB) ([]*Workout, error) {
 	var w []*Workout
 
-	if err := db.Preload("Data").Where(&Workout{UserID: u.ID}).Order("date DESC").Find(&w).Error; err != nil {
+	if err := PreloadWorkoutData(db).Where(&Workout{UserID: u.ID}).Order("date DESC").Find(&w).Error; err != nil {
 		return nil, err
 	}
 

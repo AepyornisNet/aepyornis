@@ -57,7 +57,7 @@ func rematchRouteSegmentToWorkouts(db *gorm.DB, rs *model.RouteSegment, l *slog.
 	rs.RouteSegmentMatches = []*model.RouteSegmentMatch{}
 
 	var workoutsBatch []*model.Workout
-	qw := db.Preload("Data.Details").Preload("User").Model(&model.Workout{}).
+	qw := model.PreloadWorkoutDetails(db).Preload("User").Model(&model.Workout{}).
 		FindInBatches(&workoutsBatch, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
 			l.With("batch_no", batchNo).
 				With("workouts_batch_size", len(workoutsBatch)).

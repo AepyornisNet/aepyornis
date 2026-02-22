@@ -125,9 +125,7 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 		return nil, err
 	}
 
-	db := wc.context.GetDB().
-		Preload("Data").
-		Preload("Data.Details").
+	db := model.PreloadWorkoutDetails(wc.context.GetDB()).
 		Preload("GPX").
 		Preload("Equipment").
 		Preload("User").
@@ -187,7 +185,7 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 	}
 
 	var workouts []*model.Workout
-	db := filters.ToQuery(wc.context.GetDB().Model(&model.Workout{})).Preload("GPX").Preload("Data").
+	db := model.PreloadWorkoutData(filters.ToQuery(wc.context.GetDB().Model(&model.Workout{}))).Preload("GPX").
 		Where("user_id = ?", user.ID).
 		Order("date DESC").
 		Limit(pagination.PerPage).
@@ -408,7 +406,7 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 		}
 	}
 
-	db := wc.context.GetDB().Preload("Data").Where("user_id = ?", user.ID)
+	db := model.PreloadWorkoutData(wc.context.GetDB()).Where("user_id = ?", user.ID)
 
 	const calTS = "2006-01-02T15:04:05"
 	if params.Start != nil {
@@ -577,7 +575,7 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(wc.context.GetDB()).Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -630,7 +628,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 
 	var workouts []*model.Workout
 	err := wc.context.GetDB().
-		Preload("Data").
+		Scopes(model.PreloadWorkoutData).
 		Preload("User").
 		Where(
 			"workouts.user_id = ? OR workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = workouts.user_id AND f.actor_iri = ? AND f.approved = ?))",
@@ -738,7 +736,7 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := wc.context.GetDB().Preload("Data").Preload("Data.Details").Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(wc.context.GetDB()).Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
