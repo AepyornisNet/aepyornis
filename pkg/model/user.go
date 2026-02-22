@@ -446,6 +446,7 @@ func (u *User) AddWorkout(db *gorm.DB, workoutType WorkoutType, notes string, fi
 
 		if err := w.Create(db); err != nil {
 			errs = append(errs, err)
+			continue
 		}
 
 		var equipment []*Equipment

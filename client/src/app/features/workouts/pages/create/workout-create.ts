@@ -6,6 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -18,7 +19,7 @@ import {
   WORKOUT_TYPES,
   WorkoutTypeConfig,
 } from '../../../../core/types/workout-types';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-create',
@@ -31,6 +32,7 @@ export class WorkoutCreate implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
+  private translate = inject(TranslateService);
 
   // Edit mode
   public readonly editMode = signal(false);
@@ -163,7 +165,7 @@ export class WorkoutCreate implements OnInit {
       }
     } catch (err) {
       console.error('Failed to load workout:', err);
-      this.error.set('Failed to load workout. Please try again.');
+      this.error.set(this.translate.instant('Failed to load workout. Please try again.'));
     } finally {
       this.loading.set(false);
     }
@@ -244,12 +246,50 @@ export class WorkoutCreate implements OnInit {
       }
     } catch (err) {
       console.error('Failed to upload workouts:', err);
-      this.error.set('Failed to upload workouts. Please try again.');
+      const apiError = this.extractApiError(err);
+      this.error.set(
+        apiError || this.translate.instant('Failed to upload workouts. Please try again.'),
+      );
     } finally {
       this.loading.set(false);
     }
   }
 
+  private extractApiError(err: unknown): string | null {
+    if (err instanceof HttpErrorResponse) {
+      const apiErrorCodes = err.error?.error_codes;
+      if (Array.isArray(apiErrorCodes) && apiErrorCodes.length > 0) {
+        const mapped = this.mapApiErrorCode(apiErrorCodes[0]);
+        if (mapped) {
+          return mapped;
+        }
+      }
+
+      const apiErrors = err.error?.errors;
+      if (Array.isArray(apiErrors) && apiErrors.length > 0) {
+        return apiErrors[0];
+      }
+
+      if (typeof err.error === 'string' && err.error.length > 0) {
+        return err.error;
+      }
+
+      if (typeof err.message === 'string' && err.message.length > 0) {
+        return err.message;
+      }
+    }
+
+    return null;
+  }
+
+  private mapApiErrorCode(code: string): string | null {
+    switch (code) {
+      case 'workout_already_exists':
+        return this.translate.instant('A workout with the same start time already exists.');
+      default:
+        return null;
+    }
+  }
   // Manual form handlers
   public updateManualWorkoutType(value: string): void {
     this._manualWorkoutType.set(value);
@@ -369,8 +409,13 @@ export class WorkoutCreate implements OnInit {
       }
     } catch (err) {
       console.error(`Failed to ${this.editMode() ? 'update' : 'create'} workout:`, err);
+      const apiError = this.extractApiError(err);
+      const fallbackError = this.editMode()
+        ? this.translate.instant('Failed to update workout. Please try again.')
+        : this.translate.instant('Failed to create workout. Please try again.');
+
       this.error.set(
-        `Failed to ${this.editMode() ? 'update' : 'create'} workout. Please try again.`,
+        apiError || fallbackError,
       );
     } finally {
       this.loading.set(false);

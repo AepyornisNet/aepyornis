@@ -498,19 +498,19 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 	}
 
 	createdWorkouts := []dto.WorkoutResponse{}
-	errs := []string{}
+	errList := []error{}
 
 	for _, file := range files {
 		content, parseErr := uploadedFile(file)
 		if parseErr != nil {
-			errs = append(errs, parseErr.Error())
+			errList = append(errList, parseErr)
 			continue
 		}
 
 		ws, addErr := user.AddWorkout(wc.context.GetDB(), workoutType, notes, file.Filename, content)
 		if len(addErr) > 0 {
 			for _, e := range addErr {
-				errs = append(errs, e.Error())
+				errList = append(errList, e)
 			}
 			continue
 		}
@@ -530,15 +530,31 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 		Results: createdWorkouts,
 	}
 
-	if len(errs) > 0 {
-		for _, err := range errs {
-			resp.AddError(errors.New(err))
+	if len(errList) > 0 {
+		resp.AddError(errList...)
+
+		for _, err := range errList {
+			if code := apiErrorCode(err); code != "" {
+				resp.ErrorCodes = append(resp.ErrorCodes, code)
+			}
 		}
 	}
 
 	statusCode := http.StatusCreated
-	if len(createdWorkouts) == 0 && len(errs) > 0 {
+	if len(createdWorkouts) == 0 && len(errList) > 0 {
 		statusCode = http.StatusBadRequest
+
+		allDuplicates := true
+		for _, err := range errList {
+			if !errors.Is(err, model.ErrWorkoutAlreadyExists) {
+				allDuplicates = false
+				break
+			}
+		}
+
+		if allDuplicates {
+			statusCode = http.StatusConflict
+		}
 	}
 
 	return c.JSON(statusCode, resp)
@@ -568,6 +584,10 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 	}
 
 	if err := workout.Save(wc.context.GetDB()); err != nil {
+		if errors.Is(err, model.ErrWorkoutAlreadyExists) {
+			return renderApiError(c, http.StatusConflict, err)
+		}
+
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
