@@ -7,6 +7,8 @@ import {
   PaginationParams,
 } from '../../core/types/api-response';
 import {
+  ActivityPubActor,
+  ActivityPubProfileSummary,
   AppConfig,
   AppInfo,
   FollowRequest,
@@ -365,17 +367,32 @@ export class Api {
   }
 
   // Dashboard endpoints
-  public getTotals(): Observable<APIResponse<Totals>> {
-    return this.http.get<APIResponse<Totals>>(`${this.baseUrl}/totals`);
+  public getTotals(handle?: string): Observable<APIResponse<Totals>> {
+    let httpParams = new HttpParams();
+    if (handle) {
+      httpParams = httpParams.set('handle', handle);
+    }
+
+    return this.http.get<APIResponse<Totals>>(`${this.baseUrl}/totals`, {
+      params: httpParams,
+    });
   }
 
-  public getRecords(): Observable<APIResponse<WorkoutRecord[]>> {
-    return this.http.get<APIResponse<WorkoutRecord[]>>(`${this.baseUrl}/records`);
+  public getRecords(handle?: string): Observable<APIResponse<WorkoutRecord[]>> {
+    let httpParams = new HttpParams();
+    if (handle) {
+      httpParams = httpParams.set('handle', handle);
+    }
+
+    return this.http.get<APIResponse<WorkoutRecord[]>>(`${this.baseUrl}/records`, {
+      params: httpParams,
+    });
   }
 
   public getDistanceRecordRanking(params: {
     workout_type: string;
     label: string;
+    handle?: string;
     start?: string;
     end?: string;
     page?: number;
@@ -401,6 +418,10 @@ export class Api {
       httpParams = httpParams.set('per_page', params.per_page.toString());
     }
 
+    if (params.handle) {
+      httpParams = httpParams.set('handle', params.handle);
+    }
+
     return this.http.get<PaginatedAPIResponse<DistanceRecordEntry>>(
       `${this.baseUrl}/records/ranking`,
       { params: httpParams },
@@ -409,6 +430,7 @@ export class Api {
 
   public getClimbRanking(params: {
     workout_type: string;
+    handle?: string;
     start?: string;
     end?: string;
     page?: number;
@@ -430,6 +452,10 @@ export class Api {
 
     if (params.per_page) {
       httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+
+    if (params.handle) {
+      httpParams = httpParams.set('handle', params.handle);
     }
 
     return this.http.get<PaginatedAPIResponse<ClimbRecordEntry>>(
@@ -463,6 +489,39 @@ export class Api {
 
   public getFollowRequests(): Observable<APIResponse<FollowRequest[]>> {
     return this.http.get<APIResponse<FollowRequest[]>>(`${this.baseUrl}/profile/follow-requests`);
+  }
+
+  public getUserProfileSummary(handle?: string): Observable<APIResponse<ActivityPubProfileSummary>> {
+    let httpParams = new HttpParams();
+    if (handle) {
+      httpParams = httpParams.set('handle', handle);
+    }
+
+    return this.http.get<APIResponse<ActivityPubProfileSummary>>(`${this.baseUrl}/user-profile`, {
+      params: httpParams,
+    });
+  }
+
+  public getLocalActivityPubActor(username: string): Observable<ActivityPubActor> {
+    return this.http.get<ActivityPubActor>(`/ap/users/${encodeURIComponent(username)}`);
+  }
+
+  public followUserByHandle(handle: string): Observable<APIResponse<ActivityPubProfileSummary>> {
+    const params = new HttpParams().set('handle', handle);
+    return this.http.post<APIResponse<ActivityPubProfileSummary>>(
+      `${this.baseUrl}/user-profile/follow`,
+      {},
+      { params },
+    );
+  }
+
+  public unfollowUserByHandle(handle: string): Observable<APIResponse<ActivityPubProfileSummary>> {
+    const params = new HttpParams().set('handle', handle);
+    return this.http.post<APIResponse<ActivityPubProfileSummary>>(
+      `${this.baseUrl}/user-profile/unfollow`,
+      {},
+      { params },
+    );
   }
 
   public acceptFollowRequest(id: number): Observable<APIResponse<FollowRequest>> {
@@ -527,6 +586,7 @@ export class Api {
 
   // Calendar endpoints
   public getCalendarEvents(params?: {
+    handle?: string;
     start?: string;
     end?: string;
     timeZone?: string;
@@ -540,6 +600,9 @@ export class Api {
     }
     if (params?.timeZone) {
       httpParams = httpParams.set('timeZone', params.timeZone);
+    }
+    if (params?.handle) {
+      httpParams = httpParams.set('handle', params.handle);
     }
     return this.http.get<APIResponse<CalendarEvent[]>>(`${this.baseUrl}/workouts/calendar`, {
       params: httpParams,

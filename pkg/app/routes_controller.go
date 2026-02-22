@@ -30,6 +30,9 @@ func (a *App) registerUserController(apiGroup *echo.Group) {
 	uc := controller.NewUserController(&a.container)
 
 	apiGroup.GET("/whoami", uc.GetWhoami).Name = "whoami"
+	apiGroup.GET("/user-profile", uc.GetUserProfileByHandle).Name = "user-profile"
+	apiGroup.POST("/user-profile/follow", uc.FollowUserByHandle).Name = "user-profile-follow"
+	apiGroup.POST("/user-profile/unfollow", uc.UnfollowUserByHandle).Name = "user-profile-unfollow"
 	apiGroup.GET("/totals", uc.GetTotals).Name = "totals"
 	apiGroup.GET("/records", uc.GetRecords).Name = "records"
 	apiGroup.GET("/records/climbs/ranking", uc.GetClimbRecordsRanking).Name = "records-climbs-ranking"

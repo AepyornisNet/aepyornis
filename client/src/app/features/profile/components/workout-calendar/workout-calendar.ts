@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   inject,
+  input,
   OnDestroy,
   signal,
   viewChild,
@@ -25,6 +26,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 })
 export class WorkoutCalendar implements AfterViewInit, OnDestroy {
   private readonly calendarContainer = viewChild<ElementRef<HTMLDivElement>>('calendarContainer');
+  public readonly handle = input<string | null>(null);
 
   private api = inject(Api);
   private router = inject(Router);
@@ -79,6 +81,7 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
         this.error.set(null);
 
         const params = {
+          handle: this.handle() || undefined,
           start: fetchInfo.startStr,
           end: fetchInfo.endStr,
           timeZone: timeZone,

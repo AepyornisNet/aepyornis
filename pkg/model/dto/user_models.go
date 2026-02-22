@@ -52,6 +52,22 @@ type AppInfoResponse struct {
 	AutoImportEnabled    bool   `json:"auto_import_enabled"`
 }
 
+type ActivityPubProfileSummaryResponse struct {
+	ID             uint64    `json:"id"`
+	Username       string    `json:"username"`
+	Name           string    `json:"name"`
+	Handle         string    `json:"handle"`
+	ActorURL       string    `json:"actor_url"`
+	IconURL        string    `json:"icon_url"`
+	IsExternal     bool      `json:"is_external"`
+	IsOwn          bool      `json:"is_own"`
+	IsFollowing    bool      `json:"is_following"`
+	PostsCount     int64     `json:"posts_count"`
+	FollowersCount int64     `json:"followers_count"`
+	FollowingCount int64     `json:"following_count"`
+	MemberSince    time.Time `json:"member_since"`
+}
+
 // NewUserProfileResponse converts a database user to API response
 func NewUserProfileResponse(u *model.User) UserProfileResponse {
 	resp := UserProfileResponse{
