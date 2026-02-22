@@ -81,6 +81,14 @@ func ListApprovedFollowers(db *gorm.DB, userID uint64) ([]Follower, error) {
 	return followers, nil
 }
 
+func ListApprovedFollowing(db *gorm.DB, userID uint64) ([]Follower, error) {
+	following := make([]Follower, 0)
+	if err := db.Where("user_id = ? AND direction = ? AND approved = ?", userID, FollowerDirectionOutgoing, true).Order("created_at DESC").Find(&following).Error; err != nil {
+		return nil, err
+	}
+	return following, nil
+}
+
 func ApproveFollowerRequest(db *gorm.DB, userID uint64, requestID uint64) (*Follower, error) {
 	f := &Follower{}
 	if err := db.Where("id = ? AND user_id = ? AND direction = ?", requestID, userID, FollowerDirectionIncoming).First(f).Error; err != nil {
