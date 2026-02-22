@@ -559,7 +559,7 @@ func (w *Workout) Delete(db *gorm.DB) error {
 func (w *Workout) Create(db *gorm.DB) error {
 	err := w.create(db)
 	if errors.Is(err, gorm.ErrDuplicatedKey) {
-		return fmt.Errorf("%w: user_id=%d, date=%s", ErrWorkoutAlreadyExists, w.UserID, w.Date)
+		return ErrWorkoutAlreadyExists
 	}
 
 	return err

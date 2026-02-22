@@ -1,6 +1,7 @@
 export type APIResponse<T = unknown> = {
   results: T;
   errors?: string[];
+  error_codes?: string[];
 };
 
 export type PaginatedAPIResponse<T = unknown> = {
@@ -10,6 +11,7 @@ export type PaginatedAPIResponse<T = unknown> = {
   total_pages: number;
   total_count: number;
   errors?: string[];
+  error_codes?: string[];
 };
 
 export type PaginationParams = {

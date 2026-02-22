@@ -21,12 +21,14 @@ type PaginatedResponse[T any] struct {
 	TotalPages int      `json:"total_pages"`
 	TotalCount int64    `json:"total_count"`
 	Errors     []string `json:"errors,omitempty"`
+	ErrorCodes []string `json:"error_codes,omitempty"`
 }
 
 // Response represents a simple API response
 type Response[T any] struct {
-	Results T        `json:"results"`
-	Errors  []string `json:"errors,omitempty"`
+	Results    T        `json:"results"`
+	Errors     []string `json:"errors,omitempty"`
+	ErrorCodes []string `json:"error_codes,omitempty"`
 }
 
 // AddError adds an error message to the response
