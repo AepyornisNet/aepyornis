@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { adminGuard } from './core/guards/admin-guard';
+import { feedGuard } from './core/guards/feed-guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: '', redirectTo: '/feed', pathMatch: 'full' },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login),
@@ -17,9 +18,19 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
+        path: 'feed',
+        canActivate: [feedGuard],
+        loadComponent: () => import('./features/feed/pages/feed/feed').then((m) => m.Feed),
+      },
+      {
         path: 'dashboard',
+        redirectTo: '/profile',
+        pathMatch: 'full',
+      },
+      {
+        path: 'profile',
         loadComponent: () =>
-          import('./features/dashboard/pages/dashboard/dashboard').then((m) => m.Dashboard),
+          import('./features/profile/pages/user-profile/user-profile').then((m) => m.UserProfile),
       },
       {
         path: 'workouts',
@@ -129,7 +140,7 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'profile',
+        path: 'profile/settings',
         loadComponent: () =>
           import('./features/profile/pages/profile/profile').then((m) => m.Profile),
         children: [
@@ -201,5 +212,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: '/dashboard' },
+  { path: '**', redirectTo: '/feed' },
 ];

@@ -17,7 +17,7 @@ export class KeyMetrics {
   public readonly totalWorkoutsCount = computed(() => this.totals()?.workouts || 0);
   public readonly totalDistance = computed(() => {
     const distance = this.totals()?.distance || 0;
-    return (distance / 1000).toFixed(2); // Convert to km
+    return (distance / 1000).toFixed(2);
   });
   public readonly totalDuration = computed(() => {
     const duration = this.totals()?.duration || 0;

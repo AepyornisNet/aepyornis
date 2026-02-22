@@ -6,17 +6,16 @@ import { Totals, WorkoutRecord } from '../../../../core/types/workout';
 import { WorkoutCalendar } from '../../components/workout-calendar/workout-calendar';
 import { KeyMetrics } from '../../components/key-metrics/key-metrics';
 import { Records } from '../../components/records/records';
-import { RecentActivity } from '../../components/recent-activity/recent-activity';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
-  selector: 'app-dashboard',
-  imports: [WorkoutCalendar, KeyMetrics, Records, RecentActivity, TranslatePipe],
-  templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss',
+  selector: 'app-user-profile',
+  imports: [WorkoutCalendar, KeyMetrics, Records, TranslatePipe],
+  templateUrl: './user-profile.html',
+  styleUrl: './user-profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Dashboard implements OnInit {
+export class UserProfile implements OnInit {
   private api = inject(Api);
   private translate = inject(TranslateService);
 
@@ -26,15 +25,14 @@ export class Dashboard implements OnInit {
   public readonly error = signal<string | null>(null);
 
   public ngOnInit(): void {
-    this.loadDashboardData();
+    this.loadProfileData();
   }
 
-  public async loadDashboardData(): Promise<void> {
+  public async loadProfileData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
     try {
-      // Load totals and records in parallel
       const [totalsResponse, recordsResponse] = await Promise.all([
         firstValueFrom(this.api.getTotals()),
         firstValueFrom(this.api.getRecords()),
@@ -48,11 +46,12 @@ export class Dashboard implements OnInit {
         this.records.set(recordsResponse.results);
       }
     } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-      this.error.set(this.translate.instant(
-        'Failed to load {{page}} data. Please try again.',
-        { page: this.translate.instant('dashboard') }
-      ));
+      console.error('Failed to load profile data:', err);
+      this.error.set(
+        this.translate.instant('Failed to load {{page}} data. Please try again.', {
+          page: this.translate.instant('profile'),
+        }),
+      );
     } finally {
       this.loading.set(false);
     }

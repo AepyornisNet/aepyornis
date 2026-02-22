@@ -68,7 +68,6 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
       eventClick: (info): void => {
         info.jsEvent.preventDefault();
         if (info.event.url) {
-          // Extract workout ID from URL and navigate
           const match = info.event.url.match(/\/workouts\/(\d+)/);
           if (match && match[1]) {
             this.router.navigate(['/workouts', match[1]]);
@@ -97,9 +96,10 @@ export class WorkoutCalendar implements AfterViewInit, OnDestroy {
           error: (err) => {
             this.loading.set(false);
             this.error.set(
-              this.translate.instant('Failed to load {{page}} data. Please try again.',
-              { page: this.translate.instant('calendar event') }
-            ));
+              this.translate.instant('Failed to load {{page}} data. Please try again.', {
+                page: this.translate.instant('calendar event'),
+              }),
+            );
             console.error('Failed to load calendar events:', err);
             failureCallback(err);
           },

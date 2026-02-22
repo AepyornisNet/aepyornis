@@ -31,7 +31,6 @@ export class RecentActivity implements OnInit {
   public readonly pageSize = 10;
 
   public ngOnInit(): void {
-    // Load initial workouts
     this.loadInitialWorkouts();
   }
 
@@ -55,7 +54,6 @@ export class RecentActivity implements OnInit {
   }
 
   public formatDistance(distance: number): string {
-    // Convert meters to kilometers
     return (distance / 1000).toFixed(2);
   }
 
@@ -100,10 +98,9 @@ export class RecentActivity implements OnInit {
 
   @HostListener('window:scroll')
   public onWindowScroll(): void {
-    // Check if user has scrolled near the bottom of the page
     const scrollPosition = window.pageYOffset + window.innerHeight;
     const pageHeight = document.documentElement.scrollHeight;
-    const threshold = 300; // pixels from bottom
+    const threshold = 300;
 
     if (pageHeight - scrollPosition < threshold && !this.loading() && this.hasMore()) {
       this.loadMore();

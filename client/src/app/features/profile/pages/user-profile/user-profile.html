@@ -17,27 +17,17 @@
 
       @if (!loading() && !error()) {
         <div class="row mb-4">
-          <!-- Key Metrics -->
           <div class="col-lg-6 mb-4 mb-lg-0">
             <app-key-metrics [totals]="totals()" />
           </div>
 
-          <!-- Calendar -->
           <div class="col-lg-6">
             <app-workout-calendar />
           </div>
         </div>
 
-        <!-- Records Section -->
         <div class="mb-4">
           <app-records [records]="records()" />
-        </div>
-
-        <!-- Recent Activity Feed -->
-        <div class="row justify-content-center">
-          <div class="col-lg-8">
-            <app-recent-activity />
-          </div>
         </div>
       }
     </div>

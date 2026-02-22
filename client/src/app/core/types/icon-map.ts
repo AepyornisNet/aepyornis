@@ -78,7 +78,7 @@ export const ICON_MAP: Record<string, string> = {
   // Page Icons
   dashboard: 'faSolidChartLine',
   statistics: 'faSolidChartSimple',
-  admin: 'faSolidGear',
+  admin: 'faSolidWrench',
   actions: 'faSolidGear',
   'user-profile': 'faCircleUser',
   'user-add': 'faSolidUserPlus',

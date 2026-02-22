@@ -27,6 +27,11 @@
             [disableTooltip]="isOpen()"
             [ngbTooltip]="item.label | translate"
             [routerLink]="item.route"
+            [routerLinkActiveOptions]="
+              item.route === '/profile'
+                ? { paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }
+                : { paths: 'subset', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }
+            "
           >
             <app-icon size="1.125rem" [class.me-2]="isOpen()" [name]="item.iconKey" />
             <span [class.visually-hidden]="!isOpen()">{{ item.label | translate }}</span>
