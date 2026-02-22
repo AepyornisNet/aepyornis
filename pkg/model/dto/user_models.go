@@ -39,7 +39,7 @@ type ProfileSettings struct {
 	AutoImportDirectory      string                   `json:"auto_import_directory"`
 	DefaultWorkoutVisibility model.WorkoutVisibility  `json:"default_workout_visibility"`
 	APIActive                bool                     `json:"api_active"`
-	APIKey                   string                   `json:"api_key,omitempty"`
+	APIKey                   string                   `json:"api_key,omitempty"` // #nosec G117 -- API response key is intentionally named api_key
 	PreferFullDate           bool                     `json:"prefer_full_date"`
 }
 

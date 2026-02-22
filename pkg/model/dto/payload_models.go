@@ -138,10 +138,9 @@ func (m *ManualWorkout) Update(w *model.Workout) error {
 		a, err := geocoder.Find(*m.Location)
 		if err != nil {
 			w.Data.Address = nil
-			return nil
+		} else {
+			w.Data.Address = a
 		}
-
-		w.Data.Address = a
 	}
 
 	w.Data.UpdateExtraMetrics()
