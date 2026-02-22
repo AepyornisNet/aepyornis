@@ -14,6 +14,7 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	_ "github.com/jovandeginste/workout-tracker/v2/pkg/model/migrations"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
