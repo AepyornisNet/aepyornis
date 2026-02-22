@@ -30,14 +30,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 		return nil, errors.New("no sessions found")
 	}
 
-	activityTime := act.Activity.LocalTimestamp
-	if activityTime.IsZero() {
-		activityTime = act.Sessions[0].StartTime.Local()
-	}
-
-	if activityTime.IsZero() {
-		activityTime = act.FileId.TimeCreated.Local()
-	}
+	activityTime := fitActivityStartTime(act)
 
 	gpxFile := buildGPXFromActivity(act)
 	data := mapDataFromActivity(act, gpxFile)
@@ -47,10 +40,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	workouts := make([]*model.Workout, 0, len(act.Sessions))
 
 	for _, session := range act.Sessions {
-		startTime := session.StartTime.Local()
-		if startTime.IsZero() {
-			startTime = activityTime
-		}
+		startTime := firstNonZeroTime(session.StartTime.Local(), activityTime)
 
 		moveDuration := durationFromSeconds(session.TotalTimerTimeScaled())
 		elapsedDuration := durationFromSeconds(session.TotalElapsedTimeScaled())
@@ -63,7 +53,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 
 		if w.Data != nil {
 			w.Data.WorkoutData.MergeNonZero(model.WorkoutData{
-				Name:          session.Sport.String() + " - " + startTime.Format(time.DateTime),
+				Name:          formatFitWorkoutName(session.Sport.String(), startTime),
 				Type:          session.Sport.String(),
 				Start:         startTime,
 				Stop:          startTime.Add(elapsedDuration),
@@ -288,7 +278,7 @@ func durationFromSeconds(seconds float64) time.Duration {
 }
 
 func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
-	name := act.Sessions[0].Sport.String() + " - " + act.Activity.LocalTimestamp.Format(time.DateTime)
+	name := formatFitWorkoutName(act.Sessions[0].Sport.String(), fitActivityStartTime(act))
 	gpxFile := &gpx.GPX{
 		Name:    name,
 		Time:    &act.FileId.TimeCreated,
@@ -398,7 +388,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 		prevDistance  float64
 	)
 
-	startTime := act.Records[0].Timestamp.Local()
+	startTime := fitActivityStartTime(act)
 
 	for i, r := range act.Records {
 		ts := r.Timestamp.Local()
@@ -541,7 +531,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 		data.WorkoutData.Type = s.Sport.String()
 		data.WorkoutData.SubType = s.SubSport.String()
 		if data.WorkoutData.Name == "" {
-			data.WorkoutData.Name = s.Sport.String() + " - " + startTime.Format(time.DateTime)
+			data.WorkoutData.Name = formatFitWorkoutName(s.Sport.String(), startTime)
 		}
 	}
 
@@ -603,4 +593,56 @@ func maxDuration(a, b time.Duration) time.Duration {
 	}
 
 	return b
+}
+
+func fitActivityStartTime(act *filedef.Activity) time.Time {
+	if act == nil {
+		return time.Time{}
+	}
+
+	if t := act.Activity.LocalTimestamp.Local(); !t.IsZero() {
+		return t
+	}
+
+	for _, s := range act.Sessions {
+		if t := s.StartTime.Local(); !t.IsZero() {
+			return t
+		}
+	}
+
+	for _, l := range act.Laps {
+		if t := l.StartTime.Local(); !t.IsZero() {
+			return t
+		}
+	}
+
+	for _, r := range act.Records {
+		if t := r.Timestamp.Local(); !t.IsZero() {
+			return t
+		}
+	}
+
+	return act.FileId.TimeCreated.Local()
+}
+
+func firstNonZeroTime(candidates ...time.Time) time.Time {
+	for _, t := range candidates {
+		if !t.IsZero() {
+			return t
+		}
+	}
+
+	return time.Time{}
+}
+
+func formatFitWorkoutName(sport string, at time.Time) string {
+	if sport == "" {
+		sport = "workout"
+	}
+
+	if at.IsZero() {
+		return sport
+	}
+
+	return sport + " - " + at.Format(time.DateTime)
 }
