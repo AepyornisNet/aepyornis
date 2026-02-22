@@ -490,7 +490,7 @@ func GetRecentWorkouts(db *gorm.DB, count int) ([]*Workout, error) {
 func GetRecentWorkoutsWithOffset(db *gorm.DB, count int, offset int) ([]*Workout, error) {
 	var w []*Workout
 
-	if err := db.Preload("Data").Preload("User").Order("date DESC").Limit(count).Offset(offset).Find(&w).Error; err != nil {
+	if err := PreloadWorkoutData(db).Preload("User").Order("date DESC").Limit(count).Offset(offset).Find(&w).Error; err != nil {
 		return nil, err
 	}
 
@@ -500,7 +500,7 @@ func GetRecentWorkoutsWithOffset(db *gorm.DB, count int, offset int) ([]*Workout
 func GetWorkouts(db *gorm.DB) ([]*Workout, error) {
 	var w []*Workout
 
-	if err := db.Preload("Data").Preload("Data.Details").Order("date DESC").Find(&w).Error; err != nil {
+	if err := PreloadWorkoutDetails(db).Order("date DESC").Find(&w).Error; err != nil {
 		return nil, err
 	}
 
@@ -508,13 +508,17 @@ func GetWorkouts(db *gorm.DB) ([]*Workout, error) {
 }
 
 func GetWorkoutDetails(db *gorm.DB, id uint64) (*Workout, error) {
-	return GetWorkout(db.Preload("GPX").Preload("Data.Details"), id)
+	return GetWorkout(PreloadWorkoutDetails(db).Preload("GPX"), id)
 }
 
 func GetMapData(db *gorm.DB, id uint64) (*MapData, error) {
 	var md MapData
 
-	if err := db.First(&md, id).Error; err != nil {
+	if err := db.Preload("Climbs", func(tx *gorm.DB) *gorm.DB {
+		return tx.Order("sort_order ASC")
+	}).Preload("Details").Preload("Details.Points", func(tx *gorm.DB) *gorm.DB {
+		return tx.Order("sort_order ASC")
+	}).First(&md, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -527,6 +531,13 @@ func GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 	if err := db.
 		Preload("RouteSegmentMatches.RouteSegment").
 		Preload("Data").
+		Preload("Data.Climbs", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		}).
+		Preload("Data.Details").
+		Preload("Data.Details.Points", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		}).
 		Preload("User").
 		Preload("Equipment").
 		First(&w, id).
@@ -559,7 +570,32 @@ func (w *Workout) create(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
-	return db.Create(w).Error
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("Data", "GPX", "Equipment", "RouteSegmentMatches").Create(w).Error; err != nil {
+			return err
+		}
+
+		w.Data.WorkoutID = w.ID
+		if err := w.Data.Save(tx); err != nil {
+			return err
+		}
+
+		if w.GPX != nil {
+			w.GPX.WorkoutID = w.ID
+
+			if err := tx.Create(w.GPX).Error; err != nil {
+				return err
+			}
+		}
+
+		if w.RouteSegmentMatches != nil {
+			if err := tx.Model(w).Association("RouteSegmentMatches").Replace(w.RouteSegmentMatches); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (w *Workout) Save(db *gorm.DB) error {
@@ -576,24 +612,44 @@ func (w *Workout) save(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
-	if w.ID == 0 {
-		if err := db.Save(w).Error; err != nil {
+	return db.Transaction(func(tx *gorm.DB) error {
+		if w.ID == 0 {
+			if err := tx.Omit("Data", "GPX", "Equipment", "RouteSegmentMatches").Create(w).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := tx.Omit("Data", "GPX", "Equipment", "RouteSegmentMatches").Save(w).Error; err != nil {
+				return err
+			}
+		}
+
+		w.Data.WorkoutID = w.ID
+		if err := w.Data.Save(tx); err != nil {
 			return err
 		}
-	}
 
-	w.Data.WorkoutID = w.ID
-	if err := w.Data.Save(db); err != nil {
-		return err
-	}
+		if w.GPX != nil {
+			w.GPX.WorkoutID = w.ID
 
-	if w.RouteSegmentMatches != nil {
-		if err := db.Model(w).Association("RouteSegmentMatches").Replace(w.RouteSegmentMatches); err != nil {
-			return err
+			if w.GPX.ID == 0 {
+				if err := tx.Create(w.GPX).Error; err != nil {
+					return err
+				}
+			} else {
+				if err := tx.Save(w.GPX).Error; err != nil {
+					return err
+				}
+			}
 		}
-	}
 
-	return db.Save(w).Error
+		if w.RouteSegmentMatches != nil {
+			if err := tx.Model(w).Association("RouteSegmentMatches").Replace(w.RouteSegmentMatches); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (w *Workout) ReparseFile() (*Workout, error) {

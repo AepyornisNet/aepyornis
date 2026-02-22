@@ -59,12 +59,12 @@ type MapData struct {
 	Address *geo.Address    `gorm:"serializer:json" json:"address"`                       // The address of the workout
 	Details *MapDataDetails `gorm:"constraint:OnDelete:CASCADE" json:"details,omitempty"` // The details of the workout
 
-	Workout       *Workout  `gorm:"foreignKey:WorkoutID" json:"-"`         // The user who owns this profile
-	Creator       string    `json:"creator"`                               // The tool that created this workout
-	AddressString string    `json:"addressString"`                         // The generic location of the workout
-	Center        MapCenter `gorm:"serializer:json" json:"center"`         // The center of the workout (in coordinates)
-	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"` // The workout this data belongs to
-	Climbs        []Segment `gorm:"serializer:json" json:"climbs"`         // Auto-detected climbs
+	Workout       *Workout  `gorm:"foreignKey:WorkoutID" json:"-"`                                  // The user who owns this profile
+	Creator       string    `json:"creator"`                                                        // The tool that created this workout
+	AddressString string    `json:"addressString"`                                                  // The generic location of the workout
+	Center        MapCenter `gorm:"serializer:json" json:"center"`                                  // The center of the workout (in coordinates)
+	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"`                          // The workout this data belongs to
+	Climbs        []Segment `gorm:"foreignKey:MapDataID;constraint:OnDelete:CASCADE" json:"climbs"` // Auto-detected climbs
 	WorkoutData
 }
 
@@ -72,7 +72,7 @@ type MapDataDetails struct {
 	Model
 
 	MapData *MapData   `gorm:"foreignKey:MapDataID" json:"-"`
-	Points  []MapPoint `gorm:"serializer:json" json:"points"` // The GPS points of the workout
+	Points  []MapPoint `gorm:"foreignKey:MapDataDetailsID;constraint:OnDelete:CASCADE" json:"points"` // The GPS points of the workout
 
 	MapDataID uint64 `gorm:"not null;uniqueIndex" json:"mapDataID"` // The ID of the map data these details belong to
 }
@@ -96,19 +96,26 @@ type MapCenter struct {
 }
 
 type MapPoint struct {
+	MapDataDetailsID uint64 `gorm:"not null;primaryKey;index:idx_map_data_details_points_parent_order,unique" json:"-"`
+	SortOrder        int    `gorm:"not null;primaryKey;index:idx_map_data_details_points_parent_order,unique" json:"-"`
+
 	Time time.Time `json:"time"` // The time the point was recorded
 
-	ExtraMetrics    ExtraMetrics  `json:"extraMetrics"`    // Extra metrics at this point
-	Lat             float64       `json:"lat"`             // The latitude of the point
-	Lng             float64       `json:"lng"`             // The longitude of the point
-	Elevation       float64       `json:"elevation"`       // The elevation of the point
-	Distance        float64       `json:"distance"`        // The distance from the previous point
-	Distance2D      float64       `json:"distance2D"`      // The 2D distance from the previous point
-	TotalDistance   float64       `json:"totalDistance"`   // The total distance of the workout up to this point
-	TotalDistance2D float64       `json:"totalDistance2D"` // The total 2D distance of the workout up to this point
-	Duration        time.Duration `json:"duration"`        // The duration from the previous point
-	TotalDuration   time.Duration `json:"totalDuration"`   // The total duration of the workout up to this point
-	SlopeGrade      float64       `json:"slopeGrade"`      // The grade of the slope at this point
+	ExtraMetrics    ExtraMetrics  `gorm:"serializer:json" json:"extraMetrics"` // Extra metrics at this point
+	Lat             float64       `json:"lat"`                                 // The latitude of the point
+	Lng             float64       `json:"lng"`                                 // The longitude of the point
+	Elevation       float64       `json:"elevation"`                           // The elevation of the point
+	Distance        float64       `json:"distance"`                            // The distance from the previous point
+	Distance2D      float64       `json:"distance2D"`                          // The 2D distance from the previous point
+	TotalDistance   float64       `json:"totalDistance"`                       // The total distance of the workout up to this point
+	TotalDistance2D float64       `json:"totalDistance2D"`                     // The total 2D distance of the workout up to this point
+	Duration        time.Duration `json:"duration"`                            // The duration from the previous point
+	TotalDuration   time.Duration `json:"totalDuration"`                       // The total duration of the workout up to this point
+	SlopeGrade      float64       `json:"slopeGrade"`                          // The grade of the slope at this point
+}
+
+func (MapPoint) TableName() string {
+	return "map_data_details_points"
 }
 
 func (m *MapCenter) ToOrbPoint() *orb.Point {
@@ -120,7 +127,26 @@ func (m *MapPoint) ToOrbPoint() *orb.Point {
 }
 
 func (d *MapDataDetails) Save(db *gorm.DB) error {
-	return db.Save(d).Error
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("Points").Save(d).Error; err != nil {
+			return err
+		}
+
+		for i := range d.Points {
+			d.Points[i].MapDataDetailsID = d.ID
+			d.Points[i].SortOrder = i
+		}
+
+		if err := tx.Where("map_data_details_id = ?", d.ID).Delete(&MapPoint{}).Error; err != nil {
+			return err
+		}
+
+		if len(d.Points) == 0 {
+			return nil
+		}
+
+		return tx.Create(&d.Points).Error
+	})
 }
 
 func (m *MapData) UpdateExtraMetrics() {
@@ -212,21 +238,69 @@ func shouldAddState(address *geo.Address) bool {
 }
 
 func (m *MapData) Save(db *gorm.DB) error {
-	if err := db.Save(m).Error; err != nil {
-		return err
-	}
-
-	if m.Details != nil {
-		if m.Details.MapDataID == 0 {
-			m.Details.MapDataID = m.ID
-		}
-
-		if err := db.Save(m.Details).Error; err != nil {
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("Climbs", "Details", "Details.Points").Save(m).Error; err != nil {
 			return err
 		}
-	}
 
-	return nil
+		for i := range m.Climbs {
+			m.Climbs[i].MapDataID = m.ID
+			m.Climbs[i].SortOrder = i
+		}
+
+		if err := tx.Where("map_data_id = ?", m.ID).Delete(&Segment{}).Error; err != nil {
+			return err
+		}
+
+		if len(m.Climbs) > 0 {
+			if err := tx.Create(&m.Climbs).Error; err != nil {
+				return err
+			}
+		}
+
+		if m.Details != nil {
+			if m.Details.MapDataID == 0 {
+				m.Details.MapDataID = m.ID
+			}
+
+			if err := tx.Omit("Points").Save(m.Details).Error; err != nil {
+				return err
+			}
+
+			for i := range m.Details.Points {
+				m.Details.Points[i].MapDataDetailsID = m.Details.ID
+				m.Details.Points[i].SortOrder = i
+			}
+
+			if err := tx.Where("map_data_details_id = ?", m.Details.ID).Delete(&MapPoint{}).Error; err != nil {
+				return err
+			}
+
+			if len(m.Details.Points) > 0 {
+				if err := tx.Create(&m.Details.Points).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+}
+
+func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
+	return db.
+		Preload("Data").
+		Preload("Data.Climbs", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		})
+}
+
+func PreloadWorkoutDetails(db *gorm.DB) *gorm.DB {
+	return PreloadWorkoutData(db).
+		Preload("Data.Details").
+		Preload("Data.Details.Points", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		})
 }
 
 func (m *MapPoint) AverageSpeed() float64 {
