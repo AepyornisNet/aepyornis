@@ -78,6 +78,7 @@ import {
   faSolidUsers,
   faSolidWater,
   faSolidWeightHanging,
+  faSolidWrench,
   faSolidXmark,
 } from '@ng-icons/font-awesome/solid';
 
@@ -174,6 +175,7 @@ export const iconProviders = provideIcons({
   faSolidWater,
   faSolidBan,
   faSolidTrophy,
+  faSolidWrench,
 
   // Font Awesome Regular
   faClock,

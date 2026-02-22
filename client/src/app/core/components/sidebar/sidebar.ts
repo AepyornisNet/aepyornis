@@ -12,6 +12,7 @@ type MenuItem = {
   iconKey: string;
   route: string;
   adminOnly?: boolean;
+  requiresActivityPub?: boolean;
 };
 
 @Component({
@@ -28,14 +29,15 @@ export class Sidebar {
   public readonly sidebarToggle = output<void>();
 
   public allMenuItems: MenuItem[] = [
-    { label: _('Dashboard'), iconKey: 'dashboard', route: '/dashboard' },
+    { label: _('Feed'), iconKey: 'metrics', route: '/feed', requiresActivityPub: true },
+    { label: _('Profile'), iconKey: 'dashboard', route: '/profile' },
     { label: _('Workouts'), iconKey: 'workout', route: '/workouts' },
     { label: _('Measurements'), iconKey: 'scale', route: '/measurements' },
     { label: _('Statistics'), iconKey: 'statistics', route: '/statistics' },
     { label: _('Heatmap'), iconKey: 'heatmap', route: '/heatmap' },
     { label: _('Route segments'), iconKey: 'route-segment', route: '/route-segments' },
     { label: _('Equipment'), iconKey: 'equipment', route: '/equipment' },
-    { label: _('Profile'), iconKey: 'user-profile', route: '/profile' },
+    { label: _('Settings'), iconKey: 'settings', route: '/profile/settings' },
     { label: _('Admin'), iconKey: 'admin', route: '/admin', adminOnly: true },
   ];
 
@@ -43,8 +45,13 @@ export class Sidebar {
   public readonly menuItems = computed(() => {
     const userInfo = this.userService.getUserInfo()();
     const isAdmin = userInfo?.profile?.admin ?? false;
+    const isActivityPubEnabled = userInfo?.profile?.activity_pub ?? false;
 
-    return this.allMenuItems.filter((item) => !item.adminOnly || isAdmin);
+    return this.allMenuItems.filter(
+      (item) =>
+        (!item.adminOnly || isAdmin) &&
+        (!item.requiresActivityPub || isActivityPubEnabled),
+    );
   });
 
   public onToggle(): void {

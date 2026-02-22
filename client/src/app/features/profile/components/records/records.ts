@@ -23,12 +23,10 @@ export class Records {
   }
 
   public formatSpeed(speed: number): string {
-    // Convert m/s to km/h
     return (speed * 3.6).toFixed(2);
   }
 
   public formatDistance(distance: number): string {
-    // Convert meters to kilometers
     return (distance / 1000).toFixed(2);
   }
 

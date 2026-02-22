@@ -34,7 +34,7 @@ export class Login implements OnInit {
   public loginForm!: FormGroup;
   public readonly errorMessage = signal<string | null>(null);
   public readonly loginSubmitting = signal(false);
-  public readonly returnUrl = signal('/dashboard');
+  public readonly returnUrl = signal('/feed');
 
   // Register form (reactive form with 3 fields)
   public registerForm!: FormGroup;

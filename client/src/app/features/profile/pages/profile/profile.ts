@@ -15,11 +15,11 @@ export class Profile implements OnInit {
   protected store = inject(ProfileStore);
 
   public readonly navigationItems = [
-    { label: 'General', route: '/profile/general' },
-    { label: 'Personal info', route: '/profile/infos' },
-    { label: 'Privacy', route: '/profile/privacy' },
-    { label: 'Followers', route: '/profile/followers' },
-    { label: 'Actions', route: '/profile/actions' },
+    { label: 'General', route: '/profile/settings/general' },
+    { label: 'Personal info', route: '/profile/settings/infos' },
+    { label: 'Privacy', route: '/profile/settings/privacy' },
+    { label: 'Followers', route: '/profile/settings/followers' },
+    { label: 'Actions', route: '/profile/settings/actions' },
   ];
 
   public ngOnInit(): void {
