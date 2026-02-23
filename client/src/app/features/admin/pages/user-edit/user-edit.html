@@ -2,7 +2,7 @@
   <h2 class="display-6 mb-4 d-flex align-items-center gap-2">
     <app-icon name="settings" size="32" />
     @if (user()) {
-      {{ 'Manage user: {{name}}' | translate: { name: user()!.name } }}
+      {{ 'Manage user: {{name}}' | translate: { name: user()!.name || user()!.username || '' } }}
     } @else {
       {{ 'Edit user' | translate }}
     }

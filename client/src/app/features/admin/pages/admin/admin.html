@@ -21,7 +21,7 @@
     <div class="card shadow-sm mb-4">
       <div class="card-header">
         <h3 class="h5 mb-0">
-          {{ 'Manage users ({{count}})' | translate: { count: users().length } }}
+          {{ 'Manage users ({{count}})' | translate: { count: users()?.length ?? 0 } }}
         </h3>
       </div>
       <div class="card-body">
