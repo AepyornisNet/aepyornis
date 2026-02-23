@@ -41,8 +41,6 @@ services:
     depends_on:
       ap1-db:
         condition: service_healthy
-    ports:
-      - 8080:8080
     networks:
       - workout-tracker
     environment:
@@ -50,16 +48,16 @@ services:
       WT_DATABASE_DRIVER: postgres
       WT_DSN: host=ap1-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap1 port=5432 sslmode=disable TimeZone=UTC
       WT_ACTIVITY_PUB_ACTIVE: true
-      WT_HOST: ap1.local:8080
+      WT_HOST: wt-ap1.test
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/health || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 6
       start_period: 20s
-    extra_hosts:
-      - ap1.local:host-gateway
-      - ap2.local:host-gateway
+    volumes:
+      - ap-caddy-data:/caddy-data:ro
     secrets:
       - jwt_encryption_key
 
@@ -69,8 +67,6 @@ services:
     depends_on:
       ap2-db:
         condition: service_healthy
-    ports:
-      - 8081:8080
     networks:
       - workout-tracker
     environment:
@@ -78,18 +74,39 @@ services:
       WT_DATABASE_DRIVER: postgres
       WT_DSN: host=ap2-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap2 port=5432 sslmode=disable TimeZone=UTC
       WT_ACTIVITY_PUB_ACTIVE: true
-      WT_HOST: ap2.local:8081
+      WT_HOST: wt-ap2.test
+      SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/health || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 6
       start_period: 20s
-    extra_hosts:
-      - ap1.local:host-gateway
-      - ap2.local:host-gateway
+    volumes:
+      - ap-caddy-data:/caddy-data:ro
     secrets:
       - jwt_encryption_key
+
+  ap-edge:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      ap1-workout-tracker:
+        condition: service_started
+      ap2-workout-tracker:
+        condition: service_started
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      workout-tracker:
+        aliases:
+          - wt-ap1.test
+          - wt-ap2.test
+    volumes:
+      - ./Caddyfile.activitypub:/etc/caddy/Caddyfile:ro
+      - ap-caddy-data:/data
+      - ap-caddy-config:/config
 
 secrets:
   jwt_encryption_key:
@@ -98,6 +115,8 @@ secrets:
 volumes:
   ap1-db-data:
   ap2-db-data:
+  ap-caddy-data:
+  ap-caddy-config:
 
 networks:
   workout-tracker:

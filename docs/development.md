@@ -65,14 +65,23 @@ Compose files are split by purpose:
 
 ### Test ActivityPub locally with two instances
 
+Add local hostname mappings first:
+
+```bash
+echo "127.0.0.1 wt-ap1.test wt-ap2.test" | sudo tee -a /etc/hosts
+```
+
 Run:
 
 ```bash
 make dev-activitypub
 ```
 
-This starts two independent servers on `http://localhost:8080` and
-`http://localhost:8081`, each with its own Postgres database.
+This starts two independent servers on `https://wt-ap1.test` and
+`https://wt-ap2.test`, each with its own Postgres database.
+
+The ActivityPub setup uses a local HTTPS reverse proxy with an internal CA.
+Both app containers trust this CA so inter-instance HTTPS requests are accepted.
 
 ## What is this, technically?
 
