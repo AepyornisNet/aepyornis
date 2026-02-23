@@ -4,31 +4,6 @@ title: Development
 
 ## Development
 
-### Dev Container
-
-#### Usage
-
-This project contains a
-[pre-built development container](https://containers.dev/guide/prebuild)
-`ghcr.io/jovandeginste/workout-tracker-dev-container:latest` (see
-`.devcontainer/devcontainer.json`). Inside the container, just run
-`make build-server serve`. After building the project when running it, the app
-port will be exposed automatically and you can access the app locally on your
-machine via http://localhost:8080/.
-
-#### Build
-
-For building the dev container locally, the variables `GO_VERSION` and
-`NODE_VERSION` must be set. Afterwards, the dev container can be built using the
-[Dev Container CLI](https://github.com/devcontainers/cli/) via
-`devcontainer build --workspace-folder ./.devcontainer-template/ --image-name ghcr.io/jovandeginste/workout-tracker-dev-container`. Here's a full example using PowerShell:
-
-```powershell
-$env:GO_VERSION="1.24.1"
-$env:NODE_VERSION="22"
-devcontainer build --workspace-folder ./.devcontainer-template/ --image-name ghcr.io/jovandeginste/workout-tracker-dev-container
-```
-
 ### Build and run it yourself
 
 - install go
@@ -52,8 +27,6 @@ Because I keep forgetting how to build every component, I created a Makefile.
 # Make everything. This is also the default target.
 make all # Run tests and build all components
 
-# Install system dependencies
-make install-dev-deps
 # Install Javascript libraries
 make install-deps
 
@@ -63,11 +36,10 @@ make test-assets test-go # Run tests for the individual components
 
 # Building
 make build # Builds all components
-make build-frontend # Builds the frontend assets
-make build-templates # Builds the templ templates
-make build-server # Builds the web server (includes build-templates)
-make build-docker # Performs all builds inside Docker containers, creates a Docker image
-make build-swagger # Generates swagger docs
+make build-client # Builds the frontend assets
+make build-server # Builds the web server
+make build-image # Builds the production Docker image using docker/Dockerfile.prod
+make swagger # Generates swagger docs
 
 
 
@@ -78,10 +50,38 @@ make serve # Runs the compiled binary
 make clean # Removes build artifacts
 
 # Development
-make dev-docker # Runs the server in a docker compose setup
-make dev-docker-sqlite # Runs the server in a docker compose setup with SQLite
-make dev-docker-clean # Removes volumes created by the dev-docker targets
+make dev # Runs the server in a docker compose setup with Postgres
+make dev-activitypub # Runs two isolated instances for ActivityPub federation testing
+make dev-clean # Removes volumes created by development docker compose setups
 ```
+
+The development setup uses [docker/Dockerfile.dev](../docker/Dockerfile.dev).
+Production images use [docker/Dockerfile.prod](../docker/Dockerfile.prod).
+Compose files are split by purpose:
+
+- [docker/docker-compose.dev.yaml](../docker/docker-compose.dev.yaml)
+- [docker/docker-compose.activitypub.yaml](../docker/docker-compose.activitypub.yaml)
+- [docker/docker-compose.yaml](../docker/docker-compose.yaml)
+
+### Test ActivityPub locally with two instances
+
+Add local hostname mappings first:
+
+```bash
+echo "127.0.0.1 wt-ap1.test wt-ap2.test" | sudo tee -a /etc/hosts
+```
+
+Run:
+
+```bash
+make dev-activitypub
+```
+
+This starts two independent servers on `https://wt-ap1.test` and
+`https://wt-ap2.test`, each with its own Postgres database.
+
+The ActivityPub setup uses a local HTTPS reverse proxy with an internal CA.
+Both app containers trust this CA so inter-instance HTTPS requests are accepted.
 
 ## What is this, technically?
 
@@ -91,8 +91,7 @@ The binary contains all assets to serve a web interface, through which you can
 upload your GPX files, visualize your tracks and see their statistics and
 graphs. The web application is multi-user, with a simple registration and
 authentication form, session cookies and JWT tokens). New accounts are inactive
-by default. An admin user can activate (or edit, delete) accounts. The default
-database storage is a single SQLite file.
+by default. An admin user can activate (or edit, delete) accounts.
 
 ## What technologies are used
 

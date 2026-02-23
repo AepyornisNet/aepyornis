@@ -1,16 +1,17 @@
-FROM node:24.1-alpine AS builder-frontend
+FROM node:24-alpine AS dev-frontend
 
 WORKDIR /app
 
+COPY client/package*.json ./client/
+RUN cd client && npm ci
+
 COPY client ./client
-RUN cd client \
-  && npm ci
 
 WORKDIR /app/client
 EXPOSE 4200
 ENTRYPOINT ["npm", "run", "start"]
 
-FROM golang:1.25.1-alpine AS builder-backend
+FROM golang:1.25.1-alpine AS dev-backend
 ARG BUILD_TIME
 ARG GIT_COMMIT
 ARG GIT_REF

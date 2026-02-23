@@ -1,0 +1,11 @@
+wt-ap1.test {
+	bind 0.0.0.0
+	tls internal
+	reverse_proxy ap1-workout-tracker:8080
+}
+
+wt-ap2.test {
+	bind 0.0.0.0
+	tls internal
+	reverse_proxy ap2-workout-tracker:8080
+}
