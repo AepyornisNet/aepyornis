@@ -61,25 +61,19 @@ export class UserProfile implements OnInit {
       }
 
       if (profileResponse.results.username) {
-        try {
-          const actor = await firstValueFrom(
-            this.api.getLocalActivityPubActor(profileResponse.results.username),
-          );
+        const actor = await firstValueFrom(
+          this.api.getLocalActivityPubActor(profileResponse.results.username),
+        ).catch(() => null);
 
+        if (actor) {
           this.profileSummary.update((current) =>
             current
               ? {
                   ...current,
-                  member_since: actor?.published || current.member_since,
+                  member_since: actor.published || current.member_since,
                   icon_url: this.extractActorIcon(actor) || current.icon_url,
                 }
               : current,
-          );
-        } catch {
-          this.error.set(
-            this.translate.instant('Failed to load {{page}} data.', {
-              page: this.translate.instant('profile'),
-            }),
           );
         }
       }
