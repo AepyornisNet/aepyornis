@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/invopop/ctxi18n"
@@ -51,9 +52,14 @@ func (a *App) setUser(c echo.Context) error {
 		return ErrInvalidJWTToken
 	}
 
-	dbUser, err := model.GetUser(a.db, claims["name"].(string))
+	username, ok := claims["name"].(string)
+	if !ok || strings.TrimSpace(username) == "" {
+		return ErrInvalidJWTToken
+	}
+
+	dbUser, err := model.GetUser(a.db, username)
 	if err != nil {
-		return err
+		return ErrInvalidJWTToken
 	}
 
 	if !dbUser.IsActive() {

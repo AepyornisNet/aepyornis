@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Api } from './api';
 import { UserProfile } from '../../core/types/user';
-import { catchError, map, Observable, of, tap } from 'rxjs';
+import { catchError, map, Observable, of, take, tap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 
@@ -22,6 +22,7 @@ export class User {
 
   private readonly userInfo = signal<UserInfo | null>(null);
   private readonly checkingAuth = signal<boolean>(false);
+  private readonly revalidatingAfterUnauthorized = signal<boolean>(false);
 
   public getUserInfo(): ReturnType<typeof this.userInfo.asReadonly> {
     return this.userInfo.asReadonly();
@@ -70,8 +71,29 @@ export class User {
             this.userInfo.set(null);
           }
         }),
-        map(respone => respone ? respone.results : null)
+        map((response) => (response ? response.results : null)),
       );
+  }
+
+  public revalidateAfterUnauthorized(): void {
+    if (!this.isAuthenticated() || this.revalidatingAfterUnauthorized()) {
+      return;
+    }
+
+    this.revalidatingAfterUnauthorized.set(true);
+
+    this.checkAuthStatus()
+      .pipe(
+        take(1),
+        tap((profile) => {
+          if (!profile) {
+            this.router.navigate(['/login']);
+          }
+        }),
+      )
+      .subscribe({
+        complete: () => this.revalidatingAfterUnauthorized.set(false),
+      });
   }
 
   public clearUser(): void {

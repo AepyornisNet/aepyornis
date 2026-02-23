@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/stretchr/testify/assert"
@@ -131,5 +133,34 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 		assert.Contains(t, string(b), "Unauthorized")
+	})
+
+	t.Run("with stale jwt cookie", func(t *testing.T) {
+		client := &http.Client{}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"name": "deleted-or-renamed-user",
+			"exp":  time.Now().Add(time.Hour).Unix(),
+		})
+
+		tokenString, err := token.SignedString(a.Config.JWTSecret())
+		require.NoError(t, err)
+
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		require.NoError(t, err)
+		req.AddCookie(&http.Cookie{Name: "token", Value: tokenString})
+
+		res, err := client.Do(req) //nolint:gosec
+		require.NoError(t, err)
+
+		if res != nil {
+			defer res.Body.Close()
+		}
+
+		b, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+		assert.Contains(t, string(b), dto.ErrNotAuthorized.Error())
 	})
 }

@@ -116,6 +116,18 @@ func (a *App) ValidateAdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func (a *App) ValidateAuthenticatedUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		u := a.getCurrentUser(ctx)
+		if u.IsAnonymous() || !u.IsActive() {
+			log.Warn("User is not found")
+			return a.renderAPIV2Error(ctx, http.StatusUnauthorized, dto.ErrNotAuthorized)
+		}
+
+		return next(ctx)
+	}
+}
+
 // extend echo.Context
 type contextValue struct {
 	echo.Context
@@ -178,7 +190,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 			r.AddError(err)
 			r.AddError(dto.ErrNotAuthorized)
 
-			return c.JSON(http.StatusForbidden, r)
+			return c.JSON(http.StatusUnauthorized, r)
 		},
 		Skipper: func(ctx echo.Context) bool {
 			if ctx.Request().Header.Get("Authorization") != "" {
@@ -212,6 +224,8 @@ func (a *App) apiV2Routes(e *echo.Group) {
 			return ctx.Request().Header.Get("Authorization") == ""
 		},
 	}))
+
+	apiGroup.Use(a.ValidateAuthenticatedUserMiddleware)
 
 	a.registerUserController(apiGroup)
 	a.registerWorkoutController(apiGroup)
