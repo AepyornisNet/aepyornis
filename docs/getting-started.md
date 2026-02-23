@@ -55,20 +55,26 @@ mkdir -p /opt/workout-tracker
 cd /opt/workout-tracker
 
 # Download the base docker compose file
-curl https://raw.githubusercontent.com/jovandeginste/workout-tracker/master/docker/docker-compose.base.yaml --output docker-compose.base.yaml
-
-## For sqlite as database:
-curl https://raw.githubusercontent.com/jovandeginste/workout-tracker/master/docker/docker-compose.sqlite.yaml --output docker-compose.yaml
-
-## For postgres as database:
-curl https://raw.githubusercontent.com/jovandeginste/workout-tracker/master/docker/docker-compose.postgres.yaml --output docker-compose.yaml
-curl https://raw.githubusercontent.com/jovandeginste/workout-tracker/master/docker/postgres.env --output postgres.env
+curl https://raw.githubusercontent.com/AepyornisNet/aepyornis/main/docker/docker-compose.yaml --output docker-compose.yaml
+curl https://raw.githubusercontent.com/AepyornisNet/aepyornis/main/docker/postgres.env --output postgres.env
 
 # Start the server
 docker compose up -d
 ```
 
-> **_NOTE:_** If using postgres, configure the parameters in `postgres.env`.
+> **_NOTE:_** Configure the parameters in `postgres.env` before starting.
+
+For development and ActivityPub integration testing, use the dedicated compose
+files in this repository:
+
+- `docker/docker-compose.dev.yaml`
+- `docker/docker-compose.activitypub.yaml`
+
+To build a production image yourself:
+
+```bash
+docker build -f docker/Dockerfile.prod -t workout-tracker .
+```
 
 ### Natively
 

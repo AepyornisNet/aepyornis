@@ -86,6 +86,9 @@ func (a *App) ConfigureWebserver() error {
 	})
 
 	publicGroup := e.Group(a.WebRoot())
+	publicGroup.GET("/health", func(c echo.Context) error {
+		return c.String(http.StatusOK, "OK")
+	}).Name = "health"
 	a.apiV2Routes(publicGroup)
 	a.registerActivityPubController(publicGroup)
 

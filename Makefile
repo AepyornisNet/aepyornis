@@ -6,14 +6,11 @@ BUILD_TIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 WT_OUTPUT_FILE ?= tmp/workout-tracker
 WT_DEBUG_OUTPUT_FILE ?= tmp/wt-debug
 
-THEME_SCREENSHOT_WIDTH ?= 1200
-THEME_SCREENSHOT_HEIGHT ?= 900
-
 GO_TEST = go test -short -count 1 -mod vendor -covermode=atomic
 
 BRANCH_NAME_DEPS ?= update-deps
 
-.PHONY: all clean test build screenshots meta install-deps
+.PHONY: all clean test build meta install-deps
 
 all: clean install-deps test build
 
@@ -51,34 +48,27 @@ watch/client: install-deps
 dev-backend:
 	$(MAKE) watch/server
 
-dev:
-	echo "DEPRECATED: Use 'make dev-docker' instead"
-	$(MAKE) watch/server &
-	$(MAKE) watch/client &
-	sleep infinity
+dev: dev-postgres
 
-dev-docker: dev-docker-postgres
-
-dev-docker-postgres:
+dev-postgres:
 	docker compose \
 			--project-directory ./docker/ \
-			--profile dev-postgres \
+			--file ./docker/docker-compose.dev.yaml \
 			up --build
 
-dev-docker-sqlite:
+dev-activitypub:
 	docker compose \
 			--project-directory ./docker/ \
-			--profile dev-sqlite \
+			--file ./docker/docker-compose.activitypub.yaml \
 			up --build
 
-dev-docker-clean:
-	docker compose --project-directory ./docker/ \
-			--profile dev-sqlite \
-			--profile dev-postgres \
-			down --remove-orphans --volumes
+dev-clean:
+	docker compose --project-directory ./docker/ --file ./docker/docker-compose.dev.yaml down --remove-orphans --volumes
+	docker compose --project-directory ./docker/ --file ./docker/docker-compose.activitypub.yaml down --remove-orphans --volumes
+	docker compose --project-directory ./docker/ --file ./docker/docker-compose.yaml down --remove-orphans --volumes
 
-build: build-client build-server build-docker screenshots
-meta: swagger screenshots changelog
+build: build-client build-server build-image
+meta: swagger changelog
 
 build-cli:
 	go build \
@@ -93,7 +83,7 @@ build-server:
 build-client: install-deps
 	cd client && npm run build
 
-build-docker:
+build-image:
 	docker build \
 			--tag workout-tracker --pull \
 			--build-arg BUILD_TIME="$(BUILD_TIME)" \
@@ -101,7 +91,7 @@ build-docker:
 			--build-arg GIT_REF="$(GIT_REF)" \
 			--build-arg GIT_REF_NAME="$(GIT_REF_NAME)" \
 			--build-arg GIT_REF_TYPE="$(GIT_REF_TYPE)" \
-			--file ./docker/Dockerfile \
+			--file ./docker/Dockerfile.prod \
 			.
 
 swagger:
@@ -131,43 +121,6 @@ test-assets:
 test-go: test-commands test-packages
 	golangci-lint run --allow-parallel-runners
 
-screenshots: generate-screenshots screenshots-theme screenshots-responsive screenshots-i18n
-
-generate-screenshots: build-server
-	export WT_BIND=[::]:8180 WT_DSN=./tmp/screenshots.db; \
-			$(WT_OUTPUT_FILE) & \
-			export SERVER_PID=$$!; \
-			sleep 3; \
-			K6_BROWSER_ARGS="force-dark-mode" k6 run screenshots.js; \
-			kill $${SERVER_PID}
-
-screenshots-i18n:
-	magick convert -delay 400 docs/profile-*.png docs/profile.gif
-
-screenshots-theme:
-	mkdir -p tmp/
-	convert docs/single_workout-dark.png \
-			-resize $(THEME_SCREENSHOT_WIDTH)x$(THEME_SCREENSHOT_HEIGHT)\! \
-			tmp/dark_resized.jpg
-	convert docs/single_workout-light.png \
-			-resize $(THEME_SCREENSHOT_WIDTH)x$(THEME_SCREENSHOT_HEIGHT)\! \
-			tmp/light_resized.jpg
-	convert -size $(THEME_SCREENSHOT_WIDTH)x$(THEME_SCREENSHOT_HEIGHT) \
-			xc:white -draw "polygon 0,0 $(THEME_SCREENSHOT_WIDTH),0 $(THEME_SCREENSHOT_WIDTH),$(THEME_SCREENSHOT_HEIGHT)" \
-			tmp/mask.png
-	convert tmp/dark_resized.jpg tmp/light_resized.jpg tmp/mask.png \
-			-composite docs/single_workout-theme.jpg
-	rm -f tmp/dark_resized.jpg tmp/light_resized.jpg tmp/mask.png
-
-screenshots-responsive:
-	montage \
-			-font Liberation-Sans \
-			-density 300 \
-			-tile 3x0 \
-			-geometry +5+5 \
-			-background none \
-			docs/dashboard-responsive.png docs/single_workout-responsive.png docs/statistics-responsive.png docs/responsive.png
-
 go-cover:
 	go test -short -count 1 -mod vendor -covermode=atomic -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out
@@ -185,10 +138,19 @@ update-deps:
 	go mod tidy
 	go mod vendor
 	git add .
-	git commit -m "build(deps): Update Go and frontend dependencies"
-	git push origin $(BRANCH_NAME_DEPS)
+	@printf "Create commit for dependency updates? [y/N] "; \
+	read answer; \
+	case "$$answer" in \
+		y|Y|yes|YES) git commit -m "build(deps): Update Go and frontend dependencies" ;; \
+		*) echo "Skipping commit." ;; \
+	esac
 
 changelog:
 	git cliff -o CHANGELOG.md
 	prettier --write CHANGELOG.md
-	git commit CHANGELOG.md -m "Update changelog" -m "changelog: ignore"
+	@printf "Create commit for changelog update? [y/N] "; \
+	read answer; \
+	case "$$answer" in \
+		y|Y|yes|YES) git commit CHANGELOG.md -m "Update changelog" -m "changelog: ignore" ;; \
+		*) echo "Skipping commit." ;; \
+	esac

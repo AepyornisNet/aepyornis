@@ -1,0 +1,104 @@
+services:
+  ap1-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    shm_size: 128mb
+    networks:
+      - workout-tracker
+    environment:
+      POSTGRES_DB: workout_tracker_ap1
+      POSTGRES_USER: workout_tracker
+      POSTGRES_PASSWORD: workout_tracker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ap1-db-data:/var/lib/postgresql/data/
+
+  ap2-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    shm_size: 128mb
+    networks:
+      - workout-tracker
+    environment:
+      POSTGRES_DB: workout_tracker_ap2
+      POSTGRES_USER: workout_tracker
+      POSTGRES_PASSWORD: workout_tracker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ap2-db-data:/var/lib/postgresql/data/
+
+  ap1-workout-tracker:
+    image: ghcr.io/aepyornisnet/aepyornis:main
+    restart: unless-stopped
+    depends_on:
+      ap1-db:
+        condition: service_healthy
+    ports:
+      - 8080:8080
+    networks:
+      - workout-tracker
+    environment:
+      WT_JWT_ENCRYPTION_KEY_FILE: /run/secrets/jwt_encryption_key
+      WT_DATABASE_DRIVER: postgres
+      WT_DSN: host=ap1-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap1 port=5432 sslmode=disable TimeZone=UTC
+      WT_ACTIVITY_PUB_ACTIVE: true
+      WT_HOST: ap1.local:8080
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+    extra_hosts:
+      - ap1.local:host-gateway
+      - ap2.local:host-gateway
+    secrets:
+      - jwt_encryption_key
+
+  ap2-workout-tracker:
+    image: ghcr.io/aepyornisnet/aepyornis:main
+    restart: unless-stopped
+    depends_on:
+      ap2-db:
+        condition: service_healthy
+    ports:
+      - 8081:8080
+    networks:
+      - workout-tracker
+    environment:
+      WT_JWT_ENCRYPTION_KEY_FILE: /run/secrets/jwt_encryption_key
+      WT_DATABASE_DRIVER: postgres
+      WT_DSN: host=ap2-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap2 port=5432 sslmode=disable TimeZone=UTC
+      WT_ACTIVITY_PUB_ACTIVE: true
+      WT_HOST: ap2.local:8081
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+    extra_hosts:
+      - ap1.local:host-gateway
+      - ap2.local:host-gateway
+    secrets:
+      - jwt_encryption_key
+
+secrets:
+  jwt_encryption_key:
+    file: ./jwt_encryption_key.txt
+
+volumes:
+  ap1-db-data:
+  ap2-db-data:
+
+networks:
+  workout-tracker:
+    external: false

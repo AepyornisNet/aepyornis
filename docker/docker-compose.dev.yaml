@@ -14,18 +14,25 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data/
 
-  workout-tracker:
-    image: ghcr.io/aepyornisnet/aepyornis:main
+  wt-app-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      target: dev-backend
+    container_name: wt-app-dev
     restart: unless-stopped
+    tty: true
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - 8080:8080
     networks:
       - workout-tracker
     env_file: ./postgres.env
     environment:
+      APP_ENV: development
+      WT_WORKER_DELAY_SECONDS: 5
+      WT_ACTIVITY_PUB_ACTIVE: true
+      WT_HOST: localhost:4200
       WT_JWT_ENCRYPTION_KEY_FILE: /run/secrets/jwt_encryption_key
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/health || exit 1"]
@@ -35,12 +42,37 @@ services:
       start_period: 20s
     secrets:
       - jwt_encryption_key
+    volumes:
+      - asset-volume:/app/assets
+      - cache-volume:/root/.cache
+      - ../cmd:/app/cmd
+      - ../pkg:/app/pkg
+      - ../vendor:/app/vendor
+      - ../translations:/app/translations
+
+  workout-tracker-client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      target: dev-frontend
+    depends_on:
+      - wt-app-dev
+    networks:
+      - workout-tracker
+    volumes:
+      - ../client/src:/app/client/src
+      - ../client/public:/app/client/public
+    ports:
+      - 4200:4200
+    tty: true
 
 secrets:
   jwt_encryption_key:
     file: ./jwt_encryption_key.txt
 
 volumes:
+  asset-volume:
+  cache-volume:
   db-data:
 
 networks:
