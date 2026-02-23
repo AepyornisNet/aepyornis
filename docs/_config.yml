@@ -10,7 +10,5 @@ navigation:
     link: ./configuration.html
   - name: API
     link: ./api.html
-  - name: Screenshots
-    link: ./screenshots.html
   - name: Development
     link: ./development.html

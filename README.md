@@ -18,7 +18,6 @@ Self-hosted, everything included.
 - [Getting started](https://join-aepyornis.org/getting-started)
 - [Configuration](https://join-aepyornis.org/configuration)
 - [API](https://join-aepyornis.org/api)
-- [Screenshots](https://join-aepyornis.org/screenshots)
 - [Development](https://join-aepyornis.org/development)
 
 ## Credits
