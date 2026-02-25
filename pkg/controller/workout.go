@@ -952,13 +952,7 @@ func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *m
 	publishedAt := time.Now().UTC()
 	noteContent := ap.WorkoutNoteContent(workout)
 
-	attachments := vocab.ItemCollection{&vocab.Object{
-		Type:      vocab.DocumentType,
-		Name:      vocab.DefaultNaturalLanguage(ap.WorkoutFITFilename(workout)),
-		MediaType: vocab.MimeType(ap.FitMIMEType),
-		URL:       vocab.IRI(fitURL),
-	}}
-
+	attachments := vocab.ItemCollection{}
 	routeImageContent, routeImageErr := ap.GenerateWorkoutRouteImage(workout)
 	if routeImageErr == nil && len(routeImageContent) > 0 {
 		attachments = append(attachments, &vocab.Object{
@@ -971,14 +965,14 @@ func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *m
 		wc.context.Logger().Warn("Failed to generate workout route image", "workout_id", workout.ID, "error", routeImageErr)
 	}
 
-	note := vocab.Object{
-		ID:           vocab.ID(objectURL),
-		Type:         vocab.NoteType,
-		AttributedTo: vocab.IRI(actorURL),
-		Published:    publishedAt,
-		Content:      vocab.DefaultNaturalLanguage(noteContent),
-		Attachment:   attachments,
-	}
+	note := ap.NewWorkoutNote()
+	note.ID = vocab.ID(objectURL)
+	note.AttributedTo = vocab.IRI(actorURL)
+	note.Published = publishedAt
+	note.Content = vocab.DefaultNaturalLanguage(noteContent)
+	note.Attachment = attachments
+	// TODO: Workout location might not be set at this point
+	note.PopulateFromWorkout(workout, vocab.IRI(fitURL))
 
 	to := vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
 	cc := vocab.ItemCollection{}
@@ -998,14 +992,14 @@ func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *m
 	}
 
 	activityJSON, err := jsonld.WithContext(
-		jsonld.IRI(vocab.ActivityBaseURI),
+		ap.WorkoutJSONLDContext(),
 	).Marshal(activity)
 	if err != nil {
 		return err
 	}
 
 	noteJSON, err := jsonld.WithContext(
-		jsonld.IRI(vocab.ActivityBaseURI),
+		ap.WorkoutJSONLDContext(),
 	).Marshal(note)
 	if err != nil {
 		return err
@@ -1070,15 +1064,23 @@ func (wc *workoutController) updateWorkoutActivityPubAudience(c echo.Context, us
 		return err
 	}
 
+	note := ap.NewWorkoutNote()
+	if len(entry.Payload) > 0 {
+		if err := jsonld.Unmarshal(entry.Payload, note); err != nil {
+			return err
+		}
+	}
+
 	activity.To = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
 	activity.CC = vocab.ItemCollection{}
+	activity.Object = note
 	if workout.Visibility == model.WorkoutVisibilityPublic {
 		activity.To = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
 		activity.CC = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
 	}
 
 	activityJSON, err := jsonld.WithContext(
-		jsonld.IRI(vocab.ActivityBaseURI),
+		ap.WorkoutJSONLDContext(),
 	).Marshal(activity)
 	if err != nil {
 		return err
