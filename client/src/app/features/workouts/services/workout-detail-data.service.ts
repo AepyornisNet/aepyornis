@@ -64,6 +64,11 @@ export class WorkoutDetailDataService {
     return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
   });
 
+  public readonly hasPowerData = computed(() => {
+    const metrics = this.workout()?.map_data?.details?.extra_metrics?.['power'];
+    return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
+  });
+
   public readonly hasZoneCharts = computed(() =>
     this.hasHeartRateDistribution() || this.hasPowerDistribution(),
   );

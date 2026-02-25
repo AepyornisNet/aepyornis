@@ -160,6 +160,18 @@
                     </ng-template>
                   </li>
                 }
+                @if (dataService.hasPowerData()) {
+                  <li ngbNavItem>
+                    <button ngbNavLink>{{ 'Performance curve' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <div class="chart-container">
+                        <app-workout-performance-curve
+                          [mapData]="dataService.workout()!.map_data!.details"
+                        />
+                      </div>
+                    </ng-template>
+                  </li>
+                }
               </ul>
             </div>
             <div class="card-body tab-content" [ngbNavOutlet]="statistics"></div>
