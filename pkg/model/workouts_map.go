@@ -17,6 +17,11 @@ import (
 
 const UnknownLocation = "(unknown location)"
 
+const (
+	mapDataPointsInsertBatchSize = 500
+	mapDataClimbsInsertBatchSize = 500
+)
+
 var correctAltitudeCreators = []string{
 	"garmin", "Garmin", "Garmin Connect",
 	"Apple Watch", "Open GPX Tracker for iOS",
@@ -145,7 +150,7 @@ func (d *MapDataDetails) Save(db *gorm.DB) error {
 			return nil
 		}
 
-		return tx.Create(&d.Points).Error
+		return tx.CreateInBatches(&d.Points, mapDataPointsInsertBatchSize).Error
 	})
 }
 
@@ -253,7 +258,7 @@ func (m *MapData) Save(db *gorm.DB) error {
 		}
 
 		if len(m.Climbs) > 0 {
-			if err := tx.Create(&m.Climbs).Error; err != nil {
+			if err := tx.CreateInBatches(&m.Climbs, mapDataClimbsInsertBatchSize).Error; err != nil {
 				return err
 			}
 		}
@@ -277,7 +282,7 @@ func (m *MapData) Save(db *gorm.DB) error {
 			}
 
 			if len(m.Details.Points) > 0 {
-				if err := tx.Create(&m.Details.Points).Error; err != nil {
+				if err := tx.CreateInBatches(&m.Details.Points, mapDataPointsInsertBatchSize).Error; err != nil {
 					return err
 				}
 			}
