@@ -40,6 +40,8 @@ services:
       timeout: 3s
       retries: 6
       start_period: 20s
+    ports:
+      - 8080:8080
     secrets:
       - jwt_encryption_key
     volumes:
