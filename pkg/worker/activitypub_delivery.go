@@ -18,9 +18,7 @@ const JobDeliverActivityPub = "deliver_activitypub"
 // EnqueueAPDeliveriesForEntry queries all pending follower deliveries for the given outbox entry
 // and enqueues one job per follower. Call this immediately after creating an AP outbox entry.
 func EnqueueAPDeliveriesForEntry(ctx context.Context, c *container.Container, entryID uint64) error {
-	db := c.GetDB()
-
-	pending, err := model.ListPendingAPOutboxDeliveriesForEntry(db, entryID)
+	pending, err := c.APOutboxDeliveryRepo().ListPendingDeliveriesForEntry(entryID)
 	if err != nil {
 		return fmt.Errorf("EnqueueAPDeliveriesForEntry: list deliveries: %w", err)
 	}
@@ -80,7 +78,7 @@ func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) 
 			return fmt.Errorf("deliver_activitypub: send to %s: %w", item.ActorIRI, err)
 		}
 
-		if err := model.RecordAPOutboxDelivery(db, item.EntryID, item.ActorIRI); err != nil {
+		if err := c.APOutboxDeliveryRepo().RecordDelivery(item.EntryID, item.ActorIRI); err != nil {
 			return fmt.Errorf("deliver_activitypub: record delivery: %w", err)
 		}
 

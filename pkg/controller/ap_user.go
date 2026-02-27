@@ -122,7 +122,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 		}
 	}
 
-	following, err := model.ListApprovedFollowing(ac.context.GetDB(), targetUser.ID)
+	following, err := ac.context.FollowerRepo().ListApprovedFollowing(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -214,7 +214,7 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		}
 	}
 
-	followers, err := model.ListApprovedFollowers(ac.context.GetDB(), targetUser.ID)
+	followers, err := ac.context.FollowerRepo().ListApprovedFollowers(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

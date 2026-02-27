@@ -80,7 +80,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 	}, targetUser.Username)
 	outboxURL := actorURL + "/outbox"
 
-	total, err := model.CountAPOutboxEntriesByUser(ac.context.GetDB(), targetUser.ID)
+	total, err := ac.context.APOutboxRepo().CountEntriesByUser(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -105,7 +105,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 	}
 
 	offset := (page - 1) * outboxPageSize
-	entries, err := model.GetAPOutboxEntriesByUser(ac.context.GetDB(), targetUser.ID, outboxPageSize, offset)
+	entries, err := ac.context.APOutboxRepo().GetEntriesByUser(targetUser.ID, outboxPageSize, offset)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -173,7 +173,7 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := model.GetAPOutboxEntryByUUIDAndUser(ac.context.GetDB(), targetUser.ID, outboxID)
+	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -206,7 +206,7 @@ func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := model.GetAPOutboxEntryByUUIDAndUser(ac.context.GetDB(), targetUser.ID, outboxID)
+	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -244,7 +244,7 @@ func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := model.GetAPOutboxEntryByUUIDAndUser(ac.context.GetDB(), targetUser.ID, outboxID)
+	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)

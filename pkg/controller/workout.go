@@ -197,7 +197,7 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 	}
 
 	results := dto.NewWorkoutsResponse(workouts)
-	published, err := model.APOutboxPublishedMap(wc.context.GetDB(), user.ID, workoutIDs(workouts))
+	published, err := wc.context.APOutboxRepo().PublishedMap(user.ID, workoutIDs(workouts))
 	if err == nil {
 		applyPublishedFlags(results, published)
 	}
@@ -237,7 +237,7 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 	}
 
 	result := dto.NewWorkoutDetailResponse(workout, records)
-	published, err := model.APOutboxPublishedMap(wc.context.GetDB(), workout.UserID, []uint64{workout.ID})
+	published, err := wc.context.APOutboxRepo().PublishedMap(workout.UserID, []uint64{workout.ID})
 	if err == nil {
 		result.ActivityPubPublished = published[workout.ID]
 	}
@@ -784,7 +784,7 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := model.DeleteAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := wc.context.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -1019,7 +1019,7 @@ func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *m
 		outboxWorkout.RouteImageContentType = ap.RouteImageMIMEType
 	}
 
-	if err := model.CreateAPOutboxWorkout(wc.context.GetDB(), outboxWorkout); err != nil {
+	if err := wc.context.APOutboxRepo().CreateWorkout(outboxWorkout); err != nil {
 		return err
 	}
 
@@ -1036,7 +1036,7 @@ func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *m
 		PublishedAt:       publishedAt,
 	}
 
-	if err := model.CreateAPOutboxEntry(wc.context.GetDB(), entry); err != nil {
+	if err := wc.context.APOutboxRepo().CreateEntry(entry); err != nil {
 		return err
 	}
 
@@ -1100,7 +1100,7 @@ func (wc *workoutController) syncWorkoutActivityPub(c echo.Context, user *model.
 		return
 	}
 
-	entry, err := model.GetAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID)
+	entry, err := wc.context.APOutboxRepo().GetEntryForWorkout(user.ID, workout.ID)
 	hasOutboxEntry := err == nil
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		wc.context.Logger().Warn("Failed to check ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
@@ -1112,7 +1112,7 @@ func (wc *workoutController) syncWorkoutActivityPub(c echo.Context, user *model.
 
 	if !shouldPublish {
 		if hasOutboxEntry {
-			if err := model.DeleteAPOutboxEntryForWorkout(wc.context.GetDB(), user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := wc.context.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				wc.context.Logger().Warn("Failed to remove ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
 			}
 		}
