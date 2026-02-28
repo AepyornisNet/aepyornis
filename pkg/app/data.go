@@ -57,7 +57,7 @@ func (a *App) setUser(c echo.Context) error {
 		return ErrInvalidJWTToken
 	}
 
-	dbUser, err := model.GetUser(a.db, username)
+	dbUser, err := a.container.UserRepo().GetByUsername(username)
 	if err != nil {
 		return ErrInvalidJWTToken
 	}

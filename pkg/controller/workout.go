@@ -464,7 +464,7 @@ func (wc *workoutController) resolveTargetUserFromHandle(c echo.Context) (*model
 		return nil, nil, "", err
 	}
 
-	targetUser, err := model.GetUser(wc.context.GetDB(), normalizedUsername)
+	targetUser, err := wc.context.UserRepo().GetByUsername(normalizedUsername)
 	if err != nil {
 		return nil, nil, "", err
 	}

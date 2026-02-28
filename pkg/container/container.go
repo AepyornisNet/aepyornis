@@ -127,6 +127,14 @@ func (c *Container) WorkoutRepo() repository.Workout {
 	return c.repositories.Workout
 }
 
+func (c *Container) UserRepo() repository.User {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.User
+}
+
 func (c *Container) Enqueue(ctx context.Context, j *gue.Job) error {
 	return c.gueClient.Enqueue(ctx, j)
 }

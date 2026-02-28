@@ -39,7 +39,6 @@ func EnqueueAPDeliveriesForEntry(ctx context.Context, c *container.Container, en
 
 func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
-		db := c.GetDB()
 		cfg := c.GetConfig()
 
 		var item model.APPendingOutboxDelivery
@@ -49,7 +48,7 @@ func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) 
 
 		l := logger.With("entry_id", item.EntryID, "actor", item.ActorIRI)
 
-		u, err := model.GetUserByID(db, item.UserID)
+		u, err := c.UserRepo().GetByID(item.UserID)
 		if err != nil {
 			return fmt.Errorf("deliver_activitypub: get user %d: %w", item.UserID, err)
 		}

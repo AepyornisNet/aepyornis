@@ -306,7 +306,7 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	u, err := model.GetUserByID(uc.context.GetDB(), id)
+	u, err := uc.context.UserRepo().GetByID(id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -588,7 +588,7 @@ func (uc *userController) resolveTargetUserFromHandle(c echo.Context) (*model.Us
 		return nil, nil, "", err
 	}
 
-	targetUser, err := model.GetUser(uc.context.GetDB(), normalizedUsername)
+	targetUser, err := uc.context.UserRepo().GetByUsername(normalizedUsername)
 	if err != nil {
 		return nil, nil, "", err
 	}

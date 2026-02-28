@@ -143,60 +143,6 @@ func (u *User) BeforeSave(_ *gorm.DB) error {
 	return u.IsValid()
 }
 
-func GetUsers(db *gorm.DB) ([]*User, error) {
-	var u []*User
-
-	if err := db.Find(&u).Error; err != nil {
-		return nil, db.Error
-	}
-
-	return u, nil
-}
-
-func currentUserQuery(db *gorm.DB) *gorm.DB {
-	return db.Preload("Profile").Preload("Equipment")
-}
-
-func GetUserByAPIKey(db *gorm.DB, key string) (*User, error) {
-	var u User
-
-	if err := currentUserQuery(db).Where(&UserSecrets{APIKey: key}).First(&u).Error; err != nil {
-		return nil, db.Error
-	}
-
-	u.SetDB(db)
-
-	return &u, nil
-}
-
-func GetUserByID(db *gorm.DB, userID uint64) (*User, error) {
-	var u User
-
-	if err := currentUserQuery(db).First(&u, userID).Error; err != nil {
-		return nil, db.Error
-	}
-
-	u.SetDB(db)
-
-	return &u, nil
-}
-
-func GetUser(db *gorm.DB, username string) (*User, error) {
-	var u User
-
-	if err := currentUserQuery(db).Where(&UserData{Username: username}).First(&u).Error; err != nil {
-		return nil, db.Error
-	}
-
-	if u.ID == u.Profile.UserID {
-		u.Profile.User = &u
-	}
-
-	u.SetDB(db)
-
-	return &u, nil
-}
-
 func (u *User) SetDB(db *gorm.DB) {
 	u.db = db
 }
@@ -338,36 +284,8 @@ func (u *User) Delete(db *gorm.DB) error {
 	return db.Select(clause.Associations).Delete(u).Error
 }
 
-func (u *User) GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
-	var w *Workout
-
-	db = PreloadWorkoutDetails(db).Preload("GPX").Preload("Equipment")
-
-	if err := db.Where(&Workout{UserID: u.ID}).First(&w, id).Error; err != nil {
-		return nil, err
-	}
-
-	w.User = u
-
-	return w, nil
-}
-
 func (u *User) MarkWorkoutsDirty(db *gorm.DB) error {
 	return db.Model(&Workout{}).Where(&Workout{UserID: u.ID}).Update("dirty", true).Error
-}
-
-func (u *User) GetWorkouts(db *gorm.DB) ([]*Workout, error) {
-	var w []*Workout
-
-	if err := PreloadWorkoutData(db).Where(&Workout{UserID: u.ID}).Order("date DESC").Find(&w).Error; err != nil {
-		return nil, err
-	}
-
-	for _, wo := range w {
-		wo.User = u
-	}
-
-	return w, nil
 }
 
 func (u *User) AddWorkout(db *gorm.DB, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, []error) {

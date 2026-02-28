@@ -40,7 +40,7 @@ func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User
 		return nil, errors.New("username not found")
 	}
 
-	user, err := model.GetUser(ac.context.GetDB(), username)
+	user, err := ac.context.UserRepo().GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return nil, errors.New("resource not found")
 	}

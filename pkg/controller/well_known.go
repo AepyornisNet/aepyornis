@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
@@ -71,7 +70,7 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, fmt.Errorf("resource not found %s", res))
 	}
 
-	user, err := model.GetUser(wc.context.GetDB(), handle)
+	user, err := wc.context.UserRepo().GetByUsername(handle)
 	if err != nil || !user.ActivityPubEnabled() {
 		return renderApiError(c, http.StatusNotFound, fmt.Errorf("resource not found %s", res))
 	}
