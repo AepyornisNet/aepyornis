@@ -78,6 +78,17 @@
                 </span>
               }
             </div>
+
+            @if (workout.attachments && workout.attachments.length > 0) {
+              <a [routerLink]="['/workouts', workout.id]" class="d-block mt-3 text-decoration-none">
+                <img
+                  class="img-fluid rounded"
+                  [src]="workout.attachments[0].url"
+                  [alt]="workout.attachments[0].filename || workout.name"
+                  loading="lazy"
+                />
+              </a>
+            }
           </div>
         </div>
       }

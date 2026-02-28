@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -27,6 +28,7 @@ type WorkoutResponse struct {
 	HasFile              bool                    `json:"has_file"`
 	HasTracks            bool                    `json:"has_tracks"`
 	ActivityPubPublished bool                    `json:"activity_pub_published"`
+	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
 	// MapData fields (when available)
 	AddressString       string   `json:"address_string,omitempty"`
@@ -48,6 +50,15 @@ type WorkoutResponse struct {
 	MaxHeartRate        *float64 `json:"max_heart_rate,omitempty"`
 	AveragePower        *float64 `json:"average_power,omitempty"`
 	MaxPower            *float64 `json:"max_power,omitempty"`
+}
+
+type WorkoutAttachmentItem struct {
+	ID          uint64 `json:"id"`
+	Kind        string `json:"kind"`
+	Filename    string `json:"filename"`
+	ContentType string `json:"content_type"`
+	Order       int    `json:"order"`
+	URL         string `json:"url"`
 }
 
 type WorkoutLapResponse struct {
@@ -322,6 +333,20 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		// Convert pause duration to seconds (int64)
 		pauseDurationSecs := int64(w.Data.PauseDuration.Seconds())
 		wr.PauseDuration = &pauseDurationSecs
+	}
+
+	if len(w.Attachments) > 0 {
+		wr.Attachments = make([]WorkoutAttachmentItem, 0, len(w.Attachments))
+		for _, attachment := range w.Attachments {
+			wr.Attachments = append(wr.Attachments, WorkoutAttachmentItem{
+				ID:          attachment.ID,
+				Kind:        attachment.Kind,
+				Filename:    attachment.Filename,
+				ContentType: attachment.ContentType,
+				Order:       attachment.SortOrder,
+				URL:         fmt.Sprintf("/api/v2/workouts/%d/attachments/%d", w.ID, attachment.ID),
+			})
+		}
 	}
 
 	return wr

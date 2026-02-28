@@ -23,6 +23,7 @@ export type Workout = {
   has_file: boolean;
   has_tracks: boolean;
   activity_pub_published: boolean;
+  attachments?: WorkoutAttachment[];
 
   // Optional map data
   address_string?: string;
@@ -44,6 +45,15 @@ export type Workout = {
   max_heart_rate?: number;
   average_power?: number;
   max_power?: number;
+};
+
+export type WorkoutAttachment = {
+  id: number;
+  kind: string;
+  filename: string;
+  content_type: string;
+  order: number;
+  url: string;
 };
 
 export type WorkoutDetail = {

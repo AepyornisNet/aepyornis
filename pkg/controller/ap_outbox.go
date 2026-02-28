@@ -253,20 +253,29 @@ func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if entry.APOutboxWorkout == nil || len(entry.APOutboxWorkout.RouteImageContent) == 0 {
+	if entry.APOutboxWorkout == nil {
 		return renderApiError(c, http.StatusNotFound, errors.New("route image not found"))
 	}
 
-	filename := entry.APOutboxWorkout.RouteImageFilename
+	attachment, attachmentErr := model.GetRouteImageAttachment(ac.context.GetDB(), entry.APOutboxWorkout.WorkoutID)
+	if attachmentErr != nil {
+		if errors.Is(attachmentErr, gorm.ErrRecordNotFound) {
+			return renderApiError(c, http.StatusNotFound, errors.New("route image not found"))
+		}
+
+		return renderApiError(c, http.StatusInternalServerError, attachmentErr)
+	}
+
+	filename := attachment.Filename
 	if filename == "" {
 		filename = "workout-route.png"
 	}
 
-	contentType := entry.APOutboxWorkout.RouteImageContentType
+	contentType := attachment.ContentType
 	if contentType == "" {
-		contentType = ap.RouteImageMIMEType
+		contentType = model.RouteImageMIMEType
 	}
 
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
-	return c.Blob(http.StatusOK, contentType, entry.APOutboxWorkout.RouteImageContent)
+	return c.Blob(http.StatusOK, contentType, attachment.Content)
 }

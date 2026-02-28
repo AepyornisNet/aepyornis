@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -11,9 +10,6 @@ import (
 	"strings"
 	"time"
 
-	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/jsonld"
-	"github.com/google/uuid"
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
@@ -37,6 +33,7 @@ type WorkoutController interface {
 	ToggleWorkoutLock(c echo.Context) error
 	RefreshWorkout(c echo.Context) error
 	DownloadWorkout(c echo.Context) error
+	DownloadWorkoutAttachment(c echo.Context) error
 }
 
 type workoutController struct {
@@ -594,8 +591,6 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 		for _, w := range ws {
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
 
-			wc.syncWorkoutActivityPub(c, user, w, nil)
-
 			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, w.ID); err != nil {
 				wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
 			}
@@ -675,7 +670,9 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	wc.syncWorkoutActivityPub(c, user, workout, nil)
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
+		wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
+	}
 
 	result := dto.NewWorkoutResponse(workout)
 	resp := dto.Response[dto.WorkoutResponse]{
@@ -812,8 +809,6 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	previousVisibility := workout.Visibility
-
 	if err := d.Update(workout); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -836,7 +831,9 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	wc.syncWorkoutActivityPub(c, user, workout, &previousVisibility)
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
+		wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
+	}
 
 	result := dto.NewWorkoutResponse(workout)
 	resp := dto.Response[dto.WorkoutResponse]{
@@ -918,209 +915,6 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *model.User, workout *model.Workout) error {
-	fitContent, err := ap.GenerateWorkoutFIT(workout)
-	if err != nil {
-		return err
-	}
-
-	entryUUID := uuid.New()
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           wc.context.GetConfig().Host,
-		WebRoot:        wc.context.GetConfig().WebRoot,
-		FallbackHost:   c.Request().Host,
-		FallbackScheme: c.Scheme(),
-	}, user.Username)
-
-	entryURL := fmt.Sprintf("%s/outbox/%s", actorURL, entryUUID.String())
-	objectURL := entryURL + "#object"
-	fitURL := entryURL + "/fit"
-	routeImageURL := entryURL + "/route-image"
-	publishedAt := time.Now().UTC()
-	noteContent := ap.WorkoutNoteContent(workout)
-
-	attachments := vocab.ItemCollection{}
-	routeImageContent, routeImageErr := ap.GenerateWorkoutRouteImage(workout)
-	if routeImageErr == nil && len(routeImageContent) > 0 {
-		attachments = append(attachments, &vocab.Object{
-			Type:      vocab.ImageType,
-			Name:      vocab.DefaultNaturalLanguage(ap.WorkoutRouteImageFilename(workout)),
-			MediaType: vocab.MimeType(ap.RouteImageMIMEType),
-			URL:       vocab.IRI(routeImageURL),
-		})
-	} else if routeImageErr != nil && !errors.Is(routeImageErr, ap.ErrWorkoutMissingCoordinates) {
-		wc.context.Logger().Warn("Failed to generate workout route image", "workout_id", workout.ID, "error", routeImageErr)
-	}
-
-	note := ap.NewWorkoutNote()
-	note.ID = vocab.ID(objectURL)
-	note.AttributedTo = vocab.IRI(actorURL)
-	note.Published = publishedAt
-	note.Content = vocab.DefaultNaturalLanguage(noteContent)
-	note.Attachment = attachments
-	// TODO: Workout location might not be set at this point
-	note.PopulateFromWorkout(workout, vocab.IRI(fitURL))
-
-	to := vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	cc := vocab.ItemCollection{}
-	if workout.Visibility == model.WorkoutVisibilityPublic {
-		to = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
-		cc = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	}
-
-	activity := vocab.Activity{
-		ID:        vocab.ID(entryURL),
-		Type:      vocab.CreateType,
-		Actor:     vocab.IRI(actorURL),
-		Published: publishedAt,
-		To:        to,
-		CC:        cc,
-		Object:    note,
-	}
-
-	activityJSON, err := jsonld.WithContext(
-		ap.WorkoutJSONLDContext(),
-	).Marshal(activity)
-	if err != nil {
-		return err
-	}
-
-	noteJSON, err := jsonld.WithContext(
-		ap.WorkoutJSONLDContext(),
-	).Marshal(note)
-	if err != nil {
-		return err
-	}
-
-	outboxWorkout := &model.APOutboxWorkout{
-		UserID:         user.ID,
-		WorkoutID:      workout.ID,
-		FitFilename:    ap.WorkoutFITFilename(workout),
-		FitContent:     fitContent,
-		FitContentType: ap.FitMIMEType,
-	}
-
-	if len(routeImageContent) > 0 {
-		outboxWorkout.RouteImageFilename = ap.WorkoutRouteImageFilename(workout)
-		outboxWorkout.RouteImageContent = routeImageContent
-		outboxWorkout.RouteImageContentType = ap.RouteImageMIMEType
-	}
-
-	if err := wc.context.APOutboxRepo().CreateWorkout(outboxWorkout); err != nil {
-		return err
-	}
-
-	entry := &model.APOutboxEntry{
-		PublicUUID:        entryUUID,
-		UserID:            user.ID,
-		APOutboxWorkoutID: &outboxWorkout.ID,
-		Kind:              model.APOutboxWorkoutKind,
-		ActivityID:        entryURL,
-		ObjectID:          objectURL,
-		Activity:          activityJSON,
-		Payload:           noteJSON,
-		NoteText:          noteContent,
-		PublishedAt:       publishedAt,
-	}
-
-	if err := wc.context.APOutboxRepo().CreateEntry(entry); err != nil {
-		return err
-	}
-
-	if err := worker.EnqueueAPDeliveriesForEntry(c.Request().Context(), wc.context, entry.ID); err != nil {
-		wc.context.Logger().Error("Failed to enqueue ActivityPub deliveries", "entry_id", entry.ID, "error", err)
-	}
-
-	return nil
-}
-
-func (wc *workoutController) updateWorkoutActivityPubAudience(c echo.Context, user *model.User, entry *model.APOutboxEntry, workout *model.Workout) error {
-	if entry == nil {
-		return errors.New("outbox entry is nil")
-	}
-
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           wc.context.GetConfig().Host,
-		WebRoot:        wc.context.GetConfig().WebRoot,
-		FallbackHost:   c.Request().Host,
-		FallbackScheme: c.Scheme(),
-	}, user.Username)
-
-	activity := vocab.Activity{}
-	if err := jsonld.Unmarshal(entry.Activity, &activity); err != nil {
-		return err
-	}
-
-	note := ap.NewWorkoutNote()
-	if len(entry.Payload) > 0 {
-		if err := jsonld.Unmarshal(entry.Payload, note); err != nil {
-			return err
-		}
-	}
-
-	activity.To = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	activity.CC = vocab.ItemCollection{}
-	activity.Object = note
-	if workout.Visibility == model.WorkoutVisibilityPublic {
-		activity.To = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
-		activity.CC = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	}
-
-	activityJSON, err := jsonld.WithContext(
-		ap.WorkoutJSONLDContext(),
-	).Marshal(activity)
-	if err != nil {
-		return err
-	}
-
-	return wc.context.GetDB().Model(&model.APOutboxEntry{}).
-		Where("id = ?", entry.ID).
-		Update("activity", activityJSON).Error
-}
-
-func (wc *workoutController) syncWorkoutActivityPub(c echo.Context, user *model.User, workout *model.Workout, previousVisibility *model.WorkoutVisibility) {
-	if user == nil || workout == nil {
-		return
-	}
-
-	if previousVisibility != nil && *previousVisibility == workout.Visibility {
-		return
-	}
-
-	entry, err := wc.context.APOutboxRepo().GetEntryForWorkout(user.ID, workout.ID)
-	hasOutboxEntry := err == nil
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		wc.context.Logger().Warn("Failed to check ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
-		return
-	}
-
-	shouldPublish := user.ActivityPubEnabled() &&
-		(workout.Visibility == model.WorkoutVisibilityPublic || workout.Visibility == model.WorkoutVisibilityFollowers)
-
-	if !shouldPublish {
-		if hasOutboxEntry {
-			if err := wc.context.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				wc.context.Logger().Warn("Failed to remove ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
-			}
-		}
-
-		return
-	}
-
-	if hasOutboxEntry {
-		if err := wc.updateWorkoutActivityPubAudience(c, user, entry, workout); err != nil {
-			wc.context.Logger().Warn("Failed to update ActivityPub audience", "workout_id", workout.ID, "error", err)
-		}
-
-		// Already published: do not repost existing workouts and avoid duplicate deliveries.
-		return
-	}
-
-	if err := wc.publishWorkoutToActivityPub(c, user, workout); err != nil {
-		wc.context.Logger().Warn("Failed to publish workout to ActivityPub", "workout_id", workout.ID, "error", err)
-	}
-}
-
 // DownloadWorkout downloads the original workout file
 // @Summary      Download workout file
 // @Tags         workouts
@@ -1150,6 +944,40 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
 
 	return c.Blob(http.StatusOK, "application/binary", workout.GPX.Content)
+}
+
+// DownloadWorkoutAttachment downloads a workout attachment
+// @Summary      Download workout attachment
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id             path  int  true  "Workout ID"
+// @Param        attachment_id  path  int  true  "Attachment ID"
+// @Produce      octet-stream
+// @Success      200  {string}  string  "binary attachment file"
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/attachments/{attachment_id} [get]
+func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	attachmentID, err := cast.ToUint64E(c.Param("attachment_id"))
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	var attachment model.WorkoutAttachment
+	if err := wc.context.GetDB().
+		Where("id = ? AND workout_id = ?", attachmentID, workout.ID).
+		First(&attachment).Error; err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename=\""+attachment.Filename+"\"")
+	return c.Blob(http.StatusOK, attachment.ContentType, attachment.Content)
 }
 
 func uploadedFile(file *multipart.FileHeader) ([]byte, error) {

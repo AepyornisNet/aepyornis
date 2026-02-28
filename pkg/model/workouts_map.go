@@ -295,6 +295,9 @@ func (m *MapData) Save(db *gorm.DB) error {
 func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
 	return db.
 		Preload("Data").
+		Preload("Attachments", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC").Order("id ASC")
+		}).
 		Preload("Data.Climbs", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		})
