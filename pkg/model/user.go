@@ -338,64 +338,6 @@ func (u *User) Delete(db *gorm.DB) error {
 	return db.Select(clause.Associations).Delete(u).Error
 }
 
-func (u *User) GetMeasurementForDate(date time.Time) (*Measurement, error) {
-	var m *Measurement
-
-	if err := u.db.Where(&Measurement{UserID: u.ID}).Where("date = ?", datatypes.Date(date.UTC())).First(&m).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return u.NewMeasurement(date), nil
-		}
-
-		return nil, err
-	}
-
-	return m, nil
-}
-
-func (u *User) GetLatestMeasurementForDate(date time.Time) (Measurement, error) {
-	var m Measurement
-
-	if err := u.db.Where(&Measurement{UserID: u.ID}).Where("date <= ?", datatypes.Date(date)).Order("date DESC").First(&m).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return *u.NewMeasurement(date), nil
-		}
-
-		return *u.NewMeasurement(date), err
-	}
-
-	return m, nil
-}
-
-func (u *User) GetLatestMeasurements(c int) ([]*Measurement, error) {
-	var m []*Measurement
-
-	if err := u.db.Where(&Measurement{UserID: u.ID}).Order("date DESC").Limit(c).Find(&m).Error; err != nil {
-		return nil, err
-	}
-
-	return m, nil
-}
-
-func (u *User) GetCurrentMeasurement() (*Measurement, error) {
-	var m *Measurement
-
-	d := time.Now().In(u.Timezone())
-
-	if err := u.db.Where(&Measurement{UserID: u.ID}).Where("date = ?", datatypes.Date(d)).First(&m).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return u.NewMeasurement(d), nil
-		}
-
-		return nil, err
-	}
-
-	return m, nil
-}
-
-func (u *User) GetLatestMeasurement() (Measurement, error) {
-	return u.GetLatestMeasurementForDate(time.Now())
-}
-
 func (u *User) GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 	var w *Workout
 
@@ -477,31 +419,6 @@ func (u *User) GetAllEquipment(db *gorm.DB) ([]*Equipment, error) {
 	}
 
 	return w, nil
-}
-
-func (u *User) GetEquipment(db *gorm.DB, id uint64) (*Equipment, error) {
-	var w *Equipment
-
-	if err := db.Preload("Workouts").Preload("Workouts.Data").Where(&Equipment{UserID: u.ID}).First(&w, id).Error; err != nil {
-		return nil, err
-	}
-
-	w.User = *u
-
-	return w, nil
-}
-
-func AddRouteSegment(db *gorm.DB, notes string, filename string, content []byte) (*RouteSegment, error) {
-	rs, err := NewRouteSegment(notes, filename, content)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrInvalidData, err)
-	}
-
-	if err := rs.Create(db); err != nil {
-		return nil, err
-	}
-
-	return rs, nil
 }
 
 func (u *User) HeightAt(d time.Time) float64 {

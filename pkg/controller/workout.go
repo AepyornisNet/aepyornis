@@ -667,7 +667,7 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 	workout.UserID = user.ID
 	workout.Data.Creator = "web-interface"
 
-	equipment, err := model.GetEquipmentByIDs(wc.context.GetDB(), user.ID, d.EquipmentIDs)
+	equipment, err := wc.context.EquipmentRepo().GetByUserIDs(user.ID, d.EquipmentIDs)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -832,7 +832,7 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 	}
 
 	if d.EquipmentIDs != nil {
-		equipment, err := model.GetEquipmentByIDs(wc.context.GetDB(), user.ID, d.EquipmentIDs)
+		equipment, err := wc.context.EquipmentRepo().GetByUserIDs(user.ID, d.EquipmentIDs)
 		if err != nil {
 			return renderApiError(c, http.StatusBadRequest, err)
 		}

@@ -38,7 +38,7 @@ func makeUpdateRouteSegmentHandler(c *container.Container, logger *slog.Logger) 
 
 		l := logger.With("route_segment_id", args.ID)
 
-		rs, err := model.GetRouteSegment(db, args.ID)
+		rs, err := c.RouteSegmentRepo().GetByID(args.ID)
 		if err != nil {
 			return fmt.Errorf("update_route_segment: get route segment %d: %w", args.ID, err)
 		}

@@ -95,6 +95,30 @@ func (c *Container) FollowerRepo() repository.Follower {
 	return c.repositories.Follower
 }
 
+func (c *Container) EquipmentRepo() repository.Equipment {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.Equipment
+}
+
+func (c *Container) RouteSegmentRepo() repository.RouteSegment {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.RouteSegment
+}
+
+func (c *Container) MeasurementRepo() repository.Measurement {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.Measurement
+}
+
 func (c *Container) Enqueue(ctx context.Context, j *gue.Job) error {
 	return c.gueClient.Enqueue(ctx, j)
 }

@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/codingsince1985/geo-golang"
@@ -147,20 +146,6 @@ func (rs *RouteSegment) UpdateFromContent() error {
 	return nil
 }
 
-func GetRouteSegment(db *gorm.DB, id uint64) (*RouteSegment, error) {
-	var rs RouteSegment
-
-	if err := db.Preload("RouteSegmentMatches.Workout.User").First(&rs, id).Error; err != nil {
-		return nil, err
-	}
-
-	sort.Slice(rs.RouteSegmentMatches, func(i, j int) bool {
-		return rs.RouteSegmentMatches[i].Workout.GetDate().Before(rs.RouteSegmentMatches[j].Workout.GetDate())
-	})
-
-	return &rs, nil
-}
-
 func (rs *RouteSegment) Delete(db *gorm.DB) error {
 	return db.Select(clause.Associations).Delete(rs).Error
 }
@@ -185,16 +170,6 @@ func (rs *RouteSegment) Save(db *gorm.DB) error {
 	}
 
 	return db.Save(rs).Error
-}
-
-func GetRouteSegments(db *gorm.DB) ([]*RouteSegment, error) {
-	var rs []*RouteSegment
-
-	if err := db.Preload("RouteSegmentMatches.Workout").Order("created_at DESC").Find(&rs).Error; err != nil {
-		return nil, err
-	}
-
-	return rs, nil
 }
 
 func (rs *RouteSegment) Address() string {

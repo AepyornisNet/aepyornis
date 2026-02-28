@@ -41,7 +41,7 @@ func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteS
 		return nil, err
 	}
 
-	rs, err := model.GetRouteSegment(rc.context.GetDB(), id)
+	rs, err := rc.context.RouteSegmentRepo().GetByID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -69,18 +69,13 @@ func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	var totalCount int64
-	if err := rc.context.GetDB().Model(&model.RouteSegment{}).Count(&totalCount).Error; err != nil {
+	totalCount, err := rc.context.RouteSegmentRepo().Count()
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	var routeSegments []*model.RouteSegment
-	db := rc.context.GetDB().Preload("RouteSegmentMatches").
-		Order("created_at DESC").
-		Limit(pagination.PerPage).
-		Offset(pagination.GetOffset())
-
-	if err := db.Find(&routeSegments).Error; err != nil {
+	routeSegments, err := rc.context.RouteSegmentRepo().List(pagination.PerPage, pagination.GetOffset())
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -154,7 +149,7 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 
 		notes := c.FormValue("notes")
 
-		w, addErr := model.AddRouteSegment(rc.context.GetDB(), notes, file.Filename, content)
+		w, addErr := rc.context.RouteSegmentRepo().CreateFromContent(notes, file.Filename, content)
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
@@ -210,7 +205,7 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	rs, err := model.AddRouteSegment(rc.context.GetDB(), "", params.Filename(), content)
+	rs, err := rc.context.RouteSegmentRepo().CreateFromContent("", params.Filename(), content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -244,7 +239,7 @@ func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := rs.Delete(rc.context.GetDB()); err != nil {
+	if err := rc.context.RouteSegmentRepo().Delete(rs); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -277,7 +272,7 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := rs.Save(rc.context.GetDB()); err != nil {
+	if err := rc.context.RouteSegmentRepo().Save(rs); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
