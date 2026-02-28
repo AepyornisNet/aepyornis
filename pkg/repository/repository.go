@@ -9,6 +9,7 @@ type Repositories struct {
 	Follower         Follower
 	Measurement      Measurement
 	RouteSegment     RouteSegment
+	Workout          Workout
 }
 
 func New(db *gorm.DB) *Repositories {
@@ -19,5 +20,6 @@ func New(db *gorm.DB) *Repositories {
 		Follower:         NewFollower(db),
 		Measurement:      NewMeasurement(db),
 		RouteSegment:     NewRouteSegment(db),
+		Workout:          NewWorkout(db),
 	}
 }

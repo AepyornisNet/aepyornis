@@ -503,10 +503,6 @@ func autoDetectWorkoutType(data *MapData, dataName string) WorkoutType {
 	return WorkoutTypeWalking
 }
 
-func GetRecentWorkouts(db *gorm.DB, count int) ([]*Workout, error) {
-	return GetRecentWorkoutsWithOffset(db, count, 0)
-}
-
 func GetRecentWorkoutsWithOffset(db *gorm.DB, count int, offset int) ([]*Workout, error) {
 	var w []*Workout
 

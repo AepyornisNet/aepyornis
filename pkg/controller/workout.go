@@ -74,10 +74,13 @@ func (wc *workoutController) getOwnedWorkout(c echo.Context) (*model.Workout, er
 		return nil, err
 	}
 
-	w, err := wc.context.GetUser(c).GetWorkout(wc.context.GetDB(), id)
+	user := wc.context.GetUser(c)
+	w, err := wc.context.WorkoutRepo().GetByUserID(user.ID, id)
 	if err != nil {
 		return nil, err
 	}
+
+	w.User = user
 
 	return w, nil
 }
@@ -126,22 +129,12 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 		return nil, err
 	}
 
-	db := model.PreloadWorkoutDetails(wc.context.GetDB()).
-		Preload("GPX").
-		Preload("Equipment").
-		Preload("User").
-		Preload("User.Profile")
-
-	if withDetails {
-		db = db.Preload("RouteSegmentMatches.RouteSegment")
-	}
-
-	var workout model.Workout
-	if err := db.First(&workout, id).Error; err != nil {
+	workout, err := wc.context.WorkoutRepo().GetByIDForRead(id, withDetails)
+	if err != nil {
 		return nil, err
 	}
 
-	allowed, err := wc.canReadWorkout(c, wc.context.GetUser(c), &workout)
+	allowed, err := wc.canReadWorkout(c, wc.context.GetUser(c), workout)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +143,7 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 		return nil, gorm.ErrRecordNotFound
 	}
 
-	return &workout, nil
+	return workout, nil
 }
 
 // GetWorkouts returns a paginated list of workouts for the current user
@@ -180,19 +173,13 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	var totalCount int64
-	if err := filters.ToQuery(wc.context.GetDB().Model(&model.Workout{})).Where("user_id = ?", user.ID).Select("COUNT(workouts.id)").Count(&totalCount).Error; err != nil {
+	totalCount, err := wc.context.WorkoutRepo().CountByUserAndFilters(user.ID, filters)
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	var workouts []*model.Workout
-	db := model.PreloadWorkoutData(filters.ToQuery(wc.context.GetDB().Model(&model.Workout{}))).Preload("GPX").
-		Where("user_id = ?", user.ID).
-		Order("date DESC").
-		Limit(pagination.PerPage).
-		Offset(pagination.GetOffset())
-
-	if err := db.Find(&workouts).Error; err != nil {
+	workouts, err := wc.context.WorkoutRepo().ListByUserAndFilters(user.ID, filters, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

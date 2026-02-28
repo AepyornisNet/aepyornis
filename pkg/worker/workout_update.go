@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/vgarvardt/gue/v6"
 )
 
@@ -35,7 +34,7 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 
 		l := logger.With("workout_id", args.ID)
 
-		w, err := model.GetWorkoutDetails(db, args.ID)
+		w, err := c.WorkoutRepo().GetDetailsByID(args.ID)
 		if err != nil {
 			return fmt.Errorf("update_workout: get workout %d: %w", args.ID, err)
 		}

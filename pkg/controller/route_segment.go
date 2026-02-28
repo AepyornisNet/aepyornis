@@ -190,7 +190,7 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	workout, err := model.GetWorkoutDetails(rc.context.GetDB(), workoutID)
+	workout, err := rc.context.WorkoutRepo().GetDetailsByID(workoutID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}

@@ -119,6 +119,14 @@ func (c *Container) MeasurementRepo() repository.Measurement {
 	return c.repositories.Measurement
 }
 
+func (c *Container) WorkoutRepo() repository.Workout {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.Workout
+}
+
 func (c *Container) Enqueue(ctx context.Context, j *gue.Job) error {
 	return c.gueClient.Enqueue(ctx, j)
 }
