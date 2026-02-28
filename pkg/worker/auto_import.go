@@ -41,9 +41,7 @@ func makeAutoImportHandler(c *container.Container, logger *slog.Logger) gue.Work
 }
 
 func autoImportForUser(ctx context.Context, c *container.Container, l *slog.Logger, userID uint64) error {
-	db := c.GetDB()
-
-	u, err := model.GetUserByID(db, userID)
+	u, err := c.UserRepo().GetByID(userID)
 	if err != nil {
 		return err
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	_ "github.com/jovandeginste/workout-tracker/v2/pkg/model/migrations"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/repository"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
@@ -37,6 +38,7 @@ type App struct {
 	Version        version.Version
 	Config         *container.Config
 	container      container.Container
+	repositories   *repository.Repositories
 }
 
 func (a *App) Serve() error {
@@ -69,6 +71,8 @@ func (a *App) Configure() error {
 	if err := a.ConfigureDatabase(); err != nil {
 		return err
 	}
+
+	a.repositories = repository.New(a.db)
 
 	a.ConfigureGeocoder()
 

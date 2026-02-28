@@ -3,7 +3,6 @@ package app
 import (
 	"strings"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
@@ -15,7 +14,7 @@ func (a *App) ValidateAPIKeyMiddleware(key string, c echo.Context) (bool, error)
 		token = strings.TrimSpace(token[7:])
 	}
 
-	u, err := model.GetUserByAPIKey(a.db, token)
+	u, err := a.container.UserRepo().GetByAPIKey(token)
 	if err != nil {
 		return false, dto.ErrInvalidAPIKey
 	}

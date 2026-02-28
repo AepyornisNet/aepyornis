@@ -213,7 +213,7 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 func (pc *profileController) ListFollowRequests(c echo.Context) error {
 	user := pc.context.GetUser(c)
 
-	requests, err := model.ListFollowerRequests(pc.context.GetDB(), user.ID)
+	requests, err := pc.context.FollowerRepo().ListFollowerRequests(user.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -250,7 +250,7 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	follower, err := model.ApproveFollowerRequest(pc.context.GetDB(), user.ID, id)
+	follower, err := pc.context.FollowerRepo().ApproveFollowerRequest(user.ID, id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

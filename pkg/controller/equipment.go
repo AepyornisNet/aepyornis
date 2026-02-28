@@ -32,10 +32,14 @@ func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, e
 		return nil, err
 	}
 
-	e, err := ec.context.GetUser(c).GetEquipment(ec.context.GetDB(), id)
+	user := ec.context.GetUser(c)
+
+	e, err := ec.context.EquipmentRepo().GetByUserID(user.ID, id)
 	if err != nil {
 		return nil, err
 	}
+
+	e.User = *user
 
 	return e, nil
 }
@@ -62,18 +66,13 @@ func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	var totalCount int64
-	if err := ec.context.GetDB().Model(&model.Equipment{}).Where(&model.Equipment{UserID: user.ID}).Count(&totalCount).Error; err != nil {
+	totalCount, err := ec.context.EquipmentRepo().CountByUserID(user.ID)
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	var equipment []*model.Equipment
-	db := ec.context.GetDB().Where(&model.Equipment{UserID: user.ID}).
-		Order("name DESC").
-		Limit(pagination.PerPage).
-		Offset(pagination.GetOffset())
-
-	if err := db.Find(&equipment).Error; err != nil {
+	equipment, err := ec.context.EquipmentRepo().ListByUserID(user.ID, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -136,7 +135,7 @@ func (ec *equipmentController) CreateEquipment(c echo.Context) error {
 
 	e.UserID = user.ID
 
-	if err := e.Save(ec.context.GetDB()); err != nil {
+	if err := ec.context.EquipmentRepo().Save(&e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -181,7 +180,7 @@ func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 
 	e.UserID = user.ID
 
-	if err := e.Save(ec.context.GetDB()); err != nil {
+	if err := ec.context.EquipmentRepo().Save(e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -215,7 +214,7 @@ func (ec *equipmentController) DeleteEquipment(c echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
-	if err := e.Delete(ec.context.GetDB()); err != nil {
+	if err := ec.context.EquipmentRepo().Delete(e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

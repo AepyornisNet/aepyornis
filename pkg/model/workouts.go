@@ -503,10 +503,6 @@ func autoDetectWorkoutType(data *MapData, dataName string) WorkoutType {
 	return WorkoutTypeWalking
 }
 
-func GetRecentWorkouts(db *gorm.DB, count int) ([]*Workout, error) {
-	return GetRecentWorkoutsWithOffset(db, count, 0)
-}
-
 func GetRecentWorkoutsWithOffset(db *gorm.DB, count int, offset int) ([]*Workout, error) {
 	var w []*Workout
 
@@ -838,8 +834,8 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 }
 
 func (w *Workout) UpdateRouteSegmentMatches(db *gorm.DB) error {
-	routeSegments, err := GetRouteSegments(db)
-	if err != nil {
+	var routeSegments []*RouteSegment
+	if err := db.Preload("RouteSegmentMatches.Workout").Order("created_at DESC").Find(&routeSegments).Error; err != nil {
 		return err
 	}
 

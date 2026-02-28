@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
@@ -46,18 +45,13 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	var totalCount int64
-	if err := mc.context.GetDB().Model(&model.Measurement{}).Where("user_id = ?", user.ID).Count(&totalCount).Error; err != nil {
+	totalCount, err := mc.context.MeasurementRepo().CountByUserID(user.ID)
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	var measurements []*model.Measurement
-	db := mc.context.GetDB().Where("user_id = ?", user.ID).
-		Order("date DESC").
-		Limit(pagination.PerPage).
-		Offset(pagination.GetOffset())
-
-	if err := db.Find(&measurements).Error; err != nil {
+	measurements, err := mc.context.MeasurementRepo().ListByUserID(user.ID, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -94,14 +88,14 @@ func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	m, err := user.GetMeasurementForDate(d.Time())
+	m, err := mc.context.MeasurementRepo().GetByUserIDForDateOrNew(user.ID, d.Time())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	d.Update(m)
 
-	if err := m.Save(mc.context.GetDB()); err != nil {
+	if err := mc.context.MeasurementRepo().Save(m); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -133,12 +127,12 @@ func (mc *measurementController) DeleteMeasurement(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	m, err := u.GetMeasurementForDate(t)
+	m, err := mc.context.MeasurementRepo().GetByUserIDForDateOrNew(u.ID, t)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := m.Delete(mc.context.GetDB()); err != nil {
+	if err := mc.context.MeasurementRepo().Delete(m); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

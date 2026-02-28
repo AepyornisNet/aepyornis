@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/fsouza/slognil"
@@ -42,6 +43,66 @@ func createDefaultUser(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
 	require.NoError(t, defaultUser().Create(db))
+}
+
+func getUserByUsernameForTest(db *gorm.DB, username string) (*User, error) {
+	var u User
+
+	err := db.Preload("Profile").Preload("Equipment").Where(&UserData{Username: username}).First(&u).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if u.ID == u.Profile.UserID {
+		u.Profile.User = &u
+	}
+
+	u.SetDB(db)
+
+	return &u, nil
+}
+
+func getUserByIDForTest(db *gorm.DB, userID uint64) (*User, error) {
+	var u User
+
+	err := db.Preload("Profile").Preload("Equipment").First(&u, userID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	u.SetDB(db)
+
+	return &u, nil
+}
+
+func listUserWorkoutsForTest(db *gorm.DB, user *User) ([]*Workout, error) {
+	workouts := make([]*Workout, 0)
+
+	if err := PreloadWorkoutData(db).Where(&Workout{UserID: user.ID}).Order("date DESC").Find(&workouts).Error; err != nil {
+		return nil, err
+	}
+
+	for _, workout := range workouts {
+		workout.User = user
+	}
+
+	return workouts, nil
+}
+
+func countUsersForTest(db *gorm.DB) (int64, error) {
+	var count int64
+
+	if err := db.Model(&User{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func TestUser_IsValid(t *testing.T) {
@@ -166,7 +227,7 @@ func TestUser_BeforeCreateNoPassword(t *testing.T) {
 	require.Error(t, u.Create(db))
 	assert.NotEmpty(t, u.Salt)
 
-	u, err := GetUser(db, "other-username")
+	u, err := getUserByUsernameForTest(db, "other-username")
 	require.NoError(t, err)
 	require.Nil(t, u)
 }
@@ -189,11 +250,11 @@ func TestDatabaseUserCreate(t *testing.T) {
 	assert.NotEmpty(t, u.Salt)
 	assert.NotEmpty(t, u.ID)
 
-	u, err := GetUser(db, "username")
+	u, err := getUserByUsernameForTest(db, "username")
 	require.NoError(t, err)
 	assert.Equal(t, "my-name", u.Name)
 
-	u, err = GetUserByID(db, u.ID)
+	u, err = getUserByIDForTest(db, u.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "my-name", u.Name)
 }
@@ -211,9 +272,9 @@ func TestDatabaseUsers(t *testing.T) {
 	}
 	require.NoError(t, u1.Create(db))
 
-	users, err := GetUsers(db)
+	users, err := countUsersForTest(db)
 	require.NoError(t, err)
-	assert.Len(t, users, 1)
+	assert.EqualValues(t, 1, users)
 
 	u2 := User{
 		UserData: UserData{
@@ -225,9 +286,9 @@ func TestDatabaseUsers(t *testing.T) {
 	}
 	require.NoError(t, u2.Create(db))
 
-	users, err = GetUsers(db)
+	users, err = countUsersForTest(db)
 	require.NoError(t, err)
-	assert.Len(t, users, 2)
+	assert.EqualValues(t, 2, users)
 }
 
 func TestDatabaseUserSave(t *testing.T) {
@@ -236,14 +297,14 @@ func TestDatabaseUserSave(t *testing.T) {
 
 	require.NoError(t, u.Create(db))
 
-	u, err := GetUser(db, "my-username")
+	u, err := getUserByUsernameForTest(db, "my-username")
 	require.NoError(t, err)
 	assert.Equal(t, "my-name", u.Name)
 
 	u.Name = "other-name"
 	require.NoError(t, u.Save(db))
 
-	u, err = GetUser(db, "my-username")
+	u, err = getUserByUsernameForTest(db, "my-username")
 	require.NoError(t, err)
 	assert.Equal(t, "other-name", u.Name)
 }
@@ -256,9 +317,9 @@ func TestDatabaseUserCreateDoubleUsername(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, gorm.ErrDuplicatedKey)
 
-	users, err := GetUsers(db)
+	users, err := countUsersForTest(db)
 	require.NoError(t, err)
-	assert.Len(t, users, 1)
+	assert.EqualValues(t, 1, users)
 }
 
 func TestDatabaseUserDeleteUser(t *testing.T) {
@@ -267,15 +328,15 @@ func TestDatabaseUserDeleteUser(t *testing.T) {
 	u := defaultUser()
 	require.NoError(t, u.Create(db))
 
-	users, err := GetUsers(db)
+	users, err := countUsersForTest(db)
 	require.NoError(t, err)
-	assert.Len(t, users, 1)
+	assert.EqualValues(t, 1, users)
 
 	require.NoError(t, u.Delete(db))
 
-	users, err = GetUsers(db)
+	users, err = countUsersForTest(db)
 	require.NoError(t, err)
-	assert.Empty(t, users)
+	assert.Zero(t, users)
 }
 
 func TestDatabaseProfileSave(t *testing.T) {
@@ -294,13 +355,13 @@ func TestDatabaseProfileSave(t *testing.T) {
 	require.NoError(t, u.Create(db))
 	assert.NotEmpty(t, u.Profile.ID)
 
-	u, err := GetUser(db, "username")
+	u, err := getUserByUsernameForTest(db, "username")
 	require.NoError(t, err)
 	assert.Equal(t, "en", u.Profile.Language)
 
 	u.Profile.Language = "de"
 	require.NoError(t, u.Profile.Save(db))
-	u, err = GetUser(db, "username")
+	u, err = getUserByUsernameForTest(db, "username")
 	require.NoError(t, err)
 	assert.Equal(t, "de", u.Profile.Language)
 }
@@ -313,7 +374,7 @@ func TestDatabaseUserWorkouts(t *testing.T) {
 	u := defaultUser()
 	require.NoError(t, u.Create(db))
 
-	workouts, err := u.GetWorkouts(db)
+	workouts, err := listUserWorkoutsForTest(db, u)
 	require.NoError(t, err)
 	assert.Empty(t, workouts)
 
@@ -328,7 +389,7 @@ func TestDatabaseUserWorkouts(t *testing.T) {
 	require.ErrorIs(t, addErr[0], ErrInvalidData)
 	assert.Nil(t, w1)
 
-	workouts, err = u.GetWorkouts(db)
+	workouts, err = listUserWorkoutsForTest(db, u)
 	require.NoError(t, err)
 	assert.Empty(t, workouts)
 
@@ -346,7 +407,7 @@ func TestDatabaseUserWorkouts(t *testing.T) {
 	assert.Len(t, w2, 1)
 	w2_1 := w2[0]
 
-	workouts, err = u.GetWorkouts(db)
+	workouts, err = listUserWorkoutsForTest(db, u)
 	require.NoError(t, err)
 	assert.Len(t, workouts, 1)
 

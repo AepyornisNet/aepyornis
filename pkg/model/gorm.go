@@ -69,8 +69,8 @@ func Connect(driver, dsn string, debug bool, logger *slog.Logger) (*gorm.DB, err
 }
 
 func setUserAPIKeys(db *gorm.DB) error {
-	users, err := GetUsers(db)
-	if err != nil {
+	users := make([]*User, 0)
+	if err := db.Find(&users).Error; err != nil {
 		return err
 	}
 

@@ -306,7 +306,7 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	u, err := model.GetUserByID(uc.context.GetDB(), id)
+	u, err := uc.context.UserRepo().GetByID(id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -377,20 +377,20 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	followersCount, err := model.CountApprovedFollowers(uc.context.GetDB(), targetUser.ID)
+	followersCount, err := uc.context.FollowerRepo().CountApprovedFollowers(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	targetActorIRI := uc.localActorIRI(c, targetUser)
-	followingCount, err := model.CountApprovedFollowingByActorIRI(uc.context.GetDB(), targetActorIRI)
+	followingCount, err := uc.context.FollowerRepo().CountApprovedFollowingByActorIRI(targetActorIRI)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	isFollowing := false
 	if viewer.ID != targetUser.ID {
-		isFollowing, err = model.IsFollowingApprovedByActorIRI(uc.context.GetDB(), viewer.ID, targetActorIRI)
+		isFollowing, err = uc.context.FollowerRepo().IsFollowingApprovedByActorIRI(viewer.ID, targetActorIRI)
 		if err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
@@ -461,23 +461,23 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 	}
 
 	targetActorIRI := uc.localActorIRI(c, targetUser)
-	following, err := model.UpsertFollowingRequest(uc.context.GetDB(), viewer.ID, targetActorIRI, targetActorIRI+"/inbox")
+	following, err := uc.context.FollowerRepo().UpsertFollowingRequest(viewer.ID, targetActorIRI, targetActorIRI+"/inbox")
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if _, err := model.UpsertFollowerRequest(uc.context.GetDB(), targetUser.ID, viewerActorIRI, viewerActorIRI+"/inbox"); err != nil {
+	if _, err := uc.context.FollowerRepo().UpsertFollowerRequest(targetUser.ID, viewerActorIRI, viewerActorIRI+"/inbox"); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	isFollowing := following.Approved
 
-	followersCount, err := model.CountApprovedFollowers(uc.context.GetDB(), targetUser.ID)
+	followersCount, err := uc.context.FollowerRepo().CountApprovedFollowers(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	followingCount, err := model.CountApprovedFollowingByActorIRI(uc.context.GetDB(), targetActorIRI)
+	followingCount, err := uc.context.FollowerRepo().CountApprovedFollowingByActorIRI(targetActorIRI)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -530,20 +530,20 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot unfollow yourself"))
 	}
 
-	if err := model.DeleteFollowerByActorIRI(uc.context.GetDB(), targetUser.ID, viewerActorIRI); err != nil {
+	if err := uc.context.FollowerRepo().DeleteFollowerByActorIRI(targetUser.ID, viewerActorIRI); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	targetActorIRI := uc.localActorIRI(c, targetUser)
-	if err := model.DeleteFollowingByActorIRI(uc.context.GetDB(), viewer.ID, targetActorIRI); err != nil {
+	if err := uc.context.FollowerRepo().DeleteFollowingByActorIRI(viewer.ID, targetActorIRI); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
-	followersCount, err := model.CountApprovedFollowers(uc.context.GetDB(), targetUser.ID)
+	followersCount, err := uc.context.FollowerRepo().CountApprovedFollowers(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	followingCount, err := model.CountApprovedFollowingByActorIRI(uc.context.GetDB(), targetActorIRI)
+	followingCount, err := uc.context.FollowerRepo().CountApprovedFollowingByActorIRI(targetActorIRI)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -588,7 +588,7 @@ func (uc *userController) resolveTargetUserFromHandle(c echo.Context) (*model.Us
 		return nil, nil, "", err
 	}
 
-	targetUser, err := model.GetUser(uc.context.GetDB(), normalizedUsername)
+	targetUser, err := uc.context.UserRepo().GetByUsername(normalizedUsername)
 	if err != nil {
 		return nil, nil, "", err
 	}
@@ -696,7 +696,7 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 	viewer := uc.context.GetUser(c)
 	isFollowing := false
 	if viewer != nil && !viewer.IsAnonymous() {
-		isFollowing, _ = model.IsFollowingActiveByActorIRI(uc.context.GetDB(), viewer.ID, actorURL)
+		isFollowing, _ = uc.context.FollowerRepo().IsFollowingActiveByActorIRI(viewer.ID, actorURL)
 	}
 
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
@@ -755,7 +755,7 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot follow yourself"))
 	}
 
-	if _, err := model.UpsertFollowingRequest(uc.context.GetDB(), viewer.ID, actorIRI, inbox); err != nil {
+	if _, err := uc.context.FollowerRepo().UpsertFollowingRequest(viewer.ID, actorIRI, inbox); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -835,7 +835,7 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
-	if err := model.DeleteFollowingByActorIRI(uc.context.GetDB(), viewer.ID, actorIRI); err != nil {
+	if err := uc.context.FollowerRepo().DeleteFollowingByActorIRI(viewer.ID, actorIRI); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

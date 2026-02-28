@@ -33,18 +33,6 @@ type WorkoutEquipment struct {
 	EquipmentID uint64    `gorm:"not null;uniqueIndex:idx_workout_equipment" json:"equipmentID"` // The ID of the equipment
 }
 
-func GetEquipment(db *gorm.DB, id uint64) (*Equipment, error) {
-	var e Equipment
-
-	if err := db.Preload("User").Preload("Workouts").Preload("Workouts.Data").First(&e, id).Error; err != nil {
-		return nil, err
-	}
-
-	e.SetDB(db)
-
-	return &e, nil
-}
-
 func (e *Equipment) ValidFor(wt *WorkoutType) bool {
 	return slices.Contains(e.DefaultFor, *wt)
 }
@@ -59,20 +47,6 @@ func (e *Equipment) Delete(db *gorm.DB) error {
 
 func (e *Equipment) Save(db *gorm.DB) error {
 	return db.Omit(clause.Associations).Save(e).Error
-}
-
-func GetEquipmentByIDs(db *gorm.DB, userID uint64, ids []uint64) ([]*Equipment, error) {
-	var equipment []*Equipment
-
-	if len(ids) == 0 {
-		return equipment, nil
-	}
-
-	if err := db.Where("user_id = ?", userID).Find(&equipment, ids).Error; err != nil {
-		return nil, err
-	}
-
-	return equipment, nil
 }
 
 func (e *Equipment) SetDB(db *gorm.DB) {

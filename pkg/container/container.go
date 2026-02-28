@@ -6,6 +6,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/repository"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
 	"github.com/labstack/echo/v4"
 	"github.com/vgarvardt/gue/v6"
@@ -19,6 +20,7 @@ type Container struct {
 	sessionManager *scs.SessionManager
 	logger         *slog.Logger
 	gueClient      *gue.Client
+	repositories   *repository.Repositories
 }
 
 func NewContainer(
@@ -28,6 +30,7 @@ func NewContainer(
 	sessionManager *scs.SessionManager,
 	logger *slog.Logger,
 	gueClient *gue.Client,
+	repositories *repository.Repositories,
 ) *Container {
 	return &Container{
 		db:             db,
@@ -36,6 +39,7 @@ func NewContainer(
 		sessionManager: sessionManager,
 		logger:         logger,
 		gueClient:      gueClient,
+		repositories:   repositories,
 	}
 }
 
@@ -61,6 +65,74 @@ func (c *Container) GetSessionManager() *scs.SessionManager {
 
 func (c *Container) GetGueClient() *gue.Client {
 	return c.gueClient
+}
+
+func (c *Container) GetRepositories() *repository.Repositories {
+	return c.repositories
+}
+
+func (c *Container) APOutboxRepo() repository.APOutbox {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.APOutbox
+}
+
+func (c *Container) APOutboxDeliveryRepo() repository.APOutboxDelivery {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.APOutboxDelivery
+}
+
+func (c *Container) FollowerRepo() repository.Follower {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.Follower
+}
+
+func (c *Container) EquipmentRepo() repository.Equipment {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.Equipment
+}
+
+func (c *Container) RouteSegmentRepo() repository.RouteSegment {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.RouteSegment
+}
+
+func (c *Container) MeasurementRepo() repository.Measurement {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.Measurement
+}
+
+func (c *Container) WorkoutRepo() repository.Workout {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.Workout
+}
+
+func (c *Container) UserRepo() repository.User {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.User
 }
 
 func (c *Container) Enqueue(ctx context.Context, j *gue.Job) error {

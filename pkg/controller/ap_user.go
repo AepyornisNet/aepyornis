@@ -45,7 +45,7 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("username not found"))
 	}
 
-	user, err := model.GetUser(ac.context.GetDB(), username)
+	user, err := ac.context.UserRepo().GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return renderApiError(c, http.StatusNotFound, errors.New("resource not found"))
 	}
@@ -90,7 +90,7 @@ func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, 
 		return nil, errors.New("username not found")
 	}
 
-	user, err := model.GetUser(ac.context.GetDB(), username)
+	user, err := ac.context.UserRepo().GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return nil, errors.New("resource not found")
 	}
@@ -122,7 +122,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 		}
 	}
 
-	following, err := model.ListApprovedFollowing(ac.context.GetDB(), targetUser.ID)
+	following, err := ac.context.FollowerRepo().ListApprovedFollowing(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -214,7 +214,7 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		}
 	}
 
-	followers, err := model.ListApprovedFollowers(ac.context.GetDB(), targetUser.ID)
+	followers, err := ac.context.FollowerRepo().ListApprovedFollowers(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

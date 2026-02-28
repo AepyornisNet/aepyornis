@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	geojson "github.com/paulmach/orb/geojson"
@@ -36,12 +35,15 @@ func NewHeatmapController(c *container.Container) HeatmapController {
 func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 	coords := [][]float64{}
 
-	db := model.PreloadWorkoutDetails(hc.context.GetDB())
 	u := hc.context.GetUser(c)
 
-	wos, err := u.GetWorkouts(db)
+	wos, err := hc.context.WorkoutRepo().ListByUserID(u.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	for _, w := range wos {
+		w.User = u
 	}
 
 	for _, w := range wos {
@@ -74,11 +76,14 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()
 	u := hc.context.GetUser(c)
-	db := model.PreloadWorkoutDetails(hc.context.GetDB())
 
-	wos, err := u.GetWorkouts(db)
+	wos, err := hc.context.WorkoutRepo().ListByUserID(u.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	for _, w := range wos {
+		w.User = u
 	}
 
 	for _, w := range wos {

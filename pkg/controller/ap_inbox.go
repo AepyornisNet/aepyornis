@@ -33,7 +33,7 @@ func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User,
 		return nil, errors.New("username not found")
 	}
 
-	user, err := model.GetUser(ac.context.GetDB(), username)
+	user, err := ac.context.UserRepo().GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return nil, errors.New("resource not found")
 	}
@@ -170,8 +170,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 
 	switch it.GetType() {
 	case vocab.FollowType:
-		_, err := model.UpsertFollowerRequest(
-			ac.context.GetDB(),
+		_, err := ac.context.FollowerRepo().UpsertFollowerRequest(
 			targetUser.ID,
 			actor.ID.String(),
 			actorInboxIRI(actor),
@@ -193,9 +192,9 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 
 		var lifecycleErr error
 		if vocab.AcceptType.Match(it.GetType()) {
-			_, lifecycleErr = model.MarkFollowingApprovedByActorIRI(ac.context.GetDB(), targetUser.ID, followTargetIRI)
+			_, lifecycleErr = ac.context.FollowerRepo().MarkFollowingApprovedByActorIRI(targetUser.ID, followTargetIRI)
 		} else {
-			_, lifecycleErr = model.MarkFollowingRejectedByActorIRI(ac.context.GetDB(), targetUser.ID, followTargetIRI)
+			_, lifecycleErr = ac.context.FollowerRepo().MarkFollowingRejectedByActorIRI(targetUser.ID, followTargetIRI)
 		}
 
 		if lifecycleErr != nil && !errors.Is(lifecycleErr, gorm.ErrRecordNotFound) {
@@ -208,7 +207,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 			return c.NoContent(http.StatusNotImplemented)
 		}
 
-		err := model.DeleteFollowerByActorIRI(ac.context.GetDB(), targetUser.ID, actor.ID.String())
+		err := ac.context.FollowerRepo().DeleteFollowerByActorIRI(targetUser.ID, actor.ID.String())
 		if err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}

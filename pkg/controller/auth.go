@@ -51,7 +51,7 @@ func (ac *authController) SignIn(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
 	}
 
-	storedUser, err := model.GetUser(ac.context.GetDB(), req.Username)
+	storedUser, err := ac.context.UserRepo().GetByUsername(req.Username)
 	if err != nil || !storedUser.ValidLogin(req.Password) {
 		return renderApiError(c, http.StatusUnauthorized, ErrLoginFailed)
 	}

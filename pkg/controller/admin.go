@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
@@ -39,7 +38,7 @@ func NewAdminController(c *container.Container, resetConfiguration func() error)
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /admin/users [get]
 func (ac *adminController) GetUsers(c echo.Context) error {
-	users, err := model.GetUsers(ac.context.GetDB())
+	users, err := ac.context.UserRepo().GetAll()
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -74,7 +73,7 @@ func (ac *adminController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := model.GetUserByID(ac.context.GetDB(), userID)
+	user, err := ac.context.UserRepo().GetByID(userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -105,7 +104,7 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := model.GetUserByID(ac.context.GetDB(), userID)
+	user, err := ac.context.UserRepo().GetByID(userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -155,7 +154,7 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := model.GetUserByID(ac.context.GetDB(), userID)
+	user, err := ac.context.UserRepo().GetByID(userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
