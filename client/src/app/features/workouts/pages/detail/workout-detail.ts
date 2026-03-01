@@ -26,6 +26,7 @@ import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../componen
 import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
+import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
 
 @Component({
   selector: 'app-workout-detail',
@@ -47,6 +48,7 @@ import { WorkoutPerformanceCurveComponent } from '../../components/workout-perfo
     NgbNavLinkButton,
     NgbNavContent,
     WorkoutPerformanceCurveComponent,
+    WorkoutCommentsComponent,
     TranslatePipe
 ],
   templateUrl: './workout-detail.html',

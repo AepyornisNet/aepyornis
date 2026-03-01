@@ -86,12 +86,13 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 
 	err = vocab.On[vocab.Activity](item, func(act *vocab.Activity) error {
 		routed, routeErr := ap.HandleInboxActivity(ap.InboxHandlerContext{
-			TargetUserID:    targetUser.ID,
-			RequestingActor: actor,
-			FollowerRepo:    ac.context.FollowerRepo(),
-			OutboxRepo:      ac.context.APOutboxRepo(),
-			WorkoutLikeRepo: ac.context.WorkoutLikeRepo(),
-			Activity:        act,
+			TargetUserID:     targetUser.ID,
+			RequestingActor:  actor,
+			FollowerRepo:     ac.context.FollowerRepo(),
+			OutboxRepo:       ac.context.APOutboxRepo(),
+			WorkoutLikeRepo:  ac.context.WorkoutLikeRepo(),
+			WorkoutReplyRepo: ac.context.WorkoutReplyRepo(),
+			Activity:         act,
 		})
 		handled = routed
 		return routeErr

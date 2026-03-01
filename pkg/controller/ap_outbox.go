@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,6 +23,7 @@ type ApOutboxController interface {
 	OutboxItem(c echo.Context) error
 	OutboxFit(c echo.Context) error
 	OutboxRouteImage(c echo.Context) error
+	OutboxReplies(c echo.Context) error
 }
 
 type apOutboxController struct {
@@ -182,7 +184,33 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	return renderActivityPubResponse(c, entry.Activity)
+	activityPayload := entry.Activity
+
+	// For workout entries, add replies collection info to the note
+	if entry.APOutboxWorkout != nil {
+		replyCount, countErr := ac.context.WorkoutReplyRepo().CountByWorkoutID(entry.APOutboxWorkout.WorkoutID)
+		if countErr == nil && replyCount > 0 {
+			// Deserialize the activity to add replies collection
+			var activity map[string]interface{}
+			if err := json.Unmarshal(activityPayload, &activity); err == nil {
+				if object, ok := activity["object"].(map[string]interface{}); ok {
+					repliesID := entry.ObjectID + "/replies"
+					object["replies"] = map[string]interface{}{
+						"id":         repliesID,
+						"type":       "OrderedCollection",
+						"totalItems": replyCount,
+						"first":      repliesID,
+					}
+					activity["object"] = object
+				}
+				if updatedPayload, err := json.Marshal(activity); err == nil {
+					activityPayload = updatedPayload
+				}
+			}
+		}
+	}
+
+	return renderActivityPubResponse(c, activityPayload)
 }
 
 // OutboxFit downloads the FIT attachment for an ActivityPub outbox entry
@@ -278,4 +306,119 @@ func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
 	return c.Blob(http.StatusOK, contentType, attachment.Content)
+}
+
+// OutboxReplies returns the ActivityPub replies collection for a workout note
+// @Summary      Get ActivityPub workout replies collection
+// @Tags         activity-pub
+// @Param        username  path   string  true   "Username"
+// @Param        id        path   string  true   "Outbox entry UUID"
+// @Param        page      query  int     false  "Page number (1-based)"
+// @Produce      json
+// @Success      200  {object}  map[string]any
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /ap/users/{username}/outbox/{id}/replies [get]
+func (ac *apOutboxController) OutboxReplies(c echo.Context) error {
+	targetUser, err := ac.targetActivityPubUser(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	outboxID, err := uuid.Parse(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	// Only workout entries have replies
+	if entry.APOutboxWorkout == nil {
+		return renderApiError(c, http.StatusNotFound, errors.New("this outbox entry does not support replies"))
+	}
+
+	page := 0
+	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
+		page, err = strconv.Atoi(rawPage)
+		if err != nil || page < 1 {
+			return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
+		}
+	}
+
+	// Get replies for this workout
+	replies, err := ac.context.WorkoutReplyRepo().ListByWorkoutID(entry.APOutboxWorkout.WorkoutID, 10000, 0)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	// Build the replies collection
+	repliesID := entry.ObjectID + "/replies"
+	repliesCollection := vocab.OrderedCollectionNew(vocab.ID(repliesID))
+	repliesCollection.TotalItems = uint(len(replies))
+
+	// If not paginating, include items directly
+	if page == 0 {
+		items := vocab.ItemCollection{}
+		for _, r := range replies {
+			items = append(items, vocab.IRI(r.ObjectIRI))
+		}
+
+		repliesCollection.OrderedItems = items
+
+		payload, err := jsonld.WithContext(
+			jsonld.IRI(vocab.ActivityBaseURI),
+		).Marshal(repliesCollection)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		return renderActivityPubResponse(c, payload)
+	}
+
+	// Handle pagination
+	totalPages := (len(replies) + outboxPageSize - 1) / outboxPageSize
+	if page > totalPages {
+		return renderApiError(c, http.StatusBadRequest, errors.New("page out of range"))
+	}
+
+	offset := (page - 1) * outboxPageSize
+	endOffset := offset + outboxPageSize
+	if endOffset > len(replies) {
+		endOffset = len(replies)
+	}
+
+	pageReplies := replies[offset:endOffset]
+	items := vocab.ItemCollection{}
+	for _, r := range pageReplies {
+		items = append(items, vocab.IRI(r.ObjectIRI))
+	}
+
+	repliesPage := vocab.OrderedCollectionPageNew(repliesCollection)
+	repliesPage.OrderedItems = items
+	repliesPage.StartIndex = uint(offset)
+	repliesPage.ID = vocab.ID(fmt.Sprintf("%s?page=%d", repliesID, page))
+
+	if page > 1 {
+		repliesPage.Prev = vocab.IRI(fmt.Sprintf("%s?page=%d", repliesID, page-1))
+	}
+
+	if page < totalPages {
+		repliesPage.Next = vocab.IRI(fmt.Sprintf("%s?page=%d", repliesID, page+1))
+	}
+
+	payload, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(repliesPage)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	return renderActivityPubResponse(c, payload)
 }

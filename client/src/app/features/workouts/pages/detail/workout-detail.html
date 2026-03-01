@@ -293,6 +293,9 @@
           </div>
         }
 
+        <!-- Comments/Replies -->
+        <app-workout-comments [workoutId]="dataService.workout()!.id" />
+
         <!-- Equipment -->
         @if (dataService.workout()!.equipment && dataService.workout()!.equipment!.length > 0) {
           <div class="card shadow-sm mb-4">

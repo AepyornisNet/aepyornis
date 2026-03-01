@@ -22,6 +22,7 @@ func (a *App) registerActivityPubController(e *echo.Group) {
 	apGroup.GET("/users/:username/outbox/:id", aoc.OutboxItem).Name = "ap-user-outbox-item"
 	apGroup.GET("/users/:username/outbox/:id/fit", aoc.OutboxFit).Name = "ap-user-outbox-fit"
 	apGroup.GET("/users/:username/outbox/:id/route-image", aoc.OutboxRouteImage).Name = "ap-user-outbox-route-image"
+	apGroup.GET("/users/:username/outbox/:id/replies", aoc.OutboxReplies).Name = "ap-user-outbox-replies"
 	apGroup.GET("/users/:username/following", auc.Following).Name = "ap-user-following"
 	apGroup.GET("/users/:username/followers", auc.Followers).Name = "ap-user-followers"
 }
@@ -106,8 +107,10 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group) {
 	workoutGroup.GET("/:id", wc.GetWorkout).Name = "workout-get"
 	workoutGroup.GET("/:id/breakdown", wc.GetWorkoutBreakdown).Name = "workout-breakdown"
 	workoutGroup.GET("/:id/stats-range", wc.GetWorkoutRangeStats).Name = "workout-range-stats"
+	workoutGroup.GET("/:id/replies", wc.GetWorkoutReplies).Name = "workout-replies"
 	workoutGroup.POST("/:id/like", wc.LikeWorkout).Name = "workout-like"
 	workoutGroup.POST("/like", wc.LikeWorkoutByObject).Name = "workout-like-object"
+	workoutGroup.POST("/:id/replies", wc.CreateReply).Name = "workout-create-reply"
 	workoutGroup.GET("/:id/download", wc.DownloadWorkout).Name = "workout-download"
 	workoutGroup.GET("/:id/attachments/:attachment_id", wc.DownloadWorkoutAttachment).Name = "workout-attachment-download"
 	workoutGroup.PUT("/:id", wc.UpdateWorkout).Name = "workout-update"

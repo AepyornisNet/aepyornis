@@ -12,6 +12,7 @@ type Repositories struct {
 	User             User
 	Workout          Workout
 	WorkoutLike      WorkoutLike
+	WorkoutReply     WorkoutReply
 }
 
 func New(db *gorm.DB) *Repositories {
@@ -25,5 +26,6 @@ func New(db *gorm.DB) *Repositories {
 		User:             NewUser(db),
 		Workout:          NewWorkout(db),
 		WorkoutLike:      NewWorkoutLike(db),
+		WorkoutReply:     NewWorkoutReply(db),
 	}
 }

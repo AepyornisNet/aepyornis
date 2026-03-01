@@ -1,0 +1,91 @@
+<div class="card shadow-sm mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">
+      {{ 'Comments' | translate }}
+      @if (totalCount() > 0) {
+        <span class="badge bg-secondary ms-2">{{ totalCount() }}</span>
+      }
+    </h5>
+  </div>
+  <div class="card-body">
+    @if (loadingReplies()) {
+      <div class="text-center py-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    } @else if (replies().length === 0) {
+      <p class="text-muted mb-0">{{ 'No comments yet' | translate }}</p>
+    } @else {
+      <div class="comments-list">
+        @for (comment of replies(); track comment.id) {
+          <div class="comment-item mb-3 pb-3" [class.border-bottom]="$index < replies().length - 1">
+            <div class="d-flex gap-2">
+              <div class="comment-avatar">
+                @if (hasAvatarUrl(comment)) {
+                  <img class="avatar-image" [alt]="getAuthorName(comment)" [src]="comment.avatar_url" />
+                } @else {
+                  <div class="avatar-circle">
+                    {{ getInitial(comment) }}
+                  </div>
+                }
+              </div>
+              <div class="comment-content flex-grow-1">
+                <div class="comment-header mb-1">
+                  <strong class="comment-author">{{ getAuthorName(comment) }}</strong>
+                  @if (isRemoteComment(comment)) {
+                    <span class="badge bg-info ms-2" [title]="comment.actor_iri">
+                      {{ 'Remote' | translate }}
+                    </span>
+                  }
+                  <small class="text-muted ms-2">{{ getPublishDate(comment) }}</small>
+                </div>
+                <div class="comment-text" [innerHTML]="comment.content"></div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (hasMore()) {
+          <div class="text-center pt-2">
+            <button class="btn btn-outline-primary btn-sm" [disabled]="loadingMore()" (click)="loadMore()">
+              @if (loadingMore()) {
+                <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              }
+              {{ 'Load More' | translate }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+  <div class="card-footer">
+    <form class="comment-form" (ngSubmit)="submitComment()">
+      <div class="mb-2">
+        <label class="form-label visually-hidden" for="newComment">{{ 'Add a comment' | translate }}</label>
+        <textarea
+          class="form-control"
+          id="newComment"
+          name="newComment"
+          rows="3"
+          [disabled]="isSubmitting()"
+          [ngModel]="newComment()"
+          [placeholder]="('Add a comment' | translate) + '...'"
+          (ngModelChange)="setNewComment($event)"
+        ></textarea>
+      </div>
+      <div class="d-flex justify-content-end">
+        <button
+          class="btn btn-primary"
+          type="submit"
+          [disabled]="!canSubmit()"
+        >
+          @if (isSubmitting()) {
+            <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          }
+          {{ 'Post Comment' | translate }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

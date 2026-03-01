@@ -23,8 +23,10 @@ import (
 type WorkoutController interface {
 	GetWorkouts(c echo.Context) error
 	GetWorkout(c echo.Context) error
+	GetWorkoutReplies(c echo.Context) error
 	LikeWorkout(c echo.Context) error
 	LikeWorkoutByObject(c echo.Context) error
+	CreateReply(c echo.Context) error
 	GetWorkoutBreakdown(c echo.Context) error
 	GetWorkoutRangeStats(c echo.Context) error
 	GetWorkoutCalendar(c echo.Context) error
@@ -71,6 +73,12 @@ func applyLikeMetadata(results []dto.WorkoutResponse, counts map[uint64]int64, l
 	for i := range results {
 		results[i].LikesCount = counts[results[i].ID]
 		results[i].LikedByMe = liked[results[i].ID]
+	}
+}
+
+func applyReplyMetadata(results []dto.WorkoutResponse, counts map[uint64]int64) {
+	for i := range results {
+		results[i].RepliesCount = counts[results[i].ID]
 	}
 }
 
@@ -203,6 +211,11 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 		}
 	}
 
+	replyCounts, err := wc.context.WorkoutReplyRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	if err == nil {
+		applyReplyMetadata(results, replyCounts)
+	}
+
 	resp := dto.PaginatedResponse[dto.WorkoutResponse]{
 		Results:    results,
 		Page:       pagination.Page,
@@ -253,8 +266,89 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		result.LikedByMe = liked[workout.ID]
 	}
 
+	replyCount, err := wc.context.WorkoutReplyRepo().CountByWorkoutID(workout.ID)
+	if err == nil {
+		result.RepliesCount = replyCount
+	}
+
 	resp := dto.Response[dto.WorkoutDetailResponse]{
 		Results: result,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// GetWorkoutReplies returns paginated replies/comments for a workout
+// @Summary      Get workout replies
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id        path      int  true  "Workout ID"
+// @Param        page      query     int  false "Page"
+// @Param        per_page  query     int  false "Per page"
+// @Produce      json
+// @Success      200  {object}  dto.PaginatedResponse[dto.WorkoutReplyResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/replies [get]
+func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	var pagination dto.PaginationParams
+	pagination.SetDefaults()
+	if pageStr := c.QueryParam("page"); pageStr != "" {
+		if page, parseErr := strconv.Atoi(pageStr); parseErr == nil {
+			pagination.Page = page
+		}
+	}
+	if perPageStr := c.QueryParam("per_page"); perPageStr != "" {
+		if perPage, parseErr := strconv.Atoi(perPageStr); parseErr == nil {
+			pagination.PerPage = perPage
+		}
+	}
+	pagination.SetDefaults()
+
+	totalCount, err := wc.context.WorkoutReplyRepo().CountByWorkoutID(workout.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	replies, err := wc.context.WorkoutReplyRepo().ListByWorkoutID(workout.ID, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	results := make([]dto.WorkoutReplyResponse, 0, len(replies))
+	for i := range replies {
+		replyResponse := dto.NewWorkoutReplyResponse(&replies[i])
+		if replies[i].ActorIRI != nil && *replies[i].ActorIRI != "" {
+			cachedName, cachedAvatarURL, ok := ap.GetCachedActorProfile(*replies[i].ActorIRI)
+			if !ok {
+				cachedName, cachedAvatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *replies[i].ActorIRI)
+			}
+			if ok {
+				if replyResponse.ActorName == nil && cachedName != "" {
+					replyResponse.ActorName = &cachedName
+				}
+				if cachedAvatarURL != "" {
+					replyResponse.AvatarURL = &cachedAvatarURL
+				}
+			}
+		}
+
+		results = append(results, replyResponse)
+	}
+
+	resp := dto.PaginatedResponse[dto.WorkoutReplyResponse]{
+		Results:    results,
+		Page:       pagination.Page,
+		PerPage:    pagination.PerPage,
+		TotalPages: pagination.CalculateTotalPages(totalCount),
+		TotalCount: totalCount,
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -407,6 +501,65 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// CreateReply creates a reply/comment on a workout
+// @Summary      Create a reply on a workout
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int  true  "Workout ID"
+// @Param        body body  object{content=string}  true  "Reply content"
+// @Success      201  {object}  dto.Response[dto.WorkoutReplyResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/replies [post]
+func (wc *workoutController) CreateReply(c echo.Context) error {
+	viewer := wc.context.GetUser(c)
+
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	params := struct {
+		Content string `json:"content"`
+	}{}
+
+	if err := c.Bind(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	params.Content = strings.TrimSpace(params.Content)
+
+	if params.Content == "" {
+		return renderApiError(c, http.StatusBadRequest, errors.New("content is required"))
+	}
+
+	reply, err := wc.context.WorkoutReplyRepo().CreateLocalReply(workout.ID, viewer.ID, params.Content)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	// Reload reply with user data
+	if err := wc.context.GetDB().Preload("User").First(reply, reply.ID).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if err := worker.PublishReplyToActivityPub(c.Request().Context(), wc.context, viewer, workout, reply); err != nil {
+		wc.context.Logger().Warn("Failed to publish workout reply to ActivityPub", "reply_id", reply.ID, "error", err)
+	}
+
+	replyResponse := dto.NewWorkoutReplyResponse(reply)
+
+	resp := dto.Response[dto.WorkoutReplyResponse]{
+		Results: replyResponse,
+	}
+
+	return c.JSON(http.StatusCreated, resp)
 }
 
 // GetWorkoutBreakdown returns breakdown table data or laps for a workout
@@ -923,6 +1076,11 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		if likedErr == nil {
 			applyLikeMetadata(results, counts, liked)
 		}
+	}
+
+	replyCounts, err := wc.context.WorkoutReplyRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	if err == nil {
+		applyReplyMetadata(results, replyCounts)
 	}
 
 	resp := dto.Response[[]dto.WorkoutResponse]{

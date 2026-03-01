@@ -25,6 +25,7 @@ export type Workout = {
   activity_pub_published: boolean;
   likes_count: number;
   liked_by_me: boolean;
+  replies_count: number;
   attachments?: WorkoutAttachment[];
 
   // Optional map data
@@ -332,4 +333,17 @@ export type WorkoutListParams = PaginationParams & {
   since?: string;
   order_by?: string;
   order_dir?: string;
+};
+
+export type WorkoutReply = {
+  id: number;
+  object_iri: string;
+  user_id?: number;
+  user?: UserProfile;
+  actor_iri?: string;
+  actor_name?: string;
+  avatar_url?: string;
+  content: string;
+  created_at: string;
+  published_at?: string;
 };

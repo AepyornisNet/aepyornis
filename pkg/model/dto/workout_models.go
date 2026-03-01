@@ -30,6 +30,7 @@ type WorkoutResponse struct {
 	ActivityPubPublished bool                    `json:"activity_pub_published"`
 	LikesCount           int64                   `json:"likes_count"`
 	LikedByMe            bool                    `json:"liked_by_me"`
+	RepliesCount         int64                   `json:"replies_count"`
 	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
 	// MapData fields (when available)
@@ -1049,4 +1050,36 @@ func calculateFTPZone(power float64, ftp float64) int {
 	default:
 		return 7
 	}
+}
+
+// WorkoutReplyResponse represents a reply/comment to a workout
+type WorkoutReplyResponse struct {
+	ID          uint64               `json:"id"`
+	ObjectIRI   string               `json:"object_iri"`
+	UserID      *uint64              `json:"user_id,omitempty"`
+	User        *UserProfileResponse `json:"user,omitempty"`
+	ActorIRI    *string              `json:"actor_iri,omitempty"`
+	ActorName   *string              `json:"actor_name,omitempty"`
+	AvatarURL   *string              `json:"avatar_url,omitempty"`
+	Content     string               `json:"content"`
+	CreatedAt   time.Time            `json:"created_at"`
+	PublishedAt *time.Time           `json:"published_at,omitempty"`
+}
+
+func NewWorkoutReplyResponse(r *model.WorkoutReply) WorkoutReplyResponse {
+	res := WorkoutReplyResponse{
+		ID:          r.ID,
+		ObjectIRI:   r.ObjectIRI,
+		UserID:      r.UserID,
+		ActorIRI:    r.ActorIRI,
+		ActorName:   r.ActorName,
+		Content:     templatehelpers.SanitizeReplyHTML(r.Content),
+		CreatedAt:   r.CreatedAt,
+		PublishedAt: r.PublishedAt,
+	}
+	if r.User != nil {
+		userProfile := NewUserProfileResponse(r.User)
+		res.User = &userProfile
+	}
+	return res
 }

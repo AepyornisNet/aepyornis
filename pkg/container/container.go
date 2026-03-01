@@ -135,6 +135,14 @@ func (c *Container) WorkoutLikeRepo() repository.WorkoutLike {
 	return c.repositories.WorkoutLike
 }
 
+func (c *Container) WorkoutReplyRepo() repository.WorkoutReply {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.WorkoutReply
+}
+
 func (c *Container) UserRepo() repository.User {
 	if c.repositories == nil {
 		return nil

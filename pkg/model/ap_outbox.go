@@ -9,7 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const APOutboxWorkoutKind = "workout"
+const (
+	APOutboxWorkoutKind     = "workout"
+	APOutboxReplyCreateKind = "reply-create"
+)
 
 type APOutboxEntry struct {
 	Model

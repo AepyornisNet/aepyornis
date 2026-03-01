@@ -10,49 +10,54 @@ import (
 
 type WorkoutNote struct {
 	vocab.Object
-	WorkoutFitFile          vocab.IRI `jsonld:"workoutFitFile,omitempty"`
-	WorkoutLocation         string    `jsonld:"workoutLocation,omitempty"`
-	WorkoutSport            string    `jsonld:"workoutSport,omitempty"`
-	WorkoutDuration         int64     `jsonld:"workoutDuration,omitempty"`
-	WorkoutPauseDuration    int64     `jsonld:"workoutPauseDuration,omitempty"`
-	WorkoutDistance         float64   `jsonld:"workoutDistance,omitempty"`
-	WorkoutDistance2D       float64   `jsonld:"workoutDistance2D,omitempty"`
-	WorkoutElevationGain    float64   `jsonld:"workoutElevationGain,omitempty"`
-	WorkoutElevationLoss    float64   `jsonld:"workoutElevationLoss,omitempty"`
-	WorkoutAverageSpeed     float64   `jsonld:"workoutAverageSpeed,omitempty"`
-	WorkoutAverageSpeedMove float64   `jsonld:"workoutAverageSpeedMoving,omitempty"`
-	WorkoutMaxSpeed         float64   `jsonld:"workoutMaxSpeed,omitempty"`
-	WorkoutAverageCadence   float64   `jsonld:"workoutAverageCadence,omitempty"`
-	WorkoutMaxCadence       float64   `jsonld:"workoutMaxCadence,omitempty"`
-	WorkoutAverageHeartRate float64   `jsonld:"workoutAverageHeartRate,omitempty"`
-	WorkoutMaxHeartRate     float64   `jsonld:"workoutMaxHeartRate,omitempty"`
-	WorkoutAveragePower     float64   `jsonld:"workoutAveragePower,omitempty"`
-	WorkoutMaxPower         float64   `jsonld:"workoutMaxPower,omitempty"`
-	WorkoutRepetitions      int       `jsonld:"workoutRepetitions,omitempty"`
-	WorkoutWeight           float64   `jsonld:"workoutWeight,omitempty"`
+	// Activity pub reply support
+	InReplyTo               vocab.IRI               `jsonld:"inReplyTo,omitempty"`
+	Replies                 vocab.OrderedCollection `jsonld:"replies,omitempty"`
+	WorkoutFitFile          vocab.IRI               `jsonld:"workoutFitFile,omitempty"`
+	WorkoutLocation         string                  `jsonld:"workoutLocation,omitempty"`
+	WorkoutSport            string                  `jsonld:"workoutSport,omitempty"`
+	WorkoutDuration         int64                   `jsonld:"workoutDuration,omitempty"`
+	WorkoutPauseDuration    int64                   `jsonld:"workoutPauseDuration,omitempty"`
+	WorkoutDistance         float64                 `jsonld:"workoutDistance,omitempty"`
+	WorkoutDistance2D       float64                 `jsonld:"workoutDistance2D,omitempty"`
+	WorkoutElevationGain    float64                 `jsonld:"workoutElevationGain,omitempty"`
+	WorkoutElevationLoss    float64                 `jsonld:"workoutElevationLoss,omitempty"`
+	WorkoutAverageSpeed     float64                 `jsonld:"workoutAverageSpeed,omitempty"`
+	WorkoutAverageSpeedMove float64                 `jsonld:"workoutAverageSpeedMoving,omitempty"`
+	WorkoutMaxSpeed         float64                 `jsonld:"workoutMaxSpeed,omitempty"`
+	WorkoutAverageCadence   float64                 `jsonld:"workoutAverageCadence,omitempty"`
+	WorkoutMaxCadence       float64                 `jsonld:"workoutMaxCadence,omitempty"`
+	WorkoutAverageHeartRate float64                 `jsonld:"workoutAverageHeartRate,omitempty"`
+	WorkoutMaxHeartRate     float64                 `jsonld:"workoutMaxHeartRate,omitempty"`
+	WorkoutAveragePower     float64                 `jsonld:"workoutAveragePower,omitempty"`
+	WorkoutMaxPower         float64                 `jsonld:"workoutMaxPower,omitempty"`
+	WorkoutRepetitions      int                     `jsonld:"workoutRepetitions,omitempty"`
+	WorkoutWeight           float64                 `jsonld:"workoutWeight,omitempty"`
 }
 
 type workoutNoteExtensions struct {
-	WorkoutFitFile          vocab.IRI `json:"workoutFitFile,omitempty"`
-	WorkoutLocation         string    `json:"workoutLocation,omitempty"`
-	WorkoutSport            string    `json:"workoutSport,omitempty"`
-	WorkoutDuration         int64     `json:"workoutDuration,omitempty"`
-	WorkoutPauseDuration    int64     `json:"workoutPauseDuration,omitempty"`
-	WorkoutDistance         float64   `json:"workoutDistance,omitempty"`
-	WorkoutDistance2D       float64   `json:"workoutDistance2D,omitempty"`
-	WorkoutElevationGain    float64   `json:"workoutElevationGain,omitempty"`
-	WorkoutElevationLoss    float64   `json:"workoutElevationLoss,omitempty"`
-	WorkoutAverageSpeed     float64   `json:"workoutAverageSpeed,omitempty"`
-	WorkoutAverageSpeedMove float64   `json:"workoutAverageSpeedMoving,omitempty"`
-	WorkoutMaxSpeed         float64   `json:"workoutMaxSpeed,omitempty"`
-	WorkoutAverageCadence   float64   `json:"workoutAverageCadence,omitempty"`
-	WorkoutMaxCadence       float64   `json:"workoutMaxCadence,omitempty"`
-	WorkoutAverageHeartRate float64   `json:"workoutAverageHeartRate,omitempty"`
-	WorkoutMaxHeartRate     float64   `json:"workoutMaxHeartRate,omitempty"`
-	WorkoutAveragePower     float64   `json:"workoutAveragePower,omitempty"`
-	WorkoutMaxPower         float64   `json:"workoutMaxPower,omitempty"`
-	WorkoutRepetitions      int       `json:"workoutRepetitions,omitempty"`
-	WorkoutWeight           float64   `json:"workoutWeight,omitempty"`
+	InReplyTo               vocab.IRI               `json:"inReplyTo,omitempty"`
+	Replies                 vocab.OrderedCollection `json:"replies,omitempty"`
+	WorkoutFitFile          vocab.IRI               `json:"workoutFitFile,omitempty"`
+	WorkoutLocation         string                  `json:"workoutLocation,omitempty"`
+	WorkoutSport            string                  `json:"workoutSport,omitempty"`
+	WorkoutDuration         int64                   `json:"workoutDuration,omitempty"`
+	WorkoutPauseDuration    int64                   `json:"workoutPauseDuration,omitempty"`
+	WorkoutDistance         float64                 `json:"workoutDistance,omitempty"`
+	WorkoutDistance2D       float64                 `json:"workoutDistance2D,omitempty"`
+	WorkoutElevationGain    float64                 `json:"workoutElevationGain,omitempty"`
+	WorkoutElevationLoss    float64                 `json:"workoutElevationLoss,omitempty"`
+	WorkoutAverageSpeed     float64                 `json:"workoutAverageSpeed,omitempty"`
+	WorkoutAverageSpeedMove float64                 `json:"workoutAverageSpeedMoving,omitempty"`
+	WorkoutMaxSpeed         float64                 `json:"workoutMaxSpeed,omitempty"`
+	WorkoutAverageCadence   float64                 `json:"workoutAverageCadence,omitempty"`
+	WorkoutMaxCadence       float64                 `json:"workoutMaxCadence,omitempty"`
+	WorkoutAverageHeartRate float64                 `json:"workoutAverageHeartRate,omitempty"`
+	WorkoutMaxHeartRate     float64                 `json:"workoutMaxHeartRate,omitempty"`
+	WorkoutAveragePower     float64                 `json:"workoutAveragePower,omitempty"`
+	WorkoutMaxPower         float64                 `json:"workoutMaxPower,omitempty"`
+	WorkoutRepetitions      int                     `json:"workoutRepetitions,omitempty"`
+	WorkoutWeight           float64                 `json:"workoutWeight,omitempty"`
 }
 
 func NewWorkoutNote() *WorkoutNote {
@@ -103,6 +108,8 @@ func (n *WorkoutNote) PopulateFromWorkout(workout *model.Workout, fitURL vocab.I
 
 func (n WorkoutNote) extensionValues() workoutNoteExtensions {
 	return workoutNoteExtensions{
+		InReplyTo:               n.InReplyTo,
+		Replies:                 n.Replies,
 		WorkoutFitFile:          n.WorkoutFitFile,
 		WorkoutLocation:         n.WorkoutLocation,
 		WorkoutSport:            n.WorkoutSport,
@@ -127,6 +134,8 @@ func (n WorkoutNote) extensionValues() workoutNoteExtensions {
 }
 
 func (n *WorkoutNote) applyExtensionValues(ext workoutNoteExtensions) {
+	n.InReplyTo = ext.InReplyTo
+	n.Replies = ext.Replies
 	n.WorkoutFitFile = ext.WorkoutFitFile
 	n.WorkoutLocation = ext.WorkoutLocation
 	n.WorkoutSport = ext.WorkoutSport
@@ -217,4 +226,46 @@ func (n *WorkoutNote) UnmarshalJSON(data []byte) error {
 	n.applyExtensionValues(ext)
 
 	return nil
+}
+
+// SetInReplyTo sets the inReplyTo property to indicate this note is a reply
+func (n *WorkoutNote) SetInReplyTo(iri vocab.IRI) {
+	n.InReplyTo = iri
+}
+
+// PopulateRepliesCollection builds an OrderedCollection of reply IRIs from a database result
+func (n *WorkoutNote) PopulateRepliesCollection(workoutID uint64, replyCount int64, db interface{}) error {
+	repliesID := vocab.IRI("")
+	if n.ID != "" {
+		repliesID = vocab.IRI(n.ID.String() + "/replies")
+	}
+
+	replies := vocab.OrderedCollection{
+		ID:         vocab.ID(repliesID),
+		Type:       vocab.OrderedCollectionType,
+		TotalItems: uint(replyCount),
+	}
+
+	n.Replies = replies
+	return nil
+}
+
+// BuildRepliesCollectionWithItems constructs an OrderedCollection with reply items
+func BuildRepliesCollectionWithItems(noteID vocab.IRI, replies []model.WorkoutReply) vocab.OrderedCollection {
+	repliesID := vocab.IRI(noteID.String() + "/replies")
+
+	items := vocab.ItemCollection{}
+	for _, r := range replies {
+		// Either link to the remote object or to local note
+		if r.ObjectIRI != "" {
+			items = append(items, vocab.IRI(r.ObjectIRI))
+		}
+	}
+
+	return vocab.OrderedCollection{
+		ID:           vocab.ID(repliesID),
+		Type:         vocab.OrderedCollectionType,
+		TotalItems:   uint(len(items)),
+		OrderedItems: items,
+	}
 }
