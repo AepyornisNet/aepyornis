@@ -149,3 +149,21 @@ func SendUndoFollow(ctx context.Context, actorURL, privateKeyPEM, inbox, targetA
 
 	return SendSignedActivity(ctx, actorURL, privateKeyPEM, inbox, payload)
 }
+
+func SendLike(ctx context.Context, actorURL, privateKeyPEM, inbox, objectIRI string) error {
+	like := vocab.Activity{
+		ID:     vocab.ID(fmt.Sprintf("%s#like-%d", actorURL, time.Now().UTC().UnixNano())),
+		Type:   vocab.LikeType,
+		Actor:  vocab.IRI(actorURL),
+		Object: vocab.IRI(objectIRI),
+	}
+
+	payload, err := jsonld.WithContext(
+		jsonld.IRI(vocab.ActivityBaseURI),
+	).Marshal(like)
+	if err != nil {
+		return err
+	}
+
+	return SendSignedActivity(ctx, actorURL, privateKeyPEM, inbox, payload)
+}

@@ -12,7 +12,6 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 )
 
 type ApInboxController interface {
@@ -50,92 +49,6 @@ func requestingActor(c echo.Context) (*vocab.Actor, error) {
 	return nil, errors.New("requesting actor invalid")
 }
 
-func actorInboxIRI(actor *vocab.Actor) string {
-	if actor == nil || vocab.IsNil(actor.Inbox) {
-		return ""
-	}
-
-	if vocab.IsIRI(actor.Inbox) {
-		return actor.Inbox.GetLink().String()
-	}
-
-	var iri string
-	_ = vocab.OnLink(actor.Inbox, func(link *vocab.Link) error {
-		iri = link.Href.String()
-		return nil
-	})
-
-	return iri
-}
-
-func actorIRIFromItem(item vocab.Item) string {
-	if vocab.IsNil(item) {
-		return ""
-	}
-
-	if vocab.IsIRI(item) {
-		return item.GetLink().String()
-	}
-
-	var actorIRI string
-	_ = vocab.OnActor(item, func(actor *vocab.Actor) error {
-		actorIRI = actor.ID.String()
-		return nil
-	})
-
-	if actorIRI != "" {
-		return actorIRI
-	}
-
-	_ = vocab.OnLink(item, func(link *vocab.Link) error {
-		actorIRI = link.Href.String()
-		return nil
-	})
-
-	return actorIRI
-}
-
-func isFollowLifecycleActivity(it vocab.Activity) bool {
-	return vocab.AcceptType.Match(it.GetType()) || vocab.RejectType.Match(it.GetType())
-}
-
-func extractFollowLifecycleTarget(it vocab.Activity) string {
-	if !isFollowLifecycleActivity(it) || vocab.IsNil(it.Object) {
-		return ""
-	}
-
-	targetIRI := ""
-	_ = vocab.OnActivity(it.Object, func(obj *vocab.Activity) error {
-		if !vocab.FollowType.Match(obj.GetType()) {
-			return nil
-		}
-
-		targetIRI = actorIRIFromItem(obj.Object)
-		return nil
-	})
-
-	return targetIRI
-}
-
-func isUndoFollowActivity(it vocab.Activity) bool {
-	if !vocab.UndoType.Match(it.GetType()) {
-		return false
-	}
-
-	isFollow := false
-	if err := vocab.OnActivity(it.Object, func(object *vocab.Activity) error {
-		if vocab.FollowType.Match(object.GetType()) {
-			isFollow = true
-		}
-
-		return nil
-	}); err != nil {
-		return false
-	}
-
-	return isFollow
-}
-
 // Inbox handles incoming ActivityPub activities for a local user inbox
 // @Summary      Post ActivityPub inbox activity
 // @Tags         activity-pub
@@ -157,8 +70,8 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to read request body: %w", err))
 	}
 
-	var it vocab.Activity
-	err = jsonld.Unmarshal(payload, &it)
+	var activity vocab.Activity
+	err = jsonld.Unmarshal(payload, &activity)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to parse JSON-LD: %w", err))
 	}
@@ -168,52 +81,28 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	switch it.GetType() {
-	case vocab.FollowType:
-		_, err := ac.context.FollowerRepo().UpsertFollowerRequest(
-			targetUser.ID,
-			actor.ID.String(),
-			actorInboxIRI(actor),
-		)
-		if err != nil {
-			return renderApiError(c, http.StatusInternalServerError, err)
-		}
+	var item vocab.Item = activity
+	handled := false
 
-		return c.NoContent(http.StatusAccepted)
-	case vocab.AcceptType, vocab.RejectType:
-		if !isFollowLifecycleActivity(it) {
-			return c.NoContent(http.StatusAccepted)
-		}
+	err = vocab.On[vocab.Activity](item, func(act *vocab.Activity) error {
+		routed, routeErr := ap.HandleInboxActivity(ap.InboxHandlerContext{
+			TargetUserID:    targetUser.ID,
+			RequestingActor: actor,
+			FollowerRepo:    ac.context.FollowerRepo(),
+			OutboxRepo:      ac.context.APOutboxRepo(),
+			WorkoutLikeRepo: ac.context.WorkoutLikeRepo(),
+			Activity:        act,
+		})
+		handled = routed
+		return routeErr
+	})
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
 
-		followTargetIRI := extractFollowLifecycleTarget(it)
-		if followTargetIRI == "" {
-			return c.NoContent(http.StatusAccepted)
-		}
-
-		var lifecycleErr error
-		if vocab.AcceptType.Match(it.GetType()) {
-			_, lifecycleErr = ac.context.FollowerRepo().MarkFollowingApprovedByActorIRI(targetUser.ID, followTargetIRI)
-		} else {
-			_, lifecycleErr = ac.context.FollowerRepo().MarkFollowingRejectedByActorIRI(targetUser.ID, followTargetIRI)
-		}
-
-		if lifecycleErr != nil && !errors.Is(lifecycleErr, gorm.ErrRecordNotFound) {
-			return renderApiError(c, http.StatusInternalServerError, lifecycleErr)
-		}
-
-		return c.NoContent(http.StatusAccepted)
-	case vocab.UndoType:
-		if !isUndoFollowActivity(it) {
-			return c.NoContent(http.StatusNotImplemented)
-		}
-
-		err := ac.context.FollowerRepo().DeleteFollowerByActorIRI(targetUser.ID, actor.ID.String())
-		if err != nil {
-			return renderApiError(c, http.StatusInternalServerError, err)
-		}
-
-		return c.NoContent(http.StatusAccepted)
-	default:
+	if !handled {
 		return c.NoContent(http.StatusNotImplemented)
 	}
+
+	return c.NoContent(http.StatusAccepted)
 }

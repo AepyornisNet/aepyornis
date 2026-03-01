@@ -89,6 +89,20 @@
                 />
               </a>
             }
+
+            <div class="activity-actions mt-3">
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-outline-secondary]="!workout.liked_by_me"
+                [class.btn-primary]="workout.liked_by_me"
+                [disabled]="workout.liked_by_me || isLiking(workout.id)"
+                (click)="likeWorkout(workout.id)"
+              >
+                <app-icon name="heart-rate" size="14" />
+                <span>{{ workout.likes_count || 0 }}</span>
+              </button>
+            </div>
           </div>
         </div>
       }

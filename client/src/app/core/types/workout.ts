@@ -23,6 +23,8 @@ export type Workout = {
   has_file: boolean;
   has_tracks: boolean;
   activity_pub_published: boolean;
+  likes_count: number;
+  liked_by_me: boolean;
   attachments?: WorkoutAttachment[];
 
   // Optional map data

@@ -62,3 +62,14 @@
     }
   }
 }
+
+.activity-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+}

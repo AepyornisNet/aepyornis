@@ -14,6 +14,24 @@ import (
 	"github.com/go-ap/jsonld"
 )
 
+func itemIRIString(it vocab.Item) string {
+	if vocab.IsNil(it) {
+		return ""
+	}
+
+	if vocab.IsIRI(it) {
+		return it.GetLink().String()
+	}
+
+	iri := ""
+	_ = vocab.OnLink(it, func(link *vocab.Link) error {
+		iri = link.Href.String()
+		return nil
+	})
+
+	return iri
+}
+
 type webFingerResponse struct {
 	Links []struct {
 		Rel  string `json:"rel"`
@@ -130,4 +148,69 @@ func LoadCollectionTotalItems(ctx context.Context, collectionIRI string) (int64,
 	}
 
 	return 0, errors.New("could not parse collection")
+}
+
+func ResolveObjectActorAndInbox(ctx context.Context, objectIRI string) (string, string, error) {
+	trimmed := strings.TrimSpace(objectIRI)
+	if trimmed == "" {
+		return "", "", errors.New("object IRI is required")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, trimmed, nil)
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("Accept", ContentType)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", "", fmt.Errorf("object fetch rejected: %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	actorIRI := ""
+	activity := vocab.Activity{}
+	if err := jsonld.Unmarshal(body, &activity); err == nil {
+		actorIRI = itemIRIString(activity.Actor)
+		if actorIRI == "" {
+			_ = vocab.OnObject(activity.Object, func(object *vocab.Object) error {
+				if object != nil {
+					actorIRI = itemIRIString(object.AttributedTo)
+				}
+				return nil
+			})
+		}
+	}
+
+	if actorIRI == "" {
+		object := vocab.Object{}
+		if err := jsonld.Unmarshal(body, &object); err == nil {
+			actorIRI = itemIRIString(object.AttributedTo)
+		}
+	}
+
+	if actorIRI == "" {
+		return "", "", errors.New("object actor not found")
+	}
+
+	actor, err := LoadRemoteActor(ctx, actorIRI)
+	if err != nil {
+		return "", "", err
+	}
+
+	inbox := itemIRIString(actor.Inbox)
+	if inbox == "" {
+		return "", "", errors.New("actor inbox not found")
+	}
+
+	return actorIRI, inbox, nil
 }

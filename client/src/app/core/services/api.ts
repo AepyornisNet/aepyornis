@@ -217,6 +217,15 @@ export class Api {
     );
   }
 
+  public likeWorkout(id: number): Observable<
+    APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>
+  > {
+    return this.http.post<APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>>(
+      `${this.baseUrl}/workouts/${id}/like`,
+      {},
+    );
+  }
+
   public downloadWorkout(id: number): Observable<HttpResponse<Blob>> {
     return this.http.get(`${this.baseUrl}/workouts/${id}/download`, {
       observe: 'response',

@@ -106,6 +106,8 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group) {
 	workoutGroup.GET("/:id", wc.GetWorkout).Name = "workout-get"
 	workoutGroup.GET("/:id/breakdown", wc.GetWorkoutBreakdown).Name = "workout-breakdown"
 	workoutGroup.GET("/:id/stats-range", wc.GetWorkoutRangeStats).Name = "workout-range-stats"
+	workoutGroup.POST("/:id/like", wc.LikeWorkout).Name = "workout-like"
+	workoutGroup.POST("/like", wc.LikeWorkoutByObject).Name = "workout-like-object"
 	workoutGroup.GET("/:id/download", wc.DownloadWorkout).Name = "workout-download"
 	workoutGroup.GET("/:id/attachments/:attachment_id", wc.DownloadWorkoutAttachment).Name = "workout-attachment-download"
 	workoutGroup.PUT("/:id", wc.UpdateWorkout).Name = "workout-update"

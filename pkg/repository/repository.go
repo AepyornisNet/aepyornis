@@ -11,6 +11,7 @@ type Repositories struct {
 	RouteSegment     RouteSegment
 	User             User
 	Workout          Workout
+	WorkoutLike      WorkoutLike
 }
 
 func New(db *gorm.DB) *Repositories {
@@ -23,5 +24,6 @@ func New(db *gorm.DB) *Repositories {
 		RouteSegment:     NewRouteSegment(db),
 		User:             NewUser(db),
 		Workout:          NewWorkout(db),
+		WorkoutLike:      NewWorkoutLike(db),
 	}
 }

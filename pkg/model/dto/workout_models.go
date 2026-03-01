@@ -28,6 +28,8 @@ type WorkoutResponse struct {
 	HasFile              bool                    `json:"has_file"`
 	HasTracks            bool                    `json:"has_tracks"`
 	ActivityPubPublished bool                    `json:"activity_pub_published"`
+	LikesCount           int64                   `json:"likes_count"`
+	LikedByMe            bool                    `json:"liked_by_me"`
 	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
 	// MapData fields (when available)
