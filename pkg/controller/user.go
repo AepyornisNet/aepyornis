@@ -759,7 +759,8 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := ap.SendFollow(c.Request().Context(), viewerActorIRI, viewer.PrivateKey, inbox, actorIRI); err != nil {
+	localActor := uc.context.GetApUser(c)
+	if err := localActor.SendFollow(c.Request().Context(), inbox, actorIRI); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
@@ -830,8 +831,8 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 		return renderApiError(c, http.StatusBadRequest, errors.New("remote actor inbox not found"))
 	}
 
-	viewerActorIRI := uc.localActorIRI(c, viewer)
-	if err := ap.SendUndoFollow(c.Request().Context(), viewerActorIRI, viewer.PrivateKey, inbox, actorIRI); err != nil {
+	localActor := uc.context.GetApUser(c)
+	if err := localActor.SendUndoFollow(c.Request().Context(), inbox, actorIRI); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 

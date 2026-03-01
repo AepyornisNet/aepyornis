@@ -40,8 +40,8 @@ func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User,
 	return user, nil
 }
 
-func requestingActor(c echo.Context) (*vocab.Actor, error) {
-	actor, ok := c.Get(ap.RequestingActorContextKey).(*vocab.Actor)
+func requestingActor(c echo.Context) (*ap.RequestActor, error) {
+	actor, ok := c.Get(ap.RequestingActorContextKey).(*ap.RequestActor)
 	if ok && actor != nil {
 		return actor, nil
 	}
@@ -87,7 +87,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 	err = vocab.On[vocab.Activity](item, func(act *vocab.Activity) error {
 		routed, routeErr := ap.HandleInboxActivity(ap.InboxHandlerContext{
 			TargetUserID:     targetUser.ID,
-			RequestingActor:  actor,
+			RequestingActor:  &actor.Actor,
 			FollowerRepo:     ac.context.FollowerRepo(),
 			OutboxRepo:       ac.context.APOutboxRepo(),
 			WorkoutLikeRepo:  ac.context.WorkoutLikeRepo(),

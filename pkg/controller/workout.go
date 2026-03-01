@@ -543,7 +543,8 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
-	if err := ap.SendLike(c.Request().Context(), viewerActorIRI, viewer.PrivateKey, inbox, params.ObjectID); err != nil {
+	localActor := wc.context.GetApUser(c)
+	if err := localActor.SendLike(c.Request().Context(), inbox, params.ObjectID); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 

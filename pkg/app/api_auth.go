@@ -23,8 +23,7 @@ func (a *App) ValidateAPIKeyMiddleware(key string, c echo.Context) (bool, error)
 		return false, dto.ErrInvalidAPIKey
 	}
 
-	c.Set("user_info", u)
-	c.Set("user_language", u.Profile.Language)
+	a.setContextUser(c, u)
 
 	return true, nil
 }

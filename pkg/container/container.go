@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/alexedwards/scs/v2"
+	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/repository"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
@@ -166,4 +167,15 @@ func (c *Container) GetUser(e echo.Context) *model.User {
 	u.SetContext(e.Request().Context())
 
 	return u
+}
+
+func (c *Container) GetApUser(e echo.Context) *ap.UserActor {
+	d := e.Get("user_ap_actor")
+
+	a, ok := d.(*ap.UserActor)
+	if !ok {
+		return nil
+	}
+
+	return a
 }

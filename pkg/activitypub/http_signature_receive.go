@@ -257,7 +257,7 @@ func decodeSignature(sigValue string) ([]byte, error) {
 	return base64.RawStdEncoding.DecodeString(sigValue)
 }
 
-func VerifyRequest(req *http.Request, httpClient *http.Client) (*vocab.Actor, error) { //nolint:gocyclo
+func VerifyRequest(req *http.Request, httpClient *http.Client) (*RequestActor, error) { //nolint:gocyclo
 	parts, err := extractSignatureParts(req)
 	if err != nil {
 		return nil, err
@@ -326,5 +326,7 @@ func VerifyRequest(req *http.Request, httpClient *http.Client) (*vocab.Actor, er
 		return nil, err
 	}
 
-	return actor, nil
+	return &RequestActor{
+		*actor,
+	}, nil
 }
