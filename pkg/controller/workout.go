@@ -487,42 +487,16 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 
 	localWorkoutID, localErr := wc.context.APOutboxRepo().ResolveWorkoutIDByObjectOrActivityID(0, params.ObjectID)
 	if localErr == nil {
-		workout, err := wc.context.WorkoutRepo().GetByIDForRead(localWorkoutID, false)
+		results, status, err := wc.likeLocalWorkout(c, viewer, localWorkoutID)
 		if err != nil {
-			return renderApiError(c, http.StatusNotFound, err)
-		}
-
-		allowed, err := wc.canReadWorkout(c, viewer, workout)
-		if err != nil {
-			return renderApiError(c, http.StatusInternalServerError, err)
-		}
-
-		if !allowed {
-			return renderApiError(c, http.StatusNotFound, gorm.ErrRecordNotFound)
-		}
-
-		if workout.UserID == viewer.ID {
-			return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
-		}
-
-		if err := wc.context.WorkoutLikeRepo().LikeByUser(localWorkoutID, viewer.ID); err != nil {
-			return renderApiError(c, http.StatusInternalServerError, err)
-		}
-
-		counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{localWorkoutID})
-		if err != nil {
-			return renderApiError(c, http.StatusInternalServerError, err)
+			return renderApiError(c, status, err)
 		}
 
 		resp := dto.Response[map[string]any]{
-			Results: map[string]any{
-				"workout_id":  localWorkoutID,
-				"likes_count": counts[localWorkoutID],
-				"liked":       true,
-			},
+			Results: results,
 		}
 
-		return c.JSON(http.StatusOK, resp)
+		return c.JSON(status, resp)
 	}
 
 	if !errors.Is(localErr, gorm.ErrRecordNotFound) {
@@ -558,6 +532,41 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
+	workout, err := wc.context.WorkoutRepo().GetByIDForRead(localWorkoutID, false)
+	if err != nil {
+		return nil, http.StatusNotFound, err
+	}
+
+	allowed, err := wc.canReadWorkout(c, viewer, workout)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	if !allowed {
+		return nil, http.StatusNotFound, gorm.ErrRecordNotFound
+	}
+
+	if workout.UserID == viewer.ID {
+		return nil, http.StatusBadRequest, errors.New("cannot like your own workout")
+	}
+
+	if err := wc.context.WorkoutLikeRepo().LikeByUser(localWorkoutID, viewer.ID); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{localWorkoutID})
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return map[string]any{
+		"workout_id":  localWorkoutID,
+		"likes_count": counts[localWorkoutID],
+		"liked":       true,
+	}, http.StatusOK, nil
+}
+
 // CreateReply creates a reply/comment on a workout
 // @Summary      Create a reply on a workout
 // @Tags         workouts
@@ -567,7 +576,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        id   path  int  true  "Workout ID"
-// @Param        body body  object{content=string}  true  "Reply content"
+// @Param        payload body  object{content=string}  true  "Reply content"
 // @Success      201  {object}  dto.Response[dto.WorkoutReplyResponse]
 // @Failure      400  {object}  dto.Response[any]
 // @Failure      404  {object}  dto.Response[any]

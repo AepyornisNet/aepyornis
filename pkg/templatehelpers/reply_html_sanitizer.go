@@ -7,7 +7,13 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-var replyClassPattern = regexp.MustCompile(`^(h-card|h-entry|h-event|h-adr|h-feed|p-name|p-summary|p-content|u-url|u-photo|dt-published|dt-updated|e-content|mention|hashtag|ellipsis|invisible|h-[a-zA-Z0-9_-]+|p-[a-zA-Z0-9_-]+|u-[a-zA-Z0-9_-]+|dt-[a-zA-Z0-9_-]+|e-[a-zA-Z0-9_-]+)(\s+(h-card|h-entry|h-event|h-adr|h-feed|p-name|p-summary|p-content|u-url|u-photo|dt-published|dt-updated|e-content|mention|hashtag|ellipsis|invisible|h-[a-zA-Z0-9_-]+|p-[a-zA-Z0-9_-]+|u-[a-zA-Z0-9_-]+|dt-[a-zA-Z0-9_-]+|e-[a-zA-Z0-9_-]+))*$`)
+var replyBasePattern = `(h-card|h-entry|h-event|h-adr|h-feed|p-name|p-summary|p-content|u-url|` +
+	`u-photo|dt-published|dt-updated|e-content|mention|hashtag|ellipsis|invisible|` +
+	`h-[a-zA-Z0-9_-]+|p-[a-zA-Z0-9_-]+|u-[a-zA-Z0-9_-]+|dt-[a-zA-Z0-9_-]+|e-[a-zA-Z0-9_-]+)`
+
+var replyClassPattern = regexp.MustCompile(
+	"^" + replyBasePattern + `(\s+` + replyBasePattern + `)*$`,
+)
 
 var replyPolicy = buildReplySanitizerPolicy()
 

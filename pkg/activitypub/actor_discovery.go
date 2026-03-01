@@ -48,62 +48,41 @@ func ResolveActorIRIFromWebFinger(ctx context.Context, username, host string) (s
 	}
 
 	resource := url.QueryEscape(fmt.Sprintf("acct:%s@%s", username, host))
-	candidates := []string{
-		fmt.Sprintf("https://%s/.well-known/webfinger?resource=%s", host, resource),
+	endpoint := fmt.Sprintf("https://%s/.well-known/webfinger?resource=%s", host, resource)
+
+	client := actorHTTPClient{client: http.DefaultClient}
+	resp, err := client.CtxGet(ctx, endpoint)
+	if err != nil {
+		return "", err
 	}
 
-	var lastErr error
-	for _, endpoint := range candidates {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		req.Header.Set("Accept", "application/jrd+json, application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr != nil {
-			lastErr = readErr
-			continue
-		}
-
-		if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-			lastErr = fmt.Errorf("webfinger rejected: %s", resp.Status)
-			continue
-		}
-
-		parsed := webFingerResponse{}
-		if err := json.Unmarshal(body, &parsed); err != nil {
-			lastErr = err
-			continue
-		}
-
-		for _, link := range parsed.Links {
-			if link.Rel != "self" || link.Href == "" {
-				continue
-			}
-
-			typ := strings.TrimSpace(strings.ToLower(link.Type))
-			if typ == "" || typ == "application/activity+json" || strings.HasPrefix(typ, "application/ld+json") {
-				return link.Href, nil
-			}
-		}
-
-		lastErr = errors.New("no ActivityPub self link found")
+	body, readErr := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if readErr != nil {
+		return "", readErr
 	}
 
-	if lastErr == nil {
-		lastErr = errors.New("could not resolve actor via webfinger")
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("webfinger rejected: %s", resp.Status)
 	}
 
-	return "", lastErr
+	parsed := webFingerResponse{}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return "", err
+	}
+
+	for _, link := range parsed.Links {
+		if link.Rel != "self" || link.Href == "" {
+			continue
+		}
+
+		typ := strings.TrimSpace(strings.ToLower(link.Type))
+		if typ == "" || typ == "application/activity+json" || strings.HasPrefix(typ, "application/ld+json") {
+			return link.Href, nil
+		}
+	}
+
+	return "", errors.New("no ActivityPub self link found")
 }
 
 func LoadRemoteActor(ctx context.Context, actorIRI string) (*vocab.Actor, error) {
@@ -116,13 +95,8 @@ func LoadCollectionTotalItems(ctx context.Context, collectionIRI string) (int64,
 		return 0, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, collectionIRI, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Accept", ContentType)
-
-	resp, err := http.DefaultClient.Do(req)
+	client := actorHTTPClient{client: http.DefaultClient}
+	resp, err := client.CtxGet(ctx, collectionIRI)
 	if err != nil {
 		return 0, err
 	}
@@ -156,13 +130,8 @@ func ResolveObjectActorAndInbox(ctx context.Context, objectIRI string) (string, 
 		return "", "", errors.New("object IRI is required")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, trimmed, nil)
-	if err != nil {
-		return "", "", err
-	}
-	req.Header.Set("Accept", ContentType)
-
-	resp, err := http.DefaultClient.Do(req)
+	client := actorHTTPClient{client: http.DefaultClient}
+	resp, err := client.CtxGet(ctx, trimmed)
 	if err != nil {
 		return "", "", err
 	}

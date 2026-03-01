@@ -234,14 +234,14 @@ func (n *WorkoutNote) SetInReplyTo(iri vocab.IRI) {
 }
 
 // PopulateRepliesCollection builds an OrderedCollection of reply IRIs from a database result
-func (n *WorkoutNote) PopulateRepliesCollection(workoutID uint64, replyCount int64, db interface{}) error {
+func (n *WorkoutNote) PopulateRepliesCollection(workoutID uint64, replyCount int64, db any) error {
 	repliesID := vocab.IRI("")
 	if n.ID != "" {
 		repliesID = vocab.IRI(n.ID.String() + "/replies")
 	}
 
 	replies := vocab.OrderedCollection{
-		ID:         vocab.ID(repliesID),
+		ID:         repliesID,
 		Type:       vocab.OrderedCollectionType,
 		TotalItems: uint(replyCount),
 	}
@@ -263,7 +263,7 @@ func BuildRepliesCollectionWithItems(noteID vocab.IRI, replies []model.WorkoutRe
 	}
 
 	return vocab.OrderedCollection{
-		ID:           vocab.ID(repliesID),
+		ID:           repliesID,
 		Type:         vocab.OrderedCollectionType,
 		TotalItems:   uint(len(items)),
 		OrderedItems: items,

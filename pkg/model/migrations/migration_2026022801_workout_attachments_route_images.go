@@ -10,9 +10,7 @@ func init() {
 		func(*gorm.DB) error {
 			return nil
 		},
-		func(db *gorm.DB) error {
-			return backfillWorkoutRouteImageAttachments(db)
-		},
+		backfillWorkoutRouteImageAttachments,
 		func(*gorm.DB) error {
 			return nil
 		},

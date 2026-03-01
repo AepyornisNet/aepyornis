@@ -419,7 +419,7 @@ func handleUpdateReplyActivity(ctx InboxHandlerContext) error {
 		return nil
 	}
 
-	workoutID := uint64(0)
+	var workoutID uint64
 	if inReplyToIRI != "" {
 		resolvedWorkoutID, resolveErr := ctx.OutboxRepo.ResolveWorkoutIDByObjectOrActivityID(ctx.TargetUserID, inReplyToIRI)
 		if resolveErr != nil {
