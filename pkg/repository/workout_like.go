@@ -12,6 +12,7 @@ type WorkoutLike interface {
 	LikeByUser(workoutID uint64, userID uint64) error
 	LikeByActorIRI(workoutID uint64, actorIRI string) error
 	UnlikeByActorIRI(workoutID uint64, actorIRI string) error
+	ListByWorkoutID(workoutID uint64) ([]model.WorkoutLike, error)
 	CountMapByWorkoutIDs(workoutIDs []uint64) (map[uint64]int64, error)
 	LikedMapByUser(workoutIDs []uint64, userID uint64) (map[uint64]bool, error)
 }
@@ -48,6 +49,22 @@ func (r *workoutLikeRepository) UnlikeByActorIRI(workoutID uint64, actorIRI stri
 	}
 
 	return r.db.Where("workout_id = ? AND actor_iri = ?", workoutID, actorIRI).Delete(&model.WorkoutLike{}).Error
+}
+
+func (r *workoutLikeRepository) ListByWorkoutID(workoutID uint64) ([]model.WorkoutLike, error) {
+	if workoutID == 0 {
+		return nil, errors.New("workout id is required")
+	}
+
+	likes := make([]model.WorkoutLike, 0)
+	if err := r.db.Preload("User").
+		Where("workout_id = ?", workoutID).
+		Order("created_at DESC, id DESC").
+		Find(&likes).Error; err != nil {
+		return nil, err
+	}
+
+	return likes, nil
 }
 
 func (r *workoutLikeRepository) CountMapByWorkoutIDs(workoutIDs []uint64) (map[uint64]int64, error) {

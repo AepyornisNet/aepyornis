@@ -347,3 +347,13 @@ export type WorkoutReply = {
   created_at: string;
   published_at?: string;
 };
+
+export type WorkoutLike = {
+  id: number;
+  user_id?: number;
+  user?: UserProfile;
+  actor_iri?: string;
+  actor_name?: string;
+  avatar_url?: string;
+  created_at: string;
+};

@@ -23,6 +23,7 @@ import (
 type WorkoutController interface {
 	GetWorkouts(c echo.Context) error
 	GetWorkout(c echo.Context) error
+	GetWorkoutLikes(c echo.Context) error
 	GetWorkoutReplies(c echo.Context) error
 	LikeWorkout(c echo.Context) error
 	LikeWorkoutByObject(c echo.Context) error
@@ -273,6 +274,59 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 
 	resp := dto.Response[dto.WorkoutDetailResponse]{
 		Results: result,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// GetWorkoutLikes returns all likes for a workout
+// @Summary      Get workout likes
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path      int  true  "Workout ID"
+// @Produce      json
+// @Success      200  {object}  dto.Response[[]dto.WorkoutLikeResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/likes [get]
+func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	likes, err := wc.context.WorkoutLikeRepo().ListByWorkoutID(workout.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	results := make([]dto.WorkoutLikeResponse, 0, len(likes))
+	for i := range likes {
+		likeResponse := dto.NewWorkoutLikeResponse(&likes[i])
+
+		if likes[i].ActorIRI != nil && *likes[i].ActorIRI != "" {
+			cachedName, cachedAvatarURL, ok := ap.GetCachedActorProfile(*likes[i].ActorIRI)
+			if !ok {
+				cachedName, cachedAvatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *likes[i].ActorIRI)
+			}
+
+			if ok {
+				if cachedName != "" {
+					likeResponse.ActorName = &cachedName
+				}
+				if cachedAvatarURL != "" {
+					likeResponse.AvatarURL = &cachedAvatarURL
+				}
+			}
+		}
+
+		results = append(results, likeResponse)
+	}
+
+	resp := dto.Response[[]dto.WorkoutLikeResponse]{
+		Results: results,
 	}
 
 	return c.JSON(http.StatusOK, resp)

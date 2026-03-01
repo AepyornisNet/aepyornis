@@ -25,6 +25,7 @@ import {
   Workout,
   WorkoutBreakdown,
   WorkoutDetail,
+  WorkoutLike,
   WorkoutListParams,
   WorkoutRangeStats,
   WorkoutRecord,
@@ -225,6 +226,10 @@ export class Api {
       `${this.baseUrl}/workouts/${id}/like`,
       {},
     );
+  }
+
+  public getWorkoutLikes(workoutId: number): Observable<APIResponse<WorkoutLike[]>> {
+    return this.http.get<APIResponse<WorkoutLike[]>>(`${this.baseUrl}/workouts/${workoutId}/likes`);
   }
 
   public createReply(workoutId: number, content: string): Observable<APIResponse<WorkoutReply>> {

@@ -20,6 +20,7 @@ import { WorkoutZoneDistributionComponent } from '../../components/workout-zone-
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
+import { WorkoutLike } from '../../../../core/types/workout';
 import { WorkoutRecordsComponent } from '../../components/workout-records/workout-records';
 import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } from '@ng-bootstrap/ng-bootstrap';
 import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
@@ -112,5 +113,33 @@ export class WorkoutDetailPage implements OnInit {
 
   public onWorkoutDeleted(): void {
     // Navigation is handled by the actions component
+  }
+
+  public likeAuthorName(like: WorkoutLike): string {
+    if (like.user?.name) {
+      return like.user.name;
+    }
+
+    if (like.actor_name) {
+      return like.actor_name;
+    }
+
+    if (like.actor_iri) {
+      return like.actor_iri;
+    }
+
+    return 'Unknown';
+  }
+
+  public likeInitial(like: WorkoutLike): string {
+    return (this.likeAuthorName(like).charAt(0) || '?').toUpperCase();
+  }
+
+  public hasLikeAvatar(like: WorkoutLike): boolean {
+    return !!(like.avatar_url && like.avatar_url.trim());
+  }
+
+  public isRemoteLike(like: WorkoutLike): boolean {
+    return !!like.actor_iri;
   }
 }

@@ -105,6 +105,7 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group) {
 	workoutGroup.GET("/recent", wc.GetRecentWorkouts).Name = "workouts-recent"
 	workoutGroup.GET("/calendar", wc.GetWorkoutCalendar).Name = "workouts-calendar"
 	workoutGroup.GET("/:id", wc.GetWorkout).Name = "workout-get"
+	workoutGroup.GET("/:id/likes", wc.GetWorkoutLikes).Name = "workout-likes"
 	workoutGroup.GET("/:id/breakdown", wc.GetWorkoutBreakdown).Name = "workout-breakdown"
 	workoutGroup.GET("/:id/stats-range", wc.GetWorkoutRangeStats).Name = "workout-range-stats"
 	workoutGroup.GET("/:id/replies", wc.GetWorkoutReplies).Name = "workout-replies"

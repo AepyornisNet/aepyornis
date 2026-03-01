@@ -1083,3 +1083,30 @@ func NewWorkoutReplyResponse(r *model.WorkoutReply) WorkoutReplyResponse {
 	}
 	return res
 }
+
+// WorkoutLikeResponse represents a like on a workout
+type WorkoutLikeResponse struct {
+	ID        uint64               `json:"id"`
+	UserID    *uint64              `json:"user_id,omitempty"`
+	User      *UserProfileResponse `json:"user,omitempty"`
+	ActorIRI  *string              `json:"actor_iri,omitempty"`
+	ActorName *string              `json:"actor_name,omitempty"`
+	AvatarURL *string              `json:"avatar_url,omitempty"`
+	CreatedAt time.Time            `json:"created_at"`
+}
+
+func NewWorkoutLikeResponse(l *model.WorkoutLike) WorkoutLikeResponse {
+	res := WorkoutLikeResponse{
+		ID:        l.ID,
+		UserID:    l.UserID,
+		ActorIRI:  l.ActorIRI,
+		CreatedAt: l.CreatedAt,
+	}
+
+	if l.User != nil {
+		profile := NewUserProfileResponse(l.User)
+		res.User = &profile
+	}
+
+	return res
+}

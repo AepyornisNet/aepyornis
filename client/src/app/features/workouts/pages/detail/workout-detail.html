@@ -293,6 +293,56 @@
           </div>
         }
 
+        <!-- Likes -->
+        @if ((dataService.workout()!.likes_count || 0) > 0) {
+          <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">
+                {{ 'Likes' | translate }}
+                <span class="badge bg-secondary ms-2">{{ dataService.workout()!.likes_count }}</span>
+              </h5>
+            </div>
+            <div class="card-body">
+              @if (dataService.likesLoading()) {
+                <div class="text-center py-2">
+                  <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              } @else {
+                <div class="list-group">
+                  @for (like of dataService.likes(); track like.id) {
+                    <div class="list-group-item d-flex align-items-center gap-2">
+                      @if (hasLikeAvatar(like)) {
+                        <img
+                          class="rounded-circle"
+                          height="28"
+                          width="28"
+                          [alt]="likeAuthorName(like)"
+                          [src]="like.avatar_url"
+                        />
+                      } @else {
+                        <div
+                          class="rounded-circle d-flex align-items-center justify-content-center"
+                          style="width: 28px; height: 28px; background: var(--bs-gray-300); font-size: 0.8rem;"
+                        >
+                          {{ likeInitial(like) }}
+                        </div>
+                      }
+
+                      <span class="flex-grow-1">{{ likeAuthorName(like) }}</span>
+
+                      @if (isRemoteLike(like)) {
+                        <span class="badge bg-info">{{ 'Remote' | translate }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
         <!-- Comments/Replies -->
         <app-workout-comments [workoutId]="dataService.workout()!.id" />
 
