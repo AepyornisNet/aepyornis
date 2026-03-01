@@ -33,10 +33,8 @@
               <div class="comment-content flex-grow-1">
                 <div class="comment-header mb-1">
                   <strong class="comment-author">{{ getAuthorName(comment) }}</strong>
-                  @if (isRemoteComment(comment)) {
-                    <span class="badge bg-info ms-2" [title]="comment.actor_iri">
-                      {{ 'Remote' | translate }}
-                    </span>
+                  @if (getAuthorHandle(comment)) {
+                    <small class="text-muted">{{ getAuthorHandle(comment) }}</small>
                   }
                   <small class="text-muted ms-2">{{ getPublishDate(comment) }}</small>
                 </div>

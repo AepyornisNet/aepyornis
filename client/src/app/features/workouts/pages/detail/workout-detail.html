@@ -330,11 +330,12 @@
                         </div>
                       }
 
-                      <span class="flex-grow-1">{{ likeAuthorName(like) }}</span>
-
-                      @if (isRemoteLike(like)) {
-                        <span class="badge bg-info">{{ 'Remote' | translate }}</span>
-                      }
+                      <div class="flex-grow-1 d-flex flex-column">
+                        <span>{{ likeAuthorName(like) }}</span>
+                        @if (likeHandle(like)) {
+                          <small class="text-muted">{{ likeHandle(like) }}</small>
+                        }
+                      </div>
                     </div>
                   }
                 </div>

@@ -78,6 +78,23 @@ export class WorkoutCommentsComponent {
     return !!reply.actor_iri;
   }
 
+  public getAuthorHandle(reply: WorkoutReply): string {
+    if (reply.user?.username) {
+      return `@${reply.user.username}`;
+    }
+
+    const parsed = this.parseActorIri(reply.actor_iri);
+    if (!parsed) {
+      return '';
+    }
+
+    if (parsed.username) {
+      return `@${parsed.username}@${parsed.host}`;
+    }
+
+    return reply.actor_iri || '';
+  }
+
   public hasAvatarUrl(reply: WorkoutReply): boolean {
     return !!(reply.avatar_url && reply.avatar_url.trim());
   }
@@ -85,6 +102,39 @@ export class WorkoutCommentsComponent {
   public getInitial(reply: WorkoutReply): string {
     const name = this.getAuthorName(reply);
     return (name.charAt(0) || '?').toUpperCase();
+  }
+
+  private parseActorIri(actorIri?: string): { host: string; username: string } | null {
+    if (!actorIri) {
+      return null;
+    }
+
+    try {
+      const url = new URL(actorIri);
+      const segments = url.pathname.split('/').filter((segment) => segment.length > 0);
+
+      let username = '';
+      const usersIndex = segments.findIndex((segment) => segment === 'users' || segment === 'u');
+      if (usersIndex >= 0 && usersIndex + 1 < segments.length) {
+        username = segments[usersIndex + 1];
+      } else {
+        const mentionSegment = segments.find((segment) => segment.startsWith('@'));
+        if (mentionSegment) {
+          username = mentionSegment.slice(1);
+        } else if (segments.length > 0) {
+          username = segments[segments.length - 1];
+        }
+      }
+
+      username = decodeURIComponent(username).replace(/^@+/, '').trim();
+
+      return {
+        host: url.host,
+        username,
+      };
+    } catch {
+      return null;
+    }
   }
 
   public async loadMore(): Promise<void> {
