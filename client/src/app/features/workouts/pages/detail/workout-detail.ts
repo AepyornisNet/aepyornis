@@ -20,12 +20,14 @@ import { WorkoutZoneDistributionComponent } from '../../components/workout-zone-
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
+import { WorkoutLike } from '../../../../core/types/workout';
 import { WorkoutRecordsComponent } from '../../components/workout-records/workout-records';
 import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } from '@ng-bootstrap/ng-bootstrap';
 import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
 import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
+import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
 
 @Component({
   selector: 'app-workout-detail',
@@ -47,6 +49,7 @@ import { WorkoutPerformanceCurveComponent } from '../../components/workout-perfo
     NgbNavLinkButton,
     NgbNavContent,
     WorkoutPerformanceCurveComponent,
+    WorkoutCommentsComponent,
     TranslatePipe
 ],
   templateUrl: './workout-detail.html',
@@ -110,5 +113,79 @@ export class WorkoutDetailPage implements OnInit {
 
   public onWorkoutDeleted(): void {
     // Navigation is handled by the actions component
+  }
+
+  public likeAuthorName(like: WorkoutLike): string {
+    if (like.user?.name) {
+      return like.user.name;
+    }
+
+    if (like.actor_name) {
+      return like.actor_name;
+    }
+
+    if (like.actor_iri) {
+      return like.actor_iri;
+    }
+
+    return 'Unknown';
+  }
+
+  public likeInitial(like: WorkoutLike): string {
+    return (this.likeAuthorName(like).charAt(0) || '?').toUpperCase();
+  }
+
+  public hasLikeAvatar(like: WorkoutLike): boolean {
+    return !!(like.avatar_url && like.avatar_url.trim());
+  }
+
+  public likeHandle(like: WorkoutLike): string {
+    if (like.user?.username) {
+      return `@${like.user.username}`;
+    }
+
+    const parsed = this.parseActorIri(like.actor_iri);
+    if (!parsed) {
+      return '';
+    }
+
+    if (parsed.username) {
+      return `@${parsed.username}@${parsed.host}`;
+    }
+
+    return like.actor_iri || '';
+  }
+
+  private parseActorIri(actorIri?: string): { host: string; username: string } | null {
+    if (!actorIri) {
+      return null;
+    }
+
+    try {
+      const url = new URL(actorIri);
+      const segments = url.pathname.split('/').filter((segment) => segment.length > 0);
+
+      let username = '';
+      const usersIndex = segments.findIndex((segment) => segment === 'users' || segment === 'u');
+      if (usersIndex >= 0 && usersIndex + 1 < segments.length) {
+        username = segments[usersIndex + 1];
+      } else {
+        const mentionSegment = segments.find((segment) => segment.startsWith('@'));
+        if (mentionSegment) {
+          username = mentionSegment.slice(1);
+        } else if (segments.length > 0) {
+          username = segments[segments.length - 1];
+        }
+      }
+
+      username = decodeURIComponent(username).replace(/^@+/, '').trim();
+
+      return {
+        host: url.host,
+        username,
+      };
+    } catch {
+      return null;
+    }
   }
 }

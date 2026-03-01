@@ -25,9 +25,11 @@ import {
   Workout,
   WorkoutBreakdown,
   WorkoutDetail,
+  WorkoutLike,
   WorkoutListParams,
   WorkoutRangeStats,
   WorkoutRecord,
+  WorkoutReply,
 } from '../../core/types/workout';
 import { Measurement } from '../../core/types/measurement';
 import { Equipment } from '../../core/types/equipment';
@@ -214,6 +216,44 @@ export class Api {
     return this.http.post<APIResponse<{ message: string }>>(
       `${this.baseUrl}/workouts/${id}/refresh`,
       {},
+    );
+  }
+
+  public likeWorkout(id: number): Observable<
+    APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>
+  > {
+    return this.http.post<APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>>(
+      `${this.baseUrl}/workouts/${id}/like`,
+      {},
+    );
+  }
+
+  public getWorkoutLikes(workoutId: number): Observable<APIResponse<WorkoutLike[]>> {
+    return this.http.get<APIResponse<WorkoutLike[]>>(`${this.baseUrl}/workouts/${workoutId}/likes`);
+  }
+
+  public createReply(workoutId: number, content: string): Observable<APIResponse<WorkoutReply>> {
+    return this.http.post<APIResponse<WorkoutReply>>(
+      `${this.baseUrl}/workouts/${workoutId}/replies`,
+      { content },
+    );
+  }
+
+  public getWorkoutReplies(
+    workoutId: number,
+    params?: PaginationParams,
+  ): Observable<PaginatedAPIResponse<WorkoutReply>> {
+    let httpParams = new HttpParams();
+    if (params?.page) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.per_page) {
+      httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+
+    return this.http.get<PaginatedAPIResponse<WorkoutReply>>(
+      `${this.baseUrl}/workouts/${workoutId}/replies`,
+      { params: httpParams },
     );
   }
 

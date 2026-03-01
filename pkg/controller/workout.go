@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -11,9 +10,6 @@ import (
 	"strings"
 	"time"
 
-	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/jsonld"
-	"github.com/google/uuid"
 	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
@@ -27,6 +23,11 @@ import (
 type WorkoutController interface {
 	GetWorkouts(c echo.Context) error
 	GetWorkout(c echo.Context) error
+	GetWorkoutLikes(c echo.Context) error
+	GetWorkoutReplies(c echo.Context) error
+	LikeWorkout(c echo.Context) error
+	LikeWorkoutByObject(c echo.Context) error
+	CreateReply(c echo.Context) error
 	GetWorkoutBreakdown(c echo.Context) error
 	GetWorkoutRangeStats(c echo.Context) error
 	GetWorkoutCalendar(c echo.Context) error
@@ -37,6 +38,7 @@ type WorkoutController interface {
 	ToggleWorkoutLock(c echo.Context) error
 	RefreshWorkout(c echo.Context) error
 	DownloadWorkout(c echo.Context) error
+	DownloadWorkoutAttachment(c echo.Context) error
 }
 
 type workoutController struct {
@@ -65,6 +67,19 @@ func workoutIDs(ws []*model.Workout) []uint64 {
 func applyPublishedFlags(results []dto.WorkoutResponse, published map[uint64]bool) {
 	for i := range results {
 		results[i].ActivityPubPublished = published[results[i].ID]
+	}
+}
+
+func applyLikeMetadata(results []dto.WorkoutResponse, counts map[uint64]int64, liked map[uint64]bool) {
+	for i := range results {
+		results[i].LikesCount = counts[results[i].ID]
+		results[i].LikedByMe = liked[results[i].ID]
+	}
+}
+
+func applyReplyMetadata(results []dto.WorkoutResponse, counts map[uint64]int64) {
+	for i := range results {
+		results[i].RepliesCount = counts[results[i].ID]
 	}
 }
 
@@ -189,6 +204,19 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 		applyPublishedFlags(results, published)
 	}
 
+	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	if err == nil {
+		liked, likedErr := wc.context.WorkoutLikeRepo().LikedMapByUser(workoutIDs(workouts), user.ID)
+		if likedErr == nil {
+			applyLikeMetadata(results, counts, liked)
+		}
+	}
+
+	replyCounts, err := wc.context.WorkoutReplyRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	if err == nil {
+		applyReplyMetadata(results, replyCounts)
+	}
+
 	resp := dto.PaginatedResponse[dto.WorkoutResponse]{
 		Results:    results,
 		Page:       pagination.Page,
@@ -229,11 +257,373 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		result.ActivityPubPublished = published[workout.ID]
 	}
 
+	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{workout.ID})
+	if err == nil {
+		result.LikesCount = counts[workout.ID]
+	}
+
+	liked, err := wc.context.WorkoutLikeRepo().LikedMapByUser([]uint64{workout.ID}, wc.context.GetUser(c).ID)
+	if err == nil {
+		result.LikedByMe = liked[workout.ID]
+	}
+
+	replyCount, err := wc.context.WorkoutReplyRepo().CountByWorkoutID(workout.ID)
+	if err == nil {
+		result.RepliesCount = replyCount
+	}
+
 	resp := dto.Response[dto.WorkoutDetailResponse]{
 		Results: result,
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// GetWorkoutLikes returns all likes for a workout
+// @Summary      Get workout likes
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path      int  true  "Workout ID"
+// @Produce      json
+// @Success      200  {object}  dto.Response[[]dto.WorkoutLikeResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/likes [get]
+func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	likes, err := wc.context.WorkoutLikeRepo().ListByWorkoutID(workout.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	results := make([]dto.WorkoutLikeResponse, 0, len(likes))
+	for i := range likes {
+		likeResponse := dto.NewWorkoutLikeResponse(&likes[i])
+
+		if likes[i].ActorIRI != nil && *likes[i].ActorIRI != "" {
+			cachedName, cachedAvatarURL, ok := ap.GetCachedActorProfile(*likes[i].ActorIRI)
+			if !ok {
+				cachedName, cachedAvatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *likes[i].ActorIRI)
+			}
+
+			if ok {
+				if cachedName != "" {
+					likeResponse.ActorName = &cachedName
+				}
+				if cachedAvatarURL != "" {
+					likeResponse.AvatarURL = &cachedAvatarURL
+				}
+			}
+		}
+
+		results = append(results, likeResponse)
+	}
+
+	resp := dto.Response[[]dto.WorkoutLikeResponse]{
+		Results: results,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// GetWorkoutReplies returns paginated replies/comments for a workout
+// @Summary      Get workout replies
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id        path      int  true  "Workout ID"
+// @Param        page      query     int  false "Page"
+// @Param        per_page  query     int  false "Per page"
+// @Produce      json
+// @Success      200  {object}  dto.PaginatedResponse[dto.WorkoutReplyResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/replies [get]
+func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	var pagination dto.PaginationParams
+	pagination.SetDefaults()
+	if pageStr := c.QueryParam("page"); pageStr != "" {
+		if page, parseErr := strconv.Atoi(pageStr); parseErr == nil {
+			pagination.Page = page
+		}
+	}
+	if perPageStr := c.QueryParam("per_page"); perPageStr != "" {
+		if perPage, parseErr := strconv.Atoi(perPageStr); parseErr == nil {
+			pagination.PerPage = perPage
+		}
+	}
+	pagination.SetDefaults()
+
+	totalCount, err := wc.context.WorkoutReplyRepo().CountByWorkoutID(workout.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	replies, err := wc.context.WorkoutReplyRepo().ListByWorkoutID(workout.ID, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	results := make([]dto.WorkoutReplyResponse, 0, len(replies))
+	for i := range replies {
+		replyResponse := dto.NewWorkoutReplyResponse(&replies[i])
+		if replies[i].ActorIRI != nil && *replies[i].ActorIRI != "" {
+			cachedName, cachedAvatarURL, ok := ap.GetCachedActorProfile(*replies[i].ActorIRI)
+			if !ok {
+				cachedName, cachedAvatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *replies[i].ActorIRI)
+			}
+			if ok {
+				if replyResponse.ActorName == nil && cachedName != "" {
+					replyResponse.ActorName = &cachedName
+				}
+				if cachedAvatarURL != "" {
+					replyResponse.AvatarURL = &cachedAvatarURL
+				}
+			}
+		}
+
+		results = append(results, replyResponse)
+	}
+
+	resp := dto.PaginatedResponse[dto.WorkoutReplyResponse]{
+		Results:    results,
+		Page:       pagination.Page,
+		PerPage:    pagination.PerPage,
+		TotalPages: pagination.CalculateTotalPages(totalCount),
+		TotalCount: totalCount,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// LikeWorkout likes a local workout by ID
+// @Summary      Like workout
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Workout ID"
+// @Produce      json
+// @Success      200  {object}  dto.Response[map[string]any]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/like [post]
+func (wc *workoutController) LikeWorkout(c echo.Context) error {
+	viewer := wc.context.GetUser(c)
+	if viewer == nil || viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
+	}
+
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if workout.UserID == viewer.ID {
+		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
+	}
+
+	if err := wc.context.WorkoutLikeRepo().LikeByUser(workout.ID, viewer.ID); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{workout.ID})
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	resp := dto.Response[map[string]any]{
+		Results: map[string]any{
+			"workout_id":  workout.ID,
+			"likes_count": counts[workout.ID],
+			"liked":       true,
+		},
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// LikeWorkoutByObject likes an ActivityPub workout object by object IRI
+// @Summary      Like ActivityPub workout object
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dto.Response[map[string]any]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/like [post]
+func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
+	viewer := wc.context.GetUser(c)
+	if viewer == nil || viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
+	}
+
+	params := struct {
+		ObjectID string `json:"object_id" form:"object_id" query:"object_id"`
+	}{}
+	if err := c.Bind(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	params.ObjectID = strings.TrimSpace(params.ObjectID)
+	if params.ObjectID == "" {
+		return renderApiError(c, http.StatusBadRequest, errors.New("object_id is required"))
+	}
+
+	localWorkoutID, localErr := wc.context.APOutboxRepo().ResolveWorkoutIDByObjectOrActivityID(0, params.ObjectID)
+	if localErr == nil {
+		results, status, err := wc.likeLocalWorkout(c, viewer, localWorkoutID)
+		if err != nil {
+			return renderApiError(c, status, err)
+		}
+
+		resp := dto.Response[map[string]any]{
+			Results: results,
+		}
+
+		return c.JSON(status, resp)
+	}
+
+	if !errors.Is(localErr, gorm.ErrRecordNotFound) {
+		return renderApiError(c, http.StatusInternalServerError, localErr)
+	}
+
+	if !viewer.ActivityPubEnabled() {
+		return renderApiError(c, http.StatusBadRequest, errors.New("activitypub must be enabled to like remote workouts"))
+	}
+
+	actorIRI, inbox, err := ap.ResolveObjectActorAndInbox(c.Request().Context(), params.ObjectID)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	viewerActorIRI := wc.localActorIRI(c, viewer)
+	if actorIRI == viewerActorIRI {
+		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
+	}
+
+	localActor := wc.context.GetApUser(c)
+	if err := localActor.SendLike(c.Request().Context(), inbox, params.ObjectID); err != nil {
+		return renderApiError(c, http.StatusBadGateway, err)
+	}
+
+	resp := dto.Response[map[string]any]{
+		Results: map[string]any{
+			"object_id": params.ObjectID,
+			"liked":     true,
+		},
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
+	workout, err := wc.context.WorkoutRepo().GetByIDForRead(localWorkoutID, false)
+	if err != nil {
+		return nil, http.StatusNotFound, err
+	}
+
+	allowed, err := wc.canReadWorkout(c, viewer, workout)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	if !allowed {
+		return nil, http.StatusNotFound, gorm.ErrRecordNotFound
+	}
+
+	if workout.UserID == viewer.ID {
+		return nil, http.StatusBadRequest, errors.New("cannot like your own workout")
+	}
+
+	if err := wc.context.WorkoutLikeRepo().LikeByUser(localWorkoutID, viewer.ID); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{localWorkoutID})
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return map[string]any{
+		"workout_id":  localWorkoutID,
+		"likes_count": counts[localWorkoutID],
+		"liked":       true,
+	}, http.StatusOK, nil
+}
+
+// CreateReply creates a reply/comment on a workout
+// @Summary      Create a reply on a workout
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int  true  "Workout ID"
+// @Param        payload body  object{content=string}  true  "Reply content"
+// @Success      201  {object}  dto.Response[dto.WorkoutReplyResponse]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/replies [post]
+func (wc *workoutController) CreateReply(c echo.Context) error {
+	viewer := wc.context.GetUser(c)
+
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	params := struct {
+		Content string `json:"content"`
+	}{}
+
+	if err := c.Bind(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	params.Content = strings.TrimSpace(params.Content)
+
+	if params.Content == "" {
+		return renderApiError(c, http.StatusBadRequest, errors.New("content is required"))
+	}
+
+	reply, err := wc.context.WorkoutReplyRepo().CreateLocalReply(workout.ID, viewer.ID, params.Content)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	// Reload reply with user data
+	if err := wc.context.GetDB().Preload("User").First(reply, reply.ID).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if err := worker.PublishReplyToActivityPub(c.Request().Context(), wc.context, viewer, workout, reply); err != nil {
+		wc.context.Logger().Warn("Failed to publish workout reply to ActivityPub", "reply_id", reply.ID, "error", err)
+	}
+
+	replyResponse := dto.NewWorkoutReplyResponse(reply)
+
+	resp := dto.Response[dto.WorkoutReplyResponse]{
+		Results: replyResponse,
+	}
+
+	return c.JSON(http.StatusCreated, resp)
 }
 
 // GetWorkoutBreakdown returns breakdown table data or laps for a workout
@@ -594,8 +984,6 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 		for _, w := range ws {
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
 
-			wc.syncWorkoutActivityPub(c, user, w, nil)
-
 			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, w.ID); err != nil {
 				wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
 			}
@@ -675,7 +1063,9 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	wc.syncWorkoutActivityPub(c, user, workout, nil)
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
+		wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
+	}
 
 	result := dto.NewWorkoutResponse(workout)
 	resp := dto.Response[dto.WorkoutResponse]{
@@ -743,6 +1133,19 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	}
 
 	results := dto.NewWorkoutsResponse(workouts)
+
+	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	if err == nil {
+		liked, likedErr := wc.context.WorkoutLikeRepo().LikedMapByUser(workoutIDs(workouts), requester.ID)
+		if likedErr == nil {
+			applyLikeMetadata(results, counts, liked)
+		}
+	}
+
+	replyCounts, err := wc.context.WorkoutReplyRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	if err == nil {
+		applyReplyMetadata(results, replyCounts)
+	}
 
 	resp := dto.Response[[]dto.WorkoutResponse]{
 		Results: results,
@@ -812,8 +1215,6 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	previousVisibility := workout.Visibility
-
 	if err := d.Update(workout); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -836,7 +1237,9 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	wc.syncWorkoutActivityPub(c, user, workout, &previousVisibility)
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
+		wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
+	}
 
 	result := dto.NewWorkoutResponse(workout)
 	resp := dto.Response[dto.WorkoutResponse]{
@@ -918,209 +1321,6 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (wc *workoutController) publishWorkoutToActivityPub(c echo.Context, user *model.User, workout *model.Workout) error {
-	fitContent, err := ap.GenerateWorkoutFIT(workout)
-	if err != nil {
-		return err
-	}
-
-	entryUUID := uuid.New()
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           wc.context.GetConfig().Host,
-		WebRoot:        wc.context.GetConfig().WebRoot,
-		FallbackHost:   c.Request().Host,
-		FallbackScheme: c.Scheme(),
-	}, user.Username)
-
-	entryURL := fmt.Sprintf("%s/outbox/%s", actorURL, entryUUID.String())
-	objectURL := entryURL + "#object"
-	fitURL := entryURL + "/fit"
-	routeImageURL := entryURL + "/route-image"
-	publishedAt := time.Now().UTC()
-	noteContent := ap.WorkoutNoteContent(workout)
-
-	attachments := vocab.ItemCollection{}
-	routeImageContent, routeImageErr := ap.GenerateWorkoutRouteImage(workout)
-	if routeImageErr == nil && len(routeImageContent) > 0 {
-		attachments = append(attachments, &vocab.Object{
-			Type:      vocab.ImageType,
-			Name:      vocab.DefaultNaturalLanguage(ap.WorkoutRouteImageFilename(workout)),
-			MediaType: vocab.MimeType(ap.RouteImageMIMEType),
-			URL:       vocab.IRI(routeImageURL),
-		})
-	} else if routeImageErr != nil && !errors.Is(routeImageErr, ap.ErrWorkoutMissingCoordinates) {
-		wc.context.Logger().Warn("Failed to generate workout route image", "workout_id", workout.ID, "error", routeImageErr)
-	}
-
-	note := ap.NewWorkoutNote()
-	note.ID = vocab.ID(objectURL)
-	note.AttributedTo = vocab.IRI(actorURL)
-	note.Published = publishedAt
-	note.Content = vocab.DefaultNaturalLanguage(noteContent)
-	note.Attachment = attachments
-	// TODO: Workout location might not be set at this point
-	note.PopulateFromWorkout(workout, vocab.IRI(fitURL))
-
-	to := vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	cc := vocab.ItemCollection{}
-	if workout.Visibility == model.WorkoutVisibilityPublic {
-		to = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
-		cc = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	}
-
-	activity := vocab.Activity{
-		ID:        vocab.ID(entryURL),
-		Type:      vocab.CreateType,
-		Actor:     vocab.IRI(actorURL),
-		Published: publishedAt,
-		To:        to,
-		CC:        cc,
-		Object:    note,
-	}
-
-	activityJSON, err := jsonld.WithContext(
-		ap.WorkoutJSONLDContext(),
-	).Marshal(activity)
-	if err != nil {
-		return err
-	}
-
-	noteJSON, err := jsonld.WithContext(
-		ap.WorkoutJSONLDContext(),
-	).Marshal(note)
-	if err != nil {
-		return err
-	}
-
-	outboxWorkout := &model.APOutboxWorkout{
-		UserID:         user.ID,
-		WorkoutID:      workout.ID,
-		FitFilename:    ap.WorkoutFITFilename(workout),
-		FitContent:     fitContent,
-		FitContentType: ap.FitMIMEType,
-	}
-
-	if len(routeImageContent) > 0 {
-		outboxWorkout.RouteImageFilename = ap.WorkoutRouteImageFilename(workout)
-		outboxWorkout.RouteImageContent = routeImageContent
-		outboxWorkout.RouteImageContentType = ap.RouteImageMIMEType
-	}
-
-	if err := wc.context.APOutboxRepo().CreateWorkout(outboxWorkout); err != nil {
-		return err
-	}
-
-	entry := &model.APOutboxEntry{
-		PublicUUID:        entryUUID,
-		UserID:            user.ID,
-		APOutboxWorkoutID: &outboxWorkout.ID,
-		Kind:              model.APOutboxWorkoutKind,
-		ActivityID:        entryURL,
-		ObjectID:          objectURL,
-		Activity:          activityJSON,
-		Payload:           noteJSON,
-		NoteText:          noteContent,
-		PublishedAt:       publishedAt,
-	}
-
-	if err := wc.context.APOutboxRepo().CreateEntry(entry); err != nil {
-		return err
-	}
-
-	if err := worker.EnqueueAPDeliveriesForEntry(c.Request().Context(), wc.context, entry.ID); err != nil {
-		wc.context.Logger().Error("Failed to enqueue ActivityPub deliveries", "entry_id", entry.ID, "error", err)
-	}
-
-	return nil
-}
-
-func (wc *workoutController) updateWorkoutActivityPubAudience(c echo.Context, user *model.User, entry *model.APOutboxEntry, workout *model.Workout) error {
-	if entry == nil {
-		return errors.New("outbox entry is nil")
-	}
-
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           wc.context.GetConfig().Host,
-		WebRoot:        wc.context.GetConfig().WebRoot,
-		FallbackHost:   c.Request().Host,
-		FallbackScheme: c.Scheme(),
-	}, user.Username)
-
-	activity := vocab.Activity{}
-	if err := jsonld.Unmarshal(entry.Activity, &activity); err != nil {
-		return err
-	}
-
-	note := ap.NewWorkoutNote()
-	if len(entry.Payload) > 0 {
-		if err := jsonld.Unmarshal(entry.Payload, note); err != nil {
-			return err
-		}
-	}
-
-	activity.To = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	activity.CC = vocab.ItemCollection{}
-	activity.Object = note
-	if workout.Visibility == model.WorkoutVisibilityPublic {
-		activity.To = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
-		activity.CC = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
-	}
-
-	activityJSON, err := jsonld.WithContext(
-		ap.WorkoutJSONLDContext(),
-	).Marshal(activity)
-	if err != nil {
-		return err
-	}
-
-	return wc.context.GetDB().Model(&model.APOutboxEntry{}).
-		Where("id = ?", entry.ID).
-		Update("activity", activityJSON).Error
-}
-
-func (wc *workoutController) syncWorkoutActivityPub(c echo.Context, user *model.User, workout *model.Workout, previousVisibility *model.WorkoutVisibility) {
-	if user == nil || workout == nil {
-		return
-	}
-
-	if previousVisibility != nil && *previousVisibility == workout.Visibility {
-		return
-	}
-
-	entry, err := wc.context.APOutboxRepo().GetEntryForWorkout(user.ID, workout.ID)
-	hasOutboxEntry := err == nil
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		wc.context.Logger().Warn("Failed to check ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
-		return
-	}
-
-	shouldPublish := user.ActivityPubEnabled() &&
-		(workout.Visibility == model.WorkoutVisibilityPublic || workout.Visibility == model.WorkoutVisibilityFollowers)
-
-	if !shouldPublish {
-		if hasOutboxEntry {
-			if err := wc.context.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				wc.context.Logger().Warn("Failed to remove ActivityPub outbox entry", "workout_id", workout.ID, "error", err)
-			}
-		}
-
-		return
-	}
-
-	if hasOutboxEntry {
-		if err := wc.updateWorkoutActivityPubAudience(c, user, entry, workout); err != nil {
-			wc.context.Logger().Warn("Failed to update ActivityPub audience", "workout_id", workout.ID, "error", err)
-		}
-
-		// Already published: do not repost existing workouts and avoid duplicate deliveries.
-		return
-	}
-
-	if err := wc.publishWorkoutToActivityPub(c, user, workout); err != nil {
-		wc.context.Logger().Warn("Failed to publish workout to ActivityPub", "workout_id", workout.ID, "error", err)
-	}
-}
-
 // DownloadWorkout downloads the original workout file
 // @Summary      Download workout file
 // @Tags         workouts
@@ -1150,6 +1350,40 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
 
 	return c.Blob(http.StatusOK, "application/binary", workout.GPX.Content)
+}
+
+// DownloadWorkoutAttachment downloads a workout attachment
+// @Summary      Download workout attachment
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id             path  int  true  "Workout ID"
+// @Param        attachment_id  path  int  true  "Attachment ID"
+// @Produce      octet-stream
+// @Success      200  {string}  string  "binary attachment file"
+// @Failure      404  {object}  dto.Response[any]
+// @Router       /workouts/{id}/attachments/{attachment_id} [get]
+func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
+	workout, err := wc.getReadableWorkout(c, false)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	attachmentID, err := cast.ToUint64E(c.Param("attachment_id"))
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	var attachment model.WorkoutAttachment
+	if err := wc.context.GetDB().
+		Where("id = ? AND workout_id = ?", attachmentID, workout.ID).
+		First(&attachment).Error; err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename=\""+attachment.Filename+"\"")
+	return c.Blob(http.StatusOK, attachment.ContentType, attachment.Content)
 }
 
 func uploadedFile(file *multipart.FileHeader) ([]byte, error) {

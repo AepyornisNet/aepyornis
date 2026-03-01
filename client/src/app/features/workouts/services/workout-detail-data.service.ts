@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../core/services/api';
-import { WorkoutDetail } from '../../../core/types/workout';
+import { WorkoutDetail, WorkoutLike } from '../../../core/types/workout';
 
 /**
  * Service responsible for managing workout data and providing common formatting utilities.
@@ -13,6 +13,8 @@ export class WorkoutDetailDataService {
   private api = inject(Api);
 
   public readonly workout = signal<WorkoutDetail | null>(null);
+  public readonly likes = signal<WorkoutLike[]>([]);
+  public readonly likesLoading = signal(false);
   public readonly loading = signal(false);
   public readonly error = signal<string | null>(null);
 
@@ -82,6 +84,7 @@ export class WorkoutDetailDataService {
 
       if (response) {
         this.workout.set(response.results);
+        void this.loadWorkoutLikes(response.results.id);
       }
     } catch (err) {
       console.error('Failed to load workout:', err);
@@ -91,8 +94,28 @@ export class WorkoutDetailDataService {
     }
   }
 
+  public async loadWorkoutLikes(workoutId: number): Promise<void> {
+    if (!workoutId) {
+      this.likes.set([]);
+      return;
+    }
+
+    this.likesLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.api.getWorkoutLikes(workoutId));
+      this.likes.set(response?.results || []);
+    } catch (err) {
+      console.error('Failed to load workout likes:', err);
+      this.likes.set([]);
+    } finally {
+      this.likesLoading.set(false);
+    }
+  }
+
   public clearWorkout(): void {
     this.workout.set(null);
+    this.likes.set([]);
+    this.likesLoading.set(false);
     this.loading.set(false);
     this.error.set(null);
   }

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/alexedwards/scs/v2"
+	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/repository"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
@@ -127,6 +128,22 @@ func (c *Container) WorkoutRepo() repository.Workout {
 	return c.repositories.Workout
 }
 
+func (c *Container) WorkoutLikeRepo() repository.WorkoutLike {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.WorkoutLike
+}
+
+func (c *Container) WorkoutReplyRepo() repository.WorkoutReply {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.WorkoutReply
+}
+
 func (c *Container) UserRepo() repository.User {
 	if c.repositories == nil {
 		return nil
@@ -150,4 +167,15 @@ func (c *Container) GetUser(e echo.Context) *model.User {
 	u.SetContext(e.Request().Context())
 
 	return u
+}
+
+func (c *Container) GetApUser(e echo.Context) *ap.UserActor {
+	d := e.Get("user_ap_actor")
+
+	a, ok := d.(*ap.UserActor)
+	if !ok {
+		return nil
+	}
+
+	return a
 }

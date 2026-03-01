@@ -14,6 +14,24 @@ import (
 	"github.com/go-ap/jsonld"
 )
 
+func itemIRIString(it vocab.Item) string {
+	if vocab.IsNil(it) {
+		return ""
+	}
+
+	if vocab.IsIRI(it) {
+		return it.GetLink().String()
+	}
+
+	iri := ""
+	_ = vocab.OnLink(it, func(link *vocab.Link) error {
+		iri = link.Href.String()
+		return nil
+	})
+
+	return iri
+}
+
 type webFingerResponse struct {
 	Links []struct {
 		Rel  string `json:"rel"`
@@ -30,62 +48,41 @@ func ResolveActorIRIFromWebFinger(ctx context.Context, username, host string) (s
 	}
 
 	resource := url.QueryEscape(fmt.Sprintf("acct:%s@%s", username, host))
-	candidates := []string{
-		fmt.Sprintf("https://%s/.well-known/webfinger?resource=%s", host, resource),
+	endpoint := fmt.Sprintf("https://%s/.well-known/webfinger?resource=%s", host, resource)
+
+	client := actorHTTPClient{client: http.DefaultClient}
+	resp, err := client.CtxGet(ctx, endpoint)
+	if err != nil {
+		return "", err
 	}
 
-	var lastErr error
-	for _, endpoint := range candidates {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		req.Header.Set("Accept", "application/jrd+json, application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr != nil {
-			lastErr = readErr
-			continue
-		}
-
-		if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-			lastErr = fmt.Errorf("webfinger rejected: %s", resp.Status)
-			continue
-		}
-
-		parsed := webFingerResponse{}
-		if err := json.Unmarshal(body, &parsed); err != nil {
-			lastErr = err
-			continue
-		}
-
-		for _, link := range parsed.Links {
-			if link.Rel != "self" || link.Href == "" {
-				continue
-			}
-
-			typ := strings.TrimSpace(strings.ToLower(link.Type))
-			if typ == "" || typ == "application/activity+json" || strings.HasPrefix(typ, "application/ld+json") {
-				return link.Href, nil
-			}
-		}
-
-		lastErr = errors.New("no ActivityPub self link found")
+	body, readErr := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if readErr != nil {
+		return "", readErr
 	}
 
-	if lastErr == nil {
-		lastErr = errors.New("could not resolve actor via webfinger")
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("webfinger rejected: %s", resp.Status)
 	}
 
-	return "", lastErr
+	parsed := webFingerResponse{}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return "", err
+	}
+
+	for _, link := range parsed.Links {
+		if link.Rel != "self" || link.Href == "" {
+			continue
+		}
+
+		typ := strings.TrimSpace(strings.ToLower(link.Type))
+		if typ == "" || typ == "application/activity+json" || strings.HasPrefix(typ, "application/ld+json") {
+			return link.Href, nil
+		}
+	}
+
+	return "", errors.New("no ActivityPub self link found")
 }
 
 func LoadRemoteActor(ctx context.Context, actorIRI string) (*vocab.Actor, error) {
@@ -98,13 +95,8 @@ func LoadCollectionTotalItems(ctx context.Context, collectionIRI string) (int64,
 		return 0, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, collectionIRI, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Accept", ContentType)
-
-	resp, err := http.DefaultClient.Do(req)
+	client := actorHTTPClient{client: http.DefaultClient}
+	resp, err := client.CtxGet(ctx, collectionIRI)
 	if err != nil {
 		return 0, err
 	}
@@ -130,4 +122,64 @@ func LoadCollectionTotalItems(ctx context.Context, collectionIRI string) (int64,
 	}
 
 	return 0, errors.New("could not parse collection")
+}
+
+func ResolveObjectActorAndInbox(ctx context.Context, objectIRI string) (string, string, error) {
+	trimmed := strings.TrimSpace(objectIRI)
+	if trimmed == "" {
+		return "", "", errors.New("object IRI is required")
+	}
+
+	client := actorHTTPClient{client: http.DefaultClient}
+	resp, err := client.CtxGet(ctx, trimmed)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", "", fmt.Errorf("object fetch rejected: %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	actorIRI := ""
+	activity := vocab.Activity{}
+	if err := jsonld.Unmarshal(body, &activity); err == nil {
+		actorIRI = itemIRIString(activity.Actor)
+		if actorIRI == "" {
+			_ = vocab.OnObject(activity.Object, func(object *vocab.Object) error {
+				if object != nil {
+					actorIRI = itemIRIString(object.AttributedTo)
+				}
+				return nil
+			})
+		}
+	}
+
+	if actorIRI == "" {
+		object := vocab.Object{}
+		if err := jsonld.Unmarshal(body, &object); err == nil {
+			actorIRI = itemIRIString(object.AttributedTo)
+		}
+	}
+
+	if actorIRI == "" {
+		return "", "", errors.New("object actor not found")
+	}
+
+	actor, err := LoadRemoteActor(ctx, actorIRI)
+	if err != nil {
+		return "", "", err
+	}
+
+	inbox := itemIRIString(actor.Inbox)
+	if inbox == "" {
+		return "", "", errors.New("actor inbox not found")
+	}
+
+	return actorIRI, inbox, nil
 }

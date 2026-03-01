@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
@@ -255,13 +254,7 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           pc.context.GetConfig().Host,
-		WebRoot:        pc.context.GetConfig().WebRoot,
-		FallbackHost:   c.Request().Host,
-		FallbackScheme: c.Scheme(),
-	}, user.Username)
-	if err := ap.SendFollowAccept(c.Request().Context(), actorURL, user.PrivateKey, *follower); err != nil {
+	if err := pc.context.GetApUser(c).SendFollowAccept(c.Request().Context(), *follower); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 

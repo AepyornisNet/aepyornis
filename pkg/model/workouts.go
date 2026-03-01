@@ -73,9 +73,10 @@ type Workout struct {
 	CustomType          string               `json:"custom_type"`                                                                        // The type of the workout, custom
 	Equipment           []Equipment          `json:"equipment,omitempty" gorm:"constraint:OnDelete:CASCADE;many2many:workout_equipment"` // Which equipment is used for this workout
 	RouteSegmentMatches []*RouteSegmentMatch `gorm:"constraint:OnDelete:CASCADE" json:"routeSegmentMatches,omitempty"`                   // Which route segments match
-	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"`                            // The ID of the user who owns the workout
-	Locked              bool                 `json:"locked"`                                                                             // Whether the workout's main attributes should be auto-updated
-	Dirty               bool                 `json:"dirty"`                                                                              // Whether the workout has been modified and the details should be re-rendered
+	Attachments         []WorkoutAttachment  `gorm:"constraint:OnDelete:CASCADE" json:"attachments,omitempty"`
+	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"` // The ID of the user who owns the workout
+	Locked              bool                 `json:"locked"`                                                  // Whether the workout's main attributes should be auto-updated
+	Dirty               bool                 `json:"dirty"`                                                   // Whether the workout has been modified and the details should be re-rendered
 }
 
 type GPXData struct {

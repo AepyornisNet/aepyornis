@@ -16,6 +16,7 @@ type APOutbox interface {
 	GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APOutboxEntry, error)
 	GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APOutboxEntry, error)
 	GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APOutboxEntry, error)
+	ResolveWorkoutIDByObjectOrActivityID(userID uint64, objectOrActivityID string) (uint64, error)
 	DeleteEntryForWorkout(userID uint64, workoutID uint64) error
 	PublishedMap(userID uint64, workoutIDs []uint64) (map[uint64]bool, error)
 }
@@ -128,6 +129,28 @@ func (r *apOutboxRepository) DeleteEntryForWorkout(userID uint64, workoutID uint
 	}
 
 	return nil
+}
+
+func (r *apOutboxRepository) ResolveWorkoutIDByObjectOrActivityID(userID uint64, objectOrActivityID string) (uint64, error) {
+	type row struct {
+		WorkoutID uint64
+	}
+
+	found := &row{}
+	q := r.db.Table("ap_outbox").
+		Select("ap_outbox_workout.workout_id AS workout_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_outbox.ap_outbox_workout_id").
+		Where("ap_outbox.object_id = ? OR ap_outbox.activity_id = ?", objectOrActivityID, objectOrActivityID)
+
+	if userID != 0 {
+		q = q.Where("ap_outbox.user_id = ?", userID)
+	}
+
+	if err := q.Take(found).Error; err != nil {
+		return 0, err
+	}
+
+	return found.WorkoutID, nil
 }
 
 func (r *apOutboxRepository) PublishedMap(userID uint64, workoutIDs []uint64) (map[uint64]bool, error) {

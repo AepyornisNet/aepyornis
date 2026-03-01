@@ -29,6 +29,7 @@ export class RecentActivity implements OnInit {
   public readonly initialLoading = signal(true);
   public readonly hasMore = signal(true);
   public readonly pageSize = 10;
+  public readonly likingWorkoutIDs = signal<Record<number, boolean>>({});
 
   public ngOnInit(): void {
     this.loadInitialWorkouts();
@@ -93,6 +94,48 @@ export class RecentActivity implements OnInit {
       this.hasMore.set(false);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  public isLiking(workoutID: number): boolean {
+    return !!this.likingWorkoutIDs()[workoutID];
+  }
+
+  public async likeWorkout(workoutID: number): Promise<void> {
+    const workout = this.displayedWorkouts().find((item) => item.id === workoutID);
+    if (!workout || workout.liked_by_me || this.isLiking(workoutID)) {
+      return;
+    }
+
+    this.likingWorkoutIDs.update((current) => ({ ...current, [workoutID]: true }));
+
+    try {
+      const response = await firstValueFrom(this.api.likeWorkout(workoutID));
+      if (!response?.results) {
+        return;
+      }
+
+      this.displayedWorkouts.update((current) =>
+        current.map((item) => {
+          if (item.id !== workoutID) {
+            return item;
+          }
+
+          return {
+            ...item,
+            liked_by_me: response.results.liked,
+            likes_count: response.results.likes_count,
+          };
+        }),
+      );
+    } catch (error) {
+      console.error('Failed to like workout:', error);
+    } finally {
+      this.likingWorkoutIDs.update((current) => {
+        const updated = { ...current };
+        delete updated[workoutID];
+        return updated;
+      });
     }
   }
 

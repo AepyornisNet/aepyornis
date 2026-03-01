@@ -22,6 +22,10 @@ github.com/anyappinc/fitbit/logger
 # github.com/aquasecurity/table v1.11.0
 ## explicit; go 1.18
 github.com/aquasecurity/table
+# github.com/aymerick/douceur v0.2.0
+## explicit
+github.com/aymerick/douceur/css
+github.com/aymerick/douceur/parser
 # github.com/biter777/countries v1.7.5
 ## explicit; go 1.13
 github.com/biter777/countries
@@ -142,6 +146,9 @@ github.com/google/go-querystring/query
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
+# github.com/gorilla/css v1.0.1
+## explicit; go 1.20
+github.com/gorilla/css/scanner
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
@@ -215,6 +222,10 @@ github.com/mattn/go-runewidth
 # github.com/mazznoer/csscolorparser v0.1.8
 ## explicit; go 1.12
 github.com/mazznoer/csscolorparser
+# github.com/microcosm-cc/bluemonday v1.0.27
+## explicit; go 1.19
+github.com/microcosm-cc/bluemonday
+github.com/microcosm-cc/bluemonday/css
 # github.com/mitchellh/mapstructure v1.5.0
 ## explicit; go 1.14
 github.com/mitchellh/mapstructure

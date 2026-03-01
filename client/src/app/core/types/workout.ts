@@ -23,6 +23,10 @@ export type Workout = {
   has_file: boolean;
   has_tracks: boolean;
   activity_pub_published: boolean;
+  likes_count: number;
+  liked_by_me: boolean;
+  replies_count: number;
+  attachments?: WorkoutAttachment[];
 
   // Optional map data
   address_string?: string;
@@ -44,6 +48,15 @@ export type Workout = {
   max_heart_rate?: number;
   average_power?: number;
   max_power?: number;
+};
+
+export type WorkoutAttachment = {
+  id: number;
+  kind: string;
+  filename: string;
+  content_type: string;
+  order: number;
+  url: string;
 };
 
 export type WorkoutDetail = {
@@ -320,4 +333,27 @@ export type WorkoutListParams = PaginationParams & {
   since?: string;
   order_by?: string;
   order_dir?: string;
+};
+
+export type WorkoutReply = {
+  id: number;
+  object_iri: string;
+  user_id?: number;
+  user?: UserProfile;
+  actor_iri?: string;
+  actor_name?: string;
+  avatar_url?: string;
+  content: string;
+  created_at: string;
+  published_at?: string;
+};
+
+export type WorkoutLike = {
+  id: number;
+  user_id?: number;
+  user?: UserProfile;
+  actor_iri?: string;
+  actor_name?: string;
+  avatar_url?: string;
+  created_at: string;
 };

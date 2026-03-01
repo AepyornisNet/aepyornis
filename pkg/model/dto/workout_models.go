@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -27,6 +28,10 @@ type WorkoutResponse struct {
 	HasFile              bool                    `json:"has_file"`
 	HasTracks            bool                    `json:"has_tracks"`
 	ActivityPubPublished bool                    `json:"activity_pub_published"`
+	LikesCount           int64                   `json:"likes_count"`
+	LikedByMe            bool                    `json:"liked_by_me"`
+	RepliesCount         int64                   `json:"replies_count"`
+	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
 	// MapData fields (when available)
 	AddressString       string   `json:"address_string,omitempty"`
@@ -48,6 +53,15 @@ type WorkoutResponse struct {
 	MaxHeartRate        *float64 `json:"max_heart_rate,omitempty"`
 	AveragePower        *float64 `json:"average_power,omitempty"`
 	MaxPower            *float64 `json:"max_power,omitempty"`
+}
+
+type WorkoutAttachmentItem struct {
+	ID          uint64 `json:"id"`
+	Kind        string `json:"kind"`
+	Filename    string `json:"filename"`
+	ContentType string `json:"content_type"`
+	Order       int    `json:"order"`
+	URL         string `json:"url"`
 }
 
 type WorkoutLapResponse struct {
@@ -322,6 +336,20 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		// Convert pause duration to seconds (int64)
 		pauseDurationSecs := int64(w.Data.PauseDuration.Seconds())
 		wr.PauseDuration = &pauseDurationSecs
+	}
+
+	if len(w.Attachments) > 0 {
+		wr.Attachments = make([]WorkoutAttachmentItem, 0, len(w.Attachments))
+		for _, attachment := range w.Attachments {
+			wr.Attachments = append(wr.Attachments, WorkoutAttachmentItem{
+				ID:          attachment.ID,
+				Kind:        attachment.Kind,
+				Filename:    attachment.Filename,
+				ContentType: attachment.ContentType,
+				Order:       attachment.SortOrder,
+				URL:         fmt.Sprintf("/api/v2/workouts/%d/attachments/%d", w.ID, attachment.ID),
+			})
+		}
 	}
 
 	return wr
@@ -1022,4 +1050,63 @@ func calculateFTPZone(power float64, ftp float64) int {
 	default:
 		return 7
 	}
+}
+
+// WorkoutReplyResponse represents a reply/comment to a workout
+type WorkoutReplyResponse struct {
+	ID          uint64               `json:"id"`
+	ObjectIRI   string               `json:"object_iri"`
+	UserID      *uint64              `json:"user_id,omitempty"`
+	User        *UserProfileResponse `json:"user,omitempty"`
+	ActorIRI    *string              `json:"actor_iri,omitempty"`
+	ActorName   *string              `json:"actor_name,omitempty"`
+	AvatarURL   *string              `json:"avatar_url,omitempty"`
+	Content     string               `json:"content"`
+	CreatedAt   time.Time            `json:"created_at"`
+	PublishedAt *time.Time           `json:"published_at,omitempty"`
+}
+
+func NewWorkoutReplyResponse(r *model.WorkoutReply) WorkoutReplyResponse {
+	res := WorkoutReplyResponse{
+		ID:          r.ID,
+		ObjectIRI:   r.ObjectIRI,
+		UserID:      r.UserID,
+		ActorIRI:    r.ActorIRI,
+		ActorName:   r.ActorName,
+		Content:     templatehelpers.SanitizeReplyHTML(r.Content),
+		CreatedAt:   r.CreatedAt,
+		PublishedAt: r.PublishedAt,
+	}
+	if r.User != nil {
+		userProfile := NewUserProfileResponse(r.User)
+		res.User = &userProfile
+	}
+	return res
+}
+
+// WorkoutLikeResponse represents a like on a workout
+type WorkoutLikeResponse struct {
+	ID        uint64               `json:"id"`
+	UserID    *uint64              `json:"user_id,omitempty"`
+	User      *UserProfileResponse `json:"user,omitempty"`
+	ActorIRI  *string              `json:"actor_iri,omitempty"`
+	ActorName *string              `json:"actor_name,omitempty"`
+	AvatarURL *string              `json:"avatar_url,omitempty"`
+	CreatedAt time.Time            `json:"created_at"`
+}
+
+func NewWorkoutLikeResponse(l *model.WorkoutLike) WorkoutLikeResponse {
+	res := WorkoutLikeResponse{
+		ID:        l.ID,
+		UserID:    l.UserID,
+		ActorIRI:  l.ActorIRI,
+		CreatedAt: l.CreatedAt,
+	}
+
+	if l.User != nil {
+		profile := NewUserProfileResponse(l.User)
+		res.User = &profile
+	}
+
+	return res
 }

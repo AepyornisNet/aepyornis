@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/invopop/ctxi18n"
+	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 
 	"github.com/labstack/echo/v4"
@@ -66,10 +67,24 @@ func (a *App) setUser(c echo.Context) error {
 		return ErrInvalidJWTToken
 	}
 
-	c.Set("user_language", dbUser.Profile.Language)
-	c.Set("user_info", dbUser)
-
+	a.setContextUser(c, dbUser)
 	return nil
+}
+
+func (a *App) setContextUser(c echo.Context, user *model.User) {
+	c.Set("user_language", user.Profile.Language)
+	c.Set("user_info", user)
+
+	if user.ActivityPubEnabled() {
+		actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+			Host:           a.container.GetConfig().Host,
+			WebRoot:        a.container.GetConfig().WebRoot,
+			FallbackHost:   c.Request().Host,
+			FallbackScheme: c.Scheme(),
+		}, user.Username)
+
+		c.Set("user_ap_actor", ap.NewUserActor(actorURL, user.PrivateKey))
+	}
 }
 
 func (a *App) getCurrentUser(c echo.Context) *model.User {
