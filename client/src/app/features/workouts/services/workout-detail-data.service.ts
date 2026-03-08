@@ -94,8 +94,8 @@ export class WorkoutDetailDataService {
     return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
   });
 
-  public readonly hasZoneCharts = computed(() =>
-    this.hasHeartRateDistribution() || this.hasPowerDistribution(),
+  public readonly hasZoneCharts = computed(
+    () => this.hasHeartRateDistribution() || this.hasPowerDistribution(),
   );
 
   public async loadWorkout(id: number): Promise<void> {
@@ -179,16 +179,22 @@ export class WorkoutDetailDataService {
       return false;
     }
 
-    return values.some((value) => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) > 0);
+    return values.some(
+      (value) => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) > 0,
+    );
   }
 
-  private hasAnyNumericExtraMetric(extraMetrics: Record<string, (number | null)[]> | undefined): boolean {
+  private hasAnyNumericExtraMetric(
+    extraMetrics: Record<string, (number | null)[]> | undefined,
+  ): boolean {
     if (!extraMetrics) {
       return false;
     }
 
-    return Object.values(extraMetrics).some((arr) =>
-      Array.isArray(arr) && arr.some((value) => typeof value === 'number' && Number.isFinite(value)),
+    return Object.values(extraMetrics).some(
+      (arr) =>
+        Array.isArray(arr) &&
+        arr.some((value) => typeof value === 'number' && Number.isFinite(value)),
     );
   }
 }

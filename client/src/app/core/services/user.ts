@@ -55,24 +55,22 @@ export class User {
 
   public checkAuthStatus(): Observable<UserProfile | null> {
     this.checkingAuth.set(true);
-    return this.api
-      .whoami()
-      .pipe(
-        catchError(() => {
-          // User is not authenticated
+    return this.api.whoami().pipe(
+      catchError(() => {
+        // User is not authenticated
+        this.userInfo.set(null);
+        return of(null);
+      }),
+      tap((response) => {
+        this.checkingAuth.set(false);
+        if (response && response.results) {
+          this.setAuthenticatedUser(response.results);
+        } else {
           this.userInfo.set(null);
-          return of(null);
-        }),
-        tap((response) => {
-          this.checkingAuth.set(false);
-          if (response && response.results) {
-            this.setAuthenticatedUser(response.results);
-          } else {
-            this.userInfo.set(null);
-          }
-        }),
-        map((response) => (response ? response.results : null)),
-      );
+        }
+      }),
+      map((response) => (response ? response.results : null)),
+    );
   }
 
   public revalidateAfterUnauthorized(): void {

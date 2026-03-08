@@ -23,6 +23,10 @@ jobs:
         working-directory: ./client
         run: npm ci
 
+      - name: Check formatting
+        working-directory: ./client
+        run: npm run format:check
+
       - name: Run linter
         working-directory: ./client
         run: npm run lint

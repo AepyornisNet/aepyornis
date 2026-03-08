@@ -20,16 +20,12 @@
       [class.btn-outline-secondary]="!workout().locked"
       [class.btn-warning]="workout().locked"
       [disabled]="isProcessing()"
-      [title]="
-        workout().locked
-          ? ('Unlock Workout' | translate)
-          : ('Lock Workout' | translate)
-      "
+      [title]="workout().locked ? ('Unlock Workout' | translate) : ('Lock Workout' | translate)"
       (click)="toggleLock()"
     >
       <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
       <span class="ms-1">{{
-  		workout().locked ? ('Unlock' | translate) : ('Lock' | translate)
+        workout().locked ? ('Unlock' | translate) : ('Lock' | translate)
       }}</span>
     </button>
 

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { Api } from '../../../../core/services/api';
@@ -100,10 +108,7 @@ export class WorkoutBreakdownComponent {
     });
   }
 
-  private loadBreakdown(params: {
-    mode?: 'auto' | 'laps' | 'unit';
-    count?: number;
-  }): void {
+  private loadBreakdown(params: { mode?: 'auto' | 'laps' | 'unit'; count?: number }): void {
     const workoutId = this.workoutId();
     if (!workoutId) {
       return;
@@ -116,24 +121,24 @@ export class WorkoutBreakdownComponent {
     });
 
     request$.subscribe({
-        next: (response) => {
-          if (!response?.results) {
-            this.breakdown.set(null);
-            this.loading.set(false);
-            return;
-          }
-
-          this.breakdown.set(response.results);
-          const mode = (response.results.mode as 'laps' | 'unit') || 'unit';
-          this.breakdownMode.set(mode);
-          this.selectedIntervalIndex = null;
-          this.loading.set(false);
-        },
-        error: () => {
+      next: (response) => {
+        if (!response?.results) {
           this.breakdown.set(null);
           this.loading.set(false);
-        },
-      });
+          return;
+        }
+
+        this.breakdown.set(response.results);
+        const mode = (response.results.mode as 'laps' | 'unit') || 'unit';
+        this.breakdownMode.set(mode);
+        this.selectedIntervalIndex = null;
+        this.loading.set(false);
+      },
+      error: () => {
+        this.breakdown.set(null);
+        this.loading.set(false);
+      },
+    });
   }
 
   public useLaps(): void {
@@ -201,9 +206,7 @@ export class WorkoutBreakdownComponent {
     const secs = totalSeconds % 60;
 
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs
-        .toString()
-        .padStart(2, '0')}`;
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
@@ -219,11 +222,19 @@ export class WorkoutBreakdownComponent {
 
   public formatPace(secondsPerUnit?: number, fallbackSpeed?: number): string {
     let paceSeconds = secondsPerUnit;
-    if ((paceSeconds === undefined || paceSeconds === null || Number.isNaN(paceSeconds)) && fallbackSpeed) {
+    if (
+      (paceSeconds === undefined || paceSeconds === null || Number.isNaN(paceSeconds)) &&
+      fallbackSpeed
+    ) {
       paceSeconds = 3600 / fallbackSpeed;
     }
 
-    if (paceSeconds === undefined || paceSeconds === null || paceSeconds <= 0 || Number.isNaN(paceSeconds)) {
+    if (
+      paceSeconds === undefined ||
+      paceSeconds === null ||
+      paceSeconds <= 0 ||
+      Number.isNaN(paceSeconds)
+    ) {
       return '-';
     }
 

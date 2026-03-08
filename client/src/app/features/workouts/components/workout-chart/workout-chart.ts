@@ -85,8 +85,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   private timeLabels: number[] = [];
   private isUpdatingFromZoom = false; // Flag to prevent infinite loops
 
-  private readonly speedUnit = computed(() =>
-    this.userService.getUserInfo()()?.profile?.preferred_units?.speed || 'km/h',
+  private readonly speedUnit = computed(
+    () => this.userService.getUserInfo()()?.profile?.preferred_units?.speed || 'km/h',
   );
 
   private get mapDataValue(): MapDataDetails | undefined {
@@ -341,7 +341,10 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
           continue;
         } // Already handled
 
-        if (mapData.extra_metrics[metric] && this.hasMeaningfulSeries(mapData.extra_metrics[metric], true)) {
+        if (
+          mapData.extra_metrics[metric] &&
+          this.hasMeaningfulSeries(mapData.extra_metrics[metric], true)
+        ) {
           const settings = metricSettings[metric];
           const hiddenByDefault = settings?.hiddenByDefault || false;
           datasets.push({
@@ -438,7 +441,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         x: {
           type: this.viewMode() === 'time' ? 'time' : 'linear',
           time: this.viewMode() === 'time' ? { unit: 'minute' } : undefined,
-          min: this.viewMode() === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0],
+          min:
+            this.viewMode() === 'time' ? new Date(mapData.time[0]).valueOf() : mapData.distance[0],
           max:
             this.viewMode() === 'time'
               ? new Date(mapData.time[mapData.time.length - 1]).valueOf()
@@ -575,7 +579,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     return {
       speed: {
-        formatter: (val: number) => `${val?.toFixed(2) ?? '-'} ${speedUnit === 'mph' ? 'mph' : 'km/h'}`,
+        formatter: (val: number) =>
+          `${val?.toFixed(2) ?? '-'} ${speedUnit === 'mph' ? 'mph' : 'km/h'}`,
         labelFormatter: (val: number) => `${val} ${speedUnit === 'mph' ? 'mph' : 'km/h'}`,
         formatterYaxis: true,
         yaxis: { min: 0 },
@@ -608,8 +613,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         yaxis: {},
       },
       power: {
-        formatter: (val: number) =>
-          `${val !== null && val !== undefined ? val.toFixed(0) : '-'} W`,
+        formatter: (val: number) => `${val !== null && val !== undefined ? val.toFixed(0) : '-'} W`,
         labelFormatter: (val: number) => `${(val ?? 0).toFixed(0)} W`,
         formatterYaxis: true,
         hiddenByDefault: true,
@@ -657,14 +661,17 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     return value * 3.6;
   }
 
-  private hasMeaningfulSeries(values: (number | null | undefined)[] | undefined, allowZero: boolean): boolean {
+  private hasMeaningfulSeries(
+    values: (number | null | undefined)[] | undefined,
+    allowZero: boolean,
+  ): boolean {
     if (!Array.isArray(values)) {
       return false;
     }
 
     return values.some(
-      (value) => typeof value === 'number' && Number.isFinite(value) && (allowZero || Math.abs(value) > 0),
+      (value) =>
+        typeof value === 'number' && Number.isFinite(value) && (allowZero || Math.abs(value) > 0),
     );
   }
-
 }

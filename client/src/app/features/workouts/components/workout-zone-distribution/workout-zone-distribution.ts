@@ -67,7 +67,7 @@ export class WorkoutZoneDistributionComponent {
       }
 
       const currentDuration = durations[i] ?? durations[durations.length - 1] ?? 0;
-      const prevDuration = i === 0 ? 0 : durations[i - 1] ?? currentDuration;
+      const prevDuration = i === 0 ? 0 : (durations[i - 1] ?? currentDuration);
       const delta = Math.max(currentDuration - prevDuration, 0);
 
       if (!totals[zone]) {
@@ -156,7 +156,10 @@ export class WorkoutZoneDistributionComponent {
     return type === 'heart-rate' ? 'hr-zone' : 'zone';
   }
 
-  private resolveRange(selection: IntervalSelection | null, length: number): {
+  private resolveRange(
+    selection: IntervalSelection | null,
+    length: number,
+  ): {
     startIndex: number;
     endIndex: number;
   } {
@@ -231,5 +234,4 @@ export class WorkoutZoneDistributionComponent {
     const rounded = Math.round(value);
     return type === 'heart-rate' ? `${rounded} bpm` : `${rounded} W`;
   }
-
 }

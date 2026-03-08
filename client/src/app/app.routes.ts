@@ -64,9 +64,9 @@ export const routes: Routes = [
           {
             path: ':id/create-route-segment',
             loadComponent: () =>
-              import(
-                './features/route-segments/pages/create-workout/create-workout-route-segment'
-              ).then((m) => m.CreateWorkoutRouteSegmentPage),
+              import('./features/route-segments/pages/create-workout/create-workout-route-segment').then(
+                (m) => m.CreateWorkoutRouteSegmentPage,
+              ),
           },
         ],
       },
@@ -152,9 +152,7 @@ export const routes: Routes = [
           {
             path: 'general',
             loadComponent: () =>
-              import('./features/profile/pages/general/general').then(
-                (m) => m.ProfileGeneralPage,
-              ),
+              import('./features/profile/pages/general/general').then((m) => m.ProfileGeneralPage),
           },
           {
             path: 'infos',
@@ -176,9 +174,7 @@ export const routes: Routes = [
           {
             path: 'actions',
             loadComponent: () =>
-              import('./features/profile/pages/actions/actions').then(
-                (m) => m.ProfileActionsPage,
-              ),
+              import('./features/profile/pages/actions/actions').then((m) => m.ProfileActionsPage),
           },
           {
             path: 'apps',

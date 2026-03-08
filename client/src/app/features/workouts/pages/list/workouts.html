@@ -35,7 +35,9 @@
       </select>
     </div>
     <div class="col">
-      <label class="form-label small text-muted" for="filter-since">{{ 'Since' | translate }}</label>
+      <label class="form-label small text-muted" for="filter-since">{{
+        'Since' | translate
+      }}</label>
       <select
         class="form-select form-select-sm"
         id="filter-since"
@@ -48,7 +50,9 @@
       </select>
     </div>
     <div class="col">
-      <label class="form-label small text-muted" for="filter-sort-by">{{ 'Sort by' | translate }}</label>
+      <label class="form-label small text-muted" for="filter-sort-by">{{
+        'Sort by' | translate
+      }}</label>
       <div class="d-flex gap-2">
         <select
           class="form-select form-select-sm flex-grow-1"
@@ -98,8 +102,17 @@
       </ng-template>
 
       <!-- Table row -->
-      <ng-template #tableRow let-getRowLink="getRowLink" let-multiSelectActive="multiSelectActive" let-onCellClick="onCellClick" let-workout>
-        <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+      <ng-template
+        #tableRow
+        let-getRowLink="getRowLink"
+        let-multiSelectActive="multiSelectActive"
+        let-onCellClick="onCellClick"
+        let-workout
+      >
+        <td
+          class="position-relative"
+          (click)="multiSelectActive && toggleItemSelection(workout.id)"
+        >
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -108,7 +121,10 @@
             <app-icon size="24" [name]="workout.type" />
           </div>
         </td>
-        <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td
+          class="position-relative"
+          (click)="multiSelectActive && toggleItemSelection(workout.id)"
+        >
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -129,7 +145,10 @@
             <small class="text-muted">{{ sportLabel(workout.type) | translate }}</small>
           </div>
         </td>
-        <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td
+          class="position-relative"
+          (click)="multiSelectActive && toggleItemSelection(workout.id)"
+        >
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -138,7 +157,10 @@
             {{ formatDate(workout.date) }}
           </div>
         </td>
-        <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td
+          class="position-relative"
+          (click)="multiSelectActive && toggleItemSelection(workout.id)"
+        >
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -151,7 +173,10 @@
             }
           </div>
         </td>
-        <td class="position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td
+          class="position-relative"
+          (click)="multiSelectActive && toggleItemSelection(workout.id)"
+        >
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -165,7 +190,10 @@
           </div>
         </td>
         @if (sortedColumnMeta()) {
-          <td class="position-relative text-end" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+          <td
+            class="position-relative text-end"
+            (click)="multiSelectActive && toggleItemSelection(workout.id)"
+          >
             @if (!multiSelectActive) {
               <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
               <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
@@ -175,7 +203,10 @@
             </div>
           </td>
         }
-        <td class="d-none d-md-table-cell position-relative" (click)="multiSelectActive && toggleItemSelection(workout.id)">
+        <td
+          class="d-none d-md-table-cell position-relative"
+          (click)="multiSelectActive && toggleItemSelection(workout.id)"
+        >
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>

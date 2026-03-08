@@ -11,7 +11,7 @@ export type BaseListConfig = {
   enableFilters?: boolean;
   enableMultiSelect?: boolean;
   searchPlaceholder?: string;
-}
+};
 
 export type PaginationSource = {
   current: () => number;
@@ -23,7 +23,7 @@ export type PaginationSource = {
   previous: () => void;
   goTo: (page: number) => void;
   next: () => void;
-}
+};
 
 @Component({
   selector: 'app-base-list',

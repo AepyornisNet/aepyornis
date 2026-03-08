@@ -48,9 +48,7 @@ export class Sidebar {
     const isActivityPubEnabled = userInfo?.profile?.activity_pub ?? false;
 
     return this.allMenuItems.filter(
-      (item) =>
-        (!item.adminOnly || isAdmin) &&
-        (!item.requiresActivityPub || isActivityPubEnabled),
+      (item) => (!item.adminOnly || isAdmin) && (!item.requiresActivityPub || isActivityPubEnabled),
     );
   });
 

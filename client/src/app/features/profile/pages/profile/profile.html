@@ -37,7 +37,9 @@
               >
                 <span>{{ item.label | translate }}</span>
                 @if (item.route === '/profile/settings/followers') {
-                  <span class="badge text-bg-primary rounded-pill">{{ store.followRequests().length }}</span>
+                  <span class="badge text-bg-primary rounded-pill">{{
+                    store.followRequests().length
+                  }}</span>
                 }
               </a>
             }

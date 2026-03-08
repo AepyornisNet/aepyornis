@@ -414,9 +414,7 @@ export class WorkoutCreate implements OnInit {
         ? this.translate.instant('Failed to update workout. Please try again.')
         : this.translate.instant('Failed to create workout. Please try again.');
 
-      this.error.set(
-        apiError || fallbackError,
-      );
+      this.error.set(apiError || fallbackError);
     } finally {
       this.loading.set(false);
     }

@@ -63,7 +63,7 @@ export class Workouts extends PaginatedListView<Workout> {
 
   public readonly sinceOptions: FilterOption[] = [
     { value: 'forever', label: this.translate.stream('forever') },
-    { value: '7 days', label: this.translate.stream('{{num}} days', { num : 7 }) },
+    { value: '7 days', label: this.translate.stream('{{num}} days', { num: 7 }) },
     { value: '15 days', label: this.translate.stream('{{num}} days', { num: 15 }) },
     { value: '1 month', label: this.translate.stream('1 month') },
     { value: '3 months', label: this.translate.stream('{{num}} months', { num: 3 }) },
@@ -99,7 +99,12 @@ export class Workouts extends PaginatedListView<Workout> {
   });
   public readonly filterState = computed(() => this._filters());
 
-  private readonly _orderByWithOwnColumn = new Set(['date', 'total_distance', 'total_duration', 'average_speed']);
+  private readonly _orderByWithOwnColumn = new Set([
+    'date',
+    'total_distance',
+    'total_duration',
+    'average_speed',
+  ]);
   public readonly sortedColumnMeta = computed<FilterOption | null>(() => {
     const orderBy = this.filterState().orderBy;
     if (this._orderByWithOwnColumn.has(orderBy)) {
@@ -108,7 +113,10 @@ export class Workouts extends PaginatedListView<Workout> {
     return this.orderByOptions.find((option) => option.value === orderBy) ?? null;
   });
 
-  public readonly getWorkoutLink = (workout: Workout): (string | number)[] => ['/workouts', workout.id];
+  public readonly getWorkoutLink = (workout: Workout): (string | number)[] => [
+    '/workouts',
+    workout.id,
+  ];
 
   public getSortedColumnValue(workout: Workout): string {
     const orderBy = this.filterState().orderBy;
@@ -118,7 +126,9 @@ export class Workouts extends PaginatedListView<Workout> {
         return formatted !== null ? formatted : '-';
       }
       case 'total_repetitions': {
-        const formatted = this.formatNumber(workout.total_repetitions, { maximumFractionDigits: 0 });
+        const formatted = this.formatNumber(workout.total_repetitions, {
+          maximumFractionDigits: 0,
+        });
         return formatted !== null ? formatted : '-';
       }
       case 'total_up': {
@@ -227,9 +237,7 @@ export class Workouts extends PaginatedListView<Workout> {
     }
 
     // Delete all selected workouts
-    Promise.all(
-      selectedIds.map((id) => firstValueFrom(this.api.deleteWorkout(id as number))),
-    ).then(
+    Promise.all(selectedIds.map((id) => firstValueFrom(this.api.deleteWorkout(id as number)))).then(
       () => {
         // Reload data after deletion
         this.baseList().clearSelection();
@@ -279,7 +287,10 @@ export class Workouts extends PaginatedListView<Workout> {
     this.handleFilterChange({ orderDir: dir });
   }
 
-  private formatNumber(value: number | null | undefined, options?: Intl.NumberFormatOptions): string | null {
+  private formatNumber(
+    value: number | null | undefined,
+    options?: Intl.NumberFormatOptions,
+  ): string | null {
     if (value === undefined || value === null) {
       return null;
     }

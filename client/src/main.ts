@@ -1,4 +1,4 @@
-import { provideZoneChangeDetection } from "@angular/core";
+import { provideZoneChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 
@@ -6,6 +6,7 @@ import { appConfig } from './app/app.config';
 // by services/components (header and user service) which react to stored/user-selected language.
 import('./app/app').then((comp) =>
   bootstrapApplication(comp.App, {
-    ...appConfig, providers: [provideZoneChangeDetection(), ...appConfig.providers],
+    ...appConfig,
+    providers: [provideZoneChangeDetection(), ...appConfig.providers],
   }),
 );

@@ -147,7 +147,9 @@ export class WorkoutPerformanceCurveComponent implements AfterViewInit, OnDestro
       return [];
     }
 
-    return values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+    return values.filter(
+      (value): value is number => typeof value === 'number' && Number.isFinite(value),
+    );
   }
 
   private performanceCurvePoints(): { x: number; y: number }[] {
@@ -195,8 +197,8 @@ export class WorkoutPerformanceCurveComponent implements AfterViewInit, OnDestro
 
   private durationCandidates(maxSeconds: number, sampleSeconds: number): number[] {
     const baseCandidates = [
-      1, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 600, 900, 1200,
-      1800, 2400, 3600, 5400, 7200,
+      1, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 600, 900, 1200, 1800, 2400,
+      3600, 5400, 7200,
     ];
 
     const minimum = Math.max(1, Math.round(sampleSeconds));
@@ -237,8 +239,7 @@ export class WorkoutPerformanceCurveComponent implements AfterViewInit, OnDestro
     if (Array.isArray(times) && times.length > 2) {
       const deltas: number[] = [];
       for (let i = 1; i < times.length; i++) {
-        const delta =
-          (new Date(times[i]).valueOf() - new Date(times[i - 1]).valueOf()) / 1000;
+        const delta = (new Date(times[i]).valueOf() - new Date(times[i - 1]).valueOf()) / 1000;
         if (Number.isFinite(delta) && delta > 0) {
           deltas.push(delta);
         }

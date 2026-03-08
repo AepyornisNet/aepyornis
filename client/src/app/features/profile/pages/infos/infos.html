@@ -14,7 +14,11 @@
     </div>
   </div>
 
-  <button class="btn btn-primary" type="submit" [disabled]="store.saving() || store.profileForm.invalid">
+  <button
+    class="btn btn-primary"
+    type="submit"
+    [disabled]="store.saving() || store.profileForm.invalid"
+  >
     @if (store.saving()) {
       <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
       {{ 'Saving...' | translate }}

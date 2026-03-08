@@ -8,10 +8,15 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
+    "cleanup": "npm run lint -- --fix && npm run format",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "extract-translations": "ngx-translate-extract --input ./src --output ./src/assets/i18n/en.po --format pot --sort --clean"
   },
   "prettier": {
     "printWidth": 100,
+    "tabWidth": 2,
+    "useTabs": false,
     "singleQuote": true,
     "overrides": [
       {
@@ -75,6 +80,7 @@
     "jasmine-core": "~6.1.0",
     "jsdom": "^28.1.0",
     "playwright": "^1.56.0",
+    "prettier": "^3.8.1",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.56.1"
   },

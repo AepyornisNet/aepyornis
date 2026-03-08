@@ -18,7 +18,7 @@
       <div>
         <h1 class="display-4 mb-0">
           <app-icon name="route-segment" size="48" />
-		      {{ routeSegment()!.name || ('(no name)' | translate) }}
+          {{ routeSegment()!.name || ('(no name)' | translate) }}
         </h1>
         <div class="d-flex gap-2 mt-2">
           @if (routeSegment()!.bidirectional) {
@@ -181,9 +181,9 @@
                       <th class="text-end d-none d-md-table-cell">
                         {{ 'Average speed' | translate }}
                       </th>
-                        <th class="text-end d-none d-lg-table-cell">
-						  {{ 'Tempo' | translate }}
-                        </th>
+                      <th class="text-end d-none d-lg-table-cell">
+                        {{ 'Tempo' | translate }}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

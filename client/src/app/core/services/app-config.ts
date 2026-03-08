@@ -22,21 +22,19 @@ export class AppConfig {
 
   public loadAppInfo(): Observable<AppInfo | null> {
     this.loading.set(true);
-    return this.api
-      .getAppInfo()
-      .pipe(
-        catchError(() => {
-          console.error('Failed to load app info');
-          return of(null);
-        }),
-        tap((response) => {
-          this.loading.set(false);
-          if (response && response.results) {
-            this.appInfo.set(response.results);
-          }
-        }),
-        map((response => response ? response.results : null))
-      );
+    return this.api.getAppInfo().pipe(
+      catchError(() => {
+        console.error('Failed to load app info');
+        return of(null);
+      }),
+      tap((response) => {
+        this.loading.set(false);
+        if (response && response.results) {
+          this.appInfo.set(response.results);
+        }
+      }),
+      map((response) => (response ? response.results : null)),
+    );
   }
 
   public isRegistrationDisabled(): boolean {

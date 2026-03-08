@@ -85,6 +85,11 @@ export type ProfileUpdateRequest = {
   prefer_full_date: boolean;
 };
 
+export type ProfileChangePasswordRequest = {
+  current_password: string;
+  new_password: string;
+};
+
 export type AppConfig = {
   registration_disabled: boolean;
   socials_disabled: boolean;

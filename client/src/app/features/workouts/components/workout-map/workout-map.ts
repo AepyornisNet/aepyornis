@@ -317,7 +317,7 @@ export class WorkoutMapComponent implements OnDestroy {
         ...polyLineProperties,
         color,
       }).addTo(slopeLayer);
-    };
+    }
 
     return slopeLayer;
   }

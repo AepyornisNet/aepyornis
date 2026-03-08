@@ -5,7 +5,9 @@
     </div>
     <div class="card-body">
       <div class="mb-3">
-        <label class="form-label" for="totals_show">{{ 'Totals to show on dashboard' | translate }}</label>
+        <label class="form-label" for="totals_show">{{
+          'Totals to show on dashboard' | translate
+        }}</label>
         <select class="form-select" formControlName="totals_show" id="totals_show">
           <option value="all">{{ 'All' | translate }}</option>
           <option value="running">{{ 'running' | translate }}</option>
@@ -16,7 +18,13 @@
 
       <div class="mb-3">
         <label class="form-label" for="timezone">{{ 'Time zone' | translate }}</label>
-        <input class="form-control" formControlName="timezone" id="timezone" placeholder="UTC" type="text" />
+        <input
+          class="form-control"
+          formControlName="timezone"
+          id="timezone"
+          placeholder="UTC"
+          type="text"
+        />
       </div>
 
       <div class="mb-3">
@@ -50,7 +58,9 @@
 
       @if (store.appConfig.isAutoImportEnabled()) {
         <div class="mb-3">
-          <label class="form-label" for="auto_import_directory">{{ 'Auto import directory' | translate }}</label>
+          <label class="form-label" for="auto_import_directory">{{
+            'Auto import directory' | translate
+          }}</label>
           <input
             class="form-control"
             formControlName="auto_import_directory"
@@ -112,7 +122,11 @@
     </div>
   </div>
 
-  <button class="btn btn-primary" type="submit" [disabled]="store.saving() || store.profileForm.invalid">
+  <button
+    class="btn btn-primary"
+    type="submit"
+    [disabled]="store.saving() || store.profileForm.invalid"
+  >
     @if (store.saving()) {
       <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
       {{ 'Saving...' | translate }}
