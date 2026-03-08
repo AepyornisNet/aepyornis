@@ -64,7 +64,7 @@ type Workout struct {
 	Model
 	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`                                    // The timestamp the workout was recorded
 	Visibility          WorkoutVisibility    `json:"visibility"`                                                                         // The visibility of the workout (private, followers, public)
-	User                *User                `gorm:"foreignKey:UserID;constraint:-" json:"user"`                                         // The user who owns the workout
+	User                *User                `gorm:"foreignKey:UserID" json:"user"`                                         // The user who owns the workout
 	Data                *MapData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"data,omitempty"`             // The map data associated with the workout
 	GPX                 *GPXData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"gpx,omitempty"`              // The file data associated with the workout
 	Name                string               `gorm:"not null" json:"name"`                                                               // The name of the workout

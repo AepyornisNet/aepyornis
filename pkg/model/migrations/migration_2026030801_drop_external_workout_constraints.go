@@ -25,9 +25,7 @@ func init() {
 // This runs as a pre-auto-migrate step so AutoMigrate can pick up the
 // updated GORM tags without constraint violations.
 func dropOldWorkoutConstraints(db *gorm.DB) error {
-	dialect := db.Dialector.Name()
-
-	if dialect != "postgres" {
+	if !db.Migrator().HasTable("workout_attachments") {
 		return nil
 	}
 
