@@ -15,8 +15,8 @@ func init() {
 			return nil
 		},
 		func(db *gorm.DB) error {
-			if db.Migrator().HasColumn("map_data", "climbs") {
-				if err := migrateMapDataClimbs(db); err != nil {
+			if db.Migrator().HasColumn("track_data", "climbs") {
+				if err := migrateTrackDataClimbs(db); err != nil {
 					return err
 				}
 			}
@@ -38,16 +38,16 @@ func init() {
 	)
 }
 
-func migrateMapDataClimbs(db *gorm.DB) error {
-	if !db.Migrator().HasTable(&model.Segment{}) {
+func migrateTrackDataClimbs(db *gorm.DB) error {
+	if !db.Migrator().HasTable("segments") {
 		return nil
 	}
 
-	if err := db.Where("1 = 1").Delete(&model.Segment{}).Error; err != nil {
+	if err := db.Exec("DELETE FROM segments").Error; err != nil {
 		return err
 	}
 
-	rows, err := db.Table("map_data").Select("id, climbs").Rows()
+	rows, err := db.Raw("SELECT id, climbs FROM track_data").Rows()
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func migrateMapDataClimbs(db *gorm.DB) error {
 
 		var climbs []model.Segment
 		if err := json.Unmarshal(payload, &climbs); err != nil {
-			return fmt.Errorf("unmarshal map_data.climbs for map_data_id=%d: %w", id, err)
+			return fmt.Errorf("unmarshal track_data.climbs for track_data_id=%d: %w", id, err)
 		}
 
 		for i := range climbs {
@@ -100,15 +100,15 @@ func migrateMapDataClimbs(db *gorm.DB) error {
 }
 
 func migrateMapDataDetailPoints(db *gorm.DB) error {
-	if !db.Migrator().HasTable(&model.DataPoint{}) {
+	if !db.Migrator().HasTable("data_points") {
 		return nil
 	}
 
-	if err := db.Where("1 = 1").Delete(&model.DataPoint{}).Error; err != nil {
+	if err := db.Exec("DELETE FROM data_points").Error; err != nil {
 		return err
 	}
 
-	rows, err := db.Table("map_data_details").Select("id, points, map_data_id").Rows()
+	rows, err := db.Raw("SELECT id, points, map_data_id FROM map_data_details").Rows()
 	if err != nil {
 		return err
 	}

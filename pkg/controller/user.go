@@ -100,7 +100,7 @@ func (uc *userController) GetTotals(c echo.Context) error {
 				"sum(total_up) as up",
 				"'all' as bucket",
 			).
-			Joins("join map_data on workouts.id = map_data.workout_id"),
+			Joins("join track_data on workouts.id = track_data.workout_id"),
 		targetUser.ID,
 		viewer.ID,
 		viewerActorIRI,
@@ -991,7 +991,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 
 	for k, v := range mapping {
 		query := model.ScopeVisibleWorkouts(
-			uc.context.GetDB().Table("workouts").Joins("join map_data on workouts.id = map_data.workout_id"),
+			uc.context.GetDB().Table("workouts").Joins("join track_data on workouts.id = track_data.workout_id"),
 			targetUser.ID,
 			viewer.ID,
 			viewerActorIRI,
@@ -1016,7 +1016,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 	}
 
 	durationQuery := model.ScopeVisibleWorkouts(
-		uc.context.GetDB().Table("workouts").Joins("join map_data on workouts.id = map_data.workout_id"),
+		uc.context.GetDB().Table("workouts").Joins("join track_data on workouts.id = track_data.workout_id"),
 		targetUser.ID,
 		viewer.ID,
 		viewerActorIRI,

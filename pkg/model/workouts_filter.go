@@ -72,7 +72,7 @@ func (wf *WorkoutFilters) setOrderFilter() {
 		return
 	}
 
-	wf.db = wf.db.Select("workouts.*").Joins("left join map_data on workouts.id = map_data.workout_id")
+	wf.db = wf.db.Select("workouts.*").Joins("left join track_data on workouts.id = track_data.workout_id")
 
 	dir := wf.OrderDir
 	if dir == "" {
@@ -84,6 +84,6 @@ func (wf *WorkoutFilters) setOrderFilter() {
 		wf.db = wf.db.Order("workouts." + wf.OrderBy + " " + dir)
 	case "total_distance", "total_duration", "total_weight", "total_repetitions", "total_up", "total_down",
 		"average_speed_no_pause", "max_speed":
-		wf.db = wf.db.Order("map_data." + wf.OrderBy + " " + dir)
+		wf.db = wf.db.Order("track_data." + wf.OrderBy + " " + dir)
 	}
 }

@@ -135,7 +135,7 @@ func (u *User) GetStatistics(statConfig StatConfig) (*Statistics, error) {
 			statConfig.GetBucketFormatExpression(sqlDialect),
 			statConfig.GetDayBucketFormatExpression(sqlDialect),
 		).
-		Joins("join map_data on workouts.id = map_data.workout_id").
+		Joins("join track_data on workouts.id = track_data.workout_id").
 		Where("user_id = ?", u.ID)
 
 	if statConfig.Since != "" && statConfig.Since != "forever" {
@@ -235,7 +235,7 @@ func (u *User) GetTotals(t WorkoutType, startDate, endDate *time.Time) (*Bucket,
 			"sum(total_up) as up",
 			"'all' as bucket",
 		).
-		Joins("join map_data on workouts.id = map_data.workout_id").
+		Joins("join track_data on workouts.id = track_data.workout_id").
 		Where("user_id = ?", u.ID).
 		Where("workouts.type = ?", t)
 
@@ -518,7 +518,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 	for k, v := range mapping {
 		query := u.db.
 			Table("workouts").
-			Joins("join map_data on workouts.id = map_data.workout_id").
+			Joins("join track_data on workouts.id = track_data.workout_id").
 			Where("user_id = ?", u.ID).
 			Where("workouts.type = ?", t).
 			Select("workouts.id as id", v+" as value", "workouts.date as date").
@@ -542,7 +542,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 
 	query := u.db.
 		Table("workouts").
-		Joins("join map_data on workouts.id = map_data.workout_id").
+		Joins("join track_data on workouts.id = track_data.workout_id").
 		Where("user_id = ?", u.ID).
 		Where("workouts.type = ?", t).
 		Select("workouts.id as id", "max(total_duration) as value", "workouts.date as date").

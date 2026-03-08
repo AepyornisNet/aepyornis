@@ -11,17 +11,15 @@ func init() {
 			return nil
 		},
 		func(db *gorm.DB) error {
-			if !db.Migrator().HasColumn(&model.Workout{}, "public_uuid") {
+			if !db.Migrator().HasColumn("workouts", "public_uuid") {
 				return nil
 			}
 
-			if err := db.Model(&model.Workout{}).
-				Where("public_uuid IS NOT NULL").
-				Update("visibility", model.WorkoutVisibilityPublic).Error; err != nil {
+			if err := db.Exec("UPDATE workouts SET visibility = 'public' WHERE public_uuid IS NOT NULL").Error; err != nil {
 				return err
 			}
 
-			return db.Migrator().DropColumn(&model.Workout{}, "public_uuid")
+			return db.Migrator().DropColumn("workouts", "public_uuid")
 		},
 		func(*gorm.DB) error {
 			return nil

@@ -24,20 +24,21 @@ func init() {
 			return nil
 		},
 		func(db *gorm.DB) error {
-			// Post-AutoMigrate: migrate location data from map_data to track_locations
-			if db.Migrator().HasColumn("map_data", "address") {
-				if err := db.Exec(`INSERT INTO track_locations (created_at, updated_at, map_data_id, address, address_string, center)
+			// Post-AutoMigrate: migrate location data from track_data to track_locations
+			// By this point, 2026030802 PreAutoMigrate has renamed map_data → track_data
+			if db.Migrator().HasColumn("track_data", "address") {
+				if err := db.Exec(`INSERT INTO track_locations (created_at, updated_at, track_data_id, address, address_string, center)
 					SELECT created_at, updated_at, id, address, address_string, center
-					FROM map_data`).Error; err != nil {
+					FROM track_data`).Error; err != nil {
 					return err
 				}
-				if err := db.Migrator().DropColumn("map_data", "address"); err != nil {
+				if err := db.Migrator().DropColumn("track_data", "address"); err != nil {
 					return err
 				}
-				if err := db.Migrator().DropColumn("map_data", "address_string"); err != nil {
+				if err := db.Migrator().DropColumn("track_data", "address_string"); err != nil {
 					return err
 				}
-				if err := db.Migrator().DropColumn("map_data", "center"); err != nil {
+				if err := db.Migrator().DropColumn("track_data", "center"); err != nil {
 					return err
 				}
 			}

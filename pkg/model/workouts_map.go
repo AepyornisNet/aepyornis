@@ -71,7 +71,7 @@ type TrackData struct {
 }
 
 func (TrackData) TableName() string {
-	return "map_data"
+	return "track_data"
 }
 
 // TrackLocation holds optional GPS/address data for a workout track.
@@ -81,7 +81,7 @@ type TrackLocation struct {
 	Address       *geo.Address `gorm:"serializer:json" json:"address"`
 	AddressString string       `json:"addressString"`
 	Center        TrackCenter  `gorm:"serializer:json" json:"center"`
-	TrackDataID   uint64       `gorm:"column:map_data_id;not null;uniqueIndex" json:"trackDataID"`
+	TrackDataID   uint64       `gorm:"not null;uniqueIndex" json:"trackDataID"`
 }
 
 func (TrackLocation) TableName() string {
@@ -106,8 +106,8 @@ type TrackCenter struct {
 }
 
 type DataPoint struct {
-	TrackDataID uint64 `gorm:"column:map_data_id;not null;primaryKey;index:idx_map_data_details_points_parent_order,unique" json:"-"`
-	SortOrder   int    `gorm:"not null;primaryKey;index:idx_map_data_details_points_parent_order,unique" json:"-"`
+	TrackDataID uint64 `gorm:"not null;primaryKey;index:idx_data_points_parent_order,unique" json:"-"`
+	SortOrder   int    `gorm:"not null;primaryKey;index:idx_data_points_parent_order,unique" json:"-"`
 
 	Time time.Time `json:"time"` // The time the point was recorded
 
@@ -125,7 +125,7 @@ type DataPoint struct {
 }
 
 func (DataPoint) TableName() string {
-	return "map_data_details_points"
+	return "data_points"
 }
 
 func (m TrackCenter) ToOrbPoint() *orb.Point {
@@ -181,7 +181,7 @@ func (m *TrackData) Save(db *gorm.DB) error {
 			m.Climbs[i].SortOrder = i
 		}
 
-		if err := tx.Where("map_data_id = ?", m.ID).Delete(&Segment{}).Error; err != nil {
+		if err := tx.Where("track_data_id = ?", m.ID).Delete(&Segment{}).Error; err != nil {
 			return err
 		}
 
@@ -196,7 +196,7 @@ func (m *TrackData) Save(db *gorm.DB) error {
 			m.Points[i].SortOrder = i
 		}
 
-		if err := tx.Where("map_data_id = ?", m.ID).Delete(&DataPoint{}).Error; err != nil {
+		if err := tx.Where("track_data_id = ?", m.ID).Delete(&DataPoint{}).Error; err != nil {
 			return err
 		}
 
@@ -210,7 +210,7 @@ func (m *TrackData) Save(db *gorm.DB) error {
 			m.Location.TrackDataID = m.ID
 			// Find existing location to get its ID and avoid duplicate key errors on update
 			var existing TrackLocation
-			if err := tx.Where("map_data_id = ?", m.ID).First(&existing).Error; err == nil {
+			if err := tx.Where("track_data_id = ?", m.ID).First(&existing).Error; err == nil {
 				m.Location.ID = existing.ID
 				m.Location.CreatedAt = existing.CreatedAt
 			}

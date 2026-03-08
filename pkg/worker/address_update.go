@@ -37,7 +37,7 @@ func makeUpdateAddressHandler(c *container.Container, logger *slog.Logger) gue.W
 			return fmt.Errorf("update_address: get map data %d: %w", args.ID, err)
 		}
 
-		logger.With("map_data_id", md.ID).With("workout_id", md.WorkoutID).Info("Updating address")
+		logger.With("track_data_id", md.ID).With("workout_id", md.WorkoutID).Info("Updating address")
 		md.UpdateAddress()
 
 		return md.Save(db)

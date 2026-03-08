@@ -51,8 +51,8 @@ const (
 
 // Segment represents a detected climb or descent.
 type Segment struct {
-	TrackDataID uint64 `gorm:"column:map_data_id;not null;primaryKey;index:idx_map_data_climbs_parent_order,unique" json:"-"`
-	SortOrder   int    `gorm:"not null;primaryKey;index:idx_map_data_climbs_parent_order,unique" json:"-"`
+	TrackDataID uint64 `gorm:"not null;primaryKey;index:idx_segments_parent_order,unique" json:"-"`
+	SortOrder   int    `gorm:"not null;primaryKey;index:idx_segments_parent_order,unique" json:"-"`
 
 	Index    int           `json:"index"`
 	Type     SlopeKind     `json:"type"`
@@ -68,7 +68,7 @@ type Segment struct {
 }
 
 func (Segment) TableName() string {
-	return "map_data_climbs"
+	return "segments"
 }
 
 func (s *Segment) IsClimb() bool {
