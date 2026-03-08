@@ -1173,12 +1173,19 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		FallbackScheme: c.Scheme(),
 	}, requester.Username)
 
+	recentWorkoutsQuery := "workouts.user_id = ? OR workouts.visibility = ?" +
+		" OR (workouts.visibility = ? AND EXISTS" +
+		" (SELECT 1 FROM followers f WHERE f.user_id = workouts.user_id AND f.actor_iri = ? AND f.approved = ?))" +
+		" OR (workouts.actor_iri IS NOT NULL AND workouts.visibility = ? AND EXISTS" +
+		" (SELECT 1 FROM followers f WHERE f.user_id = ? AND f.actor_iri = workouts.actor_iri" +
+		" AND f.direction = ? AND f.approved = ?))"
+
 	var workouts []*model.Workout
 	err := wc.context.GetDB().
 		Scopes(model.PreloadWorkoutData).
 		Preload("User").
 		Where(
-			"workouts.user_id = ? OR workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = workouts.user_id AND f.actor_iri = ? AND f.approved = ?)) OR (workouts.actor_iri IS NOT NULL AND workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = ? AND f.actor_iri = workouts.actor_iri AND f.direction = ? AND f.approved = ?))",
+			recentWorkoutsQuery,
 			requester.ID,
 			model.WorkoutVisibilityPublic,
 			model.WorkoutVisibilityFollowers,

@@ -75,7 +75,7 @@ type Workout struct {
 	RouteSegmentMatches []*RouteSegmentMatch `gorm:"constraint:OnDelete:CASCADE" json:"routeSegmentMatches,omitempty"`                   // Which route segments match
 	Attachments         []WorkoutAttachment  `gorm:"constraint:OnDelete:CASCADE" json:"attachments,omitempty"`
 	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"`    // The ID of the user who owns the workout
-	ActorIRI            *string              `gorm:"type:text;index" json:"actor_iri,omitempty"`                  // Remote actor IRI (for federated workouts without a local user)
+	ActorIRI            *string              `gorm:"type:text;index" json:"actor_iri,omitempty"`                 // Remote actor IRI (for federated workouts without a local user)
 	ExternalObjectIRI   *string              `gorm:"type:text;uniqueIndex" json:"external_object_iri,omitempty"` // The ActivityPub object IRI for deduplication of external workouts
 	Locked              bool                 `json:"locked"`                                                     // Whether the workout's main attributes should be auto-updated
 	Dirty               bool                 `json:"dirty"`                                                      // Whether the workout has been modified and the details should be re-rendered

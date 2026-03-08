@@ -16,6 +16,9 @@ export type Workout = {
   custom_type?: string;
   user_id: number;
   user?: UserProfile;
+  actor_iri?: string;
+  actor_name?: string;
+  actor_avatar_url?: string;
   visibility?: '' | 'followers' | 'public';
   locked: boolean;
   created_at: string;
@@ -58,6 +61,7 @@ export type WorkoutAttachment = {
   content_type: string;
   order: number;
   url: string;
+  external_url?: string;
 };
 
 export type WorkoutDetail = {

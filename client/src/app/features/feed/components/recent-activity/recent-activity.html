@@ -34,6 +34,24 @@
                   </a>
                   @if (workout.user) {
                     <div class="text-muted small">{{ workout.user.name }}</div>
+                  } @else if (workout.actor_name) {
+                    <div class="text-muted small">
+                      <a [href]="workout.actor_iri"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         class="text-muted text-decoration-none">
+                        {{ workout.actor_name }}
+                      </a>
+                    </div>
+                  } @else if (workout.actor_iri) {
+                    <div class="text-muted small">
+                      <a [href]="workout.actor_iri"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         class="text-muted text-decoration-none">
+                        {{ workout.actor_iri }}
+                      </a>
+                    </div>
                   }
                 </div>
               </div>
@@ -85,7 +103,7 @@
                   class="img-fluid rounded"
                   loading="lazy"
                   [alt]="workout.attachments[0].filename || workout.name"
-                  [src]="workout.attachments[0].url"
+                  [src]="workout.attachments[0].external_url || workout.attachments[0].url"
                 />
               </a>
             }

@@ -40,6 +40,36 @@
           </div>
         </div>
 
+        <!-- External Workout Author -->
+        @if (dataService.workout()!.actor_iri) {
+          <div class="d-flex align-items-center gap-2 mt-2 mb-3">
+            @if (dataService.workout()!.actor_avatar_url) {
+              <img
+                class="rounded-circle"
+                height="28"
+                width="28"
+                [alt]="dataService.workout()!.actor_name || ''"
+                [src]="dataService.workout()!.actor_avatar_url"
+              />
+            }
+            <span>
+              @if (dataService.workout()!.actor_name) {
+                <a [href]="dataService.workout()!.actor_iri"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  {{ dataService.workout()!.actor_name }}
+                </a>
+              } @else {
+                <a [href]="dataService.workout()!.actor_iri"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  {{ dataService.workout()!.actor_iri }}
+                </a>
+              }
+            </span>
+          </div>
+        }
+
         <!-- Workout Stats -->
         <div class="workout-stats">
           @if (dataService.workout()!.total_distance) {
