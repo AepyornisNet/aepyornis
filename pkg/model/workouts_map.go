@@ -941,15 +941,15 @@ func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
 		}).
 		Preload("Data.Climbs", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
-		})
+		}).
+		Preload("Data.Location")
 }
 
 func PreloadWorkoutDetails(db *gorm.DB) *gorm.DB {
 	return PreloadWorkoutData(db).
 		Preload("Data.Points", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
-		}).
-		Preload("Data.Location")
+		})
 }
 
 func GetMapData(db *gorm.DB, id uint64) (*TrackData, error) {
