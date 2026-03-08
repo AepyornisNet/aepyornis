@@ -74,9 +74,11 @@ type Workout struct {
 	Equipment           []Equipment          `json:"equipment,omitempty" gorm:"constraint:OnDelete:CASCADE;many2many:workout_equipment"` // Which equipment is used for this workout
 	RouteSegmentMatches []*RouteSegmentMatch `gorm:"constraint:OnDelete:CASCADE" json:"routeSegmentMatches,omitempty"`                   // Which route segments match
 	Attachments         []WorkoutAttachment  `gorm:"constraint:OnDelete:CASCADE" json:"attachments,omitempty"`
-	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"` // The ID of the user who owns the workout
-	Locked              bool                 `json:"locked"`                                                  // Whether the workout's main attributes should be auto-updated
-	Dirty               bool                 `json:"dirty"`                                                   // Whether the workout has been modified and the details should be re-rendered
+	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"`    // The ID of the user who owns the workout
+	ActorIRI            *string              `gorm:"type:text;index" json:"actor_iri,omitempty"`                  // Remote actor IRI (for federated workouts without a local user)
+	ExternalObjectIRI   *string              `gorm:"type:text;uniqueIndex" json:"external_object_iri,omitempty"` // The ActivityPub object IRI for deduplication of external workouts
+	Locked              bool                 `json:"locked"`                                                     // Whether the workout's main attributes should be auto-updated
+	Dirty               bool                 `json:"dirty"`                                                      // Whether the workout has been modified and the details should be re-rendered
 }
 
 type GPXData struct {
@@ -89,6 +91,12 @@ type GPXData struct {
 
 func (w *Workout) HasCustomType() bool {
 	return w.Type == WorkoutTypeOther
+}
+
+// IsExternal returns true when the workout was received from a remote ActivityPub actor
+// rather than created by a local user.
+func (w *Workout) IsExternal() bool {
+	return w.ActorIRI != nil && *w.ActorIRI != ""
 }
 
 func (w *Workout) AfterFind(tx *gorm.DB) error {
@@ -588,7 +596,7 @@ func (w *Workout) create(db *gorm.DB) error {
 	}
 
 	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Omit("Data", "GPX", "Equipment", "RouteSegmentMatches").Create(w).Error; err != nil {
+		if err := tx.Omit("Data", "GPX", "Equipment", "RouteSegmentMatches", "Attachments").Create(w).Error; err != nil {
 			return err
 		}
 
@@ -607,6 +615,13 @@ func (w *Workout) create(db *gorm.DB) error {
 
 		if w.RouteSegmentMatches != nil {
 			if err := tx.Model(w).Association("RouteSegmentMatches").Replace(w.RouteSegmentMatches); err != nil {
+				return err
+			}
+		}
+
+		for i := range w.Attachments {
+			w.Attachments[i].WorkoutID = w.ID
+			if err := tx.Create(&w.Attachments[i]).Error; err != nil {
 				return err
 			}
 		}

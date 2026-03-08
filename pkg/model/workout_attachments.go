@@ -15,9 +15,10 @@ type WorkoutAttachment struct {
 	Workout     *Workout `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 	Kind        string   `gorm:"type:varchar(64);not null;default:image;index" json:"kind"`
 	Filename    string   `gorm:"type:varchar(255);not null" json:"filename"`
-	Content     []byte   `gorm:"type:bytes;not null" json:"-"`
-	Checksum    []byte   `gorm:"type:bytes;not null" json:"-"`
+	Content     []byte   `gorm:"type:bytes" json:"-"`
+	Checksum    []byte   `gorm:"type:bytes" json:"-"`
 	ContentType string   `gorm:"type:varchar(128);not null;default:image/png" json:"content_type"`
+	ExternalURL *string  `gorm:"type:text" json:"external_url,omitempty"` // URL for externally hosted images (federated workouts)
 	SortOrder   int      `gorm:"column:sort_order;not null;default:0;index:idx_workout_attachments_workout_sort" json:"sort_order"`
 }
 

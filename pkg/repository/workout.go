@@ -13,6 +13,8 @@ type Workout interface {
 	ListByUserAndFilters(userID uint64, filters *model.WorkoutFilters, limit int, offset int) ([]*model.Workout, error)
 	GetByIDForRead(id uint64, withRouteSegmentMatches bool) (*model.Workout, error)
 	GetDetailsByID(id uint64) (*model.Workout, error)
+	CreateExternalWorkout(workout *model.Workout) error
+	ExternalWorkoutExists(objectIRI string) (bool, error)
 }
 
 type workoutRepository struct {
@@ -123,4 +125,25 @@ func (r *workoutRepository) GetDetailsByID(id uint64) (*model.Workout, error) {
 	}
 
 	return &workout, nil
+}
+
+func (r *workoutRepository) CreateExternalWorkout(workout *model.Workout) error {
+	if workout == nil {
+		return nil
+	}
+
+	return workout.Create(r.db)
+}
+
+func (r *workoutRepository) ExternalWorkoutExists(objectIRI string) (bool, error) {
+	if objectIRI == "" {
+		return false, nil
+	}
+
+	var count int64
+	if err := r.db.Model(&model.Workout{}).Where("external_object_iri = ?", objectIRI).Count(&count).Error; err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

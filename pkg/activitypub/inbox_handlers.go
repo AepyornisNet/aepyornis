@@ -38,7 +38,9 @@ type InboxHandlerContext struct {
 	OutboxRepo       InboxOutboxRepository
 	WorkoutLikeRepo  InboxWorkoutLikeRepository
 	WorkoutReplyRepo InboxWorkoutReplyRepository
+	WorkoutRepo      InboxWorkoutRepository
 	Activity         *vocab.Activity
+	RawPayload       []byte // Raw activity JSON for parsing workout extensions
 }
 
 func HandleInboxActivity(ctx InboxHandlerContext) (bool, error) {
@@ -301,6 +303,10 @@ func extractUndoLikeTarget(it *vocab.Activity) string {
 func routeCreateActivity(ctx InboxHandlerContext) (bool, error) {
 	if isCreateReplyActivity(ctx.Activity) {
 		return true, handleCreateReplyActivity(ctx)
+	}
+
+	if isCreateWorkoutActivity(ctx.RawPayload) {
+		return true, handleCreateWorkoutActivity(ctx)
 	}
 
 	return false, nil

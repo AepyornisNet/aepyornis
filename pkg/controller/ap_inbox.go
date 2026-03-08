@@ -92,7 +92,9 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 			OutboxRepo:       ac.context.APOutboxRepo(),
 			WorkoutLikeRepo:  ac.context.WorkoutLikeRepo(),
 			WorkoutReplyRepo: ac.context.WorkoutReplyRepo(),
+			WorkoutRepo:      ac.context.WorkoutRepo(),
 			Activity:         act,
+			RawPayload:       payload,
 		})
 		handled = routed
 		return routeErr

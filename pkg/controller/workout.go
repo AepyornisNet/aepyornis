@@ -83,6 +83,31 @@ func applyReplyMetadata(results []dto.WorkoutResponse, counts map[uint64]int64) 
 	}
 }
 
+// enrichActorInfo populates ActorName and ActorAvatarURL for external workouts
+// using the actor cache.
+func enrichActorInfo(c echo.Context, results []dto.WorkoutResponse) {
+	for i := range results {
+		if results[i].ActorIRI == nil || *results[i].ActorIRI == "" {
+			continue
+		}
+
+		name, avatarURL, ok := ap.GetCachedActorProfile(*results[i].ActorIRI)
+		if !ok {
+			name, avatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *results[i].ActorIRI)
+		}
+
+		if ok {
+			if name != "" {
+				results[i].ActorName = &name
+			}
+
+			if avatarURL != "" {
+				results[i].ActorAvatarURL = &avatarURL
+			}
+		}
+	}
+}
+
 func (wc *workoutController) getOwnedWorkout(c echo.Context) (*model.Workout, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
@@ -105,7 +130,7 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 		return false, nil
 	}
 
-	if requester.ID == workout.UserID {
+	if requester.ID != 0 && requester.ID == workout.UserID {
 		return true, nil
 	}
 
@@ -113,6 +138,23 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 	case model.WorkoutVisibilityPublic:
 		return true, nil
 	case model.WorkoutVisibilityFollowers:
+		// For external workouts (from remote actors), check if the requester
+		// has an outgoing follow to the workout's actor.
+		if workout.IsExternal() {
+			var count int64
+			if err := wc.context.GetDB().
+				Model(&model.Follower{}).
+				Where("user_id = ? AND actor_iri = ? AND direction = ? AND approved = ?",
+					requester.ID, *workout.ActorIRI, model.FollowerDirectionOutgoing, true).
+				Count(&count).Error; err != nil {
+				return false, err
+			}
+
+			return count > 0, nil
+		}
+
+		// For local workouts, check if the requester's actor IRI is an
+		// approved follower of the workout owner.
 		requesterActorIRI := ap.LocalActorURL(ap.LocalActorURLConfig{
 			Host:           wc.context.GetConfig().Host,
 			WebRoot:        wc.context.GetConfig().WebRoot,
@@ -252,6 +294,25 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 	}
 
 	result := dto.NewWorkoutDetailResponse(workout, records)
+
+	// Enrich actor info for external workouts
+	if result.ActorIRI != nil && *result.ActorIRI != "" {
+		name, avatarURL, ok := ap.GetCachedActorProfile(*result.ActorIRI)
+		if !ok {
+			name, avatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *result.ActorIRI)
+		}
+
+		if ok {
+			if name != "" {
+				result.ActorName = &name
+			}
+
+			if avatarURL != "" {
+				result.ActorAvatarURL = &avatarURL
+			}
+		}
+	}
+
 	published, err := wc.context.APOutboxRepo().PublishedMap(workout.UserID, []uint64{workout.ID})
 	if err == nil {
 		result.ActivityPubPublished = published[workout.ID]
@@ -1117,11 +1178,15 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		Scopes(model.PreloadWorkoutData).
 		Preload("User").
 		Where(
-			"workouts.user_id = ? OR workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = workouts.user_id AND f.actor_iri = ? AND f.approved = ?))",
+			"workouts.user_id = ? OR workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = workouts.user_id AND f.actor_iri = ? AND f.approved = ?)) OR (workouts.actor_iri IS NOT NULL AND workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = ? AND f.actor_iri = workouts.actor_iri AND f.direction = ? AND f.approved = ?))",
 			requester.ID,
 			model.WorkoutVisibilityPublic,
 			model.WorkoutVisibilityFollowers,
 			requesterActorIRI,
+			true,
+			model.WorkoutVisibilityFollowers,
+			requester.ID,
+			model.FollowerDirectionOutgoing,
 			true,
 		).
 		Order("date DESC").
@@ -1133,6 +1198,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	}
 
 	results := dto.NewWorkoutsResponse(workouts)
+	enrichActorInfo(c, results)
 
 	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {

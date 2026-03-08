@@ -21,6 +21,9 @@ type WorkoutResponse struct {
 	CustomType           string                  `json:"custom_type,omitempty"`
 	UserID               uint64                  `json:"user_id"`
 	User                 *UserProfileResponse    `json:"user,omitempty"`
+	ActorIRI             *string                 `json:"actor_iri,omitempty"`
+	ActorName            *string                 `json:"actor_name,omitempty"`
+	ActorAvatarURL       *string                 `json:"actor_avatar_url,omitempty"`
 	Visibility           model.WorkoutVisibility `json:"visibility,omitempty"`
 	Locked               bool                    `json:"locked"`
 	CreatedAt            time.Time               `json:"created_at"`
@@ -57,12 +60,13 @@ type WorkoutResponse struct {
 }
 
 type WorkoutAttachmentItem struct {
-	ID          uint64 `json:"id"`
-	Kind        string `json:"kind"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"content_type"`
-	Order       int    `json:"order"`
-	URL         string `json:"url"`
+	ID          uint64  `json:"id"`
+	Kind        string  `json:"kind"`
+	Filename    string  `json:"filename"`
+	ContentType string  `json:"content_type"`
+	Order       int     `json:"order"`
+	URL         string  `json:"url"`
+	ExternalURL *string `json:"external_url,omitempty"`
 }
 
 type WorkoutLapResponse struct {
@@ -294,6 +298,7 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		Type:            string(w.Type),
 		CustomType:      w.CustomType,
 		UserID:          w.UserID,
+		ActorIRI:        w.ActorIRI,
 		Visibility:      w.Visibility,
 		Locked:          w.Locked,
 		CreatedAt:       w.CreatedAt,
@@ -343,14 +348,16 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 	if len(w.Attachments) > 0 {
 		wr.Attachments = make([]WorkoutAttachmentItem, 0, len(w.Attachments))
 		for _, attachment := range w.Attachments {
-			wr.Attachments = append(wr.Attachments, WorkoutAttachmentItem{
+			item := WorkoutAttachmentItem{
 				ID:          attachment.ID,
 				Kind:        attachment.Kind,
 				Filename:    attachment.Filename,
 				ContentType: attachment.ContentType,
 				Order:       attachment.SortOrder,
 				URL:         fmt.Sprintf("/api/v2/workouts/%d/attachments/%d", w.ID, attachment.ID),
-			})
+				ExternalURL: attachment.ExternalURL,
+			}
+			wr.Attachments = append(wr.Attachments, item)
 		}
 	}
 
