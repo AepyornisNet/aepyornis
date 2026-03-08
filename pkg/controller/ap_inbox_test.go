@@ -289,7 +289,7 @@ func TestApInbox_CreateWorkoutActivity_NotAReply(t *testing.T) {
 }
 
 func testWorkoutPayloadContext() (string, string) {
-	aepyCtx := `"aepy": "http://joinaepyornis.orh/ns#"`
+	aepyCtx := `"aepy": "http://joinaepyornis.org/ns#"`
 	terms := `"workoutSport": "aepy:workoutSport", ` +
 		`"workoutDuration": "aepy:workoutDuration", ` +
 		`"workoutDistance": "aepy:workoutDistance", ` +
