@@ -11,7 +11,6 @@ import {
   ProfileChangePasswordRequest,
   FullUserProfile,
   HammerheadConnectionStatus,
-  ProfileChangePasswordRequest,
   ProfileUpdateRequest,
   UserProfile,
   UserUpdateRequest,

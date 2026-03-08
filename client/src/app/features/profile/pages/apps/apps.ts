@@ -5,7 +5,7 @@ import { ProfileStore } from '../../services/profile-store';
 
 @Component({
   selector: 'app-profile-apps',
-  imports: [TranslatePipe, DatePipe],
+  imports: [TranslatePipe],
   templateUrl: './apps.html',
   styleUrl: './apps.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
