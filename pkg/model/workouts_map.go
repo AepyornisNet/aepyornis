@@ -777,7 +777,7 @@ totalDistance, totalDistance2D, maxElevation, uphill, downhill, maxSpeed float64
 totalDuration, pauseDuration                                             time.Duration
 )
 
-minElevation := 100000.0
+minElevation := 100000.0 // This should be high enough for Earthly workouts
 
 for _, track := range gpxContent.Tracks {
 for _, segment := range track.Segments {
