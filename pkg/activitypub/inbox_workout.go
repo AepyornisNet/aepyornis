@@ -18,6 +18,9 @@ import (
 type InboxWorkoutRepository interface {
 	CreateExternalWorkout(workout *model.Workout) error
 	ExternalWorkoutExists(objectIRI string) (bool, error)
+	GetExternalWorkoutByObjectIRI(objectIRI string) (*model.Workout, error)
+	UpdateExternalWorkout(workout *model.Workout) error
+	DeleteExternalWorkoutByObjectIRI(objectIRI string) error
 }
 
 // isCreateWorkoutActivity returns true when the Create activity wraps a
@@ -104,6 +107,133 @@ func handleCreateWorkoutActivity(ctx InboxHandlerContext) error {
 	extractImageAttachments(workout, note)
 
 	return ctx.WorkoutRepo.CreateExternalWorkout(workout)
+}
+
+// isUpdateWorkoutActivity returns true when the Update activity wraps a
+// WorkoutNote (identified by the presence of a workoutSport field) that is
+// *not* a reply (no inReplyTo).
+func isUpdateWorkoutActivity(rawPayload []byte) bool {
+	if len(rawPayload) == 0 {
+		return false
+	}
+
+	note, err := parseWorkoutNoteFromRawActivity(rawPayload)
+	if err != nil || note == nil {
+		return false
+	}
+
+	if note.WorkoutSport == "" {
+		return false
+	}
+
+	if note.InReplyTo != "" {
+		return false
+	}
+
+	return true
+}
+
+func handleUpdateWorkoutActivity(ctx InboxHandlerContext) error {
+	if ctx.RequestingActor == nil {
+		return errors.New("requesting actor invalid")
+	}
+
+	note, err := parseWorkoutNoteFromRawActivity(ctx.RawPayload)
+	if err != nil {
+		return err
+	}
+
+	if note == nil || note.WorkoutSport == "" {
+		return nil
+	}
+
+	objectIRI := note.ID.String()
+	if objectIRI == "" {
+		objectIRI = itemIRIString(note.URL)
+	}
+
+	if objectIRI == "" {
+		return nil
+	}
+
+	existing, err := ctx.WorkoutRepo.GetExternalWorkoutByObjectIRI(objectIRI)
+	if err != nil {
+		return nil //nolint:nilerr // Not found or error — nothing to update
+	}
+
+	actorIRI := ctx.RequestingActor.ID.String()
+
+	// Only allow the original actor to update
+	if existing.ActorIRI == nil || *existing.ActorIRI != actorIRI {
+		return nil
+	}
+
+	// Rebuild the workout from the updated note
+	updated := workoutFromNote(note, actorIRI, objectIRI)
+
+	// Carry over the database identity
+	existing.Date = updated.Date
+	existing.Name = updated.Name
+	existing.Type = updated.Type
+	existing.CustomType = updated.CustomType
+
+	// Update map data
+	if existing.Data != nil && updated.Data != nil {
+		existing.Data.AddressString = updated.Data.AddressString
+		existing.Data.WorkoutData = updated.Data.WorkoutData
+	}
+
+	// Re-download FIT if present
+	if note.WorkoutFitFile != "" {
+		if fitWorkout, fitErr := downloadAndParseFIT(
+			context.Background(), string(note.WorkoutFitFile),
+		); fitErr == nil && fitWorkout != nil {
+			mergeTrackDataFromFIT(existing, fitWorkout)
+		}
+	}
+
+	// Replace attachments: clear old external attachments, extract new ones
+	existing.Attachments = nil
+	extractImageAttachments(existing, note)
+
+	return ctx.WorkoutRepo.UpdateExternalWorkout(existing)
+}
+
+// isDeleteWorkoutActivity returns true when a Delete activity targets
+// an object IRI that corresponds to an external workout.
+func isDeleteWorkoutActivity(ctx InboxHandlerContext) bool {
+	targetIRI := extractDeleteTargetObjectIRI(ctx.Activity)
+	if targetIRI == "" {
+		return false
+	}
+
+	exists, err := ctx.WorkoutRepo.ExternalWorkoutExists(targetIRI)
+	if err != nil {
+		return false
+	}
+
+	return exists
+}
+
+func handleDeleteWorkoutActivity(ctx InboxHandlerContext) error {
+	targetIRI := extractDeleteTargetObjectIRI(ctx.Activity)
+	if targetIRI == "" {
+		return nil
+	}
+
+	existing, err := ctx.WorkoutRepo.GetExternalWorkoutByObjectIRI(targetIRI)
+	if err != nil {
+		return nil //nolint:nilerr // Not found — already deleted or never existed
+	}
+
+	// Only allow the original actor to delete
+	if ctx.RequestingActor != nil && existing.ActorIRI != nil {
+		if *existing.ActorIRI != ctx.RequestingActor.ID.String() {
+			return nil
+		}
+	}
+
+	return ctx.WorkoutRepo.DeleteExternalWorkoutByObjectIRI(targetIRI)
 }
 
 // workoutFromNote creates a Workout from the fields in a WorkoutNote.

@@ -287,3 +287,294 @@ func TestApInbox_CreateWorkoutActivity_NotAReply(t *testing.T) {
 	db.Model(&model.Workout{}).Where("actor_iri IS NOT NULL").Count(&count)
 	assert.Equal(t, int64(0), count, "reply should not create a workout")
 }
+
+func testWorkoutPayloadContext() (string, string) {
+	aepyCtx := `"aepy": "http://joinaepyornis.orh/ns#"`
+	terms := `"workoutSport": "aepy:workoutSport", ` +
+		`"workoutDuration": "aepy:workoutDuration", ` +
+		`"workoutDistance": "aepy:workoutDistance", ` +
+		`"workoutAverageSpeed": "aepy:workoutAverageSpeed", ` +
+		`"workoutLocation": "aepy:workoutLocation", ` +
+		`"workoutElevationGain": "aepy:workoutElevationGain"`
+	return aepyCtx, terms
+}
+
+func createExternalWorkout(
+	t *testing.T,
+	ctrl ApInboxController, remoteActorIRI, objectIRI string,
+) {
+	t.Helper()
+
+	aepyCtx, terms := testWorkoutPayloadContext()
+	payload := []byte(`{
+		"@context": [
+			"https://www.w3.org/ns/activitystreams",
+			{` + aepyCtx + `, ` + terms + `}
+		],
+		"id": "https://wt-ap2.test/ap/users/runner/outbox/abc123",
+		"type": "Create",
+		"actor": "` + remoteActorIRI + `",
+		"to": ["` + remoteActorIRI + `/followers"],
+		"object": {
+			"id": "` + objectIRI + `",
+			"type": "Note",
+			"attributedTo": "` + remoteActorIRI + `",
+			"content": "Morning run\ndistance: 5.00 km",
+			"published": "2025-06-15T08:30:00Z",
+			"workoutSport": "running",
+			"workoutDuration": 1800,
+			"workoutDistance": 5000,
+			"workoutAverageSpeed": 2.78,
+			"workoutLocation": "Central Park",
+			"workoutElevationGain": 50.5,
+			"attachment": [
+				{
+					"type": "Image",
+					"name": "route.png",
+					"mediaType": "image/png",
+					"url": "https://wt-ap2.test/images/route.png"
+				}
+			]
+		}
+	}`)
+
+	e := echo.New()
+	req := httptest.NewRequest(
+		http.MethodPost, "/ap/users/admin/inbox", bytes.NewReader(payload),
+	)
+	req.Header.Set(echo.HeaderContentType, ap.ContentType)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/ap/users/:username/inbox")
+	c.SetParamNames("username")
+	c.SetParamValues("admin")
+	c.Set(ap.RequestingActorContextKey, &ap.RequestActor{
+		Actor: vocab.Actor{
+			ID:   vocab.ID(remoteActorIRI),
+			Name: vocab.DefaultNaturalLanguage("Test Runner"),
+		},
+	})
+
+	err := ctrl.Inbox(c)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusAccepted, rec.Code)
+}
+
+func TestApInbox_UpdateWorkoutActivity(t *testing.T) {
+	db, err := model.Connect("memory", "", false, slognil.NewLogger())
+	require.NoError(t, err)
+
+	repos := repository.New(db)
+	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil, repos)
+	ctrl := NewApInboxController(ctr)
+
+	localUser := &model.User{
+		UserData: model.UserData{
+			Username: "admin", Name: "Admin",
+			Active: true, ActivityPub: true,
+		},
+		UserSecrets: model.UserSecrets{Password: "pass"},
+	}
+	localUser.SetDB(db)
+	require.NoError(t, localUser.Create(db))
+
+	remoteActorIRI := "https://wt-ap2.test/ap/users/runner"
+	objectIRI := "https://wt-ap2.test/ap/users/runner/outbox/abc123#object"
+
+	// Create the workout first
+	createExternalWorkout(t, ctrl, remoteActorIRI, objectIRI)
+
+	// Verify the workout exists
+	var workout model.Workout
+	require.NoError(t, db.Where("external_object_iri = ?", objectIRI).First(&workout).Error)
+	assert.Equal(t, "Morning run", workout.Name)
+
+	// Send an Update activity with modified data
+	aepyCtx, terms := testWorkoutPayloadContext()
+	updatePayload := []byte(`{
+		"@context": [
+			"https://www.w3.org/ns/activitystreams",
+			{` + aepyCtx + `, ` + terms + `}
+		],
+		"id": "https://wt-ap2.test/ap/users/runner/outbox/abc123#update-1",
+		"type": "Update",
+		"actor": "` + remoteActorIRI + `",
+		"to": ["` + remoteActorIRI + `/followers"],
+		"object": {
+			"id": "` + objectIRI + `",
+			"type": "Note",
+			"attributedTo": "` + remoteActorIRI + `",
+			"content": "Evening run\ndistance: 10.00 km",
+			"published": "2025-06-15T18:30:00Z",
+			"workoutSport": "running",
+			"workoutDuration": 3600,
+			"workoutDistance": 10000,
+			"workoutAverageSpeed": 2.78,
+			"workoutLocation": "Brooklyn Bridge",
+			"workoutElevationGain": 80.0
+		}
+	}`)
+
+	e := echo.New()
+	req := httptest.NewRequest(
+		http.MethodPost, "/ap/users/admin/inbox", bytes.NewReader(updatePayload),
+	)
+	req.Header.Set(echo.HeaderContentType, ap.ContentType)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/ap/users/:username/inbox")
+	c.SetParamNames("username")
+	c.SetParamValues("admin")
+	c.Set(ap.RequestingActorContextKey, &ap.RequestActor{
+		Actor: vocab.Actor{
+			ID:   vocab.ID(remoteActorIRI),
+			Name: vocab.DefaultNaturalLanguage("Test Runner"),
+		},
+	})
+
+	err = ctrl.Inbox(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusAccepted, rec.Code)
+
+	// Verify the workout was updated in place
+	var updated model.Workout
+	require.NoError(t, db.Where("external_object_iri = ?", objectIRI).First(&updated).Error)
+	assert.Equal(t, "Evening run", updated.Name)
+
+	// Verify only one workout exists (not a duplicate)
+	var count int64
+	db.Model(&model.Workout{}).Where("external_object_iri = ?", objectIRI).Count(&count)
+	assert.Equal(t, int64(1), count)
+
+	// Verify map data was updated
+	var mapData model.MapData
+	require.NoError(t, db.Where("workout_id = ?", updated.ID).First(&mapData).Error)
+	assert.Equal(t, float64(10000), mapData.TotalDistance)
+	assert.Equal(t, "Brooklyn Bridge", mapData.AddressString)
+}
+
+func TestApInbox_DeleteWorkoutActivity(t *testing.T) {
+	db, err := model.Connect("memory", "", false, slognil.NewLogger())
+	require.NoError(t, err)
+
+	repos := repository.New(db)
+	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil, repos)
+	ctrl := NewApInboxController(ctr)
+
+	localUser := &model.User{
+		UserData: model.UserData{
+			Username: "admin", Name: "Admin",
+			Active: true, ActivityPub: true,
+		},
+		UserSecrets: model.UserSecrets{Password: "pass"},
+	}
+	localUser.SetDB(db)
+	require.NoError(t, localUser.Create(db))
+
+	remoteActorIRI := "https://wt-ap2.test/ap/users/runner"
+	objectIRI := "https://wt-ap2.test/ap/users/runner/outbox/abc123#object"
+
+	// Create the workout first
+	createExternalWorkout(t, ctrl, remoteActorIRI, objectIRI)
+
+	// Verify it exists
+	var count int64
+	db.Model(&model.Workout{}).Where("external_object_iri = ?", objectIRI).Count(&count)
+	require.Equal(t, int64(1), count)
+
+	// Send a Delete activity
+	deletePayload := []byte(`{
+		"@context": "https://www.w3.org/ns/activitystreams",
+		"id": "https://wt-ap2.test/ap/users/runner/outbox/abc123#delete-1",
+		"type": "Delete",
+		"actor": "` + remoteActorIRI + `",
+		"to": ["` + remoteActorIRI + `/followers"],
+		"object": "` + objectIRI + `"
+	}`)
+
+	e := echo.New()
+	req := httptest.NewRequest(
+		http.MethodPost, "/ap/users/admin/inbox", bytes.NewReader(deletePayload),
+	)
+	req.Header.Set(echo.HeaderContentType, ap.ContentType)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/ap/users/:username/inbox")
+	c.SetParamNames("username")
+	c.SetParamValues("admin")
+	c.Set(ap.RequestingActorContextKey, &ap.RequestActor{
+		Actor: vocab.Actor{
+			ID:   vocab.ID(remoteActorIRI),
+			Name: vocab.DefaultNaturalLanguage("Test Runner"),
+		},
+	})
+
+	err = ctrl.Inbox(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusAccepted, rec.Code)
+
+	// Verify the workout was deleted
+	db.Model(&model.Workout{}).Where("external_object_iri = ?", objectIRI).Count(&count)
+	assert.Equal(t, int64(0), count, "workout should have been deleted")
+}
+
+func TestApInbox_DeleteWorkoutActivity_WrongActor(t *testing.T) {
+	db, err := model.Connect("memory", "", false, slognil.NewLogger())
+	require.NoError(t, err)
+
+	repos := repository.New(db)
+	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil, repos)
+	ctrl := NewApInboxController(ctr)
+
+	localUser := &model.User{
+		UserData: model.UserData{
+			Username: "admin", Name: "Admin",
+			Active: true, ActivityPub: true,
+		},
+		UserSecrets: model.UserSecrets{Password: "pass"},
+	}
+	localUser.SetDB(db)
+	require.NoError(t, localUser.Create(db))
+
+	remoteActorIRI := "https://wt-ap2.test/ap/users/runner"
+	objectIRI := "https://wt-ap2.test/ap/users/runner/outbox/abc123#object"
+
+	// Create the workout first
+	createExternalWorkout(t, ctrl, remoteActorIRI, objectIRI)
+
+	// Try to delete with a DIFFERENT actor
+	otherActor := "https://wt-ap2.test/ap/users/hacker"
+	deletePayload := []byte(`{
+		"@context": "https://www.w3.org/ns/activitystreams",
+		"id": "https://wt-ap2.test/ap/users/hacker/outbox/delete-1",
+		"type": "Delete",
+		"actor": "` + otherActor + `",
+		"object": "` + objectIRI + `"
+	}`)
+
+	e := echo.New()
+	req := httptest.NewRequest(
+		http.MethodPost, "/ap/users/admin/inbox", bytes.NewReader(deletePayload),
+	)
+	req.Header.Set(echo.HeaderContentType, ap.ContentType)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/ap/users/:username/inbox")
+	c.SetParamNames("username")
+	c.SetParamValues("admin")
+	c.Set(ap.RequestingActorContextKey, &ap.RequestActor{
+		Actor: vocab.Actor{ID: vocab.ID(otherActor)},
+	})
+
+	err = ctrl.Inbox(c)
+	require.NoError(t, err)
+
+	// Workout should still exist
+	var count int64
+	db.Model(&model.Workout{}).Where("external_object_iri = ?", objectIRI).Count(&count)
+	assert.Equal(t, int64(1), count, "workout should NOT be deleted by a different actor")
+}

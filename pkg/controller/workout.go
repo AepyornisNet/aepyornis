@@ -1247,6 +1247,14 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	// Send Delete activity to followers before removing local data
+	if err := worker.DeleteWorkoutActivityPub(
+		c.Request().Context(), wc.context, user, workout,
+	); err != nil {
+		wc.context.Logger().Error("Failed to send ActivityPub Delete",
+			"workout_id", workout.ID, "error", err)
+	}
+
 	if err := wc.context.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

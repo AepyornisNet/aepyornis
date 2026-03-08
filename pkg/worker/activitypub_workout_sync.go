@@ -20,10 +20,6 @@ func SyncWorkoutActivityPub(ctx context.Context, c *container.Container, user *m
 		return nil
 	}
 
-	if previousVisibility != nil && *previousVisibility == workout.Visibility {
-		return nil
-	}
-
 	entry, err := c.APOutboxRepo().GetEntryForWorkout(user.ID, workout.ID)
 	hasOutboxEntry := err == nil
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -44,7 +40,13 @@ func SyncWorkoutActivityPub(ctx context.Context, c *container.Container, user *m
 	}
 
 	if hasOutboxEntry {
-		return updateWorkoutActivityPubAudience(c, user, entry, workout)
+		visibilityChanged := previousVisibility != nil && *previousVisibility != workout.Visibility
+		if visibilityChanged {
+			return updateWorkoutActivityPubAudience(c, user, entry, workout)
+		}
+
+		// Content may have changed – send an Update activity
+		return updateWorkoutActivityPub(ctx, c, user, entry, workout)
 	}
 
 	return publishWorkoutToActivityPub(ctx, c, user, workout)
@@ -187,6 +189,157 @@ func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, 
 	return c.GetDB().Model(&model.APOutboxEntry{}).
 		Where("id = ?", entry.ID).
 		Update("activity", activityJSON).Error
+}
+
+// updateWorkoutActivityPub rebuilds the workout note, stores the updated
+// payload, creates an Update activity, and delivers it to followers.
+func updateWorkoutActivityPub(ctx context.Context, c *container.Container, user *model.User, entry *model.APOutboxEntry, workout *model.Workout) error {
+	if entry == nil {
+		return errors.New("outbox entry is nil")
+	}
+
+	actorURL, err := localActorURL(c, user)
+	if err != nil {
+		return err
+	}
+
+	// Regenerate FIT content
+	fitContent, fitErr := ap.GenerateWorkoutFIT(workout)
+	if fitErr != nil {
+		return fitErr
+	}
+
+	routeImageURL := entry.ActivityID + "/route-image"
+	fitURL := entry.ActivityID + "/fit"
+	noteContent := ap.WorkoutNoteContent(workout)
+
+	attachments := vocab.ItemCollection{}
+	routeImageAttachment, routeImageErr := model.GetRouteImageAttachment(c.GetDB(), workout.ID)
+	if routeImageErr == nil {
+		attachments = append(attachments, &vocab.Object{
+			Type:      vocab.ImageType,
+			Name:      vocab.DefaultNaturalLanguage(routeImageAttachment.Filename),
+			MediaType: vocab.MimeType(routeImageAttachment.ContentType),
+			URL:       vocab.IRI(routeImageURL),
+		})
+	} else if !errors.Is(routeImageErr, gorm.ErrRecordNotFound) {
+		return routeImageErr
+	}
+
+	note := ap.NewWorkoutNote()
+	note.ID = vocab.ID(entry.ObjectID)
+	note.AttributedTo = vocab.IRI(actorURL)
+	note.Published = entry.PublishedAt
+	note.Updated = time.Now().UTC()
+	note.Content = vocab.DefaultNaturalLanguage(noteContent)
+	note.Attachment = attachments
+	note.PopulateFromWorkout(workout, vocab.IRI(fitURL))
+
+	to := vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
+	cc := vocab.ItemCollection{}
+	if workout.Visibility == model.WorkoutVisibilityPublic {
+		to = vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")}
+		cc = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
+	}
+
+	updateURL := fmt.Sprintf("%s#update-%d", entry.ActivityID, time.Now().Unix())
+	activity := vocab.Activity{
+		ID:        vocab.ID(updateURL),
+		Type:      vocab.UpdateType,
+		Actor:     vocab.IRI(actorURL),
+		Published: time.Now().UTC(),
+		To:        to,
+		CC:        cc,
+		Object:    note,
+	}
+
+	activityJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(activity)
+	if err != nil {
+		return err
+	}
+
+	noteJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(note)
+	if err != nil {
+		return err
+	}
+
+	// Update the existing outbox entry and workout data
+	if err := c.GetDB().Model(&model.APOutboxEntry{}).
+		Where("id = ?", entry.ID).
+		Updates(map[string]any{
+			"activity":  activityJSON,
+			"payload":   noteJSON,
+			"note_text": noteContent,
+		}).Error; err != nil {
+		return err
+	}
+
+	if err := c.GetDB().Model(&model.APOutboxWorkout{}).
+		Where("id = ?", entry.APOutboxWorkoutID).
+		Updates(map[string]any{
+			"fit_content":  fitContent,
+			"fit_filename": ap.WorkoutFITFilename(workout),
+		}).Error; err != nil {
+		return err
+	}
+
+	return EnqueueAPDeliveriesForEntry(ctx, c, entry.ID)
+}
+
+// DeleteWorkoutActivityPub sends a Delete activity to all followers of the user
+// who previously received the workout via ActivityPub.
+func DeleteWorkoutActivityPub(ctx context.Context, c *container.Container, user *model.User, workout *model.Workout) error {
+	if user == nil || workout == nil {
+		return nil
+	}
+
+	entry, err := c.APOutboxRepo().GetEntryForWorkout(user.ID, workout.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil // never published, nothing to do
+		}
+
+		return err
+	}
+
+	actorURL, err := localActorURL(c, user)
+	if err != nil {
+		return err
+	}
+
+	to := vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
+	cc := vocab.ItemCollection{}
+
+	deleteURL := fmt.Sprintf("%s#delete-%d", entry.ActivityID, time.Now().Unix())
+	activity := vocab.Activity{
+		ID:        vocab.ID(deleteURL),
+		Type:      vocab.DeleteType,
+		Actor:     vocab.IRI(actorURL),
+		Published: time.Now().UTC(),
+		To:        to,
+		CC:        cc,
+		Object:    vocab.IRI(entry.ObjectID),
+	}
+
+	activityJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(activity)
+	if err != nil {
+		return err
+	}
+
+	// Overwrite the activity in the outbox entry with the Delete activity
+	// so the delivery mechanism picks it up.
+	if err := c.GetDB().Model(&model.APOutboxEntry{}).
+		Where("id = ?", entry.ID).
+		Update("activity", activityJSON).Error; err != nil {
+		return err
+	}
+
+	if err := EnqueueAPDeliveriesForEntry(ctx, c, entry.ID); err != nil {
+		return err
+	}
+
+	// Now remove the outbox entry
+	return c.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID)
 }
 
 func localActorURL(c *container.Container, user *model.User) (string, error) {

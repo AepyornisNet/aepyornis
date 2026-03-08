@@ -313,6 +313,10 @@ func routeCreateActivity(ctx InboxHandlerContext) (bool, error) {
 }
 
 func routeUpdateActivity(ctx InboxHandlerContext) (bool, error) {
+	if isUpdateWorkoutActivity(ctx.RawPayload) {
+		return true, handleUpdateWorkoutActivity(ctx)
+	}
+
 	if isUpdateReplyActivity(ctx.Activity) {
 		return true, handleUpdateReplyActivity(ctx)
 	}
@@ -321,6 +325,10 @@ func routeUpdateActivity(ctx InboxHandlerContext) (bool, error) {
 }
 
 func routeDeleteActivity(ctx InboxHandlerContext) (bool, error) {
+	if isDeleteWorkoutActivity(ctx) {
+		return true, handleDeleteWorkoutActivity(ctx)
+	}
+
 	if isDeleteReplyActivity(ctx.Activity) {
 		return true, handleDeleteReplyActivity(ctx)
 	}

@@ -15,6 +15,9 @@ type Workout interface {
 	GetDetailsByID(id uint64) (*model.Workout, error)
 	CreateExternalWorkout(workout *model.Workout) error
 	ExternalWorkoutExists(objectIRI string) (bool, error)
+	GetExternalWorkoutByObjectIRI(objectIRI string) (*model.Workout, error)
+	UpdateExternalWorkout(workout *model.Workout) error
+	DeleteExternalWorkoutByObjectIRI(objectIRI string) error
 }
 
 type workoutRepository struct {
@@ -146,4 +149,36 @@ func (r *workoutRepository) ExternalWorkoutExists(objectIRI string) (bool, error
 	}
 
 	return count > 0, nil
+}
+
+func (r *workoutRepository) GetExternalWorkoutByObjectIRI(objectIRI string) (*model.Workout, error) {
+	var workout model.Workout
+	if err := model.PreloadWorkoutDetails(r.db).
+		Where("external_object_iri = ?", objectIRI).
+		First(&workout).Error; err != nil {
+		return nil, err
+	}
+
+	return &workout, nil
+}
+
+func (r *workoutRepository) UpdateExternalWorkout(workout *model.Workout) error {
+	if workout == nil {
+		return nil
+	}
+
+	return workout.Save(r.db)
+}
+
+func (r *workoutRepository) DeleteExternalWorkoutByObjectIRI(objectIRI string) error {
+	if objectIRI == "" {
+		return nil
+	}
+
+	var workout model.Workout
+	if err := r.db.Where("external_object_iri = ?", objectIRI).First(&workout).Error; err != nil {
+		return err
+	}
+
+	return workout.Delete(r.db)
 }
