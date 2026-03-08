@@ -65,7 +65,11 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
 
   public readonly workoutPoints = computed(() => {
     const w = this.workout();
-    if (!w?.map_data?.details?.position || !w.map_data.details.elevation || !w.map_data.details.distance) {
+    if (
+      !w?.map_data?.details?.position ||
+      !w.map_data.details.elevation ||
+      !w.map_data.details.distance
+    ) {
       return [];
     }
     return w.map_data.details.position.map((p: [number, number], i: number) => ({

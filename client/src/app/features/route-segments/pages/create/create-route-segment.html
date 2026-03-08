@@ -21,7 +21,9 @@
         <div class="card-body">
           <form [formGroup]="routeSegmentForm" (ngSubmit)="createRouteSegment()">
             <div class="mb-3">
-              <label class="form-label" for="route-segment-file">{{ 'GPX file' | translate }}</label>
+              <label class="form-label" for="route-segment-file">{{
+                'GPX file' | translate
+              }}</label>
               <input
                 accept=".gpx"
                 aria-describedby="route-segment-file-help"

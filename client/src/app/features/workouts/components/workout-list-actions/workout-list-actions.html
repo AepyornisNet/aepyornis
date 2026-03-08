@@ -8,7 +8,7 @@
         class="btn btn-sm btn-outline-secondary"
         ngbDropdownToggle
         [disabled]="isProcessing()"
-  		[title]="'Actions' | translate"
+        [title]="'Actions' | translate"
       ></button>
     </div>
     <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
@@ -17,7 +17,11 @@
         <span class="ms-2">{{ 'Edit' | translate }}</span>
       </button>
       @if (workout().has_file) {
-        <button class="dropdown-item" [title]="'Download Original File' | translate" (click)="download()">
+        <button
+          class="dropdown-item"
+          [title]="'Download Original File' | translate"
+          (click)="download()"
+        >
           <app-icon name="download" size="16" />
           <span class="ms-2">{{ 'Download' | translate }}</span>
         </button>
@@ -25,7 +29,7 @@
       <button class="dropdown-item" (click)="toggleLock()">
         <app-icon size="16" [name]="workout().locked ? 'locked' : 'unlocked'" />
         <span class="ms-2">{{
-			workout().locked ? ('Unlock' | translate) : ('Lock' | translate)
+          workout().locked ? ('Unlock' | translate) : ('Lock' | translate)
         }}</span>
       </button>
       <div class="dropdown-divider"></div>
@@ -44,7 +48,7 @@
           <div class="modal-header">
             <h5 class="modal-title">{{ 'Confirm Delete' | translate }}</h5>
             <button class="btn-close" type="button" (click)="cancelDelete()">
-			  <span class="visually-hidden">{{ 'Close' | translate }}</span>
+              <span class="visually-hidden">{{ 'Close' | translate }}</span>
             </button>
           </div>
           <div class="modal-body">
@@ -52,7 +56,7 @@
             <p>
               <strong>{{ workout().name }}</strong>
             </p>
-			<p class="text-muted">{{ 'This action cannot be undone.' | translate }}</p>
+            <p class="text-muted">{{ 'This action cannot be undone.' | translate }}</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">

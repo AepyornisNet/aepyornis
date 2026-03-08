@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, effect, ElementRef, input, OnDestroy, viewChild, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  ElementRef,
+  input,
+  OnDestroy,
+  viewChild,
+  ViewEncapsulation,
+} from '@angular/core';
 
 import * as L from 'leaflet';
 import { MapPoint } from '../../../../core/types/route-segment';
@@ -61,31 +70,40 @@ export class RouteSegmentMapComponent implements OnDestroy {
     this.map = L.map(containerRef.nativeElement, {
       fadeAnimation: false,
       preferCanvas: true,
-      renderer: L.canvas()
+      renderer: L.canvas(),
     }).setView([centerLat, centerLng], 15);
 
     const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       className: 'map-tiles',
     }).addTo(this.map);
-    const aerialLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Esri',
-    });
+    const aerialLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Esri',
+      },
+    );
 
     this.baseTrackLayer = L.featureGroup().addTo(this.map);
 
     // Draw base track as single green polyline (no elevation coloring)
-    this.path = pts.map(p => [p.lat, p.lng]);
+    this.path = pts.map((p) => [p.lat, p.lng]);
     L.polyline(this.path, { color: 'green', weight: 4, opacity: 0.9 }).addTo(this.baseTrackLayer);
 
     // Start/end markers
     const first = pts[0];
     const last = pts[pts.length - 1];
-    L.circleMarker([first.lat, first.lng], { color: 'green', radius: 6, fillOpacity: 1 }).addTo(this.baseTrackLayer);
-    L.circleMarker([last.lat, last.lng], { color: 'red', radius: 6, fillOpacity: 1 }).addTo(this.baseTrackLayer);
+    L.circleMarker([first.lat, first.lng], { color: 'green', radius: 6, fillOpacity: 1 }).addTo(
+      this.baseTrackLayer,
+    );
+    L.circleMarker([last.lat, last.lng], { color: 'red', radius: 6, fillOpacity: 1 }).addTo(
+      this.baseTrackLayer,
+    );
 
     // Layer control
-    L.control.layers({ Streets: streetLayer, Aerial: aerialLayer }, {}, { position: 'topright' }).addTo(this.map);
+    L.control
+      .layers({ Streets: streetLayer, Aerial: aerialLayer }, {}, { position: 'topright' })
+      .addTo(this.map);
 
     this.map.fitBounds(this.baseTrackLayer.getBounds(), { animate: false });
     L.control.scale().addTo(this.map);
@@ -113,8 +131,12 @@ export class RouteSegmentMapComponent implements OnDestroy {
 
     // Draw single polyline for entire selection (much faster than per-segment)
     this.highlightLayer = L.featureGroup().addTo(this.map);
-    const highlightLatLngs = this.path?.slice(start, end + 1) ?? pts.slice(start, end + 1).map(p => [p.lat, p.lng] as [number, number]);
-    L.polyline(highlightLatLngs, { color: 'red', weight: 5, opacity: 0.8 }).addTo(this.highlightLayer);
+    const highlightLatLngs =
+      this.path?.slice(start, end + 1) ??
+      pts.slice(start, end + 1).map((p) => [p.lat, p.lng] as [number, number]);
+    L.polyline(highlightLatLngs, { color: 'red', weight: 5, opacity: 0.8 }).addTo(
+      this.highlightLayer,
+    );
     this.map.fitBounds(this.highlightLayer.getBounds(), { animate: false });
   }
 }

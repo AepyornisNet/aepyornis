@@ -16,6 +16,7 @@ import (
 type ProfileController interface {
 	GetProfile(c echo.Context) error
 	UpdateProfile(c echo.Context) error
+	ChangePassword(c echo.Context) error
 	ResetAPIKey(c echo.Context) error
 	EnableActivityPub(c echo.Context) error
 	ListFollowRequests(c echo.Context) error
@@ -23,6 +24,8 @@ type ProfileController interface {
 	RefreshWorkouts(c echo.Context) error
 	UpdateVersion(c echo.Context) error
 }
+
+var ErrCurrentPasswordIncorrect = errors.New("current password is incorrect")
 
 type profileController struct {
 	context *container.Container
@@ -130,6 +133,50 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 
 	if user.Profile.APIActive {
 		resp.Results.Profile.APIKey = user.APIKey
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// ChangePassword changes the current user's password
+// @Summary      Change password
+// @Tags         profile
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      400  {object}  dto.Response[any]
+// @Failure      401  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
+// @Router       /profile/change-password [post]
+func (pc *profileController) ChangePassword(c echo.Context) error {
+	user := pc.context.GetUser(c)
+
+	var changeData dto.ProfileChangePasswordData
+	if err := c.Bind(&changeData); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	if changeData.CurrentPassword == "" || changeData.NewPassword == "" {
+		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
+	}
+
+	if !user.ValidLogin(changeData.CurrentPassword) {
+		return renderApiError(c, http.StatusUnauthorized, ErrCurrentPasswordIncorrect)
+	}
+
+	if err := user.SetPassword(changeData.NewPassword); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	if err := user.Save(pc.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	resp := dto.Response[map[string]string]{
+		Results: map[string]string{"message": "Password changed successfully"},
 	}
 
 	return c.JSON(http.StatusOK, resp)

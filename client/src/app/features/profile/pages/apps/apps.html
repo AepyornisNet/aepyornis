@@ -8,7 +8,10 @@
       <div>
         <div class="fw-medium">Hammerhead</div>
         <p class="small text-muted mb-1">
-          {{ 'Sync completed activities from Hammerhead and automatically create workouts.' | translate }}
+          {{
+            'Sync completed activities from Hammerhead and automatically create workouts.'
+              | translate
+          }}
         </p>
 
         @if (store.hammerheadConnection()?.connected) {
@@ -30,7 +33,11 @@
           (click)="store.disconnectHammerhead()"
         >
           @if (store.disconnectingHammerhead()) {
-            <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span
+              aria-hidden="true"
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+            ></span>
           }
           {{ 'Disconnect' | translate }}
         </button>
@@ -42,7 +49,11 @@
           (click)="store.connectHammerhead()"
         >
           @if (store.connectingHammerhead()) {
-            <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span
+              aria-hidden="true"
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+            ></span>
           }
           {{ 'Connect' | translate }}
         </button>

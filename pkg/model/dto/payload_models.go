@@ -295,6 +295,11 @@ type ProfileUpdateData struct {
 	PreferFullDate           bool                     `json:"prefer_full_date"`
 }
 
+type ProfileChangePasswordData struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
 type CalendarQueryParams struct {
 	Start    *string `query:"start"`
 	End      *string `query:"end"`

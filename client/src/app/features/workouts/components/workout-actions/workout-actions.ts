@@ -146,5 +146,4 @@ export class WorkoutActions {
       },
     });
   }
-
 }

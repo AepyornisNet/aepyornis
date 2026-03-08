@@ -16,7 +16,12 @@
         <th class="text-center">{{ 'Actions' | translate }}</th>
       </ng-template>
 
-      <ng-template #tableRow let-getRowLink="getRowLink" let-item let-multiSelectActive="multiSelectActive">
+      <ng-template
+        #tableRow
+        let-getRowLink="getRowLink"
+        let-item
+        let-multiSelectActive="multiSelectActive"
+      >
         <td class="position-relative">
           @if (!multiSelectActive) {
             <!-- eslint-disable-next-line @angular-eslint/template/elements-content -->
@@ -124,9 +129,7 @@
             ></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="create-notes">{{
-              'Notes' | translate
-            }}</label>
+            <label class="form-label" for="create-notes">{{ 'Notes' | translate }}</label>
             <textarea
               class="form-control"
               id="create-notes"
@@ -206,9 +209,7 @@
             />
           </div>
           <div class="mb-3">
-            <label class="form-label" for="edit-description">{{
-              'Description' | translate
-            }}</label>
+            <label class="form-label" for="edit-description">{{ 'Description' | translate }}</label>
             <textarea
               class="form-control"
               id="edit-description"

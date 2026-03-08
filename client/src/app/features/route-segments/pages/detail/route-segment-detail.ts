@@ -11,7 +11,13 @@ import { RouteSegmentMapComponent } from '../../components/route-segment-map/rou
 
 @Component({
   selector: 'app-route-segment-detail',
-  imports: [RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe, RouteSegmentMapComponent],
+  imports: [
+    RouterLink,
+    AppIcon,
+    RouteSegmentActionsComponent,
+    TranslatePipe,
+    RouteSegmentMapComponent,
+  ],
   templateUrl: './route-segment-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

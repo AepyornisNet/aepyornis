@@ -5,7 +5,9 @@
 >
   <div class="sidebar-brand d-flex flex-row align-items-center justify-content-center text-dark">
     <img alt="Logo" height="44" src="logo.svg" />
-    <span class="ps-3" [class.visually-hidden]="!isOpen()">{{ 'Workout Tracker' | translate }}</span>
+    <span class="ps-3" [class.visually-hidden]="!isOpen()">{{
+      'Workout Tracker' | translate
+    }}</span>
   </div>
 
   <div class="overflow-y-auto" [class.p-3]="isOpen()">
@@ -29,8 +31,18 @@
             [routerLink]="item.route"
             [routerLinkActiveOptions]="
               item.route === '/profile'
-                ? { paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }
-                : { paths: 'subset', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }
+                ? {
+                    paths: 'exact',
+                    queryParams: 'ignored',
+                    matrixParams: 'ignored',
+                    fragment: 'ignored',
+                  }
+                : {
+                    paths: 'subset',
+                    queryParams: 'ignored',
+                    matrixParams: 'ignored',
+                    fragment: 'ignored',
+                  }
             "
           >
             <app-icon size="1.125rem" [class.me-2]="isOpen()" [name]="item.iconKey" />

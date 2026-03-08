@@ -12,7 +12,11 @@
     </thead>
     <tbody>
       @for (climb of climbs(); track climb.index) {
-        <tr class="interval-row" [class.table-active]="isSelected(climb)" (click)="selectClimb(climb)">
+        <tr
+          class="interval-row"
+          [class.table-active]="isSelected(climb)"
+          (click)="selectClimb(climb)"
+        >
           <td>
             @if (climb.type === 'climb') {
               <span class="text-success">↑ Climb {{ climb.index }}</span>

@@ -22,8 +22,17 @@ import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-c
 import { Workout } from '../../../../core/types/workout';
 import { WorkoutLike } from '../../../../core/types/workout';
 import { WorkoutRecordsComponent } from '../../components/workout-records/workout-records';
-import { NgbNav, NgbNavContent, NgbNavItem, NgbNavLinkButton, NgbNavOutlet } from '@ng-bootstrap/ng-bootstrap';
-import { hasWorkoutStatistics, WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
+import {
+  NgbNav,
+  NgbNavContent,
+  NgbNavItem,
+  NgbNavLinkButton,
+  NgbNavOutlet,
+} from '@ng-bootstrap/ng-bootstrap';
+import {
+  hasWorkoutStatistics,
+  WorkoutStatisticsComponent,
+} from '../../components/workout-statistics/workout-statistics';
 import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
@@ -50,8 +59,8 @@ import { WorkoutCommentsComponent } from '../../components/workout-comments/work
     NgbNavContent,
     WorkoutPerformanceCurveComponent,
     WorkoutCommentsComponent,
-    TranslatePipe
-],
+    TranslatePipe,
+  ],
   templateUrl: './workout-detail.html',
   styleUrl: './workout-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

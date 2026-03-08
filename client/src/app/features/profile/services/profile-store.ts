@@ -1,9 +1,13 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Api } from '../../../core/services/api';
 import { AppConfig } from '../../../core/services/app-config';
-import { FollowRequest, FullUserProfile, HammerheadConnectionStatus } from '../../../core/types/user';
+import {
+  FollowRequest,
+  FullUserProfile,
+  HammerheadConnectionStatus,
+} from '../../../core/types/user';
 import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
@@ -18,6 +22,7 @@ export class ProfileStore {
   public readonly saving = signal(false);
   public readonly error = signal<string | null>(null);
   public readonly successMessage = signal<string | null>(null);
+  public readonly changingPassword = signal(false);
   public readonly apiKeyVisible = signal(false);
   public readonly followRequests = signal<FollowRequest[]>([]);
   public readonly loadingFollowRequests = signal(false);
@@ -44,6 +49,12 @@ export class ProfileStore {
       weight: ['kg'],
       height: ['cm'],
     }),
+  });
+
+  public readonly changePasswordForm: FormGroup = this.fb.group({
+    current_password: ['', Validators.required],
+    new_password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(128)]],
+    confirm_password: ['', Validators.required],
   });
 
   public async loadProfile(): Promise<void> {
@@ -116,6 +127,48 @@ export class ProfileStore {
       );
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  public async changePassword(): Promise<void> {
+    if (this.changePasswordForm.invalid) {
+      this.changePasswordForm.markAllAsTouched();
+      return;
+    }
+
+    const currentPassword = this.changePasswordForm.value.current_password;
+    const newPassword = this.changePasswordForm.value.new_password;
+    const confirmPassword = this.changePasswordForm.value.confirm_password;
+
+    if (newPassword !== confirmPassword) {
+      this.error.set(this.translate.instant('Passwords do not match'));
+      return;
+    }
+
+    this.changingPassword.set(true);
+    this.error.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.api.changePassword({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      );
+
+      this.successMessage.set(
+        response?.results?.message ?? this.translate.instant('Password changed successfully'),
+      );
+      this.changePasswordForm.reset();
+    } catch (err) {
+      this.error.set(
+        this.translate.instant('Failed to change password: {{message}}', {
+          message: this.errorMessage(err),
+        }),
+      );
+    } finally {
+      this.changingPassword.set(false);
     }
   }
 
@@ -270,7 +323,9 @@ export class ProfileStore {
 
     try {
       const response = await firstValueFrom(this.api.disconnectHammerhead());
-      this.successMessage.set(response?.results?.message ?? this.translate.instant('Hammerhead disconnected'));
+      this.successMessage.set(
+        response?.results?.message ?? this.translate.instant('Hammerhead disconnected'),
+      );
       this.hammerheadConnection.set({ connected: false });
       setTimeout(() => this.successMessage.set(null), 3000);
     } catch (err) {

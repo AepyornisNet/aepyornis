@@ -241,7 +241,10 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
     return 'year';
   }
 
-  private normalizeBucketValue(bucket: string, timeUnit: 'day' | 'week' | 'month' | 'year'): Date | string {
+  private normalizeBucketValue(
+    bucket: string,
+    timeUnit: 'day' | 'week' | 'month' | 'year',
+  ): Date | string {
     const date = new Date(bucket);
 
     if (Number.isNaN(date.getTime())) {

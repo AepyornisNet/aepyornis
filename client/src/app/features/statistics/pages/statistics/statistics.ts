@@ -19,7 +19,14 @@ type StatisticOption = {
 
 @Component({
   selector: 'app-statistics',
-  imports: [ReactiveFormsModule, AppIcon, StatisticChartComponent, StatisticsNav, AsyncPipe, TranslatePipe],
+  imports: [
+    ReactiveFormsModule,
+    AppIcon,
+    StatisticChartComponent,
+    StatisticsNav,
+    AsyncPipe,
+    TranslatePipe,
+  ],
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,7 +45,7 @@ export class Statistics implements OnInit {
   public filterForm!: FormGroup;
 
   public sinceOptions: StatisticOption[] = [
-    { key: '7 days', label: this.translate.stream('{{num}} days', { num : 7 }) },
+    { key: '7 days', label: this.translate.stream('{{num}} days', { num: 7 }) },
     { key: '1 month', label: this.translate.stream('1 month') },
     { key: '3 months', label: this.translate.stream('{{num}} months', { num: 3 }) },
     { key: '6 months', label: this.translate.stream('{{num}} months', { num: 6 }) },

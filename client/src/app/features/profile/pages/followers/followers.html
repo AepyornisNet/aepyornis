@@ -26,7 +26,11 @@
               (click)="store.acceptFollowRequest(request)"
             >
               @if (store.acceptingRequestIds()[request.id]) {
-                <span aria-hidden="true" class="spinner-border spinner-border-sm" role="status"></span>
+                <span
+                  aria-hidden="true"
+                  class="spinner-border spinner-border-sm"
+                  role="status"
+                ></span>
               } @else {
                 {{ 'Accept' | translate }}
               }

@@ -47,7 +47,9 @@ export class UserProfile implements OnInit {
     this.successMessage.set(null);
 
     try {
-      const profileResponse = await firstValueFrom(this.api.getUserProfileSummary(handle || undefined));
+      const profileResponse = await firstValueFrom(
+        this.api.getUserProfileSummary(handle || undefined),
+      );
       if (!profileResponse?.results) {
         return;
       }
