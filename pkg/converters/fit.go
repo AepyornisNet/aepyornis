@@ -10,6 +10,7 @@ import (
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/muktihari/fit/decoder"
+	"github.com/muktihari/fit/kit/datetime"
 	"github.com/muktihari/fit/kit/semicircles"
 	"github.com/muktihari/fit/profile/filedef"
 	"github.com/muktihari/fit/profile/typedef"
@@ -597,24 +598,24 @@ func fitActivityStartTime(act *filedef.Activity) time.Time {
 		return time.Time{}
 	}
 
-	if t := act.Activity.LocalTimestamp.Local(); !t.IsZero() {
+	if t := act.Activity.LocalTimestamp.Local(); fitTimeIsValid(t) {
 		return t
 	}
 
 	for _, s := range act.Sessions {
-		if t := s.StartTime.Local(); !t.IsZero() {
+		if t := s.StartTime.Local(); fitTimeIsValid(t) {
 			return t
 		}
 	}
 
 	for _, l := range act.Laps {
-		if t := l.StartTime.Local(); !t.IsZero() {
+		if t := l.StartTime.Local(); fitTimeIsValid(t) {
 			return t
 		}
 	}
 
 	for _, r := range act.Records {
-		if t := r.Timestamp.Local(); !t.IsZero() {
+		if t := r.Timestamp.Local(); fitTimeIsValid(t) {
 			return t
 		}
 	}
@@ -622,9 +623,17 @@ func fitActivityStartTime(act *filedef.Activity) time.Time {
 	return act.FileId.TimeCreated.Local()
 }
 
+// fitTimeIsValid reports whether t is a plausible FIT timestamp.
+// The FIT library decodes an unset uint32(0) field as the FIT epoch
+// (1989-12-31 00:00:00 UTC) rather than Go's zero time, so we must
+// reject both Go's zero time and the FIT epoch itself.
+func fitTimeIsValid(t time.Time) bool {
+	return !t.IsZero() && t.After(datetime.Epoch())
+}
+
 func firstNonZeroTime(candidates ...time.Time) time.Time {
 	for _, t := range candidates {
-		if !t.IsZero() {
+		if fitTimeIsValid(t) {
 			return t
 		}
 	}
@@ -637,7 +646,7 @@ func formatFitWorkoutName(sport string, at time.Time) string {
 		sport = "workout"
 	}
 
-	if at.IsZero() {
+	if !fitTimeIsValid(at) {
 		return sport
 	}
 
