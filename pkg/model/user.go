@@ -285,7 +285,7 @@ func (u *User) Delete(db *gorm.DB) error {
 }
 
 func (u *User) MarkWorkoutsDirty(db *gorm.DB) error {
-	return db.Model(&Workout{}).Where(&Workout{UserID: u.ID}).Update("dirty", true).Error
+	return db.Model(&Workout{}).Where("user_id = ?", u.ID).Update("dirty", true).Error
 }
 
 func (u *User) AddWorkout(db *gorm.DB, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, []error) {

@@ -24,7 +24,11 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 		return nil
 	}
 
-	parentEntry, err := c.APOutboxRepo().GetEntryForWorkout(workout.UserID, workout.ID)
+	if workout.UserID == nil {
+		return nil
+	}
+
+	parentEntry, err := c.APOutboxRepo().GetEntryForWorkout(*workout.UserID, workout.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil

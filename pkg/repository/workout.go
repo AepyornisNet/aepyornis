@@ -32,7 +32,7 @@ func (r *workoutRepository) GetByUserID(userID uint64, id uint64) (*model.Workou
 	var workout model.Workout
 
 	q := model.PreloadWorkoutDetails(r.db).Preload("GPX").Preload("Equipment")
-	if err := q.Where(&model.Workout{UserID: userID}).First(&workout, id).Error; err != nil {
+	if err := q.Where("user_id = ?", userID).First(&workout, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func (r *workoutRepository) GetByUserID(userID uint64, id uint64) (*model.Workou
 func (r *workoutRepository) ListByUserID(userID uint64) ([]*model.Workout, error) {
 	var workouts []*model.Workout
 
-	if err := model.PreloadWorkoutData(r.db).Where(&model.Workout{UserID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := model.PreloadWorkoutData(r.db).Where("user_id = ?", userID).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
 	}
 
@@ -52,7 +52,7 @@ func (r *workoutRepository) ListByUserID(userID uint64) ([]*model.Workout, error
 func (r *workoutRepository) ListByUserIDWithDetails(userID uint64) ([]*model.Workout, error) {
 	var workouts []*model.Workout
 
-	if err := model.PreloadWorkoutDetails(r.db).Where(&model.Workout{UserID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(r.db).Where("user_id = ?", userID).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
 	}
 

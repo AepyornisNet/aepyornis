@@ -67,7 +67,7 @@ type MapPoint struct {
 type RouteSegmentMatch struct {
 	WorkoutID    uint64  `json:"workout_id"`
 	WorkoutName  string  `json:"workout_name"`
-	UserID       uint64  `json:"user_id"`
+	UserID       *uint64 `json:"user_id"`
 	UserName     string  `json:"user_name"`
 	Distance     float64 `json:"distance"`
 	Duration     int     `json:"duration"`

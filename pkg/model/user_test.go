@@ -84,7 +84,7 @@ func getUserByIDForTest(db *gorm.DB, userID uint64) (*User, error) {
 func listUserWorkoutsForTest(db *gorm.DB, user *User) ([]*Workout, error) {
 	workouts := make([]*Workout, 0)
 
-	if err := PreloadWorkoutData(db).Where(&Workout{UserID: user.ID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := PreloadWorkoutData(db).Where("user_id = ?", user.ID).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
 	}
 

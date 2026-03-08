@@ -63,9 +63,9 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 			return nil
 		}
 
-		user, err := c.UserRepo().GetByID(w.UserID)
+		user, err := c.UserRepo().GetByID(*w.UserID)
 		if err != nil {
-			return fmt.Errorf("update_workout: get user %d: %w", w.UserID, err)
+			return fmt.Errorf("update_workout: get user %d: %w", *w.UserID, err)
 		}
 
 		if err := SyncWorkoutActivityPub(ctx, c, user, w, nil); err != nil {

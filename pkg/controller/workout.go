@@ -130,7 +130,7 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 		return false, nil
 	}
 
-	if requester.ID != 0 && requester.ID == workout.UserID {
+	if requester.ID != 0 && workout.UserID != nil && requester.ID == *workout.UserID {
 		return true, nil
 	}
 
@@ -162,14 +162,14 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 			FallbackScheme: c.Scheme(),
 		}, requester.Username)
 
-		if requesterActorIRI == "" {
+		if requesterActorIRI == "" || workout.UserID == nil {
 			return false, nil
 		}
 
 		var count int64
 		if err := wc.context.GetDB().
 			Model(&model.Follower{}).
-			Where("user_id = ? AND actor_iri = ? AND approved = ?", workout.UserID, requesterActorIRI, true).
+			Where("user_id = ? AND actor_iri = ? AND approved = ?", *workout.UserID, requesterActorIRI, true).
 			Count(&count).Error; err != nil {
 			return false, err
 		}
@@ -288,7 +288,12 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), workout.UserID, workout.Type, workout.ID)
+	var userID uint64
+	if workout.UserID != nil {
+		userID = *workout.UserID
+	}
+
+	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), userID, workout.Type, workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -313,7 +318,7 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		}
 	}
 
-	published, err := wc.context.APOutboxRepo().PublishedMap(workout.UserID, []uint64{workout.ID})
+	published, err := wc.context.APOutboxRepo().PublishedMap(userID, []uint64{workout.ID})
 	if err == nil {
 		result.ActivityPubPublished = published[workout.ID]
 	}
@@ -492,7 +497,7 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if workout.UserID == viewer.ID {
+	if workout.UserID != nil && *workout.UserID == viewer.ID {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
@@ -608,7 +613,7 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 		return nil, http.StatusNotFound, gorm.ErrRecordNotFound
 	}
 
-	if workout.UserID == viewer.ID {
+	if workout.UserID != nil && *workout.UserID == viewer.ID {
 		return nil, http.StatusBadRequest, errors.New("cannot like your own workout")
 	}
 
@@ -1100,7 +1105,7 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 	}
 
 	workout.User = user
-	workout.UserID = user.ID
+	workout.UserID = &user.ID
 	workout.Data.Creator = "web-interface"
 
 	equipment, err := wc.context.EquipmentRepo().GetByUserIDs(user.ID, d.EquipmentIDs)
@@ -1350,7 +1355,7 @@ func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if workout.UserID != user.ID {
+	if workout.UserID == nil || *workout.UserID != user.ID {
 		return renderApiError(c, http.StatusForbidden, errors.New("not authorized"))
 	}
 

@@ -19,7 +19,7 @@ type WorkoutResponse struct {
 	Type                 string                  `json:"type"`
 	SubType              string                  `json:"sub_type"`
 	CustomType           string                  `json:"custom_type,omitempty"`
-	UserID               uint64                  `json:"user_id"`
+	UserID               *uint64                 `json:"user_id"`
 	User                 *UserProfileResponse    `json:"user,omitempty"`
 	ActorIRI             *string                 `json:"actor_iri,omitempty"`
 	ActorName            *string                 `json:"actor_name,omitempty"`
