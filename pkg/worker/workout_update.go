@@ -57,6 +57,12 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 
 		syncWorkoutAttachmentImage(db, l, w)
 
+		// External workouts (from federated actors) don't have a local user,
+		// so skip ActivityPub outbox sync for them.
+		if w.IsExternal() {
+			return nil
+		}
+
 		user, err := c.UserRepo().GetByID(w.UserID)
 		if err != nil {
 			return fmt.Errorf("update_workout: get user %d: %w", w.UserID, err)

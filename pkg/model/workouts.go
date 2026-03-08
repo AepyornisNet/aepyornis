@@ -64,7 +64,7 @@ type Workout struct {
 	Model
 	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`                                    // The timestamp the workout was recorded
 	Visibility          WorkoutVisibility    `json:"visibility"`                                                                         // The visibility of the workout (private, followers, public)
-	User                *User                `gorm:"foreignKey:UserID" json:"user"`                                                      // The user who owns the workout
+	User                *User                `gorm:"foreignKey:UserID;constraint:-" json:"user"`                                         // The user who owns the workout
 	Data                *MapData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"data,omitempty"`             // The map data associated with the workout
 	GPX                 *GPXData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"gpx,omitempty"`              // The file data associated with the workout
 	Name                string               `gorm:"not null" json:"name"`                                                               // The name of the workout
@@ -74,7 +74,7 @@ type Workout struct {
 	Equipment           []Equipment          `json:"equipment,omitempty" gorm:"constraint:OnDelete:CASCADE;many2many:workout_equipment"` // Which equipment is used for this workout
 	RouteSegmentMatches []*RouteSegmentMatch `gorm:"constraint:OnDelete:CASCADE" json:"routeSegmentMatches,omitempty"`                   // Which route segments match
 	Attachments         []WorkoutAttachment  `gorm:"constraint:OnDelete:CASCADE" json:"attachments,omitempty"`
-	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"`    // The ID of the user who owns the workout
+	UserID              uint64               `gorm:"index;uniqueIndex:idx_start_user" json:"userID"`             // The ID of the user who owns the workout (0 for external/federated workouts)
 	ActorIRI            *string              `gorm:"type:text;index" json:"actor_iri,omitempty"`                 // Remote actor IRI (for federated workouts without a local user)
 	ExternalObjectIRI   *string              `gorm:"type:text;uniqueIndex" json:"external_object_iri,omitempty"` // The ActivityPub object IRI for deduplication of external workouts
 	Locked              bool                 `json:"locked"`                                                     // Whether the workout's main attributes should be auto-updated

@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"log/slog"
+
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"gorm.io/gorm"
 )
@@ -25,34 +27,84 @@ func dropOldWorkoutConstraints(db *gorm.DB) error {
 
 	switch dialect {
 	case "sqlite":
-		// SQLite doesn't enforce NOT NULL changes via ALTER TABLE.
-		// AutoMigrate handles new columns; existing NOT NULL columns
-		// won't block inserts of NULL because the GORM tags have already
-		// been changed. No action needed.
+		// SQLite doesn't enforce NOT NULL changes via ALTER TABLE and
+		// typically has no FK enforcement enabled. The updated GORM tags
+		// take effect on new columns via AutoMigrate. No action needed.
 		return nil
 	case "postgres":
 		stmts := []string{
 			"ALTER TABLE workout_attachments ALTER COLUMN content DROP NOT NULL",
 			"ALTER TABLE workout_attachments ALTER COLUMN checksum DROP NOT NULL",
+			"ALTER TABLE workouts ALTER COLUMN user_id DROP NOT NULL",
 		}
 		for _, stmt := range stmts {
 			if err := db.Exec(stmt).Error; err != nil {
 				return err
 			}
 		}
+
+		// Drop the foreign key constraint on workouts.user_id so that
+		// external workouts (user_id = 0) can be inserted.
+		dropPostgresFKOnWorkoutsUserID(db)
 	case "mysql":
-		// MySQL requires the full column definition for ALTER.
-		// Content is LONGBLOB, checksum is VARBINARY.
 		stmts := []string{
 			"ALTER TABLE workout_attachments MODIFY content LONGBLOB NULL",
 			"ALTER TABLE workout_attachments MODIFY checksum VARBINARY(255) NULL",
+			"ALTER TABLE workouts MODIFY user_id BIGINT UNSIGNED NULL",
 		}
 		for _, stmt := range stmts {
 			if err := db.Exec(stmt).Error; err != nil {
 				return err
 			}
 		}
+
+		dropMySQLFKOnWorkoutsUserID(db)
 	}
 
 	return nil
+}
+
+// dropPostgresFKOnWorkoutsUserID finds and drops any FK constraint on
+// workouts.user_id for PostgreSQL.
+func dropPostgresFKOnWorkoutsUserID(db *gorm.DB) {
+	var constraintName string
+	err := db.Raw(`
+		SELECT constraint_name
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+		  ON tc.constraint_name = kcu.constraint_name
+		 AND tc.table_schema = kcu.table_schema
+		WHERE tc.table_name = 'workouts'
+		  AND kcu.column_name = 'user_id'
+		  AND tc.constraint_type = 'FOREIGN KEY'
+		LIMIT 1
+	`).Scan(&constraintName).Error
+	if err != nil || constraintName == "" {
+		return
+	}
+
+	if err := db.Exec("ALTER TABLE workouts DROP CONSTRAINT " + constraintName).Error; err != nil {
+		slog.Warn("Failed to drop FK constraint on workouts.user_id", "constraint", constraintName, "error", err)
+	}
+}
+
+// dropMySQLFKOnWorkoutsUserID finds and drops any FK constraint on
+// workouts.user_id for MySQL.
+func dropMySQLFKOnWorkoutsUserID(db *gorm.DB) {
+	var constraintName string
+	err := db.Raw(`
+		SELECT CONSTRAINT_NAME
+		FROM information_schema.KEY_COLUMN_USAGE
+		WHERE TABLE_NAME = 'workouts'
+		  AND COLUMN_NAME = 'user_id'
+		  AND REFERENCED_TABLE_NAME IS NOT NULL
+		LIMIT 1
+	`).Scan(&constraintName).Error
+	if err != nil || constraintName == "" {
+		return
+	}
+
+	if err := db.Exec("ALTER TABLE workouts DROP FOREIGN KEY " + constraintName).Error; err != nil {
+		slog.Warn("Failed to drop FK constraint on workouts.user_id", "constraint", constraintName, "error", err)
+	}
 }

@@ -168,6 +168,7 @@ func TestApInbox_CreateWorkoutActivity(t *testing.T) {
 	assert.Equal(t, "Morning run", workout.Name)
 	assert.Equal(t, model.WorkoutTypeRunning, workout.Type)
 	assert.Equal(t, model.WorkoutVisibilityFollowers, workout.Visibility)
+	assert.Equal(t, uint64(0), workout.UserID, "external workouts should have UserID=0")
 	assert.NotNil(t, workout.ActorIRI)
 	assert.Equal(t, remoteActorIRI, *workout.ActorIRI)
 	assert.NotNil(t, workout.ExternalObjectIRI)
