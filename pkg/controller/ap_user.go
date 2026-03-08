@@ -50,6 +50,20 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("resource not found"))
 	}
 
+	// Content negotiation: redirect browsers to the SPA profile page
+	if !wantsActivityPub(c.Request()) {
+		host := ac.context.GetConfig().Host
+		if host == "" {
+			host = c.Request().Host
+		}
+
+		webRoot := ac.context.GetConfig().WebRoot
+		handle := fmt.Sprintf("@%s@%s", user.Username, host)
+		profileURL := fmt.Sprintf("%s://%s%s/profile/%s", c.Scheme(), c.Request().Host, webRoot, handle)
+
+		return c.Redirect(http.StatusSeeOther, profileURL)
+	}
+
 	actorPath := strings.TrimSuffix(c.Request().URL.Path, "/")
 	actorURL := fmt.Sprintf("%s://%s%s", c.Scheme(), c.Request().Host, actorPath)
 

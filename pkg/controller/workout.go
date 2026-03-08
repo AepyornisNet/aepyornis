@@ -418,6 +418,11 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	// For external workouts, fetch remote replies and store locally
+	if workout.IsExternal() && workout.ExternalObjectIRI != nil {
+		wc.fetchRemoteReplies(c, workout)
+	}
+
 	var pagination dto.PaginationParams
 	pagination.SetDefaults()
 	if pageStr := c.QueryParam("page"); pageStr != "" {
@@ -503,6 +508,11 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 
 	if err := wc.context.WorkoutLikeRepo().LikeByUser(workout.ID, viewer.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	// Send Like activity via ActivityPub if both users have AP enabled
+	if viewer.ActivityPubEnabled() && workout.UserID != nil {
+		wc.sendLikeActivityForWorkout(c, viewer, workout)
 	}
 
 	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{workout.ID})
@@ -631,6 +641,87 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 		"likes_count": counts[localWorkoutID],
 		"liked":       true,
 	}, http.StatusOK, nil
+}
+
+// sendLikeActivityForWorkout sends a Like activity via ActivityPub for a
+// local workout.  Errors are logged but do not block the HTTP response.
+func (wc *workoutController) sendLikeActivityForWorkout(c echo.Context, viewer *model.User, workout *model.Workout) {
+	if workout.UserID == nil {
+		return
+	}
+
+	// For external workouts, send the like to the remote actor's inbox
+	if workout.IsExternal() && workout.ExternalObjectIRI != nil {
+		actorIRI, inbox, err := ap.ResolveObjectActorAndInbox(c.Request().Context(), *workout.ExternalObjectIRI)
+		if err != nil {
+			wc.context.Logger().Warn("Failed to resolve remote actor for like", "error", err)
+			return
+		}
+
+		localActor := wc.context.GetApUser(c)
+		if localActor == nil {
+			return
+		}
+
+		if actorIRI == wc.localActorIRI(c, viewer) {
+			return
+		}
+
+		if err := localActor.SendLike(c.Request().Context(), inbox, *workout.ExternalObjectIRI); err != nil {
+			wc.context.Logger().Warn("Failed to send AP like for external workout", "error", err)
+		}
+
+		return
+	}
+
+	// For local workouts, look up the outbox entry to get the object IRI
+	entry, err := wc.context.APOutboxRepo().GetEntryForWorkout(*workout.UserID, workout.ID)
+	if err != nil {
+		return // Not published to AP, nothing to do
+	}
+
+	ownerUser, err := wc.context.UserRepo().GetByID(*workout.UserID)
+	if err != nil || !ownerUser.ActivityPubEnabled() {
+		return
+	}
+
+	ownerActorIRI := wc.localActorIRI(c, ownerUser)
+	ownerInbox := ownerActorIRI + "/inbox"
+
+	localActor := wc.context.GetApUser(c)
+	if localActor == nil {
+		return
+	}
+
+	if err := localActor.SendLike(c.Request().Context(), ownerInbox, entry.ObjectID); err != nil {
+		wc.context.Logger().Warn("Failed to send AP like", "error", err)
+	}
+}
+
+// fetchRemoteReplies fetches the replies collection from a remote workout
+// object and stores any new replies locally.  Errors are logged but do not
+// block the response.
+func (wc *workoutController) fetchRemoteReplies(c echo.Context, workout *model.Workout) {
+	if workout.ExternalObjectIRI == nil || *workout.ExternalObjectIRI == "" {
+		return
+	}
+
+	repliesIRI := *workout.ExternalObjectIRI + "/replies"
+	items, err := ap.FetchRemoteReplies(c.Request().Context(), repliesIRI)
+	if err != nil {
+		wc.context.Logger().Warn("Failed to fetch remote replies", "iri", repliesIRI, "error", err)
+		return
+	}
+
+	for _, item := range items {
+		if item.ObjectIRI == "" || item.Content == "" {
+			continue
+		}
+
+		_ = wc.context.WorkoutReplyRepo().ReplyByActorIRI(
+			workout.ID, item.ObjectIRI, item.ActorIRI, item.ActorName, item.Content,
+		)
+	}
 }
 
 // CreateReply creates a reply/comment on a workout
@@ -1466,6 +1557,11 @@ func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
 		Where("id = ? AND workout_id = ?", attachmentID, workout.ID).
 		First(&attachment).Error; err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	// For external attachments (federated workouts), redirect to the remote URL
+	if attachment.ExternalURL != nil && *attachment.ExternalURL != "" {
+		return c.Redirect(http.StatusTemporaryRedirect, *attachment.ExternalURL)
 	}
 
 	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename=\""+attachment.Filename+"\"")

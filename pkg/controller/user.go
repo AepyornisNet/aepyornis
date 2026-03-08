@@ -403,13 +403,16 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 
 	memberSince := targetUser.CreatedAt.UTC()
 
+	handle = fmt.Sprintf("@%s@%s", targetUser.Username, host)
+
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             targetUser.ID,
 			Username:       targetUser.Username,
 			Name:           targetUser.Name,
-			Handle:         fmt.Sprintf("@%s@%s", targetUser.Username, host),
+			Handle:         handle,
 			ActorURL:       targetActorIRI,
+			ProfileURL:     "/profile/" + handle,
 			IconURL:        "",
 			IsExternal:     false,
 			IsOwn:          viewer.ID == targetUser.ID,
@@ -482,13 +485,16 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	followHandle := uc.renderHandle(c, targetUser.Username)
+
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             targetUser.ID,
 			Username:       targetUser.Username,
 			Name:           targetUser.Name,
-			Handle:         uc.renderHandle(c, targetUser.Username),
+			Handle:         followHandle,
 			ActorURL:       targetActorIRI,
+			ProfileURL:     "/profile/" + followHandle,
 			IconURL:        "",
 			IsExternal:     false,
 			IsOwn:          false,
@@ -548,13 +554,16 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	unfollowHandle := uc.renderHandle(c, targetUser.Username)
+
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             targetUser.ID,
 			Username:       targetUser.Username,
 			Name:           targetUser.Name,
-			Handle:         uc.renderHandle(c, targetUser.Username),
+			Handle:         unfollowHandle,
 			ActorURL:       targetActorIRI,
+			ProfileURL:     "/profile/" + unfollowHandle,
 			IconURL:        "",
 			IsExternal:     false,
 			IsOwn:          false,
@@ -699,13 +708,16 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 		isFollowing, _ = uc.context.FollowerRepo().IsFollowingActiveByActorIRI(viewer.ID, actorURL)
 	}
 
+	remoteHandle := fmt.Sprintf("@%s@%s", username, host)
+
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             0,
 			Username:       username,
 			Name:           name,
-			Handle:         fmt.Sprintf("@%s@%s", username, host),
+			Handle:         remoteHandle,
 			ActorURL:       actorURL,
+			ProfileURL:     "/profile/" + remoteHandle,
 			IconURL:        iconURL,
 			IsExternal:     true,
 			IsOwn:          false,
@@ -780,13 +792,16 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 
 	iconURL := actorIconURL(actor)
 
+	followRemoteHandle := fmt.Sprintf("@%s@%s", username, host)
+
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             0,
 			Username:       username,
 			Name:           name,
-			Handle:         fmt.Sprintf("@%s@%s", username, host),
+			Handle:         followRemoteHandle,
 			ActorURL:       actorIRI,
+			ProfileURL:     "/profile/" + followRemoteHandle,
 			IconURL:        iconURL,
 			IsExternal:     true,
 			IsOwn:          false,
@@ -856,13 +871,16 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 
 	iconURL := actorIconURL(actor)
 
+	unfollowRemoteHandle := fmt.Sprintf("@%s@%s", username, host)
+
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             0,
 			Username:       username,
 			Name:           name,
-			Handle:         fmt.Sprintf("@%s@%s", username, host),
+			Handle:         unfollowRemoteHandle,
 			ActorURL:       actorIRI,
+			ProfileURL:     "/profile/" + unfollowRemoteHandle,
 			IconURL:        iconURL,
 			IsExternal:     true,
 			IsOwn:          false,

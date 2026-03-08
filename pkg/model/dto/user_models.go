@@ -58,6 +58,7 @@ type ActivityPubProfileSummaryResponse struct {
 	Name           string    `json:"name"`
 	Handle         string    `json:"handle"`
 	ActorURL       string    `json:"actor_url"`
+	ProfileURL     string    `json:"profile_url"`
 	IconURL        string    `json:"icon_url"`
 	IsExternal     bool      `json:"is_external"`
 	IsOwn          bool      `json:"is_own"`
