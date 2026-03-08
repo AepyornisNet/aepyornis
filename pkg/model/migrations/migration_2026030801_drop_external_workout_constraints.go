@@ -1,7 +1,9 @@
 package migrations
 
 import (
+	"fmt"
 	"log/slog"
+	"regexp"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"gorm.io/gorm"
@@ -83,7 +85,14 @@ func dropPostgresFKOnWorkoutsUserID(db *gorm.DB) {
 		return
 	}
 
-	if err := db.Exec("ALTER TABLE workouts DROP CONSTRAINT " + constraintName).Error; err != nil {
+	if !isValidSQLIdentifier(constraintName) {
+		slog.Warn("Skipping FK drop: invalid constraint name", "constraint", constraintName)
+		return
+	}
+
+	//nolint:gosec // constraintName is validated by isValidSQLIdentifier above
+	stmt := fmt.Sprintf(`ALTER TABLE workouts DROP CONSTRAINT "%s"`, constraintName)
+	if err := db.Exec(stmt).Error; err != nil {
 		slog.Warn("Failed to drop FK constraint on workouts.user_id", "constraint", constraintName, "error", err)
 	}
 }
@@ -104,7 +113,22 @@ func dropMySQLFKOnWorkoutsUserID(db *gorm.DB) {
 		return
 	}
 
-	if err := db.Exec("ALTER TABLE workouts DROP FOREIGN KEY " + constraintName).Error; err != nil {
+	if !isValidSQLIdentifier(constraintName) {
+		slog.Warn("Skipping FK drop: invalid constraint name", "constraint", constraintName)
+		return
+	}
+
+	//nolint:gosec // constraintName is validated by isValidSQLIdentifier above
+	stmt := fmt.Sprintf("ALTER TABLE workouts DROP FOREIGN KEY `%s`", constraintName)
+	if err := db.Exec(stmt).Error; err != nil {
 		slog.Warn("Failed to drop FK constraint on workouts.user_id", "constraint", constraintName, "error", err)
 	}
+}
+
+// validSQLIdentifier matches standard SQL identifier characters only.
+var validSQLIdentifier = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+// isValidSQLIdentifier ensures the name only contains safe identifier characters.
+func isValidSQLIdentifier(name string) bool {
+	return validSQLIdentifier.MatchString(name)
 }
