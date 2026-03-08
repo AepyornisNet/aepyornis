@@ -118,9 +118,9 @@ func migrateMapDataDetailPoints(db *gorm.DB) error {
 
 	for rows.Next() {
 		var (
-			id         uint64
-			raw        any
-			mapDataID  uint64
+			id        uint64
+			raw       any
+			mapDataID uint64
 		)
 
 		if err := rows.Scan(&id, &raw, &mapDataID); err != nil {

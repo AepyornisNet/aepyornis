@@ -28,8 +28,7 @@ func init() {
 			if db.Migrator().HasColumn("map_data", "address") {
 				if err := db.Exec(`INSERT INTO track_locations (created_at, updated_at, map_data_id, address, address_string, center)
 					SELECT created_at, updated_at, id, address, address_string, center
-					FROM map_data
-					WHERE address IS NOT NULL OR address_string != '' OR center IS NOT NULL`).Error; err != nil {
+					FROM map_data`).Error; err != nil {
 					return err
 				}
 				if err := db.Migrator().DropColumn("map_data", "address"); err != nil {
