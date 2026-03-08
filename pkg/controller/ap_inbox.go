@@ -112,7 +112,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 	// After a follow Accept, sync the accepted user's outbox so that
 	// their existing published workouts are pulled in.
 	if vocab.AcceptType.Match(activity.GetType()) {
-		go ac.syncAcceptedFollowOutbox(c, targetUser, &actor.Actor)
+		go ac.syncAcceptedFollowOutbox(targetUser, &actor.Actor)
 	}
 
 	return c.NoContent(http.StatusAccepted)
@@ -121,7 +121,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 // syncAcceptedFollowOutbox fetches the outbox of the remote actor who just
 // accepted a follow request and processes each workout Create activity.
 // This runs in a goroutine so it doesn't block the inbox response.
-func (ac *apInboxController) syncAcceptedFollowOutbox(c echo.Context, localUser *model.User, remoteActor *vocab.Actor) {
+func (ac *apInboxController) syncAcceptedFollowOutbox(localUser *model.User, remoteActor *vocab.Actor) {
 	if remoteActor == nil || vocab.IsNil(remoteActor.Outbox) {
 		return
 	}
