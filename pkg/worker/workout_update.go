@@ -48,7 +48,7 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 				return err
 			}
 
-			if w.Data != nil && !w.Data.Center.IsZero() && w.Data.AddressString == "" {
+			if w.Data != nil && !w.Data.GetCenter().IsZero() && w.Data.GetAddressString() == "" {
 				if err := EnqueueAddressUpdate(ctx, c, w.Data.ID); err != nil {
 					l.Error("Failed to enqueue address update after workout processing", "error", err)
 				}

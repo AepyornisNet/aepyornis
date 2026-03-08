@@ -112,7 +112,7 @@ func (m *ManualWorkout) ToDuration() *time.Duration {
 
 func (m *ManualWorkout) Update(w *model.Workout) error {
 	if w.Data == nil {
-		w.Data = &model.MapData{}
+		w.Data = &model.TrackData{}
 	}
 
 	if m.Visibility != nil && !m.Visibility.IsValid() {
@@ -128,7 +128,10 @@ func (m *ManualWorkout) Update(w *model.Workout) error {
 	setIfNotNil(&w.Type, m.Type)
 	setIfNotNil(&w.CustomType, m.CustomType)
 
-	setIfNotNil(&w.Data.AddressString, m.Location)
+	if m.Location != nil {
+		w.Data.EnsureLocation()
+		w.Data.Location.AddressString = *m.Location
+	}
 	setIfNotNil(&w.Data.TotalDistance, m.ToDistance())
 	setIfNotNil(&w.Data.TotalDuration, m.ToDuration())
 	setIfNotNil(&w.Data.TotalRepetitions, m.Repetitions)
@@ -137,9 +140,11 @@ func (m *ManualWorkout) Update(w *model.Workout) error {
 	if m.Location != nil && w.FullAddress() != *m.Location {
 		a, err := geocoder.Find(*m.Location)
 		if err != nil {
-			w.Data.Address = nil
+			w.Data.EnsureLocation()
+			w.Data.Location.Address = nil
 		} else {
-			w.Data.Address = a
+			w.Data.EnsureLocation()
+			w.Data.Location.Address = a
 		}
 	}
 

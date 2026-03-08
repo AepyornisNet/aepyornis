@@ -354,10 +354,10 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 // mapDataFromActivity converts a FIT activity into MapData, falling back to
 // non-positional record data when coordinates are missing so charts and
 // breakdowns remain available even without a map.
-func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData {
+func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.TrackData {
 	data := model.MapDataFromGPX(gpxFile)
 
-	if data != nil && data.Details != nil && len(data.Details.Points) > 0 {
+	if data != nil && len(data.Points) > 0 {
 		return data
 	}
 
@@ -370,12 +370,12 @@ func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData
 // and breakdowns.
 //
 //nolint:gocyclo // branching covers optional FIT metrics without positions
-func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
+func buildMapDataWithoutPositions(act *filedef.Activity) *model.TrackData {
 	if act == nil || len(act.Records) == 0 {
 		return nil
 	}
 
-	points := make([]model.MapPoint, 0, len(act.Records))
+	points := make([]model.DataPoint, 0, len(act.Records))
 
 	var (
 		totalDistance float64
@@ -479,7 +479,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 			elevationValue = 0
 		}
 
-		points = append(points, model.MapPoint{
+		points = append(points, model.DataPoint{
 			Time:          ts,
 			Lat:           0,
 			Lng:           0,
@@ -505,10 +505,8 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 		maxElevation = 0
 	}
 
-	data := &model.MapData{
+	data := &model.TrackData{
 		Creator: act.FileId.Manufacturer.String(),
-		Center:  model.MapCenter{},
-		Details: &model.MapDataDetails{Points: points},
 		WorkoutData: model.WorkoutData{
 			Start:         startTime,
 			Stop:          points[len(points)-1].Time,
@@ -523,6 +521,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 				MaxSpeed:            maxSpeed,
 			},
 		},
+		Points: points,
 	}
 
 	// Populate workout type/name from the first session when available
@@ -548,7 +547,7 @@ func safeDivide(distance float64, d time.Duration) float64 {
 	return distance / d.Seconds()
 }
 
-func sanitizeMapData(data *model.MapData) {
+func sanitizeMapData(data *model.TrackData) {
 	if data == nil {
 		return
 	}
@@ -574,15 +573,13 @@ func sanitizeMapData(data *model.MapData) {
 	}
 }
 
-func cloneMapData(src *model.MapData) *model.MapData {
+func cloneMapData(src *model.TrackData) *model.TrackData {
 	if src == nil {
-		return &model.MapData{}
+		return &model.TrackData{}
 	}
 
 	clone := *src
-	if src.Details != nil {
-		clone.Details = &model.MapDataDetails{Points: src.Details.Points}
-	}
+	clone.Points = src.Points
 
 	return &clone
 }

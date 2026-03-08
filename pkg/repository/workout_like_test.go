@@ -19,7 +19,7 @@ func createRepositoryWorkout(t *testing.T, db *gorm.DB, dbUser *model.User) *mod
 		Type:   model.WorkoutTypeRunning,
 		User:   dbUser,
 		UserID: dbUser.ID,
-		Data: &model.MapData{
+		Data: &model.TrackData{
 			Creator: "repository-test",
 		},
 	}

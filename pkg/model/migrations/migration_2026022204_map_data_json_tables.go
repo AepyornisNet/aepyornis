@@ -76,7 +76,7 @@ func migrateMapDataClimbs(db *gorm.DB) error {
 		}
 
 		for i := range climbs {
-			climbs[i].MapDataID = id
+			climbs[i].TrackDataID = id
 			climbs[i].SortOrder = i
 
 			batch = append(batch, climbs[i])
@@ -100,29 +100,30 @@ func migrateMapDataClimbs(db *gorm.DB) error {
 }
 
 func migrateMapDataDetailPoints(db *gorm.DB) error {
-	if !db.Migrator().HasTable(&model.MapPoint{}) {
+	if !db.Migrator().HasTable(&model.DataPoint{}) {
 		return nil
 	}
 
-	if err := db.Where("1 = 1").Delete(&model.MapPoint{}).Error; err != nil {
+	if err := db.Where("1 = 1").Delete(&model.DataPoint{}).Error; err != nil {
 		return err
 	}
 
-	rows, err := db.Table("map_data_details").Select("id, points").Rows()
+	rows, err := db.Table("map_data_details").Select("id, points, map_data_id").Rows()
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
-	batch := make([]model.MapPoint, 0, 500)
+	batch := make([]model.DataPoint, 0, 500)
 
 	for rows.Next() {
 		var (
-			id  uint64
-			raw any
+			id         uint64
+			raw        any
+			mapDataID  uint64
 		)
 
-		if err := rows.Scan(&id, &raw); err != nil {
+		if err := rows.Scan(&id, &raw, &mapDataID); err != nil {
 			return err
 		}
 
@@ -131,13 +132,13 @@ func migrateMapDataDetailPoints(db *gorm.DB) error {
 			continue
 		}
 
-		var points []model.MapPoint
+		var points []model.DataPoint
 		if err := json.Unmarshal(payload, &points); err != nil {
 			return fmt.Errorf("unmarshal map_data_details.points for map_data_details_id=%d: %w", id, err)
 		}
 
 		for i := range points {
-			points[i].MapDataDetailsID = id
+			points[i].TrackDataID = mapDataID
 			points[i].SortOrder = i
 
 			batch = append(batch, points[i])

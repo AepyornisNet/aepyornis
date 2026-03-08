@@ -91,7 +91,7 @@ func parseSingle(f parserFunc, fileType string, filename string, content []byte)
 func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte) *model.Workout {
 	data := model.MapDataFromGPX(g)
 	if data == nil {
-		data = &model.MapData{}
+		data = &model.TrackData{}
 	}
 
 	w := &model.Workout{

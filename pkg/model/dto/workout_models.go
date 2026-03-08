@@ -312,7 +312,7 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 	// Add map data if available
 	if w.Data != nil {
 		wr.SubType = w.Data.SubType
-		wr.AddressString = w.Data.AddressString
+		wr.AddressString = w.Data.GetAddressString()
 		wr.TotalDistance = &w.Data.TotalDistance
 
 		// Convert durations to seconds (int64)
@@ -425,10 +425,8 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 		// Add climbs
 		if len(w.Data.Climbs) > 0 {
 			wr.Climbs = make([]ClimbSegmentResponse, len(w.Data.Climbs))
-			var points []model.MapPoint
-			if w.Data.Details != nil {
-				points = w.Data.Details.Points
-			}
+			var points []model.DataPoint
+			points = w.Data.Points
 			for i, climb := range w.Data.Climbs {
 				duration := 0.0
 				if len(points) > 0 && climb.StartIdx >= 0 && climb.EndIdx >= climb.StartIdx && climb.EndIdx < len(points) {
@@ -523,7 +521,7 @@ func NewWorkoutLapResponses(laps []model.WorkoutLap) []WorkoutLapResponse {
 	return resp
 }
 
-func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.MapPoint, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.DataPoint, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
 	if len(laps) == 0 {
 		return nil
 	}
@@ -665,7 +663,7 @@ func optionalMetric(value float64) *float64 {
 	return &v
 }
 
-func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endIdx int, units *model.UserPreferredUnits) WorkoutRangeStatsResponse {
+func NewWorkoutRangeStatsResponse(stats model.DataRangeStats, startIdx, endIdx int, units *model.UserPreferredUnits) WorkoutRangeStatsResponse {
 	resp := WorkoutRangeStatsResponse{
 		StartIndex: startIdx,
 		EndIndex:   endIdx,
@@ -725,7 +723,7 @@ func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endId
 	return resp
 }
 
-func findClosestPointIndex(points []model.MapPoint, t time.Time) int {
+func findClosestPointIndex(points []model.DataPoint, t time.Time) int {
 	if len(points) == 0 || t.IsZero() {
 		return -1
 	}
@@ -751,16 +749,16 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 	mapData := &MapDataResponse{
 		Creator: w.Data.Creator,
 		Center: MapCenterResponse{
-			TZ:  w.Data.Center.TZ,
-			Lat: w.Data.Center.Lat,
-			Lng: w.Data.Center.Lng,
+			TZ:  w.Data.GetCenter().TZ,
+			Lat: w.Data.GetCenter().Lat,
+			Lng: w.Data.GetCenter().Lng,
 		},
 		ExtraMetrics: w.Data.ExtraMetrics,
 	}
 
 	// Add detailed points in compact format
-	if w.Data.Details != nil && len(w.Data.Details.Points) > 0 {
-		points := w.Data.Details.Points
+	if len(w.Data.Points) > 0 {
+		points := w.Data.Points
 		mapData.Details = &MapDataDetailsResponse{
 			Position:     make([][]float64, len(points)),
 			Time:         make([]time.Time, len(points)),

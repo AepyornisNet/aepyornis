@@ -51,7 +51,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 			continue
 		}
 
-		for _, p := range w.Data.Details.Points {
+		for _, p := range w.Data.Points {
 			coords = append(coords, []float64{p.Lat, p.Lng, 1})
 		}
 	}
@@ -91,7 +91,7 @@ func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 			continue
 		}
 
-		p := w.Data.Center
+		p := w.Data.GetCenter()
 		if p.IsZero() {
 			continue
 		}

@@ -38,12 +38,12 @@ type RouteSegment struct {
 	AddressString string       `json:"addressString"`                     // The generic location of the workout
 	Filename      string       `json:"filename"`                          // The filename of the file
 
-	Points []MapPoint `gorm:"serializer:json" json:"points"` // The GPS points of the workout
+	Points []DataPoint `gorm:"serializer:json" json:"points"` // The GPS points of the workout
 
 	Content             []byte               `gorm:"type:bytes" json:"content"`            // The file content
 	Checksum            []byte               `gorm:"not null;uniqueIndex" json:"checksum"` // The checksum of the content
 	RouteSegmentMatches []*RouteSegmentMatch `json:"routeSegmentMatches"`                  // The matches of the route segment
-	Center              MapCenter            `gorm:"serializer:json" json:"center"`        // The center of the workout (in coordinates)
+	Center              TrackCenter          `gorm:"serializer:json" json:"center"`        // The center of the workout (in coordinates)
 
 	TotalDistance float64 `json:"totalDistance"` // The total distance of the workout
 	MinElevation  float64 `json:"minElevation"`  // The minimum elevation of the workout
@@ -85,7 +85,7 @@ func NewRouteSegment(notes string, filename string, content []byte) (*RouteSegme
 }
 
 func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams) ([]byte, error) {
-	points := workout.Data.Details.Points[params.Start-1 : params.End-1]
+	points := workout.Data.Points[params.Start-1 : params.End-1]
 
 	s := gpx.GPXTrackSegment{}
 
@@ -134,7 +134,7 @@ func (rs *RouteSegment) UpdateFromContent() error {
 	rs.MaxElevation = data.MaxElevation
 	rs.TotalUp = data.TotalUp
 	rs.TotalDown = data.TotalDown
-	rs.Points = data.Details.Points
+	rs.Points = data.Points
 
 	// Detect whether the route is circular so matching can wrap around the end of the track.
 	if len(rs.Points) > 1 {

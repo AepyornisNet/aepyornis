@@ -30,8 +30,7 @@ func backfillWorkoutRouteImageAttachments(db *gorm.DB) error {
 		err := db.Table("workouts").
 			Select("workouts.id").
 			Joins("JOIN map_data ON map_data.workout_id = workouts.id").
-			Joins("JOIN map_data_details ON map_data_details.map_data_id = map_data.id").
-			Joins("JOIN map_data_details_points ON map_data_details_points.map_data_details_id = map_data_details.id").
+			Joins("JOIN map_data_details_points ON map_data_details_points.map_data_id = map_data.id").
 			Joins("LEFT JOIN workout_attachments ON workout_attachments.workout_id = workouts.id AND workout_attachments.kind = ?", model.WorkoutAttachmentKindRouteImage).
 			Where("workout_attachments.id IS NULL").
 			Group("workouts.id").

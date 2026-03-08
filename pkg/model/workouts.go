@@ -65,7 +65,7 @@ type Workout struct {
 	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`                                    // The timestamp the workout was recorded
 	Visibility          WorkoutVisibility    `json:"visibility"`                                                                         // The visibility of the workout (private, followers, public)
 	User                *User                `gorm:"foreignKey:UserID" json:"user"`                                                      // The user who owns the workout
-	Data                *MapData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"data,omitempty"`             // The map data associated with the workout
+	Data                *TrackData           `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"data,omitempty"`             // The map data associated with the workout
 	GPX                 *GPXData             `gorm:"foreignKey:WorkoutID;constraint:OnDelete:CASCADE" json:"gpx,omitempty"`              // The file data associated with the workout
 	Name                string               `gorm:"not null" json:"name"`                                                               // The name of the workout
 	Notes               string               `json:"notes"`                                                                              // The notes associated with the workout, in markdown
@@ -133,19 +133,19 @@ func (w *Workout) HasTracks() bool {
 		return false
 	}
 
-	if w.Data.Center.IsZero() {
+	if w.Data.GetCenter().IsZero() {
 		return false
 	}
 
-	if w.Data.Details == nil {
-		return false
-	}
-
-	if len(w.Data.Details.Points) == 0 {
+	if len(w.Data.Points) == 0 {
 		return false
 	}
 
 	return w.Type.IsLocation()
+}
+
+func (w *Workout) HasTimeSeries() bool {
+	return w.Data != nil && len(w.Data.Points) > 0
 }
 
 func (w *Workout) TotalRepetitions() int {
@@ -221,27 +221,21 @@ func (w *Workout) FullAddress() string {
 		return ""
 	}
 
-	if w.Data.Address != nil {
-		return w.Data.Address.FormattedAddress
+	if w.Data.GetAddress() != nil {
+		return w.Data.GetAddress().FormattedAddress
 	}
 
-	return w.Data.AddressString
+	return w.Data.GetAddressString()
 }
 
-func (w *Workout) Center() *MapCenter {
+func (w *Workout) Center() *TrackCenter {
 	if w.Data == nil {
 		return nil
 	}
 
-	return &w.Data.Center
-}
+	c := w.Data.GetCenter()
 
-func (w *Workout) Details() *MapDataDetails {
-	if w.Data == nil {
-		return nil
-	}
-
-	return w.Data.Details
+	return &c
 }
 
 func (w *Workout) TotalDown() float64 {
@@ -325,11 +319,16 @@ func (w *Workout) Creator() string {
 }
 
 func (w *Workout) City() string {
-	if w.Data == nil || w.Data.Address == nil {
+	if w.Data == nil {
 		return ""
 	}
 
-	return w.Data.Address.City
+	addr := w.Data.GetAddress()
+	if addr == nil {
+		return ""
+	}
+
+	return addr.City
 }
 
 func (w *Workout) Timezone() string {
@@ -337,7 +336,7 @@ func (w *Workout) Timezone() string {
 		return ""
 	}
 
-	return w.Data.Center.TZ
+	return w.Data.GetCenter().TZ
 }
 
 func (w *Workout) Address() string {
@@ -345,8 +344,8 @@ func (w *Workout) Address() string {
 		return UnknownLocation
 	}
 
-	if w.Data.AddressString != "" {
-		return w.Data.AddressString
+	if w.Data.GetAddressString() != "" {
+		return w.Data.GetAddressString()
 	}
 
 	return w.Data.addressString()
@@ -402,7 +401,7 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 		w.Notes = notes
 
 		if w.Data == nil {
-			w.Data = &MapData{}
+			w.Data = &TrackData{}
 		}
 
 		if workoutType == WorkoutTypeAutoDetect {
@@ -471,7 +470,7 @@ func workoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	}
 }
 
-func autoDetectWorkoutType(data *MapData, dataName string) WorkoutType {
+func autoDetectWorkoutType(data *TrackData, dataName string) WorkoutType {
 	if data != nil {
 		if workoutType, ok := workoutTypeFromData(data.WorkoutData.Type); ok {
 			return workoutType
@@ -528,20 +527,6 @@ func GetWorkoutDetails(db *gorm.DB, id uint64) (*Workout, error) {
 	return GetWorkout(PreloadWorkoutDetails(db).Preload("GPX"), id)
 }
 
-func GetMapData(db *gorm.DB, id uint64) (*MapData, error) {
-	var md MapData
-
-	if err := db.Preload("Climbs", func(tx *gorm.DB) *gorm.DB {
-		return tx.Order("sort_order ASC")
-	}).Preload("Details").Preload("Details.Points", func(tx *gorm.DB) *gorm.DB {
-		return tx.Order("sort_order ASC")
-	}).First(&md, id).Error; err != nil {
-		return nil, err
-	}
-
-	return &md, nil
-}
-
 func GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 	var w Workout
 
@@ -551,10 +536,10 @@ func GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 		Preload("Data.Climbs", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
-		Preload("Data.Details").
-		Preload("Data.Details.Points", func(tx *gorm.DB) *gorm.DB {
+		Preload("Data.Points", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
+		Preload("Data.Location").
 		Preload("User").
 		Preload("Equipment").
 		First(&w, id).
@@ -690,7 +675,7 @@ func (w *Workout) ReparseFile() (*Workout, error) {
 	return workouts[0], nil
 }
 
-func (w *Workout) setData(data *MapData) {
+func (w *Workout) setData(data *TrackData) {
 	if w.Data == nil {
 		w.Data = data
 		w.Data.WorkoutID = w.ID
@@ -702,20 +687,11 @@ func (w *Workout) setData(data *MapData) {
 	data.CreatedAt = w.Data.CreatedAt
 	data.WorkoutID = w.ID
 
-	if data.Details == nil {
-		data.Details = &MapDataDetails{}
-	}
-
-	if w.Data.Details != nil {
-		data.Details.ID = w.Data.Details.ID
-		data.Details.MapDataID = w.Data.Details.MapDataID
-	}
-
 	if w.Locked {
 		data.TotalDistance = w.Data.TotalDistance
 		data.TotalDistance2D = w.Data.TotalDistance2D
 		data.TotalDuration = w.Data.TotalDuration
-		data.Address = w.Data.Address
+		data.Location = w.Data.Location // preserve address
 	}
 
 	w.Data = data
@@ -734,19 +710,15 @@ func (w *Workout) UpdateAverages() {
 	w.calculateAverageSpeeds()
 }
 
-func (w *Workout) aggregateDetailsStats() (MapDataRangeStats, bool) {
-	if w.Data == nil || w.Data.Details == nil {
-		return MapDataRangeStats{}, false
+func (w *Workout) aggregateDetailsStats() (DataRangeStats, bool) {
+	if w.Data == nil || len(w.Data.Points) < 2 {
+		return DataRangeStats{}, false
 	}
 
-	if len(w.Data.Details.Points) < 2 {
-		return MapDataRangeStats{}, false
-	}
-
-	return w.Data.Details.StatsForRange(0, len(w.Data.Details.Points)-1)
+	return w.Data.StatsForRange(0, len(w.Data.Points)-1)
 }
 
-func (w *Workout) applyRangeStats(stats MapDataRangeStats) {
+func (w *Workout) applyRangeStats(stats DataRangeStats) {
 	w.Data.AverageSpeed = stats.AverageSpeed
 	w.Data.AverageSpeedNoPause = stats.AverageSpeedNoPause
 	w.Data.MaxSpeed = stats.MaxSpeed
@@ -918,7 +890,7 @@ func (w *Workout) UpdateRecords(db *gorm.DB) error {
 			return err
 		}
 
-		if len(targets) == 0 || w.Data == nil || w.Data.Details == nil || len(w.Data.Details.Points) < 2 {
+		if len(targets) == 0 || w.Data == nil || len(w.Data.Points) < 2 {
 			return nil
 		}
 
@@ -996,6 +968,10 @@ func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
 	}
 
 	data := MapDataFromGPX(gpxContent)
+	if data == nil {
+		data = &TrackData{}
+	}
+
 	w := &Workout{
 		Data: data,
 		Name: data.WorkoutData.Name,

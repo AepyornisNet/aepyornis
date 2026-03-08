@@ -671,13 +671,13 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 	if preferLaps {
 		resp.Results = dto.WorkoutBreakdownResponse{
 			Mode:  "laps",
-			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Details.Points, requester.PreferredUnits()),
+			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Points, requester.PreferredUnits()),
 		}
 
 		return c.JSON(http.StatusOK, resp)
 	}
 
-	if workout.Data == nil || workout.Data.Details == nil {
+	if workout.Data == nil {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
@@ -725,11 +725,11 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
+	if workout.Data == nil || len(workout.Data.Points) == 0 {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
-	points := workout.Data.Details.Points
+	points := workout.Data.Points
 	startIdx := 0
 	endIdx := len(points) - 1
 
@@ -745,7 +745,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
-	stats, ok := workout.Data.Details.StatsForRange(startIdx, endIdx)
+	stats, ok := workout.Data.StatsForRange(startIdx, endIdx)
 	if !ok {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
