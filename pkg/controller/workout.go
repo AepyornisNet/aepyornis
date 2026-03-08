@@ -288,14 +288,12 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	var userID uint64
+	var records []model.WorkoutIntervalRecordWithRank
 	if workout.UserID != nil {
-		userID = *workout.UserID
-	}
-
-	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), userID, workout.Type, workout.ID)
-	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		records, err = model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), *workout.UserID, workout.Type, workout.ID)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
 	}
 
 	result := dto.NewWorkoutDetailResponse(workout, records)
@@ -318,9 +316,11 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		}
 	}
 
-	published, err := wc.context.APOutboxRepo().PublishedMap(userID, []uint64{workout.ID})
-	if err == nil {
-		result.ActivityPubPublished = published[workout.ID]
+	if workout.UserID != nil {
+		published, err := wc.context.APOutboxRepo().PublishedMap(*workout.UserID, []uint64{workout.ID})
+		if err == nil {
+			result.ActivityPubPublished = published[workout.ID]
+		}
 	}
 
 	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{workout.ID})
