@@ -81,7 +81,9 @@
       </div>
 
       @if (!store.profile()!.activity_pub) {
-        <div class="d-flex align-items-center justify-content-between gap-3 mt-3 pt-3 mb-3 border-top">
+        <div
+          class="d-flex align-items-center justify-content-between gap-3 mt-3 pt-3 mb-3 border-top"
+        >
           <div>
             <div class="fw-medium">{{ 'Enable activity pub' | translate }}</div>
             <p class="small text-muted mb-0">
@@ -104,7 +106,11 @@
         [disabled]="store.saving() || store.profileForm.invalid"
       >
         @if (store.saving()) {
-          <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <span
+            aria-hidden="true"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+          ></span>
           {{ 'Saving...' | translate }}
         } @else {
           {{ 'Update profile' | translate }}
@@ -121,7 +127,9 @@
   <div class="card-body">
     <form [formGroup]="store.changePasswordForm" (ngSubmit)="store.changePassword()">
       <div class="mb-3">
-        <label class="form-label" for="current_password">{{ 'Current password' | translate }}</label>
+        <label class="form-label" for="current_password">{{
+          'Current password' | translate
+        }}</label>
         <input
           autocomplete="current-password"
           class="form-control"
@@ -143,7 +151,9 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="confirm_password">{{ 'Confirm password' | translate }}</label>
+        <label class="form-label" for="confirm_password">{{
+          'Confirm password' | translate
+        }}</label>
         <input
           autocomplete="new-password"
           class="form-control"
@@ -156,7 +166,8 @@
       @if (
         store.changePasswordForm.value.new_password &&
         store.changePasswordForm.value.confirm_password &&
-        store.changePasswordForm.value.new_password !== store.changePasswordForm.value.confirm_password
+        store.changePasswordForm.value.new_password !==
+          store.changePasswordForm.value.confirm_password
       ) {
         <div class="alert alert-warning py-2" role="alert">
           {{ 'Passwords do not match' | translate }}
