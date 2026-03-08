@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	AEPYNamespaceURL = "http://joinaepyornis.orh/ns#"
+	AEPYNamespaceURL = "http://joinaepyornis.org/ns#"
 
 	AEPYWorkoutFitFile          = "workoutFitFile"
 	AEPYWorkoutLocation         = "workoutLocation"

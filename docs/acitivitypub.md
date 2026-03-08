@@ -9,14 +9,14 @@ Workout Tracker exposes a small ActivityPub JSON-LD extension for workout outbox
 ### Namespace
 
 - Prefix: `aepy`
-- Base URL: `http://joinaepyornis.orh/ns#`
+- Base URL: `http://joinaepyornis.org/ns#`
 
 ### Terms
 
 #### `aepy:workoutFitFile`
 
 - Compact term: `workoutFitFile`
-- IRI: `http://joinaepyornis.orh/ns#workoutFitFile`
+- IRI: `http://joinaepyornis.org/ns#workoutFitFile`
 - Used on: ActivityPub `Note` objects in workout outbox `Create` activities
 - Value type: IRI (URL)
 - Meaning: URL to the workout FIT file export
@@ -67,7 +67,7 @@ The following compact terms are available as numeric metrics on workout `Note` o
   "@context": [
     "https://www.w3.org/ns/activitystreams",
     {
-      "aepy": "http://joinaepyornis.orh/ns#",
+      "aepy": "http://joinaepyornis.org/ns#",
       "workoutFitFile": "aepy:workoutFitFile",
       "workoutLocation": "aepy:workoutLocation",
       "workoutSport": "aepy:workoutSport",

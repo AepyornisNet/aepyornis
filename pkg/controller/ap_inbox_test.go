@@ -101,7 +101,7 @@ func TestApInbox_CreateWorkoutActivity(t *testing.T) {
 	objectIRI := "https://wt-ap2.test/ap/users/runner/outbox/abc123#object"
 
 	// Build a Create activity wrapping a WorkoutNote
-	aepyCtx := `"aepy": "http://joinaepyornis.orh/ns#"`
+	aepyCtx := `"aepy": "http://joinaepyornis.org/ns#"`
 	terms := `"workoutSport": "aepy:workoutSport", ` +
 		`"workoutDuration": "aepy:workoutDuration", ` +
 		`"workoutDistance": "aepy:workoutDistance", ` +
@@ -243,7 +243,7 @@ func TestApInbox_CreateWorkoutActivity_NotAReply(t *testing.T) {
 		"@context": [
 			"https://www.w3.org/ns/activitystreams",
 			{
-				"aepy": "http://joinaepyornis.orh/ns#",
+				"aepy": "http://joinaepyornis.org/ns#",
 				"workoutSport": "aepy:workoutSport"
 			}
 		],
