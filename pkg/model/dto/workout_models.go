@@ -34,7 +34,7 @@ type WorkoutResponse struct {
 	RepliesCount         int64                   `json:"replies_count"`
 	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
-	// MapData fields (when available)
+	// TrackData fields (when available)
 	AddressString       string   `json:"address_string,omitempty"`
 	TotalDistance       *float64 `json:"total_distance,omitempty"`
 	TotalDuration       *int64   `json:"total_duration,omitempty"` // Duration in seconds
@@ -178,19 +178,19 @@ type WorkoutBreakdownItemResponse struct {
 type WorkoutDetailResponse struct {
 	WorkoutResponse
 	Equipment           []EquipmentResponse             `json:"equipment,omitempty"`
-	MapData             *MapDataResponse                `json:"map_data,omitempty"`
+	TrackData           *TrackDataResponse              `json:"track_data,omitempty"`
 	Climbs              []ClimbSegmentResponse          `json:"climbs,omitempty"`
 	RouteSegmentMatches []RouteSegmentMatchResponse     `json:"route_segment_matches,omitempty"`
 	Records             []WorkoutIntervalRecordResponse `json:"records,omitempty"`
 	Laps                []WorkoutLapResponse            `json:"laps,omitempty"`
 }
 
-// MapDataResponse represents workout map data in API v2 responses
-type MapDataResponse struct {
-	Creator      string                  `json:"creator,omitempty"`
-	Center       MapCenterResponse       `json:"center"`
-	ExtraMetrics []string                `json:"extra_metrics,omitempty"`
-	Details      *MapDataDetailsResponse `json:"details,omitempty"`
+// TrackDataResponse represents workout track data in API v2 responses
+type TrackDataResponse struct {
+	Creator      string                   `json:"creator,omitempty"`
+	Center       MapCenterResponse        `json:"center"`
+	ExtraMetrics []string                 `json:"extra_metrics,omitempty"`
+	Details      *TrackDataDetailsResponse `json:"details,omitempty"`
 }
 
 // MapCenterResponse represents the center coordinates
@@ -200,15 +200,15 @@ type MapCenterResponse struct {
 	Lng float64 `json:"lng"`
 }
 
-// MapDataDetailsResponse represents detailed map points in compact format
-type MapDataDetailsResponse struct {
-	Position     [][]float64                    `json:"position"` // [[lat, lng], ...]
+// TrackDataDetailsResponse represents detailed track points in compact format
+type TrackDataDetailsResponse struct {
+	Position     [][]float64                    `json:"position,omitempty"`  // [[lat, lng], ...]; omitted when no GPS data
 	Time         []time.Time                    `json:"time"`
-	Distance     []float64                      `json:"distance"` // in km
-	Duration     []float64                      `json:"duration"` // in seconds
-	Speed        []float64                      `json:"speed"`    // in m/s
-	Slope        []float64                      `json:"slope"`
-	Elevation    []float64                      `json:"elevation"`
+	Distance     []float64                      `json:"distance"`            // in km
+	Duration     []float64                      `json:"duration"`            // in seconds
+	Speed        []float64                      `json:"speed,omitempty"`     // in m/s; omitted when no speed data
+	Slope        []float64                      `json:"slope,omitempty"`     // omitted when no slope data
+	Elevation    []float64                      `json:"elevation,omitempty"` // omitted when no elevation data
 	ExtraMetrics map[string][]any               `json:"extra_metrics,omitempty"` // Additional metrics like heart-rate, cadence, temperature
 	ZoneRanges   map[string][]ZoneRangeResponse `json:"zone_ranges,omitempty"`
 }
@@ -447,7 +447,7 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 			}
 		}
 
-		wr.MapData = workoutResponseMapData(w)
+		wr.TrackData = workoutResponseTrackData(w)
 	}
 
 	// Add route segment matches
@@ -745,8 +745,8 @@ func findClosestPointIndex(points []model.DataPoint, t time.Time) int {
 	return bestIdx
 }
 
-func workoutResponseMapData(w *model.Workout) *MapDataResponse {
-	mapData := &MapDataResponse{
+func workoutResponseTrackData(w *model.Workout) *TrackDataResponse {
+	trackData := &TrackDataResponse{
 		Creator: w.Data.Creator,
 		Center: MapCenterResponse{
 			TZ:  w.Data.GetCenter().TZ,
@@ -759,44 +759,105 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 	// Add detailed points in compact format
 	if len(w.Data.Points) > 0 {
 		points := w.Data.Points
-		mapData.Details = &MapDataDetailsResponse{
-			Position:     make([][]float64, len(points)),
+
+		// Pre-scan to determine which optional arrays actually have data, so
+		// that fields with all-zero values are omitted from the response.
+		// We check lat != 0 OR lng != 0 because non-GPS workouts (e.g. FIT
+		// files without position records) have both coordinates set to exactly
+		// zero, whereas any real GPS fix will have at least one non-zero value.
+		var hasPosition, hasElevation, hasSpeed, hasSlope bool
+
+		for _, point := range points {
+			if !hasPosition && (point.Lat != 0 || point.Lng != 0) {
+				hasPosition = true
+			}
+
+			if !hasElevation && point.Elevation != 0 {
+				hasElevation = true
+			}
+
+			if !hasSlope && point.SlopeGrade != 0 {
+				hasSlope = true
+			}
+
+			if !hasSpeed {
+				speed := point.AverageSpeed()
+				if ems, ok := point.ExtraMetrics["speed"]; ok && ems > 0 {
+					speed = ems
+				}
+
+				if speed > 0 {
+					hasSpeed = true
+				}
+			}
+
+			if hasPosition && hasElevation && hasSlope && hasSpeed {
+				break // All optional fields confirmed; no need to scan further
+			}
+		}
+
+		details := &TrackDataDetailsResponse{
 			Time:         make([]time.Time, len(points)),
 			Distance:     make([]float64, len(points)),
 			Duration:     make([]float64, len(points)),
-			Speed:        make([]float64, len(points)),
-			Slope:        make([]float64, len(points)),
-			Elevation:    make([]float64, len(points)),
 			ExtraMetrics: make(map[string][]any),
 		}
+
+		if hasPosition {
+			details.Position = make([][]float64, len(points))
+		}
+
+		if hasElevation {
+			details.Elevation = make([]float64, len(points))
+		}
+
+		if hasSpeed {
+			details.Speed = make([]float64, len(points))
+		}
+
+		if hasSlope {
+			details.Slope = make([]float64, len(points))
+		}
+
+		trackData.Details = details
 
 		zoneMetrics := newZoneMetricsBuilder(w)
 
 		// Initialize extra metrics arrays
-		for _, metric := range mapData.ExtraMetrics {
+		for _, metric := range trackData.ExtraMetrics {
 			if metric == "speed" || metric == "elevation" {
 				continue
 			}
 
-			mapData.Details.ExtraMetrics[metric] = make([]any, len(points))
+			details.ExtraMetrics[metric] = make([]any, len(points))
 		}
 
-		zoneMetrics.ensureBuffers(mapData.Details.ExtraMetrics, len(points))
+		zoneMetrics.ensureBuffers(details.ExtraMetrics, len(points))
 
 		for i, point := range points {
-			mapData.Details.Position[i] = []float64{point.Lat, point.Lng}
-			mapData.Details.Time[i] = point.Time
-			mapData.Details.Distance[i] = point.TotalDistance / 1000 // Convert to km
-			mapData.Details.Duration[i] = point.TotalDuration.Seconds()
-			mapData.Details.Slope[i] = point.SlopeGrade
-			mapData.Details.Elevation[i] = point.Elevation
-
-			// Calculate speed from extra metrics or derive it
-			speed := point.AverageSpeed()
-			if ems, ok := point.ExtraMetrics["speed"]; ok && ems > 0 {
-				speed = ems
+			if hasPosition {
+				details.Position[i] = []float64{point.Lat, point.Lng}
 			}
-			mapData.Details.Speed[i] = speed
+
+			details.Time[i] = point.Time
+			details.Distance[i] = point.TotalDistance / 1000 // Convert to km
+			details.Duration[i] = point.TotalDuration.Seconds()
+
+			if hasSlope {
+				details.Slope[i] = point.SlopeGrade
+			}
+
+			if hasElevation {
+				details.Elevation[i] = point.Elevation
+			}
+
+			if hasSpeed {
+				speed := point.AverageSpeed()
+				if ems, ok := point.ExtraMetrics["speed"]; ok && ems > 0 {
+					speed = ems
+				}
+				details.Speed[i] = speed
+			}
 
 			// Add extra metrics
 			for _, metric := range w.Data.ExtraMetrics {
@@ -804,19 +865,19 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 					continue // Already handled
 				}
 				if val, ok := point.ExtraMetrics[metric]; ok {
-					mapData.Details.ExtraMetrics[metric][i] = val
+					details.ExtraMetrics[metric][i] = val
 				} else {
-					mapData.Details.ExtraMetrics[metric][i] = nil
+					details.ExtraMetrics[metric][i] = nil
 				}
 			}
 
 			zoneMetrics.setForPoint(i, point.ExtraMetrics)
 		}
 
-		mapData.Details.ZoneRanges = zoneMetrics.zoneRanges()
+		details.ZoneRanges = zoneMetrics.zoneRanges()
 	}
 
-	return mapData
+	return trackData
 }
 
 const (

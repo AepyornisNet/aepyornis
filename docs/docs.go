@@ -3311,7 +3311,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.MapDataDetailsResponse": {
+        "dto.TrackDataDetailsResponse": {
             "type": "object",
             "properties": {
                 "distance": {
@@ -3329,6 +3329,7 @@ const docTemplate = `{
                     }
                 },
                 "elevation": {
+                    "description": "omitted when no elevation data",
                     "type": "array",
                     "items": {
                         "type": "number"
@@ -3343,7 +3344,7 @@ const docTemplate = `{
                     }
                 },
                 "position": {
-                    "description": "[[lat, lng], ...]",
+                    "description": "[[lat, lng], ...]; omitted when no GPS data",
                     "type": "array",
                     "items": {
                         "type": "array",
@@ -3354,13 +3355,14 @@ const docTemplate = `{
                     }
                 },
                 "slope": {
+                    "description": "omitted when no slope data",
                     "type": "array",
                     "items": {
                         "type": "number"
                     }
                 },
                 "speed": {
-                    "description": "in m/s",
+                    "description": "in m/s; omitted when no speed data",
                     "type": "array",
                     "items": {
                         "type": "number"
@@ -3383,7 +3385,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.MapDataResponse": {
+        "dto.TrackDataResponse": {
             "type": "object",
             "properties": {
                 "center": {
@@ -3393,7 +3395,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "details": {
-                    "$ref": "#/definitions/dto.MapDataDetailsResponse"
+                    "$ref": "#/definitions/dto.TrackDataDetailsResponse"
                 },
                 "extra_metrics": {
                     "type": "array",
@@ -4468,7 +4470,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "address_string": {
-                    "description": "MapData fields (when available)",
+                    "description": "TrackData fields (when available)",
                     "type": "string"
                 },
                 "average_cadence": {
@@ -4528,8 +4530,8 @@ const docTemplate = `{
                 "locked": {
                     "type": "boolean"
                 },
-                "map_data": {
-                    "$ref": "#/definitions/dto.MapDataResponse"
+                "track_data": {
+                    "$ref": "#/definitions/dto.TrackDataResponse"
                 },
                 "max_cadence": {
                     "type": "number"
@@ -4864,7 +4866,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "address_string": {
-                    "description": "MapData fields (when available)",
+                    "description": "TrackData fields (when available)",
                     "type": "string"
                 },
                 "average_cadence": {

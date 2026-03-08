@@ -141,7 +141,7 @@ definitions:
       tz:
         type: string
     type: object
-  dto.MapDataDetailsResponse:
+  dto.TrackDataDetailsResponse:
     properties:
       distance:
         description: in km
@@ -191,14 +191,14 @@ definitions:
           type: array
         type: object
     type: object
-  dto.MapDataResponse:
+  dto.TrackDataResponse:
     properties:
       center:
         $ref: '#/definitions/dto.MapCenterResponse'
       creator:
         type: string
       details:
-        $ref: '#/definitions/dto.MapDataDetailsResponse'
+        $ref: '#/definitions/dto.TrackDataDetailsResponse'
       extra_metrics:
         items:
           type: string
@@ -941,8 +941,8 @@ definitions:
         type: array
       locked:
         type: boolean
-      map_data:
-        $ref: '#/definitions/dto.MapDataResponse'
+      track_data:
+        $ref: '#/definitions/dto.TrackDataResponse'
       max_cadence:
         type: number
       max_elevation:

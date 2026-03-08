@@ -3304,7 +3304,7 @@
                 }
             }
         },
-        "dto.MapDataDetailsResponse": {
+        "dto.TrackDataDetailsResponse": {
             "type": "object",
             "properties": {
                 "distance": {
@@ -3376,7 +3376,7 @@
                 }
             }
         },
-        "dto.MapDataResponse": {
+        "dto.TrackDataResponse": {
             "type": "object",
             "properties": {
                 "center": {
@@ -3386,7 +3386,7 @@
                     "type": "string"
                 },
                 "details": {
-                    "$ref": "#/definitions/dto.MapDataDetailsResponse"
+                    "$ref": "#/definitions/dto.TrackDataDetailsResponse"
                 },
                 "extra_metrics": {
                     "type": "array",
@@ -4461,7 +4461,7 @@
                     "type": "boolean"
                 },
                 "address_string": {
-                    "description": "MapData fields (when available)",
+                    "description": "TrackData fields (when available)",
                     "type": "string"
                 },
                 "average_cadence": {
@@ -4521,8 +4521,8 @@
                 "locked": {
                     "type": "boolean"
                 },
-                "map_data": {
-                    "$ref": "#/definitions/dto.MapDataResponse"
+                "track_data": {
+                    "$ref": "#/definitions/dto.TrackDataResponse"
                 },
                 "max_cadence": {
                     "type": "number"
@@ -4857,7 +4857,7 @@
                     "type": "boolean"
                 },
                 "address_string": {
-                    "description": "MapData fields (when available)",
+                    "description": "TrackData fields (when available)",
                     "type": "string"
                 },
                 "average_cadence": {
