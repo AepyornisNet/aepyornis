@@ -54,15 +54,19 @@
             }
             <span>
               @if (dataService.workout()!.actor_name) {
-                <a [href]="dataService.workout()!.actor_iri"
-                   target="_blank"
-                   rel="noopener noreferrer">
+                <a
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  [href]="dataService.workout()!.actor_iri"
+                >
                   {{ dataService.workout()!.actor_name }}
                 </a>
               } @else {
-                <a [href]="dataService.workout()!.actor_iri"
-                   target="_blank"
-                   rel="noopener noreferrer">
+                <a
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  [href]="dataService.workout()!.actor_iri"
+                >
                   {{ dataService.workout()!.actor_iri }}
                 </a>
               }

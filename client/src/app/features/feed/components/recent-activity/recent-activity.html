@@ -36,19 +36,23 @@
                     <div class="text-muted small">{{ workout.user.name }}</div>
                   } @else if (workout.actor_name) {
                     <div class="text-muted small">
-                      <a [href]="workout.actor_iri"
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         class="text-muted text-decoration-none">
+                      <a
+                        class="text-muted text-decoration-none"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        [href]="workout.actor_iri"
+                      >
                         {{ workout.actor_name }}
                       </a>
                     </div>
                   } @else if (workout.actor_iri) {
                     <div class="text-muted small">
-                      <a [href]="workout.actor_iri"
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         class="text-muted text-decoration-none">
+                      <a
+                        class="text-muted text-decoration-none"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        [href]="workout.actor_iri"
+                      >
                         {{ workout.actor_iri }}
                       </a>
                     </div>
