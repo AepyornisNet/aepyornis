@@ -28,7 +28,7 @@ jobs:
         run: echo "image_name=${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}
           tags: |
@@ -55,7 +55,7 @@ jobs:
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Log in to the Container registry
         uses: docker/login-action@v4
         with:
@@ -64,7 +64,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker image (amd64)
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./docker/Dockerfile.prod
@@ -102,7 +102,7 @@ jobs:
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Log in to the Container registry
         uses: docker/login-action@v4
         with:
@@ -111,7 +111,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker image (arm64)
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./docker/Dockerfile.prod
@@ -145,7 +145,7 @@ jobs:
       packages: write
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Log in to the Container registry
         uses: docker/login-action@v4
         with:
