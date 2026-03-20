@@ -9,6 +9,14 @@ aside {
   background: #fa7a1c;
 }
 
+.nav-item-icon {
+  padding: 3px 0;
+}
+
+.nav-link.is-open {
+  display: flex;
+}
+
 @media (max-width: 575.98px) {
   aside {
     position: fixed;
@@ -20,5 +28,6 @@ aside {
     z-index: 1020;
     overflow-x: hidden;
     overflow-y: auto;
+    max-height: calc(100vh - 100px);
   }
 }

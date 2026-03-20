@@ -10,7 +10,7 @@
     }}</span>
   </div>
 
-  <div class="overflow-y-auto" [class.p-3]="isOpen()">
+  <div class="overflow-y-auto">
     <ul
       class="nav nav-pills flex-column mb-auto"
       [class.nav-flush]="!isOpen()"
@@ -19,13 +19,11 @@
       @for (item of menuItems(); track item.route) {
         <li class="nav-item">
           <a
-            class="nav-link link-body-emphasis"
+            class="nav-link link-body-emphasis rounded-0 py-3 border-bottom"
             placement="right"
             routerLinkActive="active"
             triggers="hover"
-            [class.border-bottom]="!isOpen()"
-            [class.py-3]="!isOpen()"
-            [class.rounded-0]="!isOpen()"
+            [class.is-open]="isOpen()"
             [disableTooltip]="isOpen()"
             [ngbTooltip]="item.label | translate"
             [routerLink]="item.route"
@@ -45,7 +43,7 @@
                   }
             "
           >
-            <app-icon size="1.125rem" [class.me-2]="isOpen()" [name]="item.iconKey" />
+            <app-icon class="nav-item-icon" size="18px" [class.me-3]="isOpen()" [name]="item.iconKey" />
             <span [class.visually-hidden]="!isOpen()">{{ item.label | translate }}</span>
           </a>
         </li>
