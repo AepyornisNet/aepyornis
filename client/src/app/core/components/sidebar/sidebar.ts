@@ -37,8 +37,6 @@ export class Sidebar {
     { label: _('Heatmap'), iconKey: 'heatmap', route: '/heatmap' },
     { label: _('Route segments'), iconKey: 'route-segment', route: '/route-segments' },
     { label: _('Equipment'), iconKey: 'equipment', route: '/equipment' },
-    { label: _('Settings'), iconKey: 'settings', route: '/profile/settings' },
-    { label: _('Admin'), iconKey: 'admin', route: '/admin', adminOnly: true },
   ];
 
   // Computed property to filter menu items based on user permissions

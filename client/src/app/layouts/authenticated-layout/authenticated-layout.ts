@@ -16,6 +16,7 @@ export class AuthenticatedLayout {
   private userService = inject(User);
 
   public readonly userName = computed(() => this.userService.getUserInfo()()?.name || '');
+  public readonly isAdmin = computed(() => this.userService.getUserInfo()()?.profile?.admin || false);
   public readonly sidebarOpen = signal(false);
 
   public handleLogout(): void {

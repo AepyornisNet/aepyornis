@@ -16,16 +16,33 @@
     <div class="ms-auto">
       <div class="d-flex align-items-center gap-3">
         @if (userName()) {
-          <span class="navbar-text d-none d-md-inline">
-            <app-icon class="me-2" name="user" size="16px" />
-            <strong>{{ userName() }}</strong>
-          </span>
-          <button
-            class="btn btn-sm btn-link text-danger link-body-emphasis"
-            (click)="logout.emit()"
-          >
-            <app-icon class="me-2" name="logout" size="16px" />
-          </button>
+          <div class="dropdown" ngbDropdown>
+            <button
+              class="btn btn-sm btn-link link-body-emphasis d-inline-flex align-items-center header-user-menu"
+              ngbDropdownToggle
+              type="button"
+            >
+              <app-icon class="me-2" name="user" size="16px" />
+              <strong>{{ userName() }}</strong>
+            </button>
+
+            <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+              <a class="dropdown-item" routerLink="/profile/settings">
+                <app-icon class="me-2" name="settings" size="14px" />
+                {{ 'Settings' | translate }}
+              </a>
+              @if (isAdmin()) {
+                <a class="dropdown-item" routerLink="/admin">
+                  <app-icon class="me-2" name="admin" size="14px" />
+                  {{ 'Admin' | translate }}
+                </a>
+              }
+              <button class="dropdown-item text-danger" type="button" (click)="logout.emit()">
+                <app-icon class="me-2" name="logout" size="14px" />
+                {{ 'Logout' | translate }}
+              </button>
+            </div>
+          </div>
         }
         @if (!userName()) {
           <div class="d-flex align-items-center">

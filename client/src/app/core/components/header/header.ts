@@ -10,13 +10,15 @@ import {
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AppIcon } from '../app-icon/app-icon';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AVAILABLE_LANGUAGES, Language } from '../../config/languages';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-header',
-  imports: [FormsModule, AppIcon],
+  imports: [FormsModule, RouterLink, AppIcon, NgbDropdownModule, TranslatePipe],
   templateUrl: './header.html',
   styleUrl: './header.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +29,7 @@ export class Header {
 
   // Input for user info and logout handler
   public readonly userName = input<string>();
+  public readonly isAdmin = input<boolean>(false);
   public readonly showSidebar = input<boolean>(false);
 
   // Output for sidebar toggle
