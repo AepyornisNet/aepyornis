@@ -45,6 +45,29 @@ WT_OFFLINE="false"
 WT_ACTIVITY_PUB_ACTIVE="false"
 ```
 
+### Hammerhead integration
+
+To enable automatic activity import from a
+[Hammerhead Karoo](https://www.hammerhead.io/) device, register an OAuth
+application with Hammerhead and set the following variables:
+
+```bash
+WT_HAMMERHEAD_CLIENT_ID="your-client-id"
+WT_HAMMERHEAD_CLIENT_SECRET="your-client-secret"
+WT_HAMMERHEAD_REDIRECT_URI="https://your-instance/profile/apps/hammerhead/callback"
+WT_HAMMERHEAD_WEBHOOK_SECRET="your-webhook-secret"
+```
+
+| Variable                      | Config key                  | Description                                                   |
+| ----------------------------- | --------------------------- | ------------------------------------------------------------- |
+| `WT_HAMMERHEAD_CLIENT_ID`     | `hammerhead_client_id`      | OAuth client ID issued by Hammerhead                          |
+| `WT_HAMMERHEAD_CLIENT_SECRET` | `hammerhead_client_secret`  | OAuth client secret issued by Hammerhead                      |
+| `WT_HAMMERHEAD_REDIRECT_URI`  | `hammerhead_redirect_uri`   | OAuth redirect URI registered with Hammerhead (callback URL)  |
+| `WT_HAMMERHEAD_WEBHOOK_SECRET`| `hammerhead_webhook_secret` | Secret used to verify incoming webhook payloads from Karoo    |
+
+When all four variables are set, users can connect their Karoo device under
+**Profile → Apps → Hammerhead**.
+
 > [!NOTE]
 > The environment variables in `postgres.env` used by `docker-compose.yaml`
 > configure the database connection. Edit them before starting the server.
