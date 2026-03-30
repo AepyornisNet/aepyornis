@@ -25,6 +25,9 @@ export WT_JWT_ENCRYPTION_KEY="$(openssl rand -base64 32)"
 
 See `workout-tracker.example.yaml` for more options and details.
 
+Aepyornis requires a **PostgreSQL** database. Set the connection string via
+`WT_DSN` or in the config file.
+
 Other environment variables, with their default values:
 
 ```bash
@@ -32,11 +35,10 @@ WT_BIND="[::]:8080"
 WT_WEB_ROOT=""
 WT_LOGGING="true"
 WT_DEBUG="false"
-WT_DATABASE_DRIVER="sqlite"
-WT_DSN="./database.db"
+WT_DATABASE_DRIVER="postgres"
+WT_DSN="host=localhost user=aepyornis password=aepyornis dbname=aepyornis port=5432 sslmode=disable TimeZone=UTC"
 WT_REGISTRATION_DISABLED="false"
 WT_SOCIALS_DISABLED="false"
-WT_DEV="false"
 WT_WORKER_DELAY_SECONDS=60
 WT_AUTO_IMPORT_ENABLED="false"
 WT_OFFLINE="false"
@@ -44,9 +46,8 @@ WT_ACTIVITY_PUB_ACTIVE="false"
 ```
 
 > [!NOTE]
-> When using the provided `docker-compose.yaml`, the database driver defaults to
-> `postgres`. The environment variables in `postgres.env` configure the
-> connection string.
+> The environment variables in `postgres.env` used by `docker-compose.yaml`
+> configure the database connection. Edit them before starting the server.
 
 > [!NOTE]  
 > Setting `WT_OFFLINE` to `true` runs the app without making external geocoding
