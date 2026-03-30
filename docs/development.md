@@ -10,8 +10,8 @@ title: Development
 - clone the repository
 
 ```bash
-go build ./
-./workout-tracker
+go build ./...
+./tmp/workout-tracker
 ```
 
 This does not require npm or Tailwind, since the compiled css is included in the
@@ -40,8 +40,6 @@ make build-client # Builds the frontend assets
 make build-server # Builds the web server
 make build-image # Builds the production Docker image using docker/Dockerfile.prod
 make swagger # Generates swagger docs
-
-
 
 # Running it
 make serve # Runs the compiled binary
