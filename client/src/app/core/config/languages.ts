@@ -3,7 +3,7 @@ export interface Language {
   name: string;
   nativeName: string;
   flag: string;
-}
+};
 
 export const AVAILABLE_LANGUAGES: Language[] = [
   { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },

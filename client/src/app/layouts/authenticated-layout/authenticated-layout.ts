@@ -13,17 +13,27 @@ import { User } from '../../core/services/user';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthenticatedLayout {
+  private static readonly SIDEBAR_STATE_KEY = 'sidebarOpen';
+
   private userService = inject(User);
 
   public readonly userName = computed(() => this.userService.getUserInfo()()?.name || '');
-  public readonly isAdmin = computed(() => this.userService.getUserInfo()()?.profile?.admin || false);
-  public readonly sidebarOpen = signal(false);
+  public readonly isAdmin = computed(
+    () => this.userService.getUserInfo()()?.profile?.admin || false,
+  );
+  public readonly sidebarOpen = signal(AuthenticatedLayout.getInitialSidebarState());
+
+  private static getInitialSidebarState(): boolean {
+    return localStorage.getItem(AuthenticatedLayout.SIDEBAR_STATE_KEY) === 'true';
+  }
 
   public handleLogout(): void {
     this.userService.logout();
   }
 
   public toggleSidebar(): void {
-    this.sidebarOpen.update((open) => !open);
+    const nextState = !this.sidebarOpen();
+    this.sidebarOpen.set(nextState);
+    localStorage.setItem(AuthenticatedLayout.SIDEBAR_STATE_KEY, String(nextState));
   }
 }

@@ -43,7 +43,12 @@
                   }
             "
           >
-            <app-icon class="nav-item-icon" size="18px" [class.me-3]="isOpen()" [name]="item.iconKey" />
+            <app-icon
+              class="nav-item-icon"
+              size="18px"
+              [class.me-3]="isOpen()"
+              [name]="item.iconKey"
+            />
             <span [class.visually-hidden]="!isOpen()">{{ item.label | translate }}</span>
           </a>
         </li>
