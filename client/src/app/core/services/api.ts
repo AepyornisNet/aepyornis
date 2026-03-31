@@ -645,9 +645,34 @@ export class Api {
   }
 
   // Heatmap endpoints
-  public getWorkoutsCoordinates(): Observable<APIResponse<HeatmapCoordinateList>> {
+  public getWorkoutsCoordinates(params?: {
+    cellSize?: number;
+    minLat?: number;
+    minLng?: number;
+    maxLat?: number;
+    maxLng?: number;
+  }): Observable<APIResponse<HeatmapCoordinateList>> {
+    let httpParams = new HttpParams();
+    if (params?.cellSize !== undefined) {
+      httpParams = httpParams.set('cell_size', params.cellSize.toString());
+    }
+    if (params?.minLat !== undefined) {
+      httpParams = httpParams.set('min_lat', params.minLat.toString());
+    }
+    if (params?.minLng !== undefined) {
+      httpParams = httpParams.set('min_lng', params.minLng.toString());
+    }
+    if (params?.maxLat !== undefined) {
+      httpParams = httpParams.set('max_lat', params.maxLat.toString());
+    }
+    if (params?.maxLng !== undefined) {
+      httpParams = httpParams.set('max_lng', params.maxLng.toString());
+    }
     return this.http.get<APIResponse<HeatmapCoordinateList>>(
       `${this.baseUrl}/workouts/coordinates`,
+      {
+        params: httpParams,
+      },
     );
   }
 

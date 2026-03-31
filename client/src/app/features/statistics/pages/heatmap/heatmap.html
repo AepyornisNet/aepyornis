@@ -13,5 +13,63 @@
     </div>
   </div>
 } @else {
-  <div #mapContainer class="map-container"></div>
+  <div class="heatmap-shell">
+    <mgl-map
+      class="map-container"
+      [center]="[0, 20]"
+      [mapStyle]="mapStyle()"
+      [zoom]="[3]"
+      (mapLoad)="onMapLoad($event)"
+    />
+
+    <div class="map-controls card shadow-sm">
+      <div class="mb-2">
+        <label class="form-label mb-1" for="radius">Radius</label>
+        <input
+          class="form-range"
+          id="radius"
+          max="30"
+          min="1"
+          type="range"
+          [ngModel]="radius()"
+          (ngModelChange)="radius.set($event); onRenderSettingsChange()"
+        />
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label mb-1" for="blur">Blur</label>
+        <input
+          class="form-range"
+          id="blur"
+          max="30"
+          min="1"
+          type="range"
+          [ngModel]="blur()"
+          (ngModelChange)="blur.set($event); onRenderSettingsChange()"
+        />
+      </div>
+
+      <div class="form-check mb-2">
+        <input
+          class="form-check-input"
+          id="showMarkers"
+          type="checkbox"
+          [ngModel]="showMarkers()"
+          (ngModelChange)="showMarkers.set($event); onRenderSettingsChange()"
+        />
+        <label class="form-check-label" for="showMarkers">Show Markers</label>
+      </div>
+
+      <div class="form-check mb-3">
+        <input
+          class="form-check-input"
+          id="onlyTrace"
+          type="checkbox"
+          [ngModel]="onlyTrace()"
+          (ngModelChange)="onlyTrace.set($event); onRenderSettingsChange()"
+        />
+        <label class="form-check-label" for="onlyTrace">Only show trace</label>
+      </div>
+    </div>
+  </div>
 }

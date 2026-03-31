@@ -35,23 +35,14 @@
                 "glob": "**/*",
                 "input": "public"
               },
-              "src/assets",
-              {
-                "glob": "**/*",
-                "input": "node_modules/leaflet/dist/images",
-                "output": "leaflet/images/"
-              }
+              "src/assets"
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/leaflet/dist/leaflet.css",
-              "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
-              "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css"
+              "node_modules/maplibre-theme/icons.default.css",
+              "node_modules/maplibre-theme/modern.css"
             ],
-            "scripts": [
-              "node_modules/leaflet/dist/leaflet.js",
-              "node_modules/leaflet.markercluster/dist/leaflet.markercluster.js"
-            ],
+            "scripts": [],
             "polyfills": ["@angular/localize/init"]
           },
           "configurations": {

@@ -1,1 +1,9 @@
-<div #mapContainer class="map-container"></div>
+<div class="map-shell">
+  <mgl-map
+    class="map-container"
+    [center]="initialCenter()"
+    [mapStyle]="mapStyle()"
+    [zoom]="[15]"
+    (mapLoad)="onMapLoad($event)"
+  />
+</div>

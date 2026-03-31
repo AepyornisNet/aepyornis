@@ -1,12 +1,20 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	geojson "github.com/paulmach/orb/geojson"
+)
+
+const (
+	defaultHeatmapCellSize = 0.0015
+	minHeatmapCellSize     = 0.0001
+	maxHeatmapCellSize     = 0.1
 )
 
 type HeatmapController interface {
@@ -16,6 +24,24 @@ type HeatmapController interface {
 
 type heatmapController struct {
 	context *container.Container
+}
+
+type heatmapBounds struct {
+	minLat float64
+	minLng float64
+	maxLat float64
+	maxLng float64
+}
+
+type aggregatedCoordinateRow struct {
+	LatCell float64 `gorm:"column:lat_cell"`
+	LngCell float64 `gorm:"column:lng_cell"`
+	Weight  int64   `gorm:"column:weight"`
+}
+
+type rawCoordinateRow struct {
+	Lat float64 `gorm:"column:lat"`
+	Lng float64 `gorm:"column:lng"`
 }
 
 func NewHeatmapController(c *container.Container) HeatmapController {
@@ -29,31 +55,77 @@ func NewHeatmapController(c *container.Container) HeatmapController {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
+// @Param        cell_size  query  number  false  "Grid cell size in degrees used for server-side aggregation"  default(0.0015)
+// @Param        min_lat    query  number  false  "Minimum latitude for viewport filtering"
+// @Param        min_lng    query  number  false  "Minimum longitude for viewport filtering"
+// @Param        max_lat    query  number  false  "Maximum latitude for viewport filtering"
+// @Param        max_lng    query  number  false  "Maximum longitude for viewport filtering"
 // @Success      200  {object}  dto.Response[[][]float64]
+// @Failure      400  {object}  dto.Response[any]
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/coordinates [get]
 func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
-	coords := [][]float64{}
+	hasCellSize := false
+	cellSize := defaultHeatmapCellSize
+	if rawCellSize := c.QueryParam("cell_size"); rawCellSize != "" {
+		parsedCellSize, err := strconv.ParseFloat(rawCellSize, 64)
+		if err != nil || parsedCellSize < minHeatmapCellSize || parsedCellSize > maxHeatmapCellSize {
+			return renderApiError(c, http.StatusBadRequest, errors.New("invalid cell_size"))
+		}
+		cellSize = parsedCellSize
+		hasCellSize = true
+	}
+
+	bounds, err := parseHeatmapBounds(c)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
 
 	u := hc.context.GetUser(c)
 
-	wos, err := hc.context.WorkoutRepo().ListByUserIDWithDetails(u.ID)
-	if err != nil {
+	query := hc.context.GetDB().Table("map_data_details_points AS mdp").
+		Joins("JOIN map_data_details AS mdd ON mdd.id = mdp.map_data_details_id").
+		Joins("JOIN map_data AS md ON md.id = mdd.map_data_id").
+		Joins("JOIN workouts ON workouts.id = md.workout_id").
+		Where("workouts.user_id = ?", u.ID)
+
+	if bounds != nil {
+		query = query.Where(
+			"mdp.lat >= ? AND mdp.lat <= ? AND mdp.lng >= ? AND mdp.lng <= ?",
+			bounds.minLat, bounds.maxLat, bounds.minLng, bounds.maxLng,
+		)
+	}
+
+	if !hasCellSize {
+		rows := make([]rawCoordinateRow, 0)
+		if err := query.Select("mdp.lat AS lat, mdp.lng AS lng").Find(&rows).Error; err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		coords := make([][]float64, 0, len(rows))
+		for _, row := range rows {
+			coords = append(coords, []float64{row.Lat, row.Lng, 1})
+		}
+
+		resp := dto.Response[[][]float64]{
+			Results: coords,
+		}
+		return c.JSON(http.StatusOK, resp)
+	}
+
+	rows := make([]aggregatedCoordinateRow, 0)
+	if err := query.
+		Select("floor(mdp.lat / ?) AS lat_cell, floor(mdp.lng / ?) AS lng_cell, count(*) AS weight", cellSize, cellSize).
+		Group("lat_cell, lng_cell").
+		Find(&rows).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	for _, w := range wos {
-		w.User = u
-	}
-
-	for _, w := range wos {
-		if !w.HasTracks() {
-			continue
-		}
-
-		for _, p := range w.Data.Details.Points {
-			coords = append(coords, []float64{p.Lat, p.Lng, 1})
-		}
+	coords := make([][]float64, 0, len(rows))
+	for _, row := range rows {
+		lat := (row.LatCell + 0.5) * cellSize
+		lng := (row.LngCell + 0.5) * cellSize
+		coords = append(coords, []float64{lat, lng, float64(row.Weight)})
 	}
 
 	resp := dto.Response[[][]float64]{
@@ -61,6 +133,46 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func parseHeatmapBounds(c echo.Context) (*heatmapBounds, error) {
+	minLatRaw := c.QueryParam("min_lat")
+	minLngRaw := c.QueryParam("min_lng")
+	maxLatRaw := c.QueryParam("max_lat")
+	maxLngRaw := c.QueryParam("max_lng")
+
+	if minLatRaw == "" && minLngRaw == "" && maxLatRaw == "" && maxLngRaw == "" {
+		return nil, nil
+	}
+
+	minLat, err := strconv.ParseFloat(minLatRaw, 64)
+	if err != nil {
+		return nil, errors.New("invalid min_lat")
+	}
+	minLng, err := strconv.ParseFloat(minLngRaw, 64)
+	if err != nil {
+		return nil, errors.New("invalid min_lng")
+	}
+	maxLat, err := strconv.ParseFloat(maxLatRaw, 64)
+	if err != nil {
+		return nil, errors.New("invalid max_lat")
+	}
+	maxLng, err := strconv.ParseFloat(maxLngRaw, 64)
+	if err != nil {
+		return nil, errors.New("invalid max_lng")
+	}
+
+	withingBounds := minLat < -90 || maxLat > 90 || minLng < -180 || maxLng > 180
+	if withingBounds || minLat > maxLat || minLng > maxLng {
+		return nil, errors.New("invalid viewport bounds")
+	}
+
+	return &heatmapBounds{
+		minLat: minLat,
+		minLng: minLng,
+		maxLat: maxLat,
+		maxLng: maxLng,
+	}, nil
 }
 
 // GetWorkoutCenters returns the center of all workouts of the current user

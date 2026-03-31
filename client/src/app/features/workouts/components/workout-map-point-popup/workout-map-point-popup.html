@@ -1,0 +1,37 @@
+<ul class="list-unstyled mb-0">
+  @if (formattedTime()) {
+    <li><strong>Time</strong>: {{ formattedTime() }}</li>
+  }
+
+  @if (formattedDistance() !== null) {
+    <li>
+      <strong>Distance</strong>: {{ formattedDistance()!.toFixed(2) }} {{ data().distanceUnit }}
+    </li>
+  }
+
+  @if (formattedDuration()) {
+    <li><strong>Duration</strong>: {{ formattedDuration() }}</li>
+  }
+
+  @if (formattedSpeed() !== null) {
+    <li><strong>Speed</strong>: {{ formattedSpeed()!.toFixed(2) }} {{ data().speedUnit }}</li>
+  }
+
+  @if (formattedElevation() !== null) {
+    <li>
+      <strong>Elevation</strong>: {{ formattedElevation()!.toFixed(1) }} {{ data().elevationUnit }}
+    </li>
+  }
+
+  @if (data().slope !== undefined && data().slope !== null) {
+    <li><strong>Slope</strong>: {{ data().slope!.toFixed(1) }}%</li>
+  }
+
+  @if (data().heartRate !== undefined && data().heartRate !== null) {
+    <li><strong>Heart Rate</strong>: {{ data().heartRate!.toFixed(0) }} bpm</li>
+  }
+
+  @if (data().power !== undefined && data().power !== null) {
+    <li><strong>Power</strong>: {{ data().power!.toFixed(0) }} W</li>
+  }
+</ul>

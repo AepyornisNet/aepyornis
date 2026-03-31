@@ -1,175 +1,78 @@
 import {
-  AfterViewInit,
   ApplicationRef,
   ChangeDetectionStrategy,
   Component,
   createComponent,
-  ElementRef,
   EnvironmentInjector,
   inject,
-  OnDestroy,
   signal,
-  viewChild,
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import * as L from 'leaflet';
-import 'leaflet.heat';
-import 'leaflet.markercluster';
+import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
+import maplibregl, { LngLatBounds, Map } from 'maplibre-gl';
 import { Api } from '../../../../core/services/api';
-import { GeoJsonFeatureCollection, WorkoutPopupData } from '../../../../core/types/statistics';
+import { WorkoutPopupData } from '../../../../core/types/statistics';
 import { WorkoutPopup } from '../../components/workout-popup/workout-popup';
+import { BaseMapComponent } from '../../../../core/components/base-map/base-map';
 
-// Fix for default marker icons
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: '/leaflet/images/marker-icon-2x.png',
-  iconUrl: '/leaflet/images/marker-icon.png',
-  shadowUrl: '/leaflet/images/marker-shadow.png',
-});
+const DEFAULT_HEATMAP_CELL_SIZE = 0.0015;
+const MEDIUM_HEATMAP_CELL_SIZE = 0.0007;
+const FINE_HEATMAP_CELL_SIZE = 0.0003;
+const HEAT_SOURCE_ID = 'heat-source';
+const HEAT_LAYER_ID = 'heat-layer';
+const HEAT_SOFTENER_LAYER_ID = 'heat-points-softener';
+const MARKERS_SOURCE_ID = 'markers-source';
+const CLUSTERS_LAYER_ID = 'clusters';
+const CLUSTER_COUNT_LAYER_ID = 'cluster-count';
+const UNCLUSTERED_LAYER_ID = 'unclustered-point';
 
 @Component({
   selector: 'app-heatmap',
-  imports: [FormsModule, TranslatePipe],
+  imports: [FormsModule, TranslatePipe, NgxMapLibreGLModule],
   templateUrl: './heatmap.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./heatmap.scss'],
 })
-export class Heatmap implements AfterViewInit, OnDestroy {
-  private readonly mapContainer = viewChild<ElementRef<HTMLDivElement>>('mapContainer');
+export class Heatmap extends BaseMapComponent {
+  private readonly api = inject(Api);
+  private readonly environmentInjector = inject(EnvironmentInjector);
+  private readonly applicationRef = inject(ApplicationRef);
 
-  private leaflet = window.L;
-  private api = inject(Api);
-  private environmentInjector = inject(EnvironmentInjector);
-  private applicationRef = inject(ApplicationRef);
-  private map?: L.Map;
-  private heatLayer?: L.HeatLayer;
-  private markersLayer?: L.MarkerClusterGroup;
+  private markerPopup?: maplibregl.Popup;
+  private coordinatesRefreshVersion = 0;
+  private coordinatesRequestKey: string | null = null;
+  private markerInteractionsBound = false;
 
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
 
-  // Control settings
   public readonly radius = signal(10);
   public readonly blur = signal(15);
   public readonly showMarkers = signal(true);
   public readonly onlyTrace = signal(false);
 
-  private heatMapData: L.HeatLatLngTuple[] = [];
+  private heatMapData: [number, number, number][] = [];
+  private markerFeatures: GeoJSON.Feature[] = [];
 
-  public ngAfterViewInit(): void {
-    this.initMap();
-    this.loadHeatmapData();
+  protected override onDestroy(): void {
+    this.map?.off('moveend', this.onMapMoveEnd);
   }
 
-  public ngOnDestroy(): void {
-    if (this.map) {
-      this.map.remove();
-    }
+  public async onMapLoad(map: Map): Promise<void> {
+    this.onMapLoadBase(map);
+    this.bindMarkerInteractions();
+    this.refreshHeatmapAfterStyleChange();
+    await this.loadHeatmapData();
+    this.map!.on('moveend', this.onMapMoveEnd);
   }
 
-  private initMap(): void {
-    const containerRef = this.mapContainer();
-    if (!containerRef) {
-      return;
-    }
-
-    this.map = this.leaflet.map(containerRef.nativeElement, {
-      fadeAnimation: false,
-    });
-
-    const layerStreet = this.leaflet.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      className: 'map-tiles',
-    });
-
-    const layerAerial = this.leaflet.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {
-        attribution: 'Powered by Esri',
-      },
-    );
-
-    this.leaflet.control
-      .layers({
-        Streets: layerStreet,
-        Aerial: layerAerial,
-      })
-      .addTo(this.map);
-
-    layerStreet.addTo(this.map);
-
-    // Add custom control for heatmap settings
-    this.addCustomControl();
-  }
-
-  private addCustomControl(): void {
-    if (!this.map) {
-      return;
-    }
-
-    const CustomControl = this.leaflet.Control.extend({
-      options: { position: 'topright' },
-      onAdd: () => {
-        const container = this.leaflet.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.style.backgroundColor = 'white';
-        container.style.padding = '10px';
-        container.innerHTML = `
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="display: flex; align-items: center;">
-              <label for="radius" style="width: 80px; color: #333;">Radius</label>
-              <input type="range" id="radius" value="${this.radius()}" min="1" max="30" style="padding: 0;"/>
-            </div>
-            <div style="display: flex; align-items: center;">
-              <label for="blur" style="width: 80px; color: #333;">Blur</label>
-              <input type="range" id="blur" value="${this.blur()}" min="1" max="30" style="padding: 0;"/>
-            </div>
-            <div style="display: flex; align-items: center;">
-              <input type="checkbox" id="showMarkers" ${this.showMarkers() ? 'checked' : ''} style="margin-right: 4px;"/>
-              <label for="showMarkers" style="color: #333;">Show Markers</label>
-            </div>
-            <div style="display: flex; align-items: center;">
-              <input type="checkbox" id="onlyTrace" ${this.onlyTrace() ? 'checked' : ''} style="margin-right: 4px;"/>
-              <label for="onlyTrace" style="color: #333;">Only show trace</label>
-            </div>
-          </div>
-        `;
-
-        this.leaflet.DomEvent.disableClickPropagation(container);
-
-        const radiusInput = container.querySelector('#radius') as HTMLInputElement;
-        const blurInput = container.querySelector('#blur') as HTMLInputElement;
-        const showMarkersInput = container.querySelector('#showMarkers') as HTMLInputElement;
-        const onlyTraceInput = container.querySelector('#onlyTrace') as HTMLInputElement;
-
-        radiusInput?.addEventListener('input', () => {
-          this.radius.set(Number(radiusInput.value));
-          this.rerenderHeatMap();
-        });
-
-        blurInput?.addEventListener('input', () => {
-          this.blur.set(Number(blurInput.value));
-          this.rerenderHeatMap();
-        });
-
-        showMarkersInput?.addEventListener('change', () => {
-          this.showMarkers.set(showMarkersInput.checked);
-          this.rerenderHeatMap();
-        });
-
-        onlyTraceInput?.addEventListener('change', () => {
-          this.onlyTrace.set(onlyTraceInput.checked);
-          this.rerenderHeatMap();
-        });
-
-        return container;
-      },
-    });
-
-    new CustomControl().addTo(this.map);
+  public onRenderSettingsChange(): void {
+    void this.refreshCoordinatesIfNeeded();
+    this.updateHeatmapPaint();
+    this.setMarkerVisibility(this.showMarkers());
   }
 
   private async loadHeatmapData(): Promise<void> {
@@ -177,66 +80,27 @@ export class Heatmap implements AfterViewInit, OnDestroy {
     this.error.set(null);
 
     try {
-      const [coordinatesResponse, centersResponse] = await Promise.all([
-        firstValueFrom(this.api.getWorkoutsCoordinates()),
-        firstValueFrom(this.api.getWorkoutsCenters()),
-      ]);
+      const centersResponse = await firstValueFrom(this.api.getWorkoutsCenters());
 
-      if (coordinatesResponse?.results) {
-        this.heatMapData = coordinatesResponse.results;
-      }
-
-      if (centersResponse?.results && this.map) {
-        this.markersLayer = this.leaflet.markerClusterGroup({ showCoverageOnHover: false });
-
-        const geoJsonLayer = this.leaflet.geoJSON(
-          centersResponse.results as unknown as GeoJSON.GeoJsonObject,
-          {
-            onEachFeature: (feature: unknown, layer) => {
-              const feat = feature as { properties?: Record<string, unknown> } | null;
-              if (feat?.properties && feat.properties['popup_data']) {
-                const popupData = feat.properties['popup_data'] as WorkoutPopupData;
-
-                // Create Angular component for popup
-                const componentRef = createComponent(WorkoutPopup, {
-                  environmentInjector: this.environmentInjector,
-                });
-
-                // Set input data
-                componentRef.setInput('data', popupData);
-
-                // Attach to application
-                this.applicationRef.attachView(componentRef.hostView);
-
-                // Get the DOM element
-                const popupElement = componentRef.location.nativeElement as HTMLElement;
-
-                // Bind popup with the component's DOM
-                layer.bindPopup(popupElement);
-
-                // Clean up component when popup is closed
-                layer.on('popupclose', () => {
-                  this.applicationRef.detachView(componentRef.hostView);
-                  componentRef.destroy();
-                });
-              }
-            },
+      const centerGeoJson = (centersResponse?.results as GeoJSON.FeatureCollection | undefined) ?? {
+        type: 'FeatureCollection',
+        features: [],
+      };
+      this.markerFeatures = (centerGeoJson.features ?? []).map((feature) => {
+        const props = (feature.properties ?? {}) as Record<string, unknown>;
+        const popupData = props['popup_data'];
+        return {
+          ...feature,
+          properties: {
+            ...props,
+            popup_data:
+              popupData && typeof popupData !== 'string' ? JSON.stringify(popupData) : popupData,
           },
-        );
+        };
+      });
 
-        this.markersLayer.addLayer(geoJsonLayer);
-
-        if (this.showMarkers()) {
-          this.markersLayer.addTo(this.map);
-        }
-
-        // Fit map to bounds
-        if (this.markersLayer.getBounds().isValid()) {
-          this.map.fitBounds(this.markersLayer.getBounds());
-        }
-      }
-
-      this.rerenderHeatMap();
+      this.fitInitialBounds();
+      await this.refreshCoordinatesIfNeeded(true, false);
     } catch (err) {
       console.error('Failed to load heatmap data:', err);
       this.error.set('Failed to load heatmap data. Please try again.');
@@ -245,44 +109,516 @@ export class Heatmap implements AfterViewInit, OnDestroy {
     }
   }
 
-  private geoJson2heat(geojson: GeoJsonFeatureCollection): L.HeatLatLngTuple[] {
-    return geojson.features.map(
-      (feature) =>
-        [feature.geometry.coordinates[1], feature.geometry.coordinates[0], 1] as L.HeatLatLngTuple,
-    );
-  }
-
   private rerenderHeatMap(): void {
-    if (!this.map || this.heatMapData.length === 0) {
+    if (!this.map) {
       return;
     }
 
-    // Remove existing heat layer
-    if (this.heatLayer) {
-      this.map.removeLayer(this.heatLayer);
+    this.upsertHeatSource();
+    this.upsertHeatLayers();
+    this.updateHeatmapPaint();
+    this.upsertMarkersSource();
+    this.upsertMarkerLayers();
+    this.setMarkerVisibility(this.showMarkers());
+  }
+
+  private upsertHeatSource(): void {
+    if (!this.map) {
+      return;
     }
 
-    // Configure heatmap based on settings
-    const config: L.HeatMapOptions = {
-      radius: this.onlyTrace() ? 1 : this.radius(),
-      blur: this.onlyTrace() ? 1 : this.blur(),
+    const maxWeight = this.heatMapData.reduce((max, [, , weight]) => Math.max(max, weight ?? 1), 1);
+    const features: GeoJSON.Feature<GeoJSON.Point, { weight: number }>[] = this.heatMapData.map(
+      ([lat, lng, weight]) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat],
+        },
+        properties: { weight: Math.min(1, (weight ?? 1) / maxWeight) },
+      }),
+    );
+
+    const heatData: GeoJSON.FeatureCollection<GeoJSON.Point, { weight: number }> = {
+      type: 'FeatureCollection',
+      features,
     };
 
-    if (this.onlyTrace()) {
-      config.minOpacity = 1;
-      config.gradient = { 0: 'blue' };
+    const source = this.map.getSource(HEAT_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(heatData);
+      return;
     }
 
-    this.heatLayer = this.leaflet.heatLayer(this.heatMapData, config);
-    this.heatLayer?.addTo(this.map);
+    this.map.addSource(HEAT_SOURCE_ID, {
+      type: 'geojson',
+      data: heatData,
+    });
+  }
 
-    // Toggle markers
-    if (this.markersLayer) {
-      if (this.showMarkers()) {
-        this.markersLayer.addTo(this.map);
-      } else {
-        this.map.removeLayer(this.markersLayer);
+  private upsertHeatLayers(): void {
+    if (!this.map) {
+      return;
+    }
+
+    if (!this.map.getLayer(HEAT_LAYER_ID)) {
+      this.map.addLayer({
+        id: HEAT_LAYER_ID,
+        type: 'heatmap',
+        source: HEAT_SOURCE_ID,
+        maxzoom: 20,
+        paint: {
+          'heatmap-weight': ['coalesce', ['get', 'weight'], 1],
+          'heatmap-radius': this.radius(),
+          'heatmap-intensity': 0.65,
+          'heatmap-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            0,
+            0.35,
+            8,
+            0.45,
+            12,
+            0.55,
+            16,
+            0.65,
+          ],
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(33,102,172,0)',
+            0.2,
+            'rgb(103,169,207)',
+            0.4,
+            'rgb(209,229,240)',
+            0.6,
+            'rgb(253,219,199)',
+            0.8,
+            'rgb(239,138,98)',
+            1,
+            'rgb(178,24,43)',
+          ],
+        },
+      });
+    }
+
+    if (!this.map.getLayer(HEAT_SOFTENER_LAYER_ID)) {
+      this.map.addLayer({
+        id: HEAT_SOFTENER_LAYER_ID,
+        type: 'circle',
+        source: HEAT_SOURCE_ID,
+        paint: {
+          'circle-radius': this.radius(),
+          'circle-color': 'rgba(0,0,0,0)',
+          'circle-opacity': 0,
+        },
+      });
+    }
+  }
+
+  private updateHeatmapPaint(): void {
+    if (!this.map || !this.map.getLayer(HEAT_LAYER_ID)) {
+      return;
+    }
+
+    const isTrace = this.onlyTrace();
+    const radius = isTrace ? 1 : this.radius();
+    const blur = isTrace ? 0 : this.blur();
+    const effectiveRadius = isTrace ? radius : radius + blur * 0.75;
+
+    this.map.setPaintProperty(HEAT_LAYER_ID, 'heatmap-radius', effectiveRadius);
+    this.map.setPaintProperty(HEAT_LAYER_ID, 'heatmap-intensity', isTrace ? 1 : 0.65);
+    this.map.setPaintProperty(
+      HEAT_LAYER_ID,
+      'heatmap-opacity',
+      isTrace ? 1 : ['interpolate', ['linear'], ['zoom'], 0, 0.35, 8, 0.45, 12, 0.55, 16, 0.65],
+    );
+    this.map.setPaintProperty(
+      HEAT_LAYER_ID,
+      'heatmap-color',
+      isTrace
+        ? ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,255,0)', 1, 'blue']
+        : [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(33,102,172,0)',
+            0.2,
+            'rgb(103,169,207)',
+            0.4,
+            'rgb(209,229,240)',
+            0.6,
+            'rgb(253,219,199)',
+            0.8,
+            'rgb(239,138,98)',
+            1,
+            'rgb(178,24,43)',
+          ],
+    );
+
+    if (this.map.getLayer(HEAT_SOFTENER_LAYER_ID)) {
+      this.map.setPaintProperty(HEAT_SOFTENER_LAYER_ID, 'circle-radius', radius + blur);
+    }
+  }
+
+  private upsertMarkersSource(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const markerData: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: this.markerFeatures,
+    };
+
+    const source = this.map.getSource(MARKERS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(markerData);
+      return;
+    }
+
+    this.map.addSource(MARKERS_SOURCE_ID, {
+      type: 'geojson',
+      data: markerData,
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 50,
+    });
+  }
+
+  private upsertMarkerLayers(): void {
+    if (!this.map) {
+      return;
+    }
+
+    if (!this.map.getLayer(CLUSTERS_LAYER_ID)) {
+      this.map.addLayer({
+        id: CLUSTERS_LAYER_ID,
+        type: 'circle',
+        source: MARKERS_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': '#3b82f6',
+          'circle-radius': 14,
+        },
+      });
+    }
+
+    if (!this.map.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+      this.map.addLayer({
+        id: CLUSTER_COUNT_LAYER_ID,
+        type: 'symbol',
+        source: MARKERS_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': ['get', 'point_count_abbreviated'],
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#ffffff',
+        },
+      });
+    }
+
+    if (!this.map.getLayer(UNCLUSTERED_LAYER_ID)) {
+      this.map.addLayer({
+        id: UNCLUSTERED_LAYER_ID,
+        type: 'circle',
+        source: MARKERS_SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': '#ef4444',
+          'circle-radius': 6,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+    }
+  }
+
+  private bindMarkerInteractions(): void {
+    if (!this.map || this.markerInteractionsBound) {
+      return;
+    }
+    this.markerInteractionsBound = true;
+
+    this.map.on('click', 'clusters', (event) => {
+      this.zoomToCluster(event);
+    });
+
+    this.map.on('click', 'cluster-count', (event) => {
+      this.zoomToCluster(event);
+    });
+
+    this.map.on('click', 'unclustered-point', (event) => {
+      const feature = event.features?.[0];
+      const rawPopupData = feature?.properties?.['popup_data'];
+      const popupData = this.parsePopupData(rawPopupData);
+      if (!popupData || !event.lngLat) {
+        return;
+      }
+
+      const componentRef = createComponent(WorkoutPopup, {
+        environmentInjector: this.environmentInjector,
+      });
+      componentRef.setInput('data', popupData);
+      this.applicationRef.attachView(componentRef.hostView);
+
+      const popupElement = componentRef.location.nativeElement as HTMLElement;
+
+      this.markerPopup?.remove();
+      this.markerPopup = new maplibregl.Popup({ closeButton: true })
+        .setLngLat(event.lngLat)
+        .setDOMContent(popupElement)
+        .addTo(this.map!);
+
+      this.markerPopup.once('close', () => {
+        this.applicationRef.detachView(componentRef.hostView);
+        componentRef.destroy();
+      });
+    });
+
+    this.map.on('mouseenter', 'clusters', () => {
+      this.map!.getCanvas().style.cursor = 'pointer';
+    });
+
+    this.map.on('mouseenter', 'cluster-count', () => {
+      this.map!.getCanvas().style.cursor = 'pointer';
+    });
+
+    this.map.on('mouseleave', 'clusters', () => {
+      this.map!.getCanvas().style.cursor = '';
+    });
+
+    this.map.on('mouseleave', 'cluster-count', () => {
+      this.map!.getCanvas().style.cursor = '';
+    });
+
+    this.map.on('mouseenter', 'unclustered-point', () => {
+      this.map!.getCanvas().style.cursor = 'pointer';
+    });
+
+    this.map.on('mouseleave', 'unclustered-point', () => {
+      this.map!.getCanvas().style.cursor = '';
+    });
+  }
+
+  private parsePopupData(rawPopupData: unknown): WorkoutPopupData | null {
+    if (!rawPopupData) {
+      return null;
+    }
+
+    if (typeof rawPopupData === 'string') {
+      try {
+        return JSON.parse(rawPopupData) as WorkoutPopupData;
+      } catch (err) {
+        console.error('Failed to parse popup data:', err);
+        return null;
       }
     }
+
+    if (typeof rawPopupData === 'object') {
+      return rawPopupData as WorkoutPopupData;
+    }
+
+    return null;
+  }
+
+  private zoomToCluster(event: maplibregl.MapLayerMouseEvent): void {
+    if (!this.map) {
+      return;
+    }
+
+    const feature = event.features?.[0];
+    const clusterId = feature?.properties?.['cluster_id'];
+
+    if (clusterId === undefined || !event.lngLat) {
+      return;
+    }
+
+    const source = this.map.getSource(MARKERS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    source
+      ?.getClusterExpansionZoom(clusterId)
+      .then((zoom) => {
+        this.map?.easeTo({ center: event.lngLat, zoom });
+      })
+      .catch((err: unknown) => {
+        console.error('Failed to get cluster expansion zoom:', err);
+      });
+  }
+
+  private setMarkerVisibility(visible: boolean): void {
+    if (!this.map) {
+      return;
+    }
+
+    const visibility = visible ? 'visible' : 'none';
+
+    if (this.map.getLayer(CLUSTERS_LAYER_ID)) {
+      this.map.setLayoutProperty(CLUSTERS_LAYER_ID, 'visibility', visibility);
+    }
+    if (this.map.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+      this.map.setLayoutProperty(CLUSTER_COUNT_LAYER_ID, 'visibility', visibility);
+    }
+    if (this.map.getLayer(UNCLUSTERED_LAYER_ID)) {
+      this.map.setLayoutProperty(UNCLUSTERED_LAYER_ID, 'visibility', visibility);
+    }
+  }
+
+  private fitInitialBounds(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const bounds = new LngLatBounds();
+    for (const [lat, lng] of this.heatMapData) {
+      bounds.extend([lng, lat]);
+    }
+
+    for (const feature of this.markerFeatures) {
+      if (feature.geometry.type === 'Point') {
+        const [lng, lat] = feature.geometry.coordinates;
+        bounds.extend([lng, lat]);
+      }
+    }
+
+    if (!bounds.isEmpty()) {
+      this.map.fitBounds(bounds, { padding: 30, animate: false });
+    }
+  }
+
+  protected refreshAfterStyleChange(): void {
+    this.refreshHeatmapAfterStyleChange();
+  }
+
+  private readonly onMapMoveEnd = (): void => {
+    void this.refreshCoordinatesIfNeeded();
+  };
+
+  private refreshHeatmapAfterStyleChange(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const version = ++this.styleRefreshVersion;
+
+    const tryRender = (): void => {
+      if (!this.map || version !== this.styleRefreshVersion) {
+        return;
+      }
+      if (this.map.isStyleLoaded()) {
+        this.rerenderHeatMap();
+        return;
+      }
+      window.setTimeout(tryRender, 50);
+    };
+
+    window.setTimeout(tryRender, 0);
+  }
+
+  private getRequestedCellSize(): number | undefined {
+    if (this.onlyTrace()) {
+      return undefined;
+    }
+
+    const zoom = this.map?.getZoom() ?? 0;
+    if (zoom >= 11) {
+      return FINE_HEATMAP_CELL_SIZE;
+    }
+    if (zoom >= 8) {
+      return MEDIUM_HEATMAP_CELL_SIZE;
+    }
+    return DEFAULT_HEATMAP_CELL_SIZE;
+  }
+
+  private async refreshCoordinatesIfNeeded(
+    force = false,
+    includeViewportBounds = true,
+  ): Promise<void> {
+    if (!this.map) {
+      return;
+    }
+
+    const viewport = includeViewportBounds ? this.getSanitizedViewportBounds() : undefined;
+    const cellSize = this.getRequestedCellSize();
+    const requestKey = JSON.stringify({
+      mode: cellSize === undefined ? 'raw' : Number(cellSize.toFixed(6)),
+      bounds: viewport
+        ? {
+            minLat: Number(viewport.minLat.toFixed(4)),
+            minLng: Number(viewport.minLng.toFixed(4)),
+            maxLat: Number(viewport.maxLat.toFixed(4)),
+            maxLng: Number(viewport.maxLng.toFixed(4)),
+          }
+        : 'global',
+    });
+    if (!force && requestKey === this.coordinatesRequestKey) {
+      return;
+    }
+
+    this.coordinatesRequestKey = requestKey;
+    const version = ++this.coordinatesRefreshVersion;
+
+    try {
+      const coordinatesResponse = await firstValueFrom(
+        this.api.getWorkoutsCoordinates({
+          cellSize,
+          minLat: viewport?.minLat,
+          minLng: viewport?.minLng,
+          maxLat: viewport?.maxLat,
+          maxLng: viewport?.maxLng,
+        }),
+      );
+      if (version !== this.coordinatesRefreshVersion) {
+        return;
+      }
+      this.heatMapData = coordinatesResponse?.results ?? [];
+      this.rerenderHeatMap();
+    } catch (err) {
+      console.error('Failed to load heatmap coordinates:', err);
+    }
+  }
+
+  private getSanitizedViewportBounds():
+    | { minLat: number; minLng: number; maxLat: number; maxLng: number }
+    | undefined {
+    if (!this.map) {
+      return undefined;
+    }
+
+    const bounds = this.map.getBounds();
+    const south = bounds.getSouth();
+    const north = bounds.getNorth();
+    const west = bounds.getWest();
+    const east = bounds.getEast();
+
+    if (![south, north, west, east].every(Number.isFinite)) {
+      return undefined;
+    }
+
+    // When the viewport spans the wrapped world, a single min/max lng range is not valid.
+    if (east - west >= 360) {
+      return undefined;
+    }
+
+    const minLat = Math.max(-90, Math.min(90, south));
+    const maxLat = Math.max(-90, Math.min(90, north));
+    const minLng = this.normalizeLongitude(west);
+    const maxLng = this.normalizeLongitude(east);
+
+    // Crossing the antimeridian cannot be represented by one [min,max] range for this endpoint.
+    if (minLng > maxLng || minLat > maxLat) {
+      return undefined;
+    }
+
+    return { minLat, minLng, maxLat, maxLng };
+  }
+
+  private normalizeLongitude(value: number): number {
+    return ((((value + 180) % 360) + 360) % 360) - 180;
   }
 }
