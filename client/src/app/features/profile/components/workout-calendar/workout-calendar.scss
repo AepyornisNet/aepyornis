@@ -2,9 +2,11 @@
 
 // First define some global color variables for your app, these are just for the demo, they can be anything you like
 $bg-primary: var(--bs-body-bg);
-$bg-secondary: var(--bs-tertiary-bg);
+$bg-secondary: var(--bs-secondary-bg);
+$bg-tertiary: var(--bs-tertiary-bg);
+$bg-event: var(--bs-indigo);
 $text-color: var(--bs-body-color);
-$border-color: var(--bs-primary);
+$border-color: var(--bs-light-border-subtle);
 $weekend-color: var(--bs-danger-text-emphasis);
 
 @include angular-calendar.cal-theme(
@@ -13,9 +15,9 @@ $weekend-color: var(--bs-danger-text-emphasis);
     bg-secondary: $bg-secondary,
     weekend-color: $weekend-color,
     border-color: $border-color,
-    gray: $bg-secondary,
-    today-bg: $bg-secondary,
-    event-color-primary: $bg-secondary,
+    gray: $bg-tertiary,
+    today-bg: $bg-tertiary,
+    event-color-primary: $bg-event,
   )
 );
 
