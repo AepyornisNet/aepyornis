@@ -13,6 +13,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
 import maplibregl, { LngLatBounds, Map } from 'maplibre-gl';
+import type { ExpressionSpecification } from 'maplibre-gl';
 import { Api } from '../../../../core/services/api';
 import { WorkoutPopupData } from '../../../../core/types/statistics';
 import { WorkoutPopup } from '../../components/workout-popup/workout-popup';
@@ -28,6 +29,21 @@ const MARKERS_SOURCE_ID = 'markers-source';
 const CLUSTERS_LAYER_ID = 'clusters';
 const CLUSTER_COUNT_LAYER_ID = 'cluster-count';
 const UNCLUSTERED_LAYER_ID = 'unclustered-point';
+const HEATMAP_COLOR_SCALE: ExpressionSpecification = [
+  'interpolate',
+  ['linear'],
+  ['heatmap-density'],
+  0,
+  'rgba(0,0,255,0)',
+  0.25,
+  'rgb(0,0,255)',
+  0.5,
+  'rgb(0,255,0)',
+  0.75,
+  'rgb(255,255,0)',
+  1,
+  'rgb(255,0,0)',
+];
 
 @Component({
   selector: 'app-heatmap',
@@ -45,6 +61,7 @@ export class Heatmap extends BaseMapComponent {
   private coordinatesRefreshVersion = 0;
   private coordinatesRequestKey: string | null = null;
   private markerInteractionsBound = false;
+  private maxPointCount = 1;
 
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
@@ -184,23 +201,7 @@ export class Heatmap extends BaseMapComponent {
             16,
             0.65,
           ],
-          'heatmap-color': [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            0,
-            'rgba(33,102,172,0)',
-            0.2,
-            'rgb(103,169,207)',
-            0.4,
-            'rgb(209,229,240)',
-            0.6,
-            'rgb(253,219,199)',
-            0.8,
-            'rgb(239,138,98)',
-            1,
-            'rgb(178,24,43)',
-          ],
+          'heatmap-color': [...HEATMAP_COLOR_SCALE],
         },
       });
     }
@@ -240,24 +241,8 @@ export class Heatmap extends BaseMapComponent {
       HEAT_LAYER_ID,
       'heatmap-color',
       isTrace
-        ? ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,255,0)', 1, 'blue']
-        : [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            0,
-            'rgba(33,102,172,0)',
-            0.2,
-            'rgb(103,169,207)',
-            0.4,
-            'rgb(209,229,240)',
-            0.6,
-            'rgb(253,219,199)',
-            0.8,
-            'rgb(239,138,98)',
-            1,
-            'rgb(178,24,43)',
-          ],
+        ? ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,255,0)', 1, 'rgb(0,0,255)']
+        : HEATMAP_COLOR_SCALE,
     );
 
     if (this.map.getLayer(HEAT_SOFTENER_LAYER_ID)) {
@@ -302,10 +287,16 @@ export class Heatmap extends BaseMapComponent {
         source: MARKERS_SOURCE_ID,
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#3b82f6',
+          'circle-color': this.getClusterColorExpression(),
           'circle-radius': 14,
         },
       });
+    } else {
+      this.map.setPaintProperty(
+        CLUSTERS_LAYER_ID,
+        'circle-color',
+        this.getClusterColorExpression(),
+      );
     }
 
     if (!this.map.getLayer(CLUSTER_COUNT_LAYER_ID)) {
@@ -316,12 +307,21 @@ export class Heatmap extends BaseMapComponent {
         filter: ['has', 'point_count'],
         layout: {
           'text-field': ['get', 'point_count_abbreviated'],
-          'text-size': 12,
+          'text-size': 13,
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
         },
         paint: {
           'text-color': '#ffffff',
+          'text-halo-color': 'rgba(0,0,0,0.75)',
+          'text-halo-width': 1.25,
+          'text-halo-blur': 0.5,
         },
       });
+    } else {
+      this.map.setPaintProperty(CLUSTER_COUNT_LAYER_ID, 'text-color', '#ffffff');
+      this.map.setPaintProperty(CLUSTER_COUNT_LAYER_ID, 'text-halo-color', 'rgba(0,0,0,0.75)');
+      this.map.setPaintProperty(CLUSTER_COUNT_LAYER_ID, 'text-halo-width', 1.25);
+      this.map.setPaintProperty(CLUSTER_COUNT_LAYER_ID, 'text-halo-blur', 0.5);
     }
 
     if (!this.map.getLayer(UNCLUSTERED_LAYER_ID)) {
@@ -577,6 +577,7 @@ export class Heatmap extends BaseMapComponent {
         return;
       }
       this.heatMapData = coordinatesResponse?.results ?? [];
+      this.maxPointCount = this.computeMaxPointCount(this.markerFeatures);
       this.rerenderHeatMap();
     } catch (err) {
       console.error('Failed to load heatmap coordinates:', err);
@@ -620,5 +621,33 @@ export class Heatmap extends BaseMapComponent {
 
   private normalizeLongitude(value: number): number {
     return ((((value + 180) % 360) + 360) % 360) - 180;
+  }
+
+  private getClusterColorExpression(): ExpressionSpecification {
+    return [
+      'interpolate',
+      ['linear'],
+      ['/', ['to-number', ['get', 'point_count'], 0], this.maxPointCount],
+      0,
+      'rgb(0,0,255)',
+      0.5,
+      'rgb(0,255,0)',
+      0.75,
+      'rgb(255,255,0)',
+      1,
+      'rgb(255,0,0)',
+    ];
+  }
+
+  private computeMaxPointCount(features: GeoJSON.Feature[]): number {
+    const fallback = Math.max(features.length, 1);
+
+    return features.reduce((max, feature) => {
+      const pointCount = feature.properties?.['point_count'];
+      if (typeof pointCount !== 'number' || !Number.isFinite(pointCount)) {
+        return max;
+      }
+      return Math.max(max, pointCount);
+    }, fallback);
   }
 }
