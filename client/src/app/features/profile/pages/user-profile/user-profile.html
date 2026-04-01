@@ -27,15 +27,7 @@
             <div class="card-body">
               <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
                 <div class="d-flex align-items-start gap-3">
-                  @if (profile.icon_url) {
-                    <img alt="" class="profile-avatar rounded-circle" [src]="profile.icon_url" />
-                  } @else {
-                    <div
-                      class="profile-avatar-placeholder rounded-circle d-flex align-items-center justify-content-center"
-                    >
-                      <app-icon name="user" size="36" />
-                    </div>
-                  }
+                  <app-avatar [iconSize]="30" [size]="72" [user]="profile" />
 
                   <div>
                     <h2 class="h4 mb-1">{{ profile.name || profile.username }}</h2>

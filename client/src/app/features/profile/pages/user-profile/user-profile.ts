@@ -11,10 +11,20 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ActivityPubProfileSummary } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { Avatar } from '../../../../core/components/avatar/avatar';
 
 @Component({
   selector: 'app-user-profile',
-  imports: [WorkoutCalendar, KeyMetrics, Records, TranslatePipe, RouterLink, AppIcon, DatePipe],
+  imports: [
+    WorkoutCalendar,
+    KeyMetrics,
+    Records,
+    TranslatePipe,
+    RouterLink,
+    AppIcon,
+    Avatar,
+    DatePipe,
+  ],
   templateUrl: './user-profile.html',
   styleUrl: './user-profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -3,22 +3,7 @@
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
         <div class="d-flex align-items-start gap-2 flex-grow-1">
-          @if (hasWorkoutAvatar()) {
-            <img
-              alt=""
-              class="rounded-circle border"
-              height="44"
-              width="44"
-              [src]="workout.user!.icon_url"
-            />
-          } @else {
-            <div
-              class="rounded-circle bg-body-secondary d-flex align-items-center justify-content-center fw-semibold text-body-secondary border"
-              style="width: 44px; height: 44px"
-            >
-              {{ getInitial(workout.user?.name) }}
-            </div>
-          }
+          <app-avatar [size]="44" [user]="workout.user" />
           <div class="flex-grow-1 min-w-0">
             <div class="fw-semibold lh-sm">{{ workout.user?.name || 'Unknown' }}</div>
             @if (workout.address_string) {
@@ -123,22 +108,10 @@
             <div class="d-flex flex-column gap-2">
               @for (reply of replies(); track reply.id) {
                 <div class="d-flex align-items-start gap-2">
-                  @if (hasReplyAvatar(reply)) {
-                    <img
-                      class="rounded-circle border"
-                      height="28"
-                      width="28"
-                      [alt]="getAuthorName(reply)"
-                      [src]="reply.avatar_url"
-                    />
-                  } @else {
-                    <div
-                      class="rounded-circle bg-body-secondary d-flex align-items-center justify-content-center fw-semibold text-body-secondary border"
-                      style="width: 28px; height: 28px; font-size: 0.75rem"
-                    >
-                      {{ getInitial(getAuthorName(reply)) }}
-                    </div>
-                  }
+                  <app-avatar
+                    [size]="28"
+                    [user]="{ name: getAuthorName(reply), icon_url: reply.avatar_url }"
+                  />
                   <div class="small">
                     <div class="d-flex align-items-center gap-2">
                       <span class="fw-semibold text-body">{{ getAuthorName(reply) }}</span>

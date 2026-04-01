@@ -5,12 +5,13 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { Avatar } from '../../../../core/components/avatar/avatar';
 import { Api } from '../../../../core/services/api';
 import { Workout, WorkoutReply } from '../../../../core/types/workout';
 
 @Component({
   selector: 'app-feed-post',
-  imports: [FormsModule, RouterLink, AppIcon, TranslatePipe],
+  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe],
   templateUrl: './feed-post.html',
   styleUrl: './feed-post.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,10 +59,6 @@ export class FeedPost {
     return weight.toFixed(1);
   }
 
-  public getInitial(name?: string): string {
-    return (name?.charAt(0) || '?').toUpperCase();
-  }
-
   public getAuthorName(reply: WorkoutReply): string {
     if (reply.user?.name) {
       return reply.user.name;
@@ -75,20 +72,12 @@ export class FeedPost {
     return 'Unknown';
   }
 
-  public hasReplyAvatar(reply: WorkoutReply): boolean {
-    return !!reply.avatar_url;
-  }
-
   public getPublishDate(reply: WorkoutReply): string {
     const date = reply.published_at || reply.created_at;
     if (!date) {
       return '';
     }
     return new Date(date).toLocaleDateString();
-  }
-
-  public hasWorkoutAvatar(): boolean {
-    return !!this.workoutState()?.user?.icon_url;
   }
 
   public canSubmitReply(): boolean {

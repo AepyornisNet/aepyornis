@@ -1,0 +1,21 @@
+@if (hasImage()) {
+  <img
+    alt=""
+    class="rounded-circle border object-fit-cover d-inline-block"
+    [src]="user()!.icon_url!"
+    [style.height]="sizePx()"
+    [style.width]="sizePx()"
+  />
+} @else {
+  <div
+    class="rounded-circle bg-body-secondary d-inline-flex align-items-center justify-content-center fw-semibold text-body-secondary border"
+    [style.height]="sizePx()"
+    [style.width]="sizePx()"
+  >
+    @if (user()?.name) {
+      {{ initial() }}
+    } @else {
+      <app-icon name="user" [size]="iconSize()" />
+    }
+  </div>
+}
