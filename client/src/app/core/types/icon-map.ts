@@ -26,6 +26,8 @@ export const ICON_MAP: Record<string, string> = {
   repetitions: 'faSolidCalculator',
   weight: 'faSolidWeightHanging',
   'heart-rate': 'faSolidHeartPulse',
+  heart: 'faSolidHeartPulse',
+  chat: 'faSolidQuoteLeft',
   cadence: 'faSolidStopwatch',
   temperature: 'faSolidTemperatureHigh',
   heading: 'faSolidCompass',

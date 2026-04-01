@@ -145,13 +145,20 @@ export class Api {
     );
   }
 
-  public getRecentWorkouts(limit?: number, offset?: number): Observable<APIResponse<Workout[]>> {
+  public getRecentWorkouts(
+    limit?: number,
+    offset?: number,
+    scope?: 'following' | 'global',
+  ): Observable<APIResponse<Workout[]>> {
     let httpParams = new HttpParams();
     if (limit) {
       httpParams = httpParams.set('limit', limit.toString());
     }
     if (offset !== undefined) {
       httpParams = httpParams.set('offset', offset.toString());
+    }
+    if (scope) {
+      httpParams = httpParams.set('scope', scope);
     }
     return this.http.get<APIResponse<Workout[]>>(`${this.baseUrl}/workouts/recent`, {
       params: httpParams,

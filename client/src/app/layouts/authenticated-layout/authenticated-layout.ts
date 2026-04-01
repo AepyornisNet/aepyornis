@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { Header } from '../../core/components/header/header';
 import { Footer } from '../../core/components/footer/footer';
 import { Sidebar } from '../../core/components/sidebar/sidebar';
@@ -16,12 +17,21 @@ export class AuthenticatedLayout {
   private static readonly SIDEBAR_STATE_KEY = 'sidebarOpen';
 
   private userService = inject(User);
+  private router = inject(Router);
 
   public readonly userName = computed(() => this.userService.getUserInfo()()?.name || '');
   public readonly isAdmin = computed(
     () => this.userService.getUserInfo()()?.profile?.admin || false,
   );
   public readonly sidebarOpen = signal(AuthenticatedLayout.getInitialSidebarState());
+  public readonly currentUrl = signal(this.router.url);
+  public readonly isFeedRoute = computed(() => this.currentUrl().startsWith('/feed'));
+
+  public constructor() {
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe((event) => this.currentUrl.set(event.urlAfterRedirects));
+  }
 
   private static getInitialSidebarState(): boolean {
     return localStorage.getItem(AuthenticatedLayout.SIDEBAR_STATE_KEY) === 'true';

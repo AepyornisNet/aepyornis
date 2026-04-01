@@ -1,0 +1,27 @@
+<aside class="feed-sidebar d-flex flex-column gap-3">
+  <div class="feed-scope-selection">
+    <button
+      class="btn w-100 mb-2"
+      type="button"
+      [class.btn-outline-primary]="feedScope() !== 'following'"
+      [class.btn-primary]="feedScope() === 'following'"
+      (click)="setFeedScope('following')"
+    >
+      {{ 'Following' | translate }}
+    </button>
+
+    <button
+      class="btn w-100"
+      type="button"
+      [class.btn-outline-primary]="feedScope() !== 'global'"
+      [class.btn-primary]="feedScope() === 'global'"
+      (click)="setFeedScope('global')"
+    >
+      {{ 'Global' | translate }}
+    </button>
+  </div>
+
+  <app-feed-calendar />
+
+  <app-footer />
+</aside>

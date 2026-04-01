@@ -1079,8 +1079,9 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 // @Summary      List recent workouts
 // @Tags         workouts
 // @Produce      json
-// @Param        limit   query  int false "Limit"
-// @Param        offset  query  int false "Offset"
+// @Param        limit   query  int     false "Limit"
+// @Param        offset  query  int     false "Offset"
+// @Param        scope   query  string  false "Feed scope (following|global)"
 // @Success      200  {object}  dto.Response[[]dto.WorkoutResponse]
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/recent [get]
@@ -1105,6 +1106,11 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		}
 	}
 
+	scope := "following"
+	if c.QueryParam("scope") == "global" {
+		scope = "global"
+	}
+
 	requesterActorIRI := ap.LocalActorURL(ap.LocalActorURLConfig{
 		Host:           wc.context.GetConfig().Host,
 		WebRoot:        wc.context.GetConfig().WebRoot,
@@ -1113,17 +1119,53 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	}, requester.Username)
 
 	var workouts []*model.Workout
-	err := wc.context.GetDB().
+	query := wc.context.GetDB().
 		Scopes(model.PreloadWorkoutData).
-		Preload("User").
-		Where(
-			"workouts.user_id = ? OR workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers f WHERE f.user_id = workouts.user_id AND f.actor_iri = ? AND f.approved = ?))",
+		Preload("User")
+
+	if scope == "global" {
+		query = query.Where(
+			`workouts.user_id = ? OR workouts.visibility = ? OR (
+				workouts.visibility = ? AND
+				EXISTS (
+					SELECT 1
+					FROM followers f
+					WHERE f.user_id = workouts.user_id
+						AND f.actor_iri = ?
+						AND f.direction = ?
+						AND f.approved = ?
+				)
+			)`,
 			requester.ID,
 			model.WorkoutVisibilityPublic,
 			model.WorkoutVisibilityFollowers,
 			requesterActorIRI,
+			model.FollowerDirectionOutgoing,
 			true,
-		).
+		)
+	} else {
+		query = query.Where(
+			`workouts.user_id = ? OR (
+				(workouts.visibility = ? OR workouts.visibility = ?) AND
+				EXISTS (
+					SELECT 1
+					FROM followers f
+					WHERE f.user_id = workouts.user_id
+						AND f.actor_iri = ?
+						AND f.direction = ?
+						AND f.approved = ?
+				)
+			)`,
+			requester.ID,
+			model.WorkoutVisibilityPublic,
+			model.WorkoutVisibilityFollowers,
+			requesterActorIRI,
+			model.FollowerDirectionOutgoing,
+			true,
+		)
+	}
+
+	err := query.
 		Order("date DESC").
 		Limit(limit).
 		Offset(offset).

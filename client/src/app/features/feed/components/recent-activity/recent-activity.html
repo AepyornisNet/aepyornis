@@ -1,8 +1,4 @@
 <div class="recent-activity-container">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">{{ 'Recent activity' | translate }}</h5>
-  </div>
-
   @if (initialLoading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
@@ -20,99 +16,7 @@
   } @else {
     <div class="activity-feed">
       @for (workout of displayedWorkouts(); track workout.id) {
-        <div class="card shadow-sm mb-3 activity-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <div class="d-flex align-items-center gap-2 flex-grow-1">
-                <app-icon class="text-primary" size="28" [name]="workout.type" />
-                <div class="flex-grow-1">
-                  <a
-                    class="activity-title text-decoration-none"
-                    [routerLink]="['/workouts', workout.id]"
-                  >
-                    {{ workout.name }}
-                  </a>
-                  @if (workout.user) {
-                    <div class="text-muted small">{{ workout.user.name }}</div>
-                  }
-                </div>
-              </div>
-              <small class="text-muted text-nowrap">{{ formatDate(workout.date) }}</small>
-            </div>
-
-            <div class="activity-stats">
-              @if (workout.address_string) {
-                <span class="stat location-stat">
-                  <app-icon name="location" size="16" />
-                  <span class="text-truncate">{{ workout.address_string }}</span>
-                </span>
-              }
-              @if (workout.total_distance) {
-                <span class="stat">
-                  <app-icon name="distance" size="16" />
-                  <span>{{ formatDistance(workout.total_distance) }} km</span>
-                </span>
-              }
-              @if (workout.total_duration) {
-                <span class="stat">
-                  <app-icon name="duration" size="16" />
-                  <span>{{ formatDuration(workout.total_duration) }}</span>
-                </span>
-              }
-              @if (workout.total_up) {
-                <span class="stat">
-                  <app-icon name="elevation" size="16" />
-                  <span>{{ workout.total_up.toFixed(0) }} m</span>
-                </span>
-              }
-              @if (workout.total_weight) {
-                <span class="stat">
-                  <app-icon name="weight" size="16" />
-                  <span>{{ formatWeight(workout.total_weight) }} kg</span>
-                </span>
-              }
-              @if (workout.total_repetitions) {
-                <span class="stat">
-                  <app-icon name="repetitions" size="16" />
-                  <span>{{ workout.total_repetitions }}</span>
-                </span>
-              }
-            </div>
-
-            @if (workout.attachments && workout.attachments.length > 0) {
-              <a class="d-block mt-3 text-decoration-none" [routerLink]="['/workouts', workout.id]">
-                <img
-                  class="img-fluid rounded"
-                  loading="lazy"
-                  [alt]="workout.attachments[0].filename || workout.name"
-                  [src]="workout.attachments[0].url"
-                />
-              </a>
-            }
-
-            <div class="activity-actions mt-3">
-              <button
-                class="btn btn-sm"
-                type="button"
-                [class.btn-outline-secondary]="!workout.liked_by_me"
-                [class.btn-primary]="workout.liked_by_me"
-                [disabled]="workout.liked_by_me || isLiking(workout.id)"
-                (click)="likeWorkout(workout.id)"
-              >
-                <app-icon name="heart-rate" size="14" />
-                <span>{{ workout.likes_count || 0 }}</span>
-              </button>
-              <a
-                class="btn btn-sm btn-outline-secondary"
-                [class.disabled]="!workout.replies_count"
-                [routerLink]="['/workouts', workout.id]"
-              >
-                <app-icon name="chat" size="14" />
-                <span>{{ workout.replies_count || 0 }}</span>
-              </a>
-            </div>
-          </div>
-        </div>
+        <app-feed-post [workout]="workout" />
       }
 
       @if (loading()) {

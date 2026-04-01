@@ -1,0 +1,51 @@
+<div class="card shadow-sm">
+  <div class="card-header">
+    <h5 class="mb-0">{{ 'My activity' | translate }}</h5>
+  </div>
+  <div class="card-body feed-calendar-card-body">
+    @if (loading()) {
+      <div class="text-center py-3">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">{{ 'Loading' | translate }}</span>
+        </div>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert alert-danger py-2" role="alert">
+        {{ error() }}
+      </div>
+    }
+
+    @if (!loading() && !error()) {
+      <div class="feed-calendar" role="grid" [attr.aria-label]="monthLabel()">
+        <div class="feed-calendar-title">{{ monthLabel() }}</div>
+        <div class="feed-calendar-weekdays" role="row">
+          @for (label of weekdayLabels(); track label) {
+            <div class="feed-calendar-weekday" role="columnheader">{{ label }}</div>
+          }
+        </div>
+        <div class="feed-calendar-days">
+          @for (day of monthDays(); track day.key) {
+            <div
+              class="feed-calendar-day"
+              role="gridcell"
+              [attr.aria-label]="day.date | date: 'fullDate'"
+              [class.feed-calendar-day--active]="hasActivity(day.key)"
+              [class.feed-calendar-day--outside]="!day.inCurrentMonth"
+            >
+              <span class="feed-calendar-day-number">{{ day.date.getDate() }}</span>
+              <span
+                class="feed-calendar-day-indicator"
+                [attr.aria-label]="
+                  hasActivity(day.key) ? ('Activity day' | translate) : ('No activity' | translate)
+                "
+                [class.feed-calendar-day-indicator--filled]="hasActivity(day.key)"
+              ></span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

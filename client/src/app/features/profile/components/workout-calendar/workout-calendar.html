@@ -1,6 +1,17 @@
 <div class="card shadow-sm">
-  <div class="card-header">
+  <div class="card-header d-flex align-items-center justify-content-between gap-2 flex-wrap">
     <h5 class="mb-0">{{ 'Calendar' | translate }}</h5>
+    <div class="btn-group" role="group" [attr.aria-label]="'Calendar navigation' | translate">
+      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="previousMonth()">
+        {{ 'Previous' | translate }}
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="goToToday()">
+        {{ 'Today' | translate }}
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="nextMonth()">
+        {{ 'Next' | translate }}
+      </button>
+    </div>
   </div>
   <div class="card-body">
     @if (loading()) {
@@ -15,6 +26,19 @@
         {{ error() }}
       </div>
     }
-    <div #calendarContainer></div>
+    @if (!loading() && !error()) {
+      <h6 class="text-center mb-3">
+        {{ monthLabel() }}
+      </h6>
+      <div class="profile-calendar-theme">
+        <mwl-calendar-month-view
+          [activeDayIsOpen]="false"
+          [events]="events()"
+          [viewDate]="viewDate()"
+          [weekStartsOn]="1"
+          (eventClicked)="onEventClicked($event.event)"
+        />
+      </div>
+    }
   </div>
 </div>

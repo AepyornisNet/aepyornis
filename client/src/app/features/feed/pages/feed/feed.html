@@ -1,7 +1,15 @@
-<div class="container-fluid my-3">
-  <div class="row justify-content-center">
-    <div class="col-12 col-lg-8">
-      <app-recent-activity />
+<div class="container-fluid feed-page my-3">
+  <div class="row g-3">
+    <div class="col-12 col-xl-8">
+      <app-recent-activity [feedScope]="feedScope()" />
+    </div>
+    <div class="d-none d-xl-block col-xl-4">
+      <app-feed-sidebar
+        class="d-block"
+        style="top: 56px; max-height: calc(100vh - 56px)"
+        [feedScope]="feedScope()"
+        (feedScopeChange)="setFeedScope($event)"
+      />
     </div>
   </div>
 </div>

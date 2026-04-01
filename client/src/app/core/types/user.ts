@@ -6,6 +6,7 @@ export type UserProfile = {
   id: number;
   username: string;
   name: string;
+  icon_url?: string;
   birthdate?: string;
   activity_pub: boolean;
   active: boolean;

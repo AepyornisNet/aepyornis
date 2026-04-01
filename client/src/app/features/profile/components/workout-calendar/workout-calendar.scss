@@ -1,0 +1,29 @@
+@use 'angular-calendar/scss/angular-calendar';
+
+// First define some global color variables for your app, these are just for the demo, they can be anything you like
+$bg-primary: var(--bs-body-bg);
+$bg-secondary: var(--bs-tertiary-bg);
+$text-color: var(--bs-body-color);
+$border-color: var(--bs-primary);
+$weekend-color: var(--bs-danger-text-emphasis);
+
+@include angular-calendar.cal-theme(
+  (
+    bg-primary: $bg-primary,
+    bg-secondary: $bg-secondary,
+    weekend-color: $weekend-color,
+    border-color: $border-color,
+    gray: $bg-secondary,
+    today-bg: $bg-secondary,
+    event-color-primary: $bg-secondary,
+  )
+);
+
+.cal-month-view .cal-day-cell.cal-today {
+  background-color: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-body-bg));
+}
+
+.cal-month-view .cal-cell-row .cal-cell:hover,
+.cal-month-view .cal-cell.cal-has-events.cal-open {
+  background-color: color-mix(in srgb, var(--bs-primary) 6%, var(--bs-body-bg));
+}
