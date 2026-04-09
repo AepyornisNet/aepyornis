@@ -140,12 +140,12 @@ func WorkoutNoteContent(workout *model.Workout) string {
 }
 
 func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mesgdef.Record { //nolint:gocyclo
-	if workout == nil || workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
+	if workout == nil || workout.Data == nil || len(workout.Data.Points) == 0 {
 		return nil
 	}
 
-	records := make([]*mesgdef.Record, 0, len(workout.Data.Details.Points))
-	for i, p := range workout.Data.Details.Points {
+	records := make([]*mesgdef.Record, 0, len(workout.Data.Points))
+	for i, p := range workout.Data.Points {
 		ts := p.Time
 		if ts.IsZero() {
 			ts = fallbackStart.Add(p.TotalDuration)

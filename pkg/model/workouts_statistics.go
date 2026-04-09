@@ -129,14 +129,14 @@ func calculateBestAndWorst(items []BreakdownItem) {
 }
 
 func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem {
-	if w.Data.Details == nil ||
-		len(w.Data.Details.Points) == 0 {
+	if w.Data == nil ||
+		len(w.Data.Points) == 0 {
 		return nil
 	}
 
 	var items []BreakdownItem
 
-	points := w.Data.Details.Points
+	points := w.Data.Points
 
 	nextItem := BreakdownItem{
 		UnitCount:  count,
@@ -153,7 +153,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 			nextItem.EndIndex = i
 			nextItem.LastPoint = &points[i]
 			nextItem.CalcultateSpeed()
-			if stats, ok := w.Data.Details.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
+			if stats, ok := w.Data.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
 				nextItem.applyRangeStats(stats)
 			}
 			items = append(items, nextItem)
@@ -180,7 +180,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 
 	if nextItem.FirstPoint != nil {
 		nextItem.CalcultateSpeed()
-		if stats, ok := w.Data.Details.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
+		if stats, ok := w.Data.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
 			nextItem.applyRangeStats(stats)
 		}
 		items = append(items, nextItem)

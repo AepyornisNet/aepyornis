@@ -92,8 +92,8 @@ type Detector struct {
 
 // CalculateSlopes processes a slice of MapPoints and returns a slice of ClimbDetection.
 func (m *MapData) CalculateSlopes() {
-	climbs := DetectSignificantSegments(m.Details.Points, SlopeKindClimb)
-	descents := DetectSignificantSegments(m.Details.Points, SlopeKindDescent)
+	climbs := DetectSignificantSegments(m.Points, SlopeKindClimb)
+	descents := DetectSignificantSegments(m.Points, SlopeKindDescent)
 
 	climbs = append(climbs, descents...)
 	slices.SortFunc(climbs, func(a, b Segment) int {

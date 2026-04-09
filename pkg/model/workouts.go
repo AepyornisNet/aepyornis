@@ -714,7 +714,7 @@ func (w *Workout) UpdateAverages() {
 }
 
 func (w *Workout) aggregateDetailsStats() (MapDataRangeStats, bool) {
-	if w.Data == nil || w.Data == nil {
+	if w.Data == nil {
 		return MapDataRangeStats{}, false
 	}
 

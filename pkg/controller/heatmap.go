@@ -84,8 +84,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 	u := hc.context.GetUser(c)
 
 	query := hc.context.GetDB().Table("map_data_details_points AS mdp").
-		Joins("JOIN map_data_details AS mdd ON mdd.id = mdp.map_data_details_id").
-		Joins("JOIN map_data AS md ON md.id = mdd.map_data_id").
+		Joins("JOIN map_data AS md ON md.id = mdp.map_data_id").
 		Joins("JOIN workouts ON workouts.id = md.workout_id").
 		Where("workouts.user_id = ?", u.ID)
 

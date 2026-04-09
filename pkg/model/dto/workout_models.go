@@ -425,10 +425,7 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 		// Add climbs
 		if len(w.Data.Climbs) > 0 {
 			wr.Climbs = make([]ClimbSegmentResponse, len(w.Data.Climbs))
-			var points []model.MapPoint
-			if w.Data.Details != nil {
-				points = w.Data.Details.Points
-			}
+			points := w.Data.Points
 			for i, climb := range w.Data.Climbs {
 				duration := 0.0
 				if len(points) > 0 && climb.StartIdx >= 0 && climb.EndIdx >= climb.StartIdx && climb.EndIdx < len(points) {
@@ -759,8 +756,8 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 	}
 
 	// Add detailed points in compact format
-	if w.Data.Details != nil && len(w.Data.Details.Points) > 0 {
-		points := w.Data.Details.Points
+	if len(w.Data.Points) > 0 {
+		points := w.Data.Points
 		mapData.Details = &MapDataDetailsResponse{
 			Position:     make([][]float64, len(points)),
 			Time:         make([]time.Time, len(points)),

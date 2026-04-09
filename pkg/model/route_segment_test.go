@@ -29,10 +29,10 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	w1, err := NewWorkout(AnonymousUser(), WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
 	assert.NoError(t, err)
 	assert.Len(t, w1, 1)
-	rp, wp := rs.Points[0], w1[0].Data.Details.Points[0]
+	rp, wp := rs.Points[0], w1[0].Data.Points[0]
 	minStart := rp.DistanceTo(&wp)
-	for i := range w1[0].Data.Details.Points {
-		d := rp.DistanceTo(&w1[0].Data.Details.Points[i])
+	for i := range w1[0].Data.Points {
+		d := rp.DistanceTo(&w1[0].Data.Points[i])
 		if d < minStart {
 			minStart = d
 		}
@@ -40,7 +40,7 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	t.Logf(
 		"route points=%d workout points=%d type=%s hasTracks=%v first_route=(%.5f,%.5f) first_workout=(%.5f,%.5f) min_start_distance=%.2fm",
 		len(rs.Points),
-		len(w1[0].Data.Details.Points),
+		len(w1[0].Data.Points),
 		w1[0].Type,
 		w1[0].HasTracks(),
 		rp.Lat,
@@ -69,7 +69,7 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 		return
 	}
 
-	assert.Len(t, matches[0].Workout.Data.Details.Points, 158)
+	assert.Len(t, matches[0].Workout.Data.Points, 158)
 }
 
 func TestRouteSegment_StartingPoints_NoMatch(t *testing.T) {
@@ -81,7 +81,7 @@ func TestRouteSegment_StartingPoints_NoMatch(t *testing.T) {
 	assert.Len(t, w, 1)
 
 	w1 := w[0]
-	sp := rs.StartingPoints(w1.Data.Details.Points)
+	sp := rs.StartingPoints(w1.Data.Points)
 	assert.Empty(t, sp)
 }
 
@@ -94,11 +94,11 @@ func TestRouteSegment_StartingPoints_Match(t *testing.T) {
 	assert.Len(t, w, 1)
 
 	w1 := w[0]
-	sp := rs.StartingPoints(w1.Data.Details.Points)
+	sp := rs.StartingPoints(w1.Data.Points)
 	assert.NotEmpty(t, sp)
 
 	for _, p := range sp {
-		assert.Less(t, rs.Points[0].DistanceTo(&w1.Data.Details.Points[p]), MaxDeltaMeter)
+		assert.Less(t, rs.Points[0].DistanceTo(&w1.Data.Points[p]), MaxDeltaMeter)
 	}
 }
 
@@ -111,7 +111,7 @@ func TestRouteSegment_StartingPoints_MatchSegment(t *testing.T) {
 	assert.Len(t, w, 1)
 
 	w1 := w[0]
-	sp := rs.StartingPoints(w1.Data.Details.Points)
+	sp := rs.StartingPoints(w1.Data.Points)
 	assert.NotEmpty(t, sp)
 
 	{

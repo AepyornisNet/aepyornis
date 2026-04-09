@@ -68,9 +68,9 @@ func (rsm *RouteSegmentMatch) MatchesDistance(distance float64) bool {
 func (rsm *RouteSegmentMatch) calculate() {
 	rsm.RouteSegmentID = rsm.RouteSegment.ID
 	rsm.WorkoutID = rsm.Workout.ID
-	rsm.first = rsm.Workout.Data.Details.Points[rsm.FirstID]
-	rsm.last = rsm.Workout.Data.Details.Points[rsm.LastID]
-	rsm.end = rsm.Workout.Data.Details.Points[len(rsm.Workout.Data.Details.Points)-1]
+	rsm.first = rsm.Workout.Data.Points[rsm.FirstID]
+	rsm.last = rsm.Workout.Data.Points[rsm.LastID]
+	rsm.end = rsm.Workout.Data.Points[len(rsm.Workout.Data.Points)-1]
 
 	if rsm.FirstID <= rsm.LastID {
 		rsm.Distance = rsm.last.TotalDistance - rsm.first.TotalDistance
@@ -113,7 +113,7 @@ func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
 		return nil
 	}
 
-	sp := rs.StartingPoints(workout.Data.Details.Points)
+	sp := rs.StartingPoints(workout.Data.Points)
 	if len(sp) == 0 {
 		return nil
 	}
@@ -151,7 +151,7 @@ func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
 // point of the route segment.
 // If forward is true, we increment the index, otherwise we decrement it
 func (rs *RouteSegment) MatchSegment(workout *Workout, start int, forward bool) (int, bool) {
-	workoutLength := len(workout.Data.Details.Points)
+	workoutLength := len(workout.Data.Points)
 	segmentLength := len(rs.Points)
 
 	cur := 0
@@ -162,7 +162,7 @@ func (rs *RouteSegment) MatchSegment(workout *Workout, start int, forward bool) 
 	for i := range workoutLength {
 		index := (start + i) % workoutLength
 
-		d := rs.Points[cur].DistanceTo(&workout.Data.Details.Points[index])
+		d := rs.Points[cur].DistanceTo(&workout.Data.Points[index])
 		if d > MaxDeltaMeter {
 			continue
 		}

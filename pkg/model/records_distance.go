@@ -64,11 +64,11 @@ func betterDistanceRecord(a, b DistanceRecord) bool {
 
 //nolint:gocyclo // sliding window search evaluates all targets in one pass
 func fastestDistancesForWorkout(w *Workout, targets []DistanceRecordTarget) []DistanceRecord {
-	if w == nil || w.Data == nil || w.Data.Details == nil || len(w.Data.Details.Points) < 2 {
+	if w == nil || w.Data == nil || len(w.Data.Points) < 2 {
 		return nil
 	}
 
-	points := w.Data.Details.Points
+	points := w.Data.Points
 	prefixDistance := make([]float64, len(points)+1)
 	prefixMoving := make([]time.Duration, len(points)+1)
 

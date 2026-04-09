@@ -92,12 +92,12 @@ func WorkoutRouteImageFilename(workout *Workout) string {
 }
 
 func routePointsFromWorkout(workout *Workout) []routePoint {
-	if workout == nil || workout.Data == nil || workout.Data.Details == nil {
+	if workout == nil || workout.Data == nil {
 		return nil
 	}
 
-	points := make([]routePoint, 0, len(workout.Data.Details.Points))
-	for _, p := range workout.Data.Details.Points {
+	points := make([]routePoint, 0, len(workout.Data.Points))
+	for _, p := range workout.Data.Points {
 		if math.IsNaN(p.Lat) || math.IsNaN(p.Lng) || (p.Lat == 0 && p.Lng == 0) {
 			continue
 		}

@@ -85,7 +85,7 @@ func NewRouteSegment(notes string, filename string, content []byte) (*RouteSegme
 }
 
 func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams) ([]byte, error) {
-	points := workout.Data.Details.Points[params.Start-1 : params.End-1]
+	points := workout.Data.Points[params.Start-1 : params.End-1]
 
 	s := gpx.GPXTrackSegment{}
 
@@ -134,7 +134,7 @@ func (rs *RouteSegment) UpdateFromContent() error {
 	rs.MaxElevation = data.MaxElevation
 	rs.TotalUp = data.TotalUp
 	rs.TotalDown = data.TotalDown
-	rs.Points = data.Details.Points
+	rs.Points = data.Points
 
 	// Detect whether the route is circular so matching can wrap around the end of the track.
 	if len(rs.Points) > 1 {

@@ -358,7 +358,7 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData {
 	data := model.MapDataFromGPX(gpxFile)
 
-	if data != nil && data.Details != nil && len(data.Details.Points) > 0 {
+	if data != nil && len(data.Points) > 0 {
 		return data
 	}
 
@@ -509,7 +509,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 	data := &model.MapData{
 		Creator: act.FileId.Manufacturer.String(),
 		Center:  model.MapCenter{},
-		Details: &model.MapDataDetails{Points: points},
+		Points:  points,
 		WorkoutData: model.WorkoutData{
 			Start:         startTime,
 			Stop:          points[len(points)-1].Time,
@@ -581,9 +581,7 @@ func cloneMapData(src *model.MapData) *model.MapData {
 	}
 
 	clone := *src
-	if src.Details != nil {
-		clone.Details = &model.MapDataDetails{Points: src.Details.Points}
-	}
+	clone.Points = append([]model.MapPoint(nil), src.Points...)
 
 	return &clone
 }
