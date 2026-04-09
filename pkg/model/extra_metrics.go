@@ -1,13 +1,44 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cast"
 	"github.com/tkrajina/gpxgo/gpx"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type ExtraMetrics map[string]float64
+
+func (ExtraMetrics) GormDataType() string {
+	return "json"
+}
+
+// Scan scan value into Jsonb, implements sql.Scanner interface
+func (em *ExtraMetrics) Scan(value any) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+	}
+
+	result := ExtraMetrics{}
+	err := json.Unmarshal(bytes, &result)
+	*em = result
+	return err
+}
+
+// Value return json value, implement driver.Valuer interface
+func (em ExtraMetrics) Value() (driver.Value, error) {
+	if len(em) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(em)
+}
 
 func (em ExtraMetrics) Set(key string, value float64) {
 	em[key] = value
@@ -29,6 +60,16 @@ func (em ExtraMetrics) ParseGPXExtensions(extension gpx.Extension) {
 			}
 		}
 	}
+}
+
+func (ExtraMetrics) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	switch db.Dialector.Name() {
+	case "mysql", "sqlite":
+		return "JSON"
+	case "postgres":
+		return "JSONB"
+	}
+	return ""
 }
 
 func getGPXExtensionKeyValue(n *gpx.ExtensionNode) (string, float64) {
