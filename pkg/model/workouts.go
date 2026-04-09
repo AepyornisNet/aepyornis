@@ -137,11 +137,7 @@ func (w *Workout) HasTracks() bool {
 		return false
 	}
 
-	if w.Data.Details == nil {
-		return false
-	}
-
-	if len(w.Data.Details.Points) == 0 {
+	if len(w.Data.Points) == 0 {
 		return false
 	}
 
@@ -234,14 +230,6 @@ func (w *Workout) Center() *MapCenter {
 	}
 
 	return &w.Data.Center
-}
-
-func (w *Workout) Details() *MapDataDetails {
-	if w.Data == nil {
-		return nil
-	}
-
-	return w.Data.Details
 }
 
 func (w *Workout) TotalDown() float64 {
@@ -533,7 +521,7 @@ func GetMapData(db *gorm.DB, id uint64) (*MapData, error) {
 
 	if err := db.Preload("Climbs", func(tx *gorm.DB) *gorm.DB {
 		return tx.Order("sort_order ASC")
-	}).Preload("Details").Preload("Details.Points", func(tx *gorm.DB) *gorm.DB {
+	}).Preload("Points", func(tx *gorm.DB) *gorm.DB {
 		return tx.Order("sort_order ASC")
 	}).First(&md, id).Error; err != nil {
 		return nil, err
@@ -551,8 +539,8 @@ func GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 		Preload("Data.Climbs", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
-		Preload("Data.Details").
-		Preload("Data.Details.Points", func(tx *gorm.DB) *gorm.DB {
+		Preload("Data").
+		Preload("Data.Points", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
 		Preload("User").
@@ -702,15 +690,6 @@ func (w *Workout) setData(data *MapData) {
 	data.CreatedAt = w.Data.CreatedAt
 	data.WorkoutID = w.ID
 
-	if data.Details == nil {
-		data.Details = &MapDataDetails{}
-	}
-
-	if w.Data.Details != nil {
-		data.Details.ID = w.Data.Details.ID
-		data.Details.MapDataID = w.Data.Details.MapDataID
-	}
-
 	if w.Locked {
 		data.TotalDistance = w.Data.TotalDistance
 		data.TotalDistance2D = w.Data.TotalDistance2D
@@ -735,15 +714,15 @@ func (w *Workout) UpdateAverages() {
 }
 
 func (w *Workout) aggregateDetailsStats() (MapDataRangeStats, bool) {
-	if w.Data == nil || w.Data.Details == nil {
+	if w.Data == nil || w.Data == nil {
 		return MapDataRangeStats{}, false
 	}
 
-	if len(w.Data.Details.Points) < 2 {
+	if len(w.Data.Points) < 2 {
 		return MapDataRangeStats{}, false
 	}
 
-	return w.Data.Details.StatsForRange(0, len(w.Data.Details.Points)-1)
+	return w.Data.StatsForRange(0, len(w.Data.Points)-1)
 }
 
 func (w *Workout) applyRangeStats(stats MapDataRangeStats) {
@@ -918,7 +897,7 @@ func (w *Workout) UpdateRecords(db *gorm.DB) error {
 			return err
 		}
 
-		if len(targets) == 0 || w.Data == nil || w.Data.Details == nil || len(w.Data.Details.Points) < 2 {
+		if len(targets) == 0 || w.Data == nil || len(w.Data.Points) < 2 {
 			return nil
 		}
 

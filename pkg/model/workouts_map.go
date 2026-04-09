@@ -61,8 +61,8 @@ func correctAltitude(creator string, lat, long, alt float64) float64 {
 
 type MapData struct {
 	Model
-	Address *geo.Address    `gorm:"serializer:json" json:"address"`                       // The address of the workout
-	Details *MapDataDetails `gorm:"constraint:OnDelete:CASCADE" json:"details,omitempty"` // The details of the workout
+	Address *geo.Address `gorm:"serializer:json" json:"address"`                                        // The address of the workout
+	Points  []MapPoint   `gorm:"foreignKey:MapDataDetailsID;constraint:OnDelete:CASCADE" json:"points"` // The GPS points of the workout
 
 	Workout       *Workout  `gorm:"foreignKey:WorkoutID" json:"-"`                                  // The user who owns this profile
 	Creator       string    `json:"creator"`                                                        // The tool that created this workout
@@ -71,15 +71,6 @@ type MapData struct {
 	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"`                          // The workout this data belongs to
 	Climbs        []Segment `gorm:"foreignKey:MapDataID;constraint:OnDelete:CASCADE" json:"climbs"` // Auto-detected climbs
 	WorkoutData
-}
-
-type MapDataDetails struct {
-	Model
-
-	MapData *MapData   `gorm:"foreignKey:MapDataID" json:"-"`
-	Points  []MapPoint `gorm:"foreignKey:MapDataDetailsID;constraint:OnDelete:CASCADE" json:"points"` // The GPS points of the workout
-
-	MapDataID uint64 `gorm:"not null;uniqueIndex" json:"mapDataID"` // The ID of the map data these details belong to
 }
 
 // MapDataRangeStats describes aggregate statistics for a contiguous slice of map points.
@@ -101,8 +92,8 @@ type MapCenter struct {
 }
 
 type MapPoint struct {
-	MapDataDetailsID uint64 `gorm:"not null;primaryKey;index:idx_map_data_details_points_parent_order,unique" json:"-"`
-	SortOrder        int    `gorm:"not null;primaryKey;index:idx_map_data_details_points_parent_order,unique" json:"-"`
+	MapDataID uint64 `gorm:"not null;primaryKey;index:idx_map_data_points_parent_order,unique" json:"-"`
+	SortOrder int    `gorm:"not null;primaryKey;index:idx_map_data_points_parent_order,unique" json:"-"`
 
 	Time time.Time `json:"time"` // The time the point was recorded
 
@@ -131,39 +122,16 @@ func (m *MapPoint) ToOrbPoint() *orb.Point {
 	return &orb.Point{m.Lng, m.Lat}
 }
 
-func (d *MapDataDetails) Save(db *gorm.DB) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Omit("Points").Save(d).Error; err != nil {
-			return err
-		}
-
-		for i := range d.Points {
-			d.Points[i].MapDataDetailsID = d.ID
-			d.Points[i].SortOrder = i
-		}
-
-		if err := tx.Where("map_data_details_id = ?", d.ID).Delete(&MapPoint{}).Error; err != nil {
-			return err
-		}
-
-		if len(d.Points) == 0 {
-			return nil
-		}
-
-		return tx.CreateInBatches(&d.Points, mapDataPointsInsertBatchSize).Error
-	})
-}
-
 func (m *MapData) UpdateExtraMetrics() {
-	if m.Details == nil ||
-		len(m.Details.Points) == 0 {
+	if m == nil ||
+		len(m.Points) == 0 {
 		return
 	}
 
 	metrics := []string{}
 	found := map[string]bool{}
 
-	for _, d := range m.Details.Points {
+	for _, d := range m.Points {
 		for k := range d.ExtraMetrics {
 			if found[k] {
 				continue
@@ -244,7 +212,7 @@ func shouldAddState(address *geo.Address) bool {
 
 func (m *MapData) Save(db *gorm.DB) error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Omit("Climbs", "Details", "Details.Points").Save(m).Error; err != nil {
+		if err := tx.Omit("Climbs", "Points").Save(m).Error; err != nil {
 			return err
 		}
 
@@ -263,26 +231,18 @@ func (m *MapData) Save(db *gorm.DB) error {
 			}
 		}
 
-		if m.Details != nil {
-			if m.Details.MapDataID == 0 {
-				m.Details.MapDataID = m.ID
+		if m.Points != nil {
+			for i := range m.Points {
+				m.Points[i].MapDataID = m.ID
+				m.Points[i].SortOrder = i
 			}
 
-			if err := tx.Omit("Points").Save(m.Details).Error; err != nil {
+			if err := tx.Where("map_data_id = ?", m.ID).Delete(&MapPoint{}).Error; err != nil {
 				return err
 			}
 
-			for i := range m.Details.Points {
-				m.Details.Points[i].MapDataDetailsID = m.Details.ID
-				m.Details.Points[i].SortOrder = i
-			}
-
-			if err := tx.Where("map_data_details_id = ?", m.Details.ID).Delete(&MapPoint{}).Error; err != nil {
-				return err
-			}
-
-			if len(m.Details.Points) > 0 {
-				if err := tx.CreateInBatches(&m.Details.Points, mapDataPointsInsertBatchSize).Error; err != nil {
+			if len(m.Points) > 0 {
+				if err := tx.CreateInBatches(&m.Points, mapDataPointsInsertBatchSize).Error; err != nil {
 					return err
 				}
 			}
@@ -305,8 +265,8 @@ func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
 
 func PreloadWorkoutDetails(db *gorm.DB) *gorm.DB {
 	return PreloadWorkoutData(db).
-		Preload("Data.Details").
-		Preload("Data.Details.Points", func(tx *gorm.DB) *gorm.DB {
+		Preload("Data").
+		Preload("Data.Points", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		})
 }
@@ -328,8 +288,8 @@ func (m *MapPoint) EnhancedElevation() float64 {
 }
 
 // StatsForRange aggregates statistics for a slice of points identified by start and end indices (inclusive).
-// Returns false when the provided range is invalid or the details contain no points.
-func (d *MapDataDetails) StatsForRange(startIdx, endIdx int) (MapDataRangeStats, bool) {
+// Returns false when the provided range is invalid or the data contains no points.
+func (d *MapData) StatsForRange(startIdx, endIdx int) (MapDataRangeStats, bool) {
 	stats := MapDataRangeStats{}
 
 	points := d.Points
@@ -882,8 +842,6 @@ func MapDataFromGPX(gpxContent *gpx.GPX) *MapData {
 	totalTime := 0.0
 	prevPoint := points[0]
 
-	data.Details = &MapDataDetails{}
-
 	for i, pt := range points {
 		if !pointHasDistance(pt) {
 			continue
@@ -909,7 +867,7 @@ func MapDataFromGPX(gpxContent *gpx.GPX) *MapData {
 		extraMetrics.Set("elevation", correctAltitude(gpxContent.Creator, pt.Point.Latitude, pt.Point.Longitude, pt.Elevation.Value()))
 		extraMetrics.ParseGPXExtensions(pt.Extensions)
 
-		data.Details.Points = append(data.Details.Points, MapPoint{
+		data.Points = append(data.Points, MapPoint{
 			Lat:             pt.Point.Latitude,
 			Lng:             pt.Point.Longitude,
 			Elevation:       pt.Elevation.Value(),
@@ -924,9 +882,9 @@ func MapDataFromGPX(gpxContent *gpx.GPX) *MapData {
 		})
 	}
 
-	if len(data.Details.Points) > 0 {
-		data.Start = data.Details.Points[0].Time
-		data.Stop = data.Details.Points[len(data.Details.Points)-1].Time
+	if len(data.Points) > 0 {
+		data.Start = data.Points[0].Time
+		data.Stop = data.Points[len(data.Points)-1].Time
 	}
 
 	data.correctNaN()
