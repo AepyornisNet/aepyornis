@@ -120,7 +120,7 @@ func (ac *authController) Register(c echo.Context) error {
 
 	language := req.Language
 	if language == "" {
-		language = "browser"
+		language = model.DefaultProfileLanguage
 	}
 
 	u := &model.User{
@@ -136,14 +136,8 @@ func (ac *authController) Register(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	u.Profile.Theme = "browser"
-	u.Profile.TotalsShow = model.WorkoutTypeRunning
+	u.Profile.ResetDefaults()
 	u.Profile.Language = language
-	u.Profile.PreferredUnits.SpeedRaw = "km/h"
-	u.Profile.PreferredUnits.DistanceRaw = "km"
-	u.Profile.PreferredUnits.ElevationRaw = "m"
-	u.Profile.PreferredUnits.WeightRaw = "kg"
-	u.Profile.PreferredUnits.HeightRaw = "cm"
 
 	if err := u.Create(ac.context.GetDB()); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)

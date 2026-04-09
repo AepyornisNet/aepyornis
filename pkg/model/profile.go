@@ -7,6 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	DefaultProfileLanguage = "browser"
+	DefaultProfileTheme    = "browser"
+)
+
 type Profile struct {
 	Model
 
@@ -99,6 +104,18 @@ func (p *Profile) ResetBools() {
 	p.PreferFullDate = false
 	p.ShowTabs = false
 	p.APIActive = false
+}
+
+func (p *Profile) ResetDefaults() {
+	p.Language = DefaultProfileLanguage
+	p.Theme = DefaultProfileTheme
+	p.TotalsShow = WorkoutTypeRunning
+	p.PreferredUnits.SpeedRaw = "km/h"
+	p.PreferredUnits.DistanceRaw = "km"
+	p.PreferredUnits.ElevationRaw = "m"
+	p.PreferredUnits.WeightRaw = "kg"
+	p.PreferredUnits.HeightRaw = "cm"
+	p.DefaultWorkoutVisibility = WorkoutVisibilityPrivate
 }
 
 func (p *Profile) EffectiveDefaultWorkoutVisibility() WorkoutVisibility {
