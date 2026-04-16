@@ -127,13 +127,16 @@ func (rs *RouteSegment) UpdateFromContent() error {
 		return errors.New("route segment parse returned no data")
 	}
 
-	data := parsed[0].Data
+	stats := parsed[0].Stats
+	if stats == nil {
+		stats = &WorkoutStats{}
+	}
 
 	rs.TotalDistance = parsed[0].TotalDistance
-	rs.MinElevation = data.MinElevation
-	rs.MaxElevation = data.MaxElevation
-	rs.TotalUp = data.TotalUp
-	rs.TotalDown = data.TotalDown
+	rs.MinElevation = stats.MinElevation
+	rs.MaxElevation = stats.MaxElevation
+	rs.TotalUp = stats.TotalUp
+	rs.TotalDown = stats.TotalDown
 	rs.Points = parsed[0].Records
 
 	// Detect whether the route is circular so matching can wrap around the end of the track.

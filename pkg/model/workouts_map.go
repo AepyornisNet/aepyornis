@@ -68,7 +68,6 @@ type WorkoutGeoMeta struct {
 	AddressString string    `json:"addressString"`                         // The generic location of the workout
 	Center        MapCenter `gorm:"serializer:json" json:"center"`         // The center of the workout (in coordinates)
 	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"` // The workout this data belongs to
-	WorkoutData
 }
 
 func (WorkoutGeoMeta) TableName() string {
@@ -224,10 +223,12 @@ func (m *WorkoutGeoMeta) Save(db *gorm.DB) error {
 
 func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
 	return db.
+		Preload("Stats").
 		Preload("Data").
 		Preload("Laps", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
+		Preload("Laps.Stats").
 		Preload("Climbs", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
@@ -261,7 +262,7 @@ func (m *WorkoutRecord) EnhancedElevation() float64 {
 
 // StatsForRange aggregates statistics for a slice of points identified by start and end indices (inclusive).
 // Returns false when the provided range is invalid or the data contains no points.
-func (d *WorkoutGeoMeta) StatsForRange(points []WorkoutRecord, startIdx, endIdx int) (MapDataRangeStats, bool) {
+func StatsForRange(points []WorkoutRecord, startIdx, endIdx int) (MapDataRangeStats, bool) {
 	stats := MapDataRangeStats{}
 
 	if len(points) == 0 || startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
@@ -683,55 +684,10 @@ func distance3DBetween(p1 gpx.GPXPoint, p2 gpx.GPXPoint) float64 {
 	return p2.Distance3D(&p1)
 }
 
-func maxSpeedForSegment(segment gpx.GPXTrackSegment) float64 {
-	ms := segment.MovingData().MaxSpeed
-
-	for _, p := range segment.Points {
-		extraMetrics := ExtraMetrics{}
-		extraMetrics.ParseGPXExtensions(p.Extensions)
-		if newMS, ok := extraMetrics["speed"]; ok {
-			if newMS > ms {
-				ms = newMS
-			}
-		}
-	}
-
-	return ms
-}
-
 func createMapData(gpxContent *gpx.GPX) *WorkoutGeoMeta {
 	if len(gpxContent.Tracks) == 0 {
 		return nil
 	}
-
-	var (
-		totalDistance, totalDistance2D, maxElevation, uphill, downhill, maxSpeed float64
-		totalDuration, pauseDuration                                             time.Duration
-	)
-
-	minElevation := 100000.0 // This should be high enough for Earthly workouts
-
-	for _, track := range gpxContent.Tracks {
-		for _, segment := range track.Segments {
-			if len(segment.Points) == 0 {
-				continue
-			}
-
-			totalDistance += segment.Length3D()
-			totalDistance2D += segment.Length2D()
-			totalDuration += time.Duration(segment.Duration()) * time.Second
-			pauseDuration += (time.Duration(segment.MovingData().StoppedTime)) * time.Second
-			minElevation = min(minElevation, segment.ElevationBounds().MinElevation)
-			maxElevation = max(maxElevation, segment.ElevationBounds().MaxElevation)
-			uphill += segment.UphillDownhill().Uphill
-			downhill += segment.UphillDownhill().Downhill
-			maxSpeed = max(maxSpeed, maxSpeedForSegment(segment))
-			pauseDuration += time.Duration(segment.MovingData().StoppedTime)
-		}
-	}
-
-	// Make sure minElevation is never higher than maxElevation
-	minElevation = min(minElevation, maxElevation)
 
 	// Now reduce the whole GPX to a single track to calculate the center
 	gpxContent.ReduceGpxToSingleTrack()
@@ -740,40 +696,9 @@ func createMapData(gpxContent *gpx.GPX) *WorkoutGeoMeta {
 	data := &WorkoutGeoMeta{
 		Creator: gpxContent.Creator,
 		Center:  mapCenter,
-		WorkoutData: WorkoutData{
-			WorkoutStats: WorkoutStats{
-				MinElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, minElevation),
-				MaxElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, maxElevation),
-				MaxSpeed:            maxSpeed,
-				AverageSpeed:        safeAverageSpeed(totalDistance, totalDuration),
-				AverageSpeedNoPause: safeAverageSpeed(totalDistance, totalDuration-pauseDuration),
-				TotalUp:             uphill,
-				TotalDown:           downhill,
-			},
-		},
 	}
-
-	data.correctNaN()
 
 	return data
-}
-
-func (m *WorkoutGeoMeta) correctNaN() {
-	if math.IsNaN(m.MinElevation) {
-		m.MinElevation = 0
-	}
-
-	if math.IsNaN(m.MaxElevation) {
-		m.MaxElevation = 0
-	}
-
-	if math.IsNaN(m.TotalDown) {
-		m.TotalDown = 0
-	}
-
-	if math.IsNaN(m.TotalUp) {
-		m.TotalUp = 0
-	}
 }
 
 func MapDataAndRecordsFromGPX(gpxContent *gpx.GPX) (*WorkoutGeoMeta, []WorkoutRecord) {
@@ -831,9 +756,20 @@ func MapDataAndRecordsFromGPX(gpxContent *gpx.GPX) (*WorkoutGeoMeta, []WorkoutRe
 		})
 	}
 
-	data.correctNaN()
-
 	return data, records
+}
+
+func WorkoutStatsFromRecords(points []WorkoutRecord) WorkoutStats {
+	if len(points) < 2 {
+		return WorkoutStats{}
+	}
+
+	stats, ok := StatsForRange(points, 0, len(points)-1)
+	if !ok {
+		return WorkoutStats{}
+	}
+
+	return stats.WorkoutStats
 }
 
 func GPXName(gpxContent *gpx.GPX) string {
@@ -885,14 +821,6 @@ func WorkoutPauseDurationFromAverages(totalDistance float64, totalDuration time.
 	}
 
 	return totalDuration - movingDuration
-}
-
-func safeAverageSpeed(totalDistance float64, totalDuration time.Duration) float64 {
-	if totalDistance <= 0 || totalDuration <= 0 {
-		return 0
-	}
-
-	return totalDistance / totalDuration.Seconds()
 }
 
 func MapDataFromGPX(gpxContent *gpx.GPX) *WorkoutGeoMeta {

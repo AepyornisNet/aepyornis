@@ -745,7 +745,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
-	stats, ok := workout.Data.StatsForRange(workout.Records, startIdx, endIdx)
+	stats, ok := model.StatsForRange(workout.Records, startIdx, endIdx)
 	if !ok {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}

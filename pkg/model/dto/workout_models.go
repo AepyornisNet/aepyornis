@@ -312,20 +312,22 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 	// Add map data if available
 	if w.Data != nil {
 		wr.AddressString = w.Data.AddressString
-		wr.TotalUp = &w.Data.TotalUp
-		wr.TotalDown = &w.Data.TotalDown
-		wr.AverageSpeed = &w.Data.AverageSpeed
-		wr.AverageSpeedNoPause = &w.Data.AverageSpeedNoPause
-		wr.MaxSpeed = &w.Data.MaxSpeed
-		wr.MinElevation = &w.Data.MinElevation
-		wr.MaxElevation = &w.Data.MaxElevation
-		wr.AverageCadence = &w.Data.AverageCadence
-		wr.MaxCadence = &w.Data.MaxCadence
-		wr.AverageHeartRate = &w.Data.AverageHeartRate
-		wr.MaxHeartRate = &w.Data.MaxHeartRate
-		wr.AveragePower = &w.Data.AveragePower
-		wr.MaxPower = &w.Data.MaxPower
+	}
 
+	if w.Stats != nil {
+		wr.TotalUp = &w.Stats.TotalUp
+		wr.TotalDown = &w.Stats.TotalDown
+		wr.AverageSpeed = &w.Stats.AverageSpeed
+		wr.AverageSpeedNoPause = &w.Stats.AverageSpeedNoPause
+		wr.MaxSpeed = &w.Stats.MaxSpeed
+		wr.MinElevation = &w.Stats.MinElevation
+		wr.MaxElevation = &w.Stats.MaxElevation
+		wr.AverageCadence = &w.Stats.AverageCadence
+		wr.MaxCadence = &w.Stats.MaxCadence
+		wr.AverageHeartRate = &w.Stats.AverageHeartRate
+		wr.MaxHeartRate = &w.Stats.MaxHeartRate
+		wr.AveragePower = &w.Stats.AveragePower
+		wr.MaxPower = &w.Stats.MaxPower
 	}
 
 	wr.SubType = w.SubType
@@ -394,8 +396,8 @@ func NewWorkoutPopupData(w *model.Workout) WorkoutPopupData {
 		popup.TotalWeight = &w.TotalWeight
 	}
 
-	if w.Type.IsDistance() && w.Type.IsDuration() && w.Data != nil {
-		popup.AverageSpeed = &w.Data.AverageSpeed
+	if w.Type.IsDistance() && w.Type.IsDuration() && w.Stats != nil {
+		popup.AverageSpeed = &w.Stats.AverageSpeed
 	}
 
 	return popup
@@ -492,25 +494,30 @@ func NewWorkoutLapResponses(laps []model.WorkoutLap) []WorkoutLapResponse {
 
 	resp := make([]WorkoutLapResponse, len(laps))
 	for i, lap := range laps {
+		stats := lap.Stats
+		if stats == nil {
+			stats = &model.WorkoutStats{}
+		}
+
 		resp[i] = WorkoutLapResponse{
 			Start:               lap.Start,
 			Stop:                lap.Stop,
 			TotalDistance:       lap.TotalDistance,
 			TotalDuration:       int64(lap.TotalDuration.Seconds()),
 			PauseDuration:       int64(lap.PauseDuration.Seconds()),
-			MinElevation:        lap.MinElevation,
-			MaxElevation:        lap.MaxElevation,
-			TotalUp:             lap.TotalUp,
-			TotalDown:           lap.TotalDown,
-			AverageSpeed:        lap.AverageSpeed,
-			AverageSpeedNoPause: lap.AverageSpeedNoPause,
-			MaxSpeed:            lap.MaxSpeed,
-			AverageCadence:      lap.AverageCadence,
-			MaxCadence:          lap.MaxCadence,
-			AverageHeartRate:    lap.AverageHeartRate,
-			MaxHeartRate:        lap.MaxHeartRate,
-			AveragePower:        lap.AveragePower,
-			MaxPower:            lap.MaxPower,
+			MinElevation:        stats.MinElevation,
+			MaxElevation:        stats.MaxElevation,
+			TotalUp:             stats.TotalUp,
+			TotalDown:           stats.TotalDown,
+			AverageSpeed:        stats.AverageSpeed,
+			AverageSpeedNoPause: stats.AverageSpeedNoPause,
+			MaxSpeed:            stats.MaxSpeed,
+			AverageCadence:      stats.AverageCadence,
+			MaxCadence:          stats.MaxCadence,
+			AverageHeartRate:    stats.AverageHeartRate,
+			MaxHeartRate:        stats.MaxHeartRate,
+			AveragePower:        stats.AveragePower,
+			MaxPower:            stats.MaxPower,
 		}
 	}
 
@@ -525,6 +532,11 @@ func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.Wo
 	items := make([]WorkoutBreakdownItemResponse, len(laps))
 
 	for i, lap := range laps {
+		stats := lap.Stats
+		if stats == nil {
+			stats = &model.WorkoutStats{}
+		}
+
 		startIdx := findClosestPointIndex(points, lap.Start)
 		endIdx := findClosestPointIndex(points, lap.Stop)
 
@@ -547,19 +559,19 @@ func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.Wo
 			Distance:            convertedDistance,
 			Duration:            movingDuration,
 			AveragePace:         pace,
-			MinElevation:        convertElevationToPreferred(lap.MinElevation, units),
-			MaxElevation:        convertElevationToPreferred(lap.MaxElevation, units),
-			TotalUp:             convertElevationToPreferred(lap.TotalUp, units),
-			TotalDown:           convertElevationToPreferred(lap.TotalDown, units),
-			AverageSpeed:        convertSpeedToPreferred(lap.AverageSpeedNoPause, units),
-			AverageSpeedNoPause: convertSpeedToPreferred(lap.AverageSpeed, units),
-			MaxSpeed:            convertSpeedToPreferred(lap.MaxSpeed, units),
-			AverageCadence:      lap.AverageCadence,
-			MaxCadence:          lap.MaxCadence,
-			AverageHeartRate:    lap.AverageHeartRate,
-			MaxHeartRate:        lap.MaxHeartRate,
-			AveragePower:        lap.AveragePower,
-			MaxPower:            lap.MaxPower,
+			MinElevation:        convertElevationToPreferred(stats.MinElevation, units),
+			MaxElevation:        convertElevationToPreferred(stats.MaxElevation, units),
+			TotalUp:             convertElevationToPreferred(stats.TotalUp, units),
+			TotalDown:           convertElevationToPreferred(stats.TotalDown, units),
+			AverageSpeed:        convertSpeedToPreferred(stats.AverageSpeedNoPause, units),
+			AverageSpeedNoPause: convertSpeedToPreferred(stats.AverageSpeed, units),
+			MaxSpeed:            convertSpeedToPreferred(stats.MaxSpeed, units),
+			AverageCadence:      stats.AverageCadence,
+			MaxCadence:          stats.MaxCadence,
+			AverageHeartRate:    stats.AverageHeartRate,
+			MaxHeartRate:        stats.MaxHeartRate,
+			AveragePower:        stats.AveragePower,
+			MaxPower:            stats.MaxPower,
 		}
 	}
 

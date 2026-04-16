@@ -70,8 +70,10 @@ func TestWorkout_Parse(t *testing.T) {
 	assert.Len(t, w.Records, 206)
 	assert.InDelta(t, 3125, w.TotalDistance, 1)
 	assert.InDelta(t, 3096, w.TotalDistance2D, 1)
-	assert.InDelta(t, 3.297, w.Data.AverageSpeed, 0.01)
-	assert.InDelta(t, 3.297, w.Data.AverageSpeedNoPause, 0.01)
+	if assert.NotNil(t, w.Stats) {
+		assert.InDelta(t, 3.297, w.Stats.AverageSpeed, 0.01)
+		assert.InDelta(t, 3.297, w.Stats.AverageSpeedNoPause, 0.01)
+	}
 	assert.Equal(t, "Some name", w.Name)
 	assert.Nil(t, w.Data.Address)
 }

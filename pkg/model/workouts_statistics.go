@@ -153,7 +153,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 			nextItem.EndIndex = i
 			nextItem.LastPoint = &points[i]
 			nextItem.CalcultateSpeed()
-			if stats, ok := w.Data.StatsForRange(w.Records, nextItem.StartIndex, nextItem.EndIndex); ok {
+			if stats, ok := StatsForRange(w.Records, nextItem.StartIndex, nextItem.EndIndex); ok {
 				nextItem.applyRangeStats(stats)
 			}
 			items = append(items, nextItem)
@@ -180,7 +180,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 
 	if nextItem.FirstPoint != nil {
 		nextItem.CalcultateSpeed()
-		if stats, ok := w.Data.StatsForRange(w.Records, nextItem.StartIndex, nextItem.EndIndex); ok {
+		if stats, ok := StatsForRange(w.Records, nextItem.StartIndex, nextItem.EndIndex); ok {
 			nextItem.applyRangeStats(stats)
 		}
 		items = append(items, nextItem)

@@ -54,7 +54,7 @@ func Connect(driver, dsn string, debug bool, logger *slog.Logger) (*gorm.DB, err
 	if err := RunMigrations(db, func(db *gorm.DB) error {
 		return db.AutoMigrate(
 			&User{}, &Profile{}, &Config{}, &Equipment{}, &Measurement{},
-			&Workout{}, &WorkoutFile{}, &WorkoutGeoMeta{}, &WorkoutLap{}, &WorkoutClimb{}, &WorkoutRecord{}, &WorkoutAttachment{}, &RouteSegment{}, &RouteSegmentMatch{},
+			&Workout{}, &WorkoutStats{}, &WorkoutFile{}, &WorkoutGeoMeta{}, &WorkoutLap{}, &WorkoutClimb{}, &WorkoutRecord{}, &WorkoutAttachment{}, &RouteSegment{}, &RouteSegmentMatch{},
 			&WorkoutIntervalBest{}, &Follower{}, &APOutboxWorkout{}, &APOutboxEntry{}, &APOutboxDelivery{}, &WorkoutLike{}, &WorkoutReply{}, &HammerheadConnection{},
 		)
 	}); err != nil {

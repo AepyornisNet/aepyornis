@@ -66,6 +66,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 
 		w := &model.Workout{
 			Data:            clonedData,
+			Stats:           &stats,
 			Date:            startTime,
 			DateEnd:         startTime.Add(elapsedDuration),
 			Name:            workoutName,
@@ -77,12 +78,6 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 			TotalDistance2D: totalDistance2D,
 			TotalDuration:   elapsedDuration,
 			PauseDuration:   pauseDuration,
-		}
-
-		if w.Data != nil {
-			w.Data.WorkoutData.MergeNonZero(model.WorkoutData{
-				WorkoutStats: stats,
-			})
 		}
 
 		w.Laps = append([]model.WorkoutLap(nil), laps...)
@@ -203,7 +198,7 @@ func parseLaps(act *filedef.Activity) []model.WorkoutLap {
 			TotalDistance: totalDistance,
 			TotalDuration: elapsed,
 			PauseDuration: pause,
-			WorkoutStats: model.WorkoutStats{
+			Stats: &model.WorkoutStats{
 				MinElevation:        minElevation,
 				MaxElevation:        maxElevation,
 				TotalUp:             totalUp,
@@ -394,12 +389,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 	points := make([]model.WorkoutRecord, 0, len(act.Records))
 
 	var (
-		totalDistance float64
 		totalDuration time.Duration
-		pauseDuration time.Duration
-		maxSpeed      float64
-		minElevation  = math.MaxFloat64
-		maxElevation  = -math.MaxFloat64
 		prevTime      time.Time
 		prevDistance  float64
 	)
@@ -433,7 +423,6 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 		}
 		prevTime = ts
 
-		totalDistance = dist
 		totalDuration += dt
 
 		speed := 0.0
@@ -442,25 +431,11 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 		} else if r.Speed != math.MaxUint16 {
 			speed = r.SpeedScaled()
 		}
-		maxSpeed = math.Max(maxSpeed, speed)
-
-		if speed*3.6 < 1.0 {
-			pauseDuration += dt
-		}
-
 		elevation := math.NaN()
 		if r.EnhancedAltitude != math.MaxUint32 {
 			elevation = r.EnhancedAltitudeScaled()
 		} else if r.Altitude != math.MaxUint16 {
 			elevation = r.AltitudeScaled()
-		}
-		if !math.IsNaN(elevation) {
-			if elevation < minElevation {
-				minElevation = elevation
-			}
-			if elevation > maxElevation {
-				maxElevation = elevation
-			}
 		}
 
 		extra := model.ExtraMetrics{}
@@ -511,30 +486,12 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 		return nil, nil
 	}
 
-	// Normalize elevation bounds when none are present
-	if minElevation == math.MaxFloat64 {
-		minElevation = 0
-	}
-	if maxElevation == -math.MaxFloat64 {
-		maxElevation = 0
-	}
-
 	data := &model.WorkoutGeoMeta{
 		Creator: act.FileId.Manufacturer.String(),
 		Center:  model.MapCenter{},
-		WorkoutData: model.WorkoutData{
-			WorkoutStats: model.WorkoutStats{
-				MinElevation:        minElevation,
-				MaxElevation:        maxElevation,
-				AverageSpeed:        safeDivide(totalDistance, totalDuration),
-				AverageSpeedNoPause: safeDivide(totalDistance, totalDuration-pauseDuration),
-				MaxSpeed:            maxSpeed,
-			},
-		},
 	}
 
 	data.UpdateExtraMetrics(points)
-	sanitizeMapData(data)
 
 	return data, points
 }
@@ -544,28 +501,6 @@ func safeDivide(distance float64, d time.Duration) float64 {
 		return 0
 	}
 	return distance / d.Seconds()
-}
-
-func sanitizeMapData(data *model.WorkoutGeoMeta) {
-	if data == nil {
-		return
-	}
-
-	if math.IsNaN(data.MinElevation) {
-		data.MinElevation = 0
-	}
-
-	if math.IsNaN(data.MaxElevation) {
-		data.MaxElevation = 0
-	}
-
-	if math.IsNaN(data.TotalDown) {
-		data.TotalDown = 0
-	}
-
-	if math.IsNaN(data.TotalUp) {
-		data.TotalUp = 0
-	}
 }
 
 func cloneMapData(src *model.WorkoutGeoMeta) *model.WorkoutGeoMeta {

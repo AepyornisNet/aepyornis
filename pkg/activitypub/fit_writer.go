@@ -65,20 +65,20 @@ func GenerateWorkoutFIT(workout *model.Workout) ([]byte, error) {
 		session.SetMaxSpeedScaled(workout.MaxSpeed())
 	}
 
-	if workout.Data.AverageCadence > 0 {
-		session.SetAvgCadence(clampUint8(math.Round(workout.Data.AverageCadence)))
+	if workout.Stats != nil && workout.Stats.AverageCadence > 0 {
+		session.SetAvgCadence(clampUint8(math.Round(workout.Stats.AverageCadence)))
 	}
 
-	if workout.Data.MaxCadence > 0 {
-		session.SetMaxCadence(clampUint8(math.Round(workout.Data.MaxCadence)))
+	if workout.Stats != nil && workout.Stats.MaxCadence > 0 {
+		session.SetMaxCadence(clampUint8(math.Round(workout.Stats.MaxCadence)))
 	}
 
-	if workout.Data.AveragePower > 0 {
-		session.SetAvgPower(clampUint16(math.Round(workout.Data.AveragePower)))
+	if workout.Stats != nil && workout.Stats.AveragePower > 0 {
+		session.SetAvgPower(clampUint16(math.Round(workout.Stats.AveragePower)))
 	}
 
-	if workout.Data.MaxPower > 0 {
-		session.SetMaxPower(clampUint16(math.Round(workout.Data.MaxPower)))
+	if workout.Stats != nil && workout.Stats.MaxPower > 0 {
+		session.SetMaxPower(clampUint16(math.Round(workout.Stats.MaxPower)))
 	}
 
 	activity.Sessions = append(activity.Sessions, session)
@@ -211,31 +211,36 @@ func buildWorkoutLaps(workout *model.Workout, start, end time.Time) []*mesgdef.L
 		}
 
 		moving := max(lap.TotalDuration-lap.PauseDuration, 0)
+		lapStats := lap.Stats
+		if lapStats == nil {
+			lapStats = &model.WorkoutStats{}
+		}
+
 		l := mesgdef.NewLap(nil).
 			SetStartTime(lapStart).
 			SetTimestamp(lapEnd).
 			SetTotalDistanceScaled(lap.TotalDistance).
 			SetTotalElapsedTimeScaled(lap.TotalDuration.Seconds()).
 			SetTotalTimerTimeScaled(moving.Seconds()).
-			SetAvgSpeedScaled(lap.AverageSpeed).
-			SetMaxSpeedScaled(lap.MaxSpeed).
-			SetTotalAscent(clampUint16(math.Round(lap.TotalUp))).
-			SetTotalDescent(clampUint16(math.Round(lap.TotalDown)))
+			SetAvgSpeedScaled(lapStats.AverageSpeed).
+			SetMaxSpeedScaled(lapStats.MaxSpeed).
+			SetTotalAscent(clampUint16(math.Round(lapStats.TotalUp))).
+			SetTotalDescent(clampUint16(math.Round(lapStats.TotalDown)))
 
-		if lap.AverageCadence > 0 {
-			l.SetAvgCadence(clampUint8(math.Round(lap.AverageCadence)))
+		if lapStats.AverageCadence > 0 {
+			l.SetAvgCadence(clampUint8(math.Round(lapStats.AverageCadence)))
 		}
 
-		if lap.MaxCadence > 0 {
-			l.SetMaxCadence(clampUint8(math.Round(lap.MaxCadence)))
+		if lapStats.MaxCadence > 0 {
+			l.SetMaxCadence(clampUint8(math.Round(lapStats.MaxCadence)))
 		}
 
-		if lap.AveragePower > 0 {
-			l.SetAvgPower(clampUint16(math.Round(lap.AveragePower)))
+		if lapStats.AveragePower > 0 {
+			l.SetAvgPower(clampUint16(math.Round(lapStats.AveragePower)))
 		}
 
-		if lap.MaxPower > 0 {
-			l.SetMaxPower(clampUint16(math.Round(lap.MaxPower)))
+		if lapStats.MaxPower > 0 {
+			l.SetMaxPower(clampUint16(math.Round(lapStats.MaxPower)))
 		}
 
 		laps = append(laps, l)

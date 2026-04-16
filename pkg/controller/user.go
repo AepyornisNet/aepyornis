@@ -97,9 +97,10 @@ func (uc *userController) GetTotals(c echo.Context) error {
 				"max(workouts.type) as workout_type",
 				"sum(total_duration) as duration",
 				"sum(total_distance) as distance",
-				"sum(total_up) as up",
+				"sum(coalesce(workout_stats.total_up, 0)) as up",
 				"'all' as bucket",
 			).
+			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 			Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 		targetUser.ID,
 		viewer.ID,
@@ -983,15 +984,15 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 
 	mapping := map[*model.Float64Record]string{
 		&r.Distance:            "max(total_distance)",
-		&r.MaxSpeed:            "max(max_speed)",
-		&r.TotalUp:             "max(total_up)",
-		&r.AverageSpeed:        "max(average_speed)",
-		&r.AverageSpeedNoPause: "max(average_speed_no_pause)",
+		&r.MaxSpeed:            "max(workout_stats.max_speed)",
+		&r.TotalUp:             "max(workout_stats.total_up)",
+		&r.AverageSpeed:        "max(workout_stats.average_speed)",
+		&r.AverageSpeedNoPause: "max(workout_stats.average_speed_no_pause)",
 	}
 
 	for k, v := range mapping {
 		query := model.ScopeVisibleWorkouts(
-			uc.context.GetDB().Table("workouts").Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
+			uc.context.GetDB().Table("workouts").Joins("left join workout_stats on workouts.stats_id = workout_stats.id").Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 			targetUser.ID,
 			viewer.ID,
 			viewerActorIRI,

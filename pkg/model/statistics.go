@@ -128,13 +128,14 @@ func (u *User) GetStatistics(statConfig StatConfig) (*Statistics, error) {
 			"workouts.type as workout_type",
 			"sum(total_duration) as duration",
 			"sum(total_distance) as distance",
-			"sum(total_up) as up",
-			"max(max_speed) as max_speed",
-			"sum(total_duration * average_speed) / sum(total_duration) as average_speed",
-			"sum((total_duration - pause_duration) * average_speed_no_pause) / NULLIF(sum(total_duration - pause_duration), 0) as average_speed_no_pause",
+			"sum(coalesce(workout_stats.total_up, 0)) as up",
+			"max(coalesce(workout_stats.max_speed, 0)) as max_speed",
+			"sum(total_duration * coalesce(workout_stats.average_speed, 0)) / NULLIF(sum(total_duration), 0) as average_speed",
+			"sum((total_duration - pause_duration) * coalesce(workout_stats.average_speed_no_pause, 0)) / NULLIF(sum(total_duration - pause_duration), 0) as average_speed_no_pause",
 			statConfig.GetBucketFormatExpression(sqlDialect),
 			statConfig.GetDayBucketFormatExpression(sqlDialect),
 		).
+		Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("user_id = ?", u.ID)
 
@@ -232,9 +233,10 @@ func (u *User) GetTotals(t WorkoutType, startDate, endDate *time.Time) (*Bucket,
 			"max(workouts.type) as workout_type",
 			"sum(total_duration) as duration",
 			"sum(total_distance) as distance",
-			"sum(total_up) as up",
+			"sum(coalesce(workout_stats.total_up, 0)) as up",
 			"'all' as bucket",
 		).
+		Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("user_id = ?", u.ID).
 		Where("workouts.type = ?", t)
@@ -511,15 +513,16 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 
 	mapping := map[*Float64Record]string{
 		&r.Distance:            "max(total_distance)",
-		&r.MaxSpeed:            "max(max_speed)",
-		&r.TotalUp:             "max(total_up)",
-		&r.AverageSpeed:        "max(average_speed)",
-		&r.AverageSpeedNoPause: "max(average_speed_no_pause)",
+		&r.MaxSpeed:            "max(workout_stats.max_speed)",
+		&r.TotalUp:             "max(workout_stats.total_up)",
+		&r.AverageSpeed:        "max(workout_stats.average_speed)",
+		&r.AverageSpeedNoPause: "max(workout_stats.average_speed_no_pause)",
 	}
 
 	for k, v := range mapping {
 		query := u.db.
 			Table("workouts").
+			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 			Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 			Where("user_id = ?", u.ID).
 			Where("workouts.type = ?", t).

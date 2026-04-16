@@ -62,17 +62,19 @@ func ScopeVisibleWorkouts(query *gorm.DB, ownerID uint64, viewerID uint64, viewe
 
 type Workout struct {
 	Model
-	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`                                    // The timestamp the workout was recorded
-	DateEnd             time.Time            `json:"date_end"`                                                                           // The stop time of the workout
-	Visibility          WorkoutVisibility    `json:"visibility"`                                                                         // The visibility of the workout (private, followers, public)
-	User                *User                `gorm:"foreignKey:UserID" json:"user"`                                                      // The user who owns the workout
-	Data                *WorkoutGeoMeta      `gorm:"constraint:OnDelete:CASCADE" json:"data,omitempty"`                                  // The map data associated with the workout
-	File                *WorkoutFile         `gorm:"constraint:OnDelete:CASCADE" json:"file,omitempty"`                                  // The file data associated with the workout
-	Name                string               `gorm:"not null" json:"name"`                                                               // The name of the workout
-	Notes               string               `json:"notes"`                                                                              // The notes associated with the workout, in markdown
-	Type                WorkoutType          `json:"type"`                                                                               // The type of the workout
-	SubType             string               `json:"subType"`                                                                            // The subtype of the workout
-	CustomType          string               `json:"custom_type"`                                                                        // The type of the workout, custom
+	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`   // The timestamp the workout was recorded
+	DateEnd             time.Time            `json:"date_end"`                                          // The stop time of the workout
+	Visibility          WorkoutVisibility    `json:"visibility"`                                        // The visibility of the workout (private, followers, public)
+	User                *User                `gorm:"foreignKey:UserID" json:"user"`                     // The user who owns the workout
+	Data                *WorkoutGeoMeta      `gorm:"constraint:OnDelete:CASCADE" json:"data,omitempty"` // The map data associated with the workout
+	File                *WorkoutFile         `gorm:"constraint:OnDelete:CASCADE" json:"file,omitempty"` // The file data associated with the workout
+	Name                string               `gorm:"not null" json:"name"`                              // The name of the workout
+	Notes               string               `json:"notes"`                                             // The notes associated with the workout, in markdown
+	Type                WorkoutType          `json:"type"`                                              // The type of the workout
+	SubType             string               `json:"subType"`                                           // The subtype of the workout
+	CustomType          string               `json:"custom_type"`                                       // The type of the workout, custom
+	StatsID             *uint64              `json:"-"`
+	Stats               *WorkoutStats        `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:StatsID;references:ID" json:"stats,omitempty"`
 	TotalDistance       float64              `json:"totalDistance"`                                                                      // The total distance of the workout
 	TotalDistance2D     float64              `json:"totalDistance2D"`                                                                    // The total 2D distance of the workout
 	TotalDuration       time.Duration        `json:"totalDuration"`                                                                      // The total duration of the workout
@@ -97,6 +99,10 @@ type WorkoutFile struct {
 	Content   []byte `gorm:"type:bytes" json:"content"`             // The file content
 	Checksum  []byte `gorm:"not null;uniqueIndex" json:"checksum"`  // The checksum of the content
 	WorkoutID uint64 `gorm:"not null;uniqueIndex" json:"workoutID"` // The ID of the workout
+}
+
+func omitWorkoutAssociations(tx *gorm.DB) *gorm.DB {
+	return tx.Omit(clause.Associations).Omit("Stats", "Data", "File", "Equipment", "RouteSegmentMatches", "Records", "Laps", "Climbs", "Attachments")
 }
 
 func (w *Workout) HasCustomType() bool {
@@ -161,11 +167,11 @@ func (w *Workout) Weight() float64 {
 }
 
 func (w *Workout) AverageSpeed() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.AverageSpeed
+	return w.Stats.AverageSpeed
 }
 
 func (w *Workout) GetEnd() time.Time {
@@ -205,67 +211,67 @@ func (w *Workout) Center() *MapCenter {
 }
 
 func (w *Workout) TotalDown() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.TotalDown
+	return w.Stats.TotalDown
 }
 
 func (w *Workout) TotalUp() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.TotalUp
+	return w.Stats.TotalUp
 }
 
 func (w *Workout) MaxElevation() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.MaxElevation
+	return w.Stats.MaxElevation
 }
 
 func (w *Workout) MinElevation() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.MinElevation
+	return w.Stats.MinElevation
 }
 
 func (w *Workout) MaxSpeed() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.MaxSpeed
+	return w.Stats.MaxSpeed
 }
 
 func (w *Workout) MaxCadence() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.MaxCadence
+	return w.Stats.MaxCadence
 }
 
 func (w *Workout) AverageSpeedNoPause() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.AverageSpeedNoPause
+	return w.Stats.AverageSpeedNoPause
 }
 
 func (w *Workout) AverageCadence() float64 {
-	if w.Data == nil {
+	if w.Stats == nil {
 		return 0
 	}
 
-	return w.Data.AverageCadence
+	return w.Stats.AverageCadence
 }
 
 func (w *Workout) Creator() string {
@@ -354,7 +360,7 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 		}
 
 		if workoutType == WorkoutTypeAutoDetect {
-			w.Type = autoDetectWorkoutType(w.Data, string(w.Type), w.Name)
+			w.Type = autoDetectWorkoutType(w.Stats, w.Data, string(w.Type), w.Name)
 		} else {
 			w.Type = workoutType
 		}
@@ -419,7 +425,7 @@ func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	}
 }
 
-func autoDetectWorkoutType(data *WorkoutGeoMeta, dataType string, dataName string) WorkoutType {
+func autoDetectWorkoutType(stats *WorkoutStats, data *WorkoutGeoMeta, dataType string, dataName string) WorkoutType {
 	if workoutType, ok := WorkoutTypeFromData(dataType); ok {
 		return workoutType
 	}
@@ -439,12 +445,12 @@ func autoDetectWorkoutType(data *WorkoutGeoMeta, dataType string, dataName strin
 		}
 	}
 
-	if data != nil {
-		if 3.6*data.AverageSpeedNoPause > 15.0 {
+	if stats != nil {
+		if 3.6*stats.AverageSpeedNoPause > 15.0 {
 			return WorkoutTypeCycling
 		}
 
-		if 3.6*data.AverageSpeedNoPause > 7.0 {
+		if 3.6*stats.AverageSpeedNoPause > 7.0 {
 			return WorkoutTypeRunning
 		}
 	}
@@ -491,10 +497,12 @@ func GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 
 	if err := db.
 		Preload("RouteSegmentMatches.RouteSegment").
+		Preload("Stats").
 		Preload("Data").
 		Preload("Laps", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
+		Preload("Laps.Stats").
 		Preload("Climbs", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
@@ -534,13 +542,17 @@ func (w *Workout) create(db *gorm.DB) error {
 	}
 
 	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Omit("Data", "File", "Equipment", "RouteSegmentMatches", "Records", "Laps", "Climbs", "Attachments").Create(w).Error; err != nil {
-			return err
+		if err := omitWorkoutAssociations(tx).Create(w).Error; err != nil {
+			return fmt.Errorf("create workout row: %w", err)
+		}
+
+		if err := saveWorkoutStats(tx, w); err != nil {
+			return fmt.Errorf("save workout stats: %w", err)
 		}
 
 		w.Data.WorkoutID = w.ID
 		if err := w.Data.Save(tx); err != nil {
-			return err
+			return fmt.Errorf("save workout geo meta: %w", err)
 		}
 
 		if w.Records != nil {
@@ -564,6 +576,9 @@ func (w *Workout) create(db *gorm.DB) error {
 			for i := range w.Laps {
 				w.Laps[i].WorkoutID = w.ID
 				w.Laps[i].SortOrder = i
+				if err := saveLapStats(tx, &w.Laps[i]); err != nil {
+					return err
+				}
 			}
 
 			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutLap{}).Error; err != nil {
@@ -597,8 +612,14 @@ func (w *Workout) create(db *gorm.DB) error {
 		if w.File != nil {
 			w.File.WorkoutID = w.ID
 
-			if err := tx.Create(w.File).Error; err != nil {
-				return err
+			if w.File.ID == 0 {
+				if err := tx.Create(w.File).Error; err != nil {
+					return fmt.Errorf("save workout file: %w", err)
+				}
+			} else {
+				if err := tx.Save(w.File).Error; err != nil {
+					return fmt.Errorf("save workout file: %w", err)
+				}
 			}
 		}
 
@@ -627,14 +648,25 @@ func (w *Workout) save(db *gorm.DB) error {
 	}
 
 	return db.Transaction(func(tx *gorm.DB) error {
+		if w.ID == 0 && w.UserID != 0 && !w.Date.IsZero() {
+			var existing Workout
+			if err := tx.Select("id").Where("user_id = ? AND date = ?", w.UserID, w.Date).First(&existing).Error; err == nil {
+				w.ID = existing.ID
+			}
+		}
+
 		if w.ID == 0 {
-			if err := tx.Omit("Data", "File", "Equipment", "RouteSegmentMatches", "Records", "Laps", "Climbs", "Attachments").Create(w).Error; err != nil {
+			if err := omitWorkoutAssociations(tx).Create(w).Error; err != nil {
 				return err
 			}
 		} else {
-			if err := tx.Omit("Data", "File", "Equipment", "RouteSegmentMatches", "Records", "Laps", "Climbs", "Attachments").Save(w).Error; err != nil {
+			if err := omitWorkoutAssociations(tx).Save(w).Error; err != nil {
 				return err
 			}
+		}
+
+		if err := saveWorkoutStats(tx, w); err != nil {
+			return err
 		}
 
 		w.Data.WorkoutID = w.ID
@@ -663,6 +695,9 @@ func (w *Workout) save(db *gorm.DB) error {
 			for i := range w.Laps {
 				w.Laps[i].WorkoutID = w.ID
 				w.Laps[i].SortOrder = i
+				if err := saveLapStats(tx, &w.Laps[i]); err != nil {
+					return err
+				}
 			}
 
 			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutLap{}).Error; err != nil {
@@ -750,6 +785,7 @@ func (w *Workout) setData(updated *Workout) {
 	if !w.Locked {
 		w.DateEnd = updated.DateEnd
 		w.SubType = updated.SubType
+		w.Stats = updated.Stats
 		w.TotalDistance = updated.TotalDistance
 		w.TotalDistance2D = updated.TotalDistance2D
 		w.TotalDuration = updated.TotalDuration
@@ -784,6 +820,10 @@ func (w *Workout) UpdateAverages() {
 		return
 	}
 
+	if w.Stats == nil {
+		w.Stats = &WorkoutStats{}
+	}
+
 	if stats, ok := w.aggregateDetailsStats(); ok {
 		w.applyRangeStats(stats)
 		return
@@ -801,55 +841,58 @@ func (w *Workout) aggregateDetailsStats() (MapDataRangeStats, bool) {
 		return MapDataRangeStats{}, false
 	}
 
-	return w.Data.StatsForRange(w.Records, 0, len(w.Records)-1)
+	return StatsForRange(w.Records, 0, len(w.Records)-1)
 }
 
 func (w *Workout) applyRangeStats(stats MapDataRangeStats) {
-	w.Data.AverageSpeed = stats.AverageSpeed
-	w.Data.AverageSpeedNoPause = stats.AverageSpeedNoPause
-	w.Data.MaxSpeed = stats.MaxSpeed
-	w.Data.MinSpeed = stats.MinSpeed
-
-	w.Data.AverageCadence = stats.AverageCadence
-	w.Data.MinCadence = stats.MinCadence
-	w.Data.MaxCadence = stats.MaxCadence
-	w.Data.AverageHeartRate = stats.AverageHeartRate
-	w.Data.MinHeartRate = stats.MinHeartRate
-	w.Data.MaxHeartRate = stats.MaxHeartRate
-	w.Data.AveragePower = stats.AveragePower
-	w.Data.MinPower = stats.MinPower
-	w.Data.MaxPower = stats.MaxPower
-
-	w.Data.AverageTemperature = stats.AverageTemperature
-	w.Data.MinTemperature = stats.MinTemperature
-	w.Data.MaxTemperature = stats.MaxTemperature
-
-	w.Data.AverageSlope = stats.AverageSlope
-	w.Data.MinSlope = stats.MinSlope
-	w.Data.MaxSlope = stats.MaxSlope
-
-	w.Data.MinElevation = stats.MinElevation
-	w.Data.MaxElevation = stats.MaxElevation
-	w.Data.TotalUp = stats.TotalUp
-	w.Data.TotalDown = stats.TotalDown
+	w.Stats.MinElevation = stats.MinElevation
+	w.Stats.MaxElevation = stats.MaxElevation
+	w.Stats.TotalUp = stats.TotalUp
+	w.Stats.TotalDown = stats.TotalDown
+	w.Stats.AverageSlope = stats.AverageSlope
+	w.Stats.MinSlope = stats.MinSlope
+	w.Stats.MaxSlope = stats.MaxSlope
+	w.Stats.AverageSpeed = stats.AverageSpeed
+	w.Stats.AverageSpeedNoPause = stats.AverageSpeedNoPause
+	w.Stats.MinSpeed = stats.MinSpeed
+	w.Stats.MaxSpeed = stats.MaxSpeed
+	w.Stats.AverageCadence = stats.AverageCadence
+	w.Stats.MinCadence = stats.MinCadence
+	w.Stats.MaxCadence = stats.MaxCadence
+	w.Stats.AverageHeartRate = stats.AverageHeartRate
+	w.Stats.MinHeartRate = stats.MinHeartRate
+	w.Stats.MaxHeartRate = stats.MaxHeartRate
+	w.Stats.AverageRespirationRate = stats.AverageRespirationRate
+	w.Stats.MinRespirationRate = stats.MinRespirationRate
+	w.Stats.MaxRespirationRate = stats.MaxRespirationRate
+	w.Stats.AveragePower = stats.AveragePower
+	w.Stats.MinPower = stats.MinPower
+	w.Stats.MaxPower = stats.MaxPower
+	w.Stats.AverageTemperature = stats.AverageTemperature
+	w.Stats.MinTemperature = stats.MinTemperature
+	w.Stats.MaxTemperature = stats.MaxTemperature
 }
 
 func (w *Workout) calculateAverageSpeeds() {
-	w.Data.AverageSpeed = 0
-	w.Data.AverageSpeedNoPause = 0
+	if w.Stats == nil {
+		w.Stats = &WorkoutStats{}
+	}
+
+	w.Stats.AverageSpeed = 0
+	w.Stats.AverageSpeedNoPause = 0
 
 	if w.TotalDuration == 0 {
 		return
 	}
 
-	w.Data.AverageSpeed = w.TotalDistance / w.TotalDuration.Seconds()
+	w.Stats.AverageSpeed = w.TotalDistance / w.TotalDuration.Seconds()
 
 	if w.TotalDuration == w.PauseDuration {
-		w.Data.AverageSpeedNoPause = w.Data.AverageSpeed
+		w.Stats.AverageSpeedNoPause = w.Stats.AverageSpeed
 		return
 	}
 
-	w.Data.AverageSpeedNoPause = w.TotalDistance / (w.TotalDuration - w.PauseDuration).Seconds()
+	w.Stats.AverageSpeedNoPause = w.TotalDistance / (w.TotalDuration - w.PauseDuration).Seconds()
 }
 
 func (w *Workout) UpdateData(db *gorm.DB) error {
@@ -904,7 +947,7 @@ func (w *Workout) UpdateRouteSegmentMatches(db *gorm.DB) error {
 }
 
 func (w *Workout) RepetitionFrequencyPerMinute() float64 {
-	if w.Data == nil {
+	if w.TotalRepetitions == 0 || w.Duration() <= 0 {
 		return 0
 	}
 
@@ -1084,14 +1127,42 @@ func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
 
 	data, records := MapDataAndRecordsFromGPX(gpxContent)
 	totalDistance, totalDistance2D, totalDuration := WorkoutTotalsFromRecords(records)
+	statsValues := WorkoutStatsFromRecords(records)
 	pauseDuration := time.Duration(0)
-	if data != nil {
-		pauseDuration = WorkoutPauseDurationFromAverages(totalDistance, totalDuration, data.AverageSpeedNoPause)
-	}
+	pauseDuration = WorkoutPauseDurationFromAverages(totalDistance, totalDuration, statsValues.AverageSpeedNoPause)
 	workoutType, _ := WorkoutTypeFromData(GPXType(gpxContent))
 	dateEnd := WorkoutEndFromRecords(records)
+	stats := &WorkoutStats{
+		MinElevation:           statsValues.MinElevation,
+		MaxElevation:           statsValues.MaxElevation,
+		TotalUp:                statsValues.TotalUp,
+		TotalDown:              statsValues.TotalDown,
+		AverageSlope:           statsValues.AverageSlope,
+		MinSlope:               statsValues.MinSlope,
+		MaxSlope:               statsValues.MaxSlope,
+		AverageSpeed:           statsValues.AverageSpeed,
+		AverageSpeedNoPause:    statsValues.AverageSpeedNoPause,
+		MinSpeed:               statsValues.MinSpeed,
+		MaxSpeed:               statsValues.MaxSpeed,
+		AverageCadence:         statsValues.AverageCadence,
+		MinCadence:             statsValues.MinCadence,
+		MaxCadence:             statsValues.MaxCadence,
+		AverageHeartRate:       statsValues.AverageHeartRate,
+		MinHeartRate:           statsValues.MinHeartRate,
+		MaxHeartRate:           statsValues.MaxHeartRate,
+		AverageRespirationRate: statsValues.AverageRespirationRate,
+		MinRespirationRate:     statsValues.MinRespirationRate,
+		MaxRespirationRate:     statsValues.MaxRespirationRate,
+		AveragePower:           statsValues.AveragePower,
+		MinPower:               statsValues.MinPower,
+		MaxPower:               statsValues.MaxPower,
+		AverageTemperature:     statsValues.AverageTemperature,
+		MinTemperature:         statsValues.MinTemperature,
+		MaxTemperature:         statsValues.MaxTemperature,
+	}
 	w := &Workout{
 		Data:            data,
+		Stats:           stats,
 		Records:         append([]WorkoutRecord(nil), records...),
 		Name:            GPXName(gpxContent),
 		Type:            workoutType,
@@ -1115,6 +1186,60 @@ func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
 	w.UpdateExtraMetrics()
 
 	return []*Workout{w}, nil
+}
+
+func saveWorkoutStats(tx *gorm.DB, w *Workout) error {
+	if w == nil {
+		return nil
+	}
+
+	if w.Stats == nil {
+		w.StatsID = nil
+
+		return tx.Model(w).Update("stats_id", nil).Error
+	}
+
+	if w.Stats.ID == 0 {
+		if err := tx.Create(w.Stats).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := tx.Save(w.Stats).Error; err != nil {
+			return err
+		}
+	}
+
+	statsID := w.Stats.ID
+	w.StatsID = &statsID
+
+	return tx.Model(&Workout{}).Where("id = ?", w.ID).Update("stats_id", w.StatsID).Error
+}
+
+func saveLapStats(tx *gorm.DB, lap *WorkoutLap) error {
+	if lap == nil {
+		return nil
+	}
+
+	if lap.Stats == nil {
+		lap.StatsID = nil
+
+		return nil
+	}
+
+	if lap.Stats.ID == 0 {
+		if err := tx.Create(lap.Stats).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := tx.Save(lap.Stats).Error; err != nil {
+			return err
+		}
+	}
+
+	statsID := lap.Stats.ID
+	lap.StatsID = &statsID
+
+	return nil
 }
 
 const minEventDuration = 1 * time.Second

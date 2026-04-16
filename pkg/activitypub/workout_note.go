@@ -98,11 +98,11 @@ func (n *WorkoutNote) PopulateFromWorkout(workout *model.Workout, fitURL vocab.I
 	n.WorkoutRepetitions = workout.TotalRepetitions
 	n.WorkoutWeight = workout.Weight()
 
-	if workout.Data != nil {
-		n.WorkoutAverageHeartRate = workout.Data.AverageHeartRate
-		n.WorkoutMaxHeartRate = workout.Data.MaxHeartRate
-		n.WorkoutAveragePower = workout.Data.AveragePower
-		n.WorkoutMaxPower = workout.Data.MaxPower
+	if workout.Stats != nil {
+		n.WorkoutAverageHeartRate = workout.Stats.AverageHeartRate
+		n.WorkoutMaxHeartRate = workout.Stats.MaxHeartRate
+		n.WorkoutAveragePower = workout.Stats.AveragePower
+		n.WorkoutMaxPower = workout.Stats.MaxPower
 	}
 }
 
