@@ -18,6 +18,7 @@ type WorkoutResponse struct {
 	Notes                string                  `json:"notes"`
 	Type                 string                  `json:"type"`
 	SubType              string                  `json:"sub_type"`
+	Creator              string                  `json:"creator,omitempty"`
 	CustomType           string                  `json:"custom_type,omitempty"`
 	UserID               uint64                  `json:"user_id"`
 	User                 *UserProfileResponse    `json:"user,omitempty"`
@@ -187,7 +188,6 @@ type WorkoutDetailResponse struct {
 
 // MapDataResponse represents workout map data in API v2 responses
 type MapDataResponse struct {
-	Creator      string                  `json:"creator,omitempty"`
 	Center       MapCenterResponse       `json:"center"`
 	ExtraMetrics []string                `json:"extra_metrics,omitempty"`
 	Details      *MapDataDetailsResponse `json:"details,omitempty"`
@@ -292,6 +292,7 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		Name:            w.Name,
 		Notes:           w.Notes,
 		Type:            string(w.Type),
+		Creator:         w.Creator,
 		CustomType:      w.CustomType,
 		UserID:          w.UserID,
 		Visibility:      w.Visibility,
@@ -755,7 +756,6 @@ func findClosestPointIndex(points []model.WorkoutRecord, t time.Time) int {
 
 func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 	mapData := &MapDataResponse{
-		Creator: w.Data.Creator,
 		Center: MapCenterResponse{
 			TZ:  w.Data.Center.TZ,
 			Lat: w.Data.Center.Lat,

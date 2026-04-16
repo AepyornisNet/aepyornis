@@ -523,8 +523,7 @@ func createMapData(gpxContent *gpx.GPX) *WorkoutGeoMeta {
 	mapCenter := center(gpxContent)
 
 	data := &WorkoutGeoMeta{
-		Creator: gpxContent.Creator,
-		Center:  mapCenter,
+		Center: mapCenter,
 	}
 
 	return data

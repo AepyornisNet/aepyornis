@@ -69,6 +69,7 @@ type Workout struct {
 	Data                *WorkoutGeoMeta      `gorm:"constraint:OnDelete:CASCADE" json:"data,omitempty"` // The map data associated with the workout
 	File                *WorkoutFile         `gorm:"constraint:OnDelete:CASCADE" json:"file,omitempty"` // The file data associated with the workout
 	Name                string               `gorm:"not null" json:"name"`                              // The name of the workout
+	Creator             string               `json:"creator"`                                           // The device/app that created the workout
 	Notes               string               `json:"notes"`                                             // The notes associated with the workout, in markdown
 	Type                WorkoutType          `json:"type"`                                              // The type of the workout
 	SubType             string               `json:"subType"`                                           // The subtype of the workout
@@ -266,14 +267,6 @@ func (w *Workout) AverageCadence() float64 {
 	return w.Stats.AverageCadence
 }
 
-func (w *Workout) Creator() string {
-	if w.Data == nil {
-		return ""
-	}
-
-	return w.Data.Creator
-}
-
 func (w *Workout) City() string {
 	if w.Data == nil || w.Data.Address == nil {
 		return ""
@@ -344,7 +337,7 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 		}
 
 		if workoutType == WorkoutTypeAutoDetect {
-			w.Type = autoDetectWorkoutType(w.Stats, w.Data, string(w.Type), w.Name)
+			w.Type = autoDetectWorkoutType(w.Stats, w.Creator, string(w.Type), w.Name)
 		} else {
 			w.Type = workoutType
 		}
@@ -409,15 +402,13 @@ func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	}
 }
 
-func autoDetectWorkoutType(stats *WorkoutStats, data *WorkoutGeoMeta, dataType string, dataName string) WorkoutType {
+func autoDetectWorkoutType(stats *WorkoutStats, creator string, dataType string, dataName string) WorkoutType {
 	if workoutType, ok := WorkoutTypeFromData(dataType); ok {
 		return workoutType
 	}
 
-	if data != nil {
-		if workoutType, ok := WorkoutTypeFromData(data.Creator); ok {
-			return workoutType
-		}
+	if workoutType, ok := WorkoutTypeFromData(creator); ok {
+		return workoutType
 	}
 
 	if len(dataName) > 0 {
@@ -521,10 +512,6 @@ func (w *Workout) Create(db *gorm.DB) error {
 }
 
 func (w *Workout) create(db *gorm.DB) error {
-	if w.Data == nil {
-		return ErrInvalidData
-	}
-
 	return db.Transaction(func(tx *gorm.DB) error {
 		if err := omitWorkoutAssociations(tx).Create(w).Error; err != nil {
 			return fmt.Errorf("create workout row: %w", err)
@@ -534,8 +521,7 @@ func (w *Workout) create(db *gorm.DB) error {
 			return fmt.Errorf("save workout stats: %w", err)
 		}
 
-		w.Data.WorkoutID = w.ID
-		if err := w.Data.Save(tx); err != nil {
+		if err := saveWorkoutGeoMeta(tx, w); err != nil {
 			return fmt.Errorf("save workout geo meta: %w", err)
 		}
 
@@ -627,10 +613,6 @@ func (w *Workout) Save(db *gorm.DB) error {
 }
 
 func (w *Workout) save(db *gorm.DB) error {
-	if w.Data == nil {
-		return ErrInvalidData
-	}
-
 	return db.Transaction(func(tx *gorm.DB) error {
 		if w.ID == 0 && w.UserID != 0 && !w.Date.IsZero() {
 			var existing Workout
@@ -653,8 +635,7 @@ func (w *Workout) save(db *gorm.DB) error {
 			return err
 		}
 
-		w.Data.WorkoutID = w.ID
-		if err := w.Data.Save(tx); err != nil {
+		if err := saveWorkoutGeoMeta(tx, w); err != nil {
 			return err
 		}
 
@@ -1149,6 +1130,7 @@ func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
 		Stats:           stats,
 		Records:         append([]WorkoutRecord(nil), records...),
 		Name:            GPXName(gpxContent),
+		Creator:         gpxContent.Creator,
 		Type:            workoutType,
 		DateEnd:         dateEnd,
 		TotalDistance:   totalDistance,
@@ -1197,6 +1179,24 @@ func saveWorkoutStats(tx *gorm.DB, w *Workout) error {
 	w.StatsID = &statsID
 
 	return tx.Model(&Workout{}).Where("id = ?", w.ID).Update("stats_id", w.StatsID).Error
+}
+
+func saveWorkoutGeoMeta(tx *gorm.DB, w *Workout) error {
+	if w == nil {
+		return nil
+	}
+
+	if w.Data == nil {
+		if w.ID == 0 {
+			return nil
+		}
+
+		return tx.Where("workout_id = ?", w.ID).Delete(&WorkoutGeoMeta{}).Error
+	}
+
+	w.Data.WorkoutID = w.ID
+
+	return w.Data.Save(tx)
 }
 
 func saveLapStats(tx *gorm.DB, lap *WorkoutLap) error {

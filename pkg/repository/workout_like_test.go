@@ -14,14 +14,13 @@ func createRepositoryWorkout(t *testing.T, db *gorm.DB, dbUser *model.User) *mod
 	t.Helper()
 
 	w := &model.Workout{
-		Date:   time.Now().UTC(),
-		Name:   "Repository Workout",
-		Type:   model.WorkoutTypeRunning,
-		User:   dbUser,
-		UserID: dbUser.ID,
-		Data: &model.WorkoutGeoMeta{
-			Creator: "repository-test",
-		},
+		Date:    time.Now().UTC(),
+		Name:    "Repository Workout",
+		Type:    model.WorkoutTypeRunning,
+		Creator: "repository-test",
+		User:    dbUser,
+		UserID:  dbUser.ID,
+		Data:    &model.WorkoutGeoMeta{},
 	}
 
 	require.NoError(t, w.Save(db))

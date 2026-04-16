@@ -136,7 +136,7 @@ func (u *User) GetStatistics(statConfig StatConfig) (*Statistics, error) {
 			statConfig.GetDayBucketFormatExpression(sqlDialect),
 		).
 		Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
-		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
+		Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("user_id = ?", u.ID)
 
 	if statConfig.Since != "" && statConfig.Since != "forever" {
@@ -237,7 +237,7 @@ func (u *User) GetTotals(t WorkoutType, startDate, endDate *time.Time) (*Bucket,
 			"'all' as bucket",
 		).
 		Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
-		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
+		Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("user_id = ?", u.ID).
 		Where("workouts.type = ?", t)
 
@@ -523,7 +523,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 		query := u.db.
 			Table("workouts").
 			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
-			Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
+			Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 			Where("user_id = ?", u.ID).
 			Where("workouts.type = ?", t).
 			Select("workouts.id as id", v+" as value", "workouts.date as date").

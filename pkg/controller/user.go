@@ -101,7 +101,7 @@ func (uc *userController) GetTotals(c echo.Context) error {
 				"'all' as bucket",
 			).
 			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
-			Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
+			Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 		targetUser.ID,
 		viewer.ID,
 		viewerActorIRI,
@@ -992,7 +992,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 
 	for k, v := range mapping {
 		query := model.ScopeVisibleWorkouts(
-			uc.context.GetDB().Table("workouts").Joins("left join workout_stats on workouts.stats_id = workout_stats.id").Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
+			uc.context.GetDB().Table("workouts").Joins("left join workout_stats on workouts.stats_id = workout_stats.id").Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 			targetUser.ID,
 			viewer.ID,
 			viewerActorIRI,
@@ -1017,7 +1017,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 	}
 
 	durationQuery := model.ScopeVisibleWorkouts(
-		uc.context.GetDB().Table("workouts").Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
+		uc.context.GetDB().Table("workouts").Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 		targetUser.ID,
 		viewer.ID,
 		viewerActorIRI,

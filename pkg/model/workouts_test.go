@@ -62,7 +62,7 @@ func TestWorkout_Parse(t *testing.T) {
 
 	assert.NotNil(t, w)
 	assert.Equal(t, WorkoutTypeRunning, w.Type)
-	assert.Equal(t, "Garmin Connect", w.Data.Creator)
+	assert.Equal(t, "Garmin Connect", w.Creator)
 	assert.Equal(t, "some notes", w.Notes)
 	assert.InDelta(t, 39, w.Data.Center.Lat, 1)
 	assert.InDelta(t, -77, w.Data.Center.Lng, 1)

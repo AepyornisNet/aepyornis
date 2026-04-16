@@ -109,6 +109,7 @@ func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte
 		Stats:           stats,
 		Records:         append([]model.WorkoutRecord(nil), records...),
 		Name:            model.GPXName(g),
+		Creator:         g.Creator,
 		Type:            workoutType,
 		CustomType:      customType,
 		DateEnd:         model.WorkoutEndFromRecords(records),

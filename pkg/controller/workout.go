@@ -1038,7 +1038,7 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 
 	workout.User = user
 	workout.UserID = user.ID
-	workout.Data.Creator = "web-interface"
+	workout.Creator = "web-interface"
 
 	equipment, err := wc.context.EquipmentRepo().GetByUserIDs(user.ID, d.EquipmentIDs)
 	if err != nil {

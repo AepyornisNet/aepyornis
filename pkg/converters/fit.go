@@ -70,6 +70,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 			Date:            startTime,
 			DateEnd:         startTime.Add(elapsedDuration),
 			Name:            workoutName,
+			Creator:         act.FileId.Manufacturer.String(),
 			Type:            workoutType,
 			SubType:         subType,
 			CustomType:      customType,
@@ -486,10 +487,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 		return nil, nil
 	}
 
-	data := &model.WorkoutGeoMeta{
-		Creator: act.FileId.Manufacturer.String(),
-		Center:  model.MapCenter{},
-	}
+	data := &model.WorkoutGeoMeta{Center: model.MapCenter{}}
 
 	data.UpdateExtraMetrics(points)
 
