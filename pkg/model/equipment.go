@@ -25,14 +25,6 @@ type Equipment struct {
 	Notes  string `json:"notes" form:"notes"`                       // The notes associated with the equipment, in markdown
 }
 
-type WorkoutEquipment struct {
-	Model
-	Workout     Workout   `json:"workout"`
-	Equipment   Equipment `json:"equipment"`
-	WorkoutID   uint64    `gorm:"not null;uniqueIndex:idx_workout_equipment" json:"workoutID"`   // The ID of the workout
-	EquipmentID uint64    `gorm:"not null;uniqueIndex:idx_workout_equipment" json:"equipmentID"` // The ID of the equipment
-}
-
 func (e *Equipment) ValidFor(wt *WorkoutType) bool {
 	return slices.Contains(e.DefaultFor, *wt)
 }
