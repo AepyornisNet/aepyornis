@@ -89,14 +89,15 @@ func parseSingle(f parserFunc, fileType string, filename string, content []byte)
 }
 
 func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte) *model.Workout {
-	data := model.MapDataFromGPX(g)
+	data, records := model.MapDataAndRecordsFromGPX(g)
 	if data == nil {
-		data = &model.MapData{}
+		data = &model.WorkoutGeoMeta{}
 	}
 
 	w := &model.Workout{
-		Data: data,
-		Name: data.WorkoutData.Name,
+		Data:    data,
+		Records: append([]model.WorkoutRecord(nil), records...),
+		Name:    data.WorkoutData.Name,
 	}
 
 	if date := model.GPXDate(g); date != nil {

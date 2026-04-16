@@ -44,7 +44,7 @@ func (c *cli) workoutsParseCmd() *cobra.Command {
 				fmt.Printf("- name: %s\n", f.Name)
 
 				if f.HasTracks() {
-					fmt.Printf("  points: %d\n", len(f.Data.Points))
+					fmt.Printf("  points: %d\n", len(f.Records))
 					continue
 				}
 
@@ -85,9 +85,10 @@ func (c *cli) workoutsCalculateCmd() *cobra.Command {
 				fmt.Printf("- total distance: %.0fm (%s %s)\n", workout.TotalDistance(), dstF(workout.TotalDistance()), dst)
 				fmt.Printf("- total duration: %.0fs (%s)\n", workout.TotalDuration().Seconds(), workout.TotalDuration().String())
 
-				p := workout.Data.Points
-				lp := p[len(p)-1]
-				fmt.Printf("- last point total distance: %sm (%s %s)\n", templatehelpers.RoundFloat64(lp.TotalDistance), dstF(lp.TotalDistance), dst)
+				if len(workout.Records) > 0 {
+					lp := workout.Records[len(workout.Records)-1]
+					fmt.Printf("- last point total distance: %sm (%s %s)\n", templatehelpers.RoundFloat64(lp.TotalDistance), dstF(lp.TotalDistance), dst)
+				}
 			}
 
 			return nil

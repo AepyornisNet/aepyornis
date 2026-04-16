@@ -112,7 +112,7 @@ func (m *ManualWorkout) ToDuration() *time.Duration {
 
 func (m *ManualWorkout) Update(w *model.Workout) error {
 	if w.Data == nil {
-		w.Data = &model.MapData{}
+		w.Data = &model.WorkoutGeoMeta{}
 	}
 
 	if m.Visibility != nil && !m.Visibility.IsValid() {
@@ -143,7 +143,7 @@ func (m *ManualWorkout) Update(w *model.Workout) error {
 		}
 	}
 
-	w.Data.UpdateExtraMetrics()
+	w.UpdateExtraMetrics()
 
 	return nil
 }

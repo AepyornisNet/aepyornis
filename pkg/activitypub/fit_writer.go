@@ -140,12 +140,12 @@ func WorkoutNoteContent(workout *model.Workout) string {
 }
 
 func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mesgdef.Record { //nolint:gocyclo
-	if workout == nil || workout.Data == nil || len(workout.Data.Points) == 0 {
+	if workout == nil || workout.Data == nil || len(workout.Records) == 0 {
 		return nil
 	}
 
-	records := make([]*mesgdef.Record, 0, len(workout.Data.Points))
-	for i, p := range workout.Data.Points {
+	records := make([]*mesgdef.Record, 0, len(workout.Records))
+	for i, p := range workout.Records {
 		ts := p.Time
 		if ts.IsZero() {
 			ts = fallbackStart.Add(p.TotalDuration)
@@ -188,7 +188,7 @@ func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mes
 }
 
 func buildWorkoutLaps(workout *model.Workout, start, end time.Time) []*mesgdef.Lap {
-	if workout == nil || workout.Data == nil || len(workout.Data.Laps) == 0 {
+	if workout == nil || workout.Data == nil || len(workout.Laps) == 0 {
 		return []*mesgdef.Lap{mesgdef.NewLap(nil).
 			SetStartTime(start).
 			SetTimestamp(end).
@@ -198,8 +198,8 @@ func buildWorkoutLaps(workout *model.Workout, start, end time.Time) []*mesgdef.L
 			SetAvgSpeedScaled(workout.AverageSpeed())}
 	}
 
-	laps := make([]*mesgdef.Lap, 0, len(workout.Data.Laps))
-	for _, lap := range workout.Data.Laps {
+	laps := make([]*mesgdef.Lap, 0, len(workout.Laps))
+	for _, lap := range workout.Laps {
 		lapStart := lap.Start
 		if lapStart.IsZero() {
 			lapStart = start

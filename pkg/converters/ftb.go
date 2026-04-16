@@ -68,7 +68,7 @@ func convertToWorkout(iw indoorWorkout) *model.Workout {
 
 	name := strings.TrimSuffix(path.Base(wd.Name), path.Ext(wd.Name))
 	w := &model.Workout{
-		Data: &model.MapData{WorkoutData: wd},
+		Data: &model.WorkoutGeoMeta{WorkoutData: wd},
 		Date: wd.Start,
 		Name: name,
 	}

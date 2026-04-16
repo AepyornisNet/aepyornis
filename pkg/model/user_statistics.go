@@ -83,8 +83,8 @@ type (
 		ID    uint64        `json:"id"`    // The workout ID of the record
 	}
 
-	// WorkoutRecord is the collection of records for a single workout type
-	WorkoutRecord struct {
+	// WorkoutPersonalRecord is the collection of records for a single workout type
+	WorkoutPersonalRecord struct {
 		WorkoutType         WorkoutType    `json:"workoutType"`         // The type of the workout
 		AverageSpeed        Float64Record  `json:"averageSpeed"`        // The record with the maximum average speed
 		AverageSpeedNoPause Float64Record  `json:"averageSpeedNoPause"` // The record with the maximum average speed without pause

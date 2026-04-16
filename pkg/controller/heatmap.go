@@ -83,21 +83,20 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 
 	u := hc.context.GetUser(c)
 
-	query := hc.context.GetDB().Table("map_data_details_points AS mdp").
-		Joins("JOIN map_data AS md ON md.id = mdp.map_data_id").
-		Joins("JOIN workouts ON workouts.id = md.workout_id").
+	query := hc.context.GetDB().Table("workout_records AS wr").
+		Joins("JOIN workouts ON workouts.id = wr.workout_id").
 		Where("workouts.user_id = ?", u.ID)
 
 	if bounds != nil {
 		query = query.Where(
-			"mdp.lat >= ? AND mdp.lat <= ? AND mdp.lng >= ? AND mdp.lng <= ?",
+			"wr.lat >= ? AND wr.lat <= ? AND wr.lng >= ? AND wr.lng <= ?",
 			bounds.minLat, bounds.maxLat, bounds.minLng, bounds.maxLng,
 		)
 	}
 
 	if !hasCellSize {
 		rows := make([]rawCoordinateRow, 0)
-		if err := query.Select("mdp.lat AS lat, mdp.lng AS lng").Find(&rows).Error; err != nil {
+		if err := query.Select("wr.lat AS lat, wr.lng AS lng").Find(&rows).Error; err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 
@@ -114,7 +113,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 
 	rows := make([]aggregatedCoordinateRow, 0)
 	if err := query.
-		Select("floor(mdp.lat / ?) AS lat_cell, floor(mdp.lng / ?) AS lng_cell, count(*) AS weight", cellSize, cellSize).
+		Select("floor(wr.lat / ?) AS lat_cell, floor(wr.lng / ?) AS lng_cell, count(*) AS weight", cellSize, cellSize).
 		Group("lat_cell, lng_cell").
 		Find(&rows).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)

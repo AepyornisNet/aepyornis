@@ -16,11 +16,13 @@ type (
 		PauseDuration    time.Duration `json:"pauseDuration"`                       // The total pause duration of the workout
 		TotalRepetitions int           `json:"totalRepetitions"`                    // The number of repetitions of the workout
 		TotalWeight      float64       `json:"totalWeight"`                         // The weight of the workout
-		Laps             []WorkoutLap  `gorm:"serializer:json" json:"laps"`         // The laps of the workout
 		ExtraMetrics     []string      `gorm:"serializer:json" json:"extraMetrics"` // Extra metrics available
 	}
 
 	WorkoutLap struct {
+		WorkoutID uint64 `gorm:"not null;primaryKey;index:idx_workout_laps_parent_order,unique" json:"-"`
+		SortOrder int    `gorm:"not null;primaryKey;index:idx_workout_laps_parent_order,unique" json:"-"`
+
 		WorkoutStats
 		Start         time.Time     `json:"start"`         // The start time of the lap
 		Stop          time.Time     `json:"stop"`          // The stop time of the lap
@@ -163,9 +165,5 @@ func (d *WorkoutData) MergeNonZero(from WorkoutData) {
 
 	if from.MaxPower != 0 {
 		d.MaxPower = from.MaxPower
-	}
-
-	if len(from.Laps) > 0 {
-		d.Laps = from.Laps
 	}
 }

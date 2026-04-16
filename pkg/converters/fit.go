@@ -34,7 +34,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	activityTime := fitActivityStartTime(act)
 
 	gpxFile := buildGPXFromActivity(act)
-	data := mapDataFromActivity(act, gpxFile)
+	data, records := mapDataFromActivity(act, gpxFile)
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
 
@@ -47,9 +47,11 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 		elapsedDuration := durationFromSeconds(session.TotalElapsedTimeScaled())
 		pauseDuration := maxDuration(elapsedDuration-moveDuration, 0)
 
+		clonedData := cloneMapData(data)
 		w := &model.Workout{
-			Data: cloneMapData(data),
-			Date: startTime,
+			Data:    clonedData,
+			Date:    startTime,
+			Records: append([]model.WorkoutRecord(nil), records...),
 		}
 
 		if w.Data != nil {
@@ -62,9 +64,10 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 				TotalDuration: elapsedDuration,
 				PauseDuration: pauseDuration,
 				WorkoutStats:  stats,
-				Laps:          laps,
 			})
 		}
+
+		w.Laps = append([]model.WorkoutLap(nil), laps...)
 
 		if session.SubSport != typedef.SubSportInvalid {
 			w.Data.WorkoutData.SubType = session.SubSport.String()
@@ -355,11 +358,11 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 // mapDataFromActivity converts a FIT activity into MapData, falling back to
 // non-positional record data when coordinates are missing so charts and
 // breakdowns remain available even without a map.
-func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData {
-	data := model.MapDataFromGPX(gpxFile)
+func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
+	data, records := model.MapDataAndRecordsFromGPX(gpxFile)
 
-	if data != nil && len(data.Points) > 0 {
-		return data
+	if data != nil && len(records) > 0 {
+		return data, records
 	}
 
 	return buildMapDataWithoutPositions(act)
@@ -371,12 +374,12 @@ func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData
 // and breakdowns.
 //
 //nolint:gocyclo // branching covers optional FIT metrics without positions
-func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
+func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
 	if act == nil || len(act.Records) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	points := make([]model.MapPoint, 0, len(act.Records))
+	points := make([]model.WorkoutRecord, 0, len(act.Records))
 
 	var (
 		totalDistance float64
@@ -480,7 +483,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 			elevationValue = 0
 		}
 
-		points = append(points, model.MapPoint{
+		points = append(points, model.WorkoutRecord{
 			Time:          ts,
 			Lat:           0,
 			Lng:           0,
@@ -495,7 +498,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 
 	// If no points survived, bail out to avoid empty details
 	if len(points) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Normalize elevation bounds when none are present
@@ -506,10 +509,9 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 		maxElevation = 0
 	}
 
-	data := &model.MapData{
+	data := &model.WorkoutGeoMeta{
 		Creator: act.FileId.Manufacturer.String(),
 		Center:  model.MapCenter{},
-		Points:  points,
 		WorkoutData: model.WorkoutData{
 			Start:         startTime,
 			Stop:          points[len(points)-1].Time,
@@ -536,10 +538,10 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 		}
 	}
 
-	data.UpdateExtraMetrics()
+	data.UpdateExtraMetrics(points)
 	sanitizeMapData(data)
 
-	return data
+	return data, points
 }
 
 func safeDivide(distance float64, d time.Duration) float64 {
@@ -549,7 +551,7 @@ func safeDivide(distance float64, d time.Duration) float64 {
 	return distance / d.Seconds()
 }
 
-func sanitizeMapData(data *model.MapData) {
+func sanitizeMapData(data *model.WorkoutGeoMeta) {
 	if data == nil {
 		return
 	}
@@ -575,13 +577,12 @@ func sanitizeMapData(data *model.MapData) {
 	}
 }
 
-func cloneMapData(src *model.MapData) *model.MapData {
+func cloneMapData(src *model.WorkoutGeoMeta) *model.WorkoutGeoMeta {
 	if src == nil {
-		return &model.MapData{}
+		return &model.WorkoutGeoMeta{}
 	}
 
 	clone := *src
-	clone.Points = append([]model.MapPoint(nil), src.Points...)
 
 	return &clone
 }

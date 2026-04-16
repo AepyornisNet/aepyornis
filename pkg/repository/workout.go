@@ -26,7 +26,7 @@ func NewWorkout(db *gorm.DB) Workout {
 func (r *workoutRepository) GetByUserID(userID uint64, id uint64) (*model.Workout, error) {
 	var workout model.Workout
 
-	q := model.PreloadWorkoutDetails(r.db).Preload("GPX").Preload("Equipment")
+	q := model.PreloadWorkoutDetails(r.db).Preload("File").Preload("Equipment")
 	if err := q.Where(&model.Workout{UserID: userID}).First(&workout, id).Error; err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (r *workoutRepository) ListByUserAndFilters(userID uint64, filters *model.W
 	}
 
 	q = model.PreloadWorkoutData(q).
-		Preload("GPX").
+		Preload("File").
 		Where("user_id = ?", userID).
 		Order("date DESC")
 
@@ -98,7 +98,7 @@ func (r *workoutRepository) ListByUserAndFilters(userID uint64, filters *model.W
 
 func (r *workoutRepository) GetByIDForRead(id uint64, withRouteSegmentMatches bool) (*model.Workout, error) {
 	q := model.PreloadWorkoutDetails(r.db).
-		Preload("GPX").
+		Preload("File").
 		Preload("Equipment").
 		Preload("User").
 		Preload("User.Profile")
@@ -118,7 +118,7 @@ func (r *workoutRepository) GetByIDForRead(id uint64, withRouteSegmentMatches bo
 func (r *workoutRepository) GetDetailsByID(id uint64) (*model.Workout, error) {
 	var workout model.Workout
 
-	if err := model.PreloadWorkoutDetails(r.db).Preload("GPX").First(&workout, id).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(r.db).Preload("File").First(&workout, id).Error; err != nil {
 		return nil, err
 	}
 

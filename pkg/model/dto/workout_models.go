@@ -423,10 +423,10 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 	// Add map data with details
 	if w.Data != nil {
 		// Add climbs
-		if len(w.Data.Climbs) > 0 {
-			wr.Climbs = make([]ClimbSegmentResponse, len(w.Data.Climbs))
-			points := w.Data.Points
-			for i, climb := range w.Data.Climbs {
+		if len(w.Climbs) > 0 {
+			wr.Climbs = make([]ClimbSegmentResponse, len(w.Climbs))
+			points := w.Records
+			for i, climb := range w.Climbs {
 				duration := 0.0
 				if len(points) > 0 && climb.StartIdx >= 0 && climb.EndIdx >= climb.StartIdx && climb.EndIdx < len(points) {
 					duration = (points[climb.EndIdx].TotalDuration - points[climb.StartIdx].TotalDuration).Seconds()
@@ -465,8 +465,8 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 		}
 	}
 
-	if w.Data != nil && len(w.Data.Laps) > 1 {
-		wr.Laps = NewWorkoutLapResponses(w.Data.Laps)
+	if len(w.Laps) > 1 {
+		wr.Laps = NewWorkoutLapResponses(w.Laps)
 	}
 
 	if len(records) > 0 {
@@ -477,7 +477,7 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 				TargetDistance:  r.TargetDistance,
 				Distance:        r.Distance,
 				DurationSeconds: r.DurationSeconds,
-				AverageSpeed:    r.AverageSpeed,
+				AverageSpeed:    r.Average,
 				StartIndex:      r.StartIndex,
 				EndIndex:        r.EndIndex,
 				Rank:            r.Rank,
@@ -520,7 +520,7 @@ func NewWorkoutLapResponses(laps []model.WorkoutLap) []WorkoutLapResponse {
 	return resp
 }
 
-func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.MapPoint, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.WorkoutRecord, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
 	if len(laps) == 0 {
 		return nil
 	}
@@ -722,7 +722,7 @@ func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endId
 	return resp
 }
 
-func findClosestPointIndex(points []model.MapPoint, t time.Time) int {
+func findClosestPointIndex(points []model.WorkoutRecord, t time.Time) int {
 	if len(points) == 0 || t.IsZero() {
 		return -1
 	}
@@ -756,8 +756,8 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 	}
 
 	// Add detailed points in compact format
-	if len(w.Data.Points) > 0 {
-		points := w.Data.Points
+	if len(w.Records) > 0 {
+		points := w.Records
 		mapData.Details = &MapDataDetailsResponse{
 			Position:     make([][]float64, len(points)),
 			Time:         make([]time.Time, len(points)),

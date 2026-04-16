@@ -59,18 +59,20 @@ func correctAltitude(creator string, lat, long, alt float64) float64 {
 	return h
 }
 
-type MapData struct {
+type WorkoutGeoMeta struct {
 	Model
-	Address *geo.Address `gorm:"serializer:json" json:"address"`                                 // The address of the workout
-	Points  []MapPoint   `gorm:"foreignKey:MapDataID;constraint:OnDelete:CASCADE" json:"points"` // The GPS points of the workout
+	Address *geo.Address `gorm:"serializer:json" json:"address"` // The address of the workout
 
-	Workout       *Workout  `gorm:"foreignKey:WorkoutID" json:"-"`                                  // The user who owns this profile
-	Creator       string    `json:"creator"`                                                        // The tool that created this workout
-	AddressString string    `json:"addressString"`                                                  // The generic location of the workout
-	Center        MapCenter `gorm:"serializer:json" json:"center"`                                  // The center of the workout (in coordinates)
-	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"`                          // The workout this data belongs to
-	Climbs        []Segment `gorm:"foreignKey:MapDataID;constraint:OnDelete:CASCADE" json:"climbs"` // Auto-detected climbs
+	Workout       *Workout  `gorm:"foreignKey:WorkoutID" json:"-"`         // The user who owns this profile
+	Creator       string    `json:"creator"`                               // The tool that created this workout
+	AddressString string    `json:"addressString"`                         // The generic location of the workout
+	Center        MapCenter `gorm:"serializer:json" json:"center"`         // The center of the workout (in coordinates)
+	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"` // The workout this data belongs to
 	WorkoutData
+}
+
+func (WorkoutGeoMeta) TableName() string {
+	return "workout_geo_meta"
 }
 
 // MapDataRangeStats describes aggregate statistics for a contiguous slice of map points.
@@ -91,9 +93,9 @@ type MapCenter struct {
 	Lng float64 `json:"lng"` // Longitude
 }
 
-type MapPoint struct {
-	MapDataID uint64 `gorm:"not null;primaryKey;index:idx_map_data_points_parent_order,unique" json:"-"`
-	SortOrder int    `gorm:"not null;primaryKey;index:idx_map_data_points_parent_order,unique" json:"-"`
+type WorkoutRecord struct {
+	WorkoutID uint64 `gorm:"not null;primaryKey;index:idx_workout_records_parent_order,unique" json:"-"`
+	SortOrder int    `gorm:"not null;primaryKey;index:idx_workout_records_parent_order,unique" json:"-"`
 
 	Time time.Time `json:"time"` // The time the point was recorded
 
@@ -110,28 +112,28 @@ type MapPoint struct {
 	SlopeGrade      float64       `json:"slopeGrade"`      // The grade of the slope at this point
 }
 
-func (MapPoint) TableName() string {
-	return "map_data_details_points"
+func (WorkoutRecord) TableName() string {
+	return "workout_records"
 }
 
 func (m *MapCenter) ToOrbPoint() *orb.Point {
 	return &orb.Point{m.Lng, m.Lat}
 }
 
-func (m *MapPoint) ToOrbPoint() *orb.Point {
+func (m *WorkoutRecord) ToOrbPoint() *orb.Point {
 	return &orb.Point{m.Lng, m.Lat}
 }
 
-func (m *MapData) UpdateExtraMetrics() {
+func (m *WorkoutGeoMeta) UpdateExtraMetrics(points []WorkoutRecord) {
 	if m == nil ||
-		len(m.Points) == 0 {
+		len(points) == 0 {
 		return
 	}
 
 	metrics := []string{}
 	found := map[string]bool{}
 
-	for _, d := range m.Points {
+	for _, d := range points {
 		for k := range d.ExtraMetrics {
 			if found[k] {
 				continue
@@ -159,7 +161,7 @@ func addressIsUnset(a *geo.Address) bool {
 	return false
 }
 
-func (m *MapData) UpdateAddress() {
+func (m *WorkoutGeoMeta) UpdateAddress() {
 	if addressIsUnset(m.Address) && !m.Center.IsZero() {
 		m.Address = m.Center.Address()
 	}
@@ -171,7 +173,7 @@ func (m *MapData) UpdateAddress() {
 	m.AddressString = m.addressString()
 }
 
-func (m *MapData) hasAddressString() bool {
+func (m *WorkoutGeoMeta) hasAddressString() bool {
 	switch m.AddressString {
 	case "", UnknownLocation:
 		return false
@@ -180,7 +182,7 @@ func (m *MapData) hasAddressString() bool {
 	}
 }
 
-func (m *MapData) addressString() string {
+func (m *WorkoutGeoMeta) addressString() string {
 	if addressIsUnset(m.Address) {
 		return UnknownLocation
 	}
@@ -210,42 +212,10 @@ func shouldAddState(address *geo.Address) bool {
 	return address.CountryCode == "US"
 }
 
-func (m *MapData) Save(db *gorm.DB) error {
+func (m *WorkoutGeoMeta) Save(db *gorm.DB) error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Omit("Climbs", "Points").Save(m).Error; err != nil {
+		if err := tx.Save(m).Error; err != nil {
 			return err
-		}
-
-		for i := range m.Climbs {
-			m.Climbs[i].MapDataID = m.ID
-			m.Climbs[i].SortOrder = i
-		}
-
-		if err := tx.Where("map_data_id = ?", m.ID).Delete(&Segment{}).Error; err != nil {
-			return err
-		}
-
-		if len(m.Climbs) > 0 {
-			if err := tx.CreateInBatches(&m.Climbs, mapDataClimbsInsertBatchSize).Error; err != nil {
-				return err
-			}
-		}
-
-		if m.Points != nil {
-			for i := range m.Points {
-				m.Points[i].MapDataID = m.ID
-				m.Points[i].SortOrder = i
-			}
-
-			if err := tx.Where("map_data_id = ?", m.ID).Delete(&MapPoint{}).Error; err != nil {
-				return err
-			}
-
-			if len(m.Points) > 0 {
-				if err := tx.CreateInBatches(&m.Points, mapDataPointsInsertBatchSize).Error; err != nil {
-					return err
-				}
-			}
 		}
 
 		return nil
@@ -255,22 +225,25 @@ func (m *MapData) Save(db *gorm.DB) error {
 func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
 	return db.
 		Preload("Data").
+		Preload("Laps", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		}).
+		Preload("Climbs", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		}).
 		Preload("Attachments", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC").Order("id ASC")
-		}).
-		Preload("Data.Climbs", func(tx *gorm.DB) *gorm.DB {
-			return tx.Order("sort_order ASC")
 		})
 }
 
 func PreloadWorkoutDetails(db *gorm.DB) *gorm.DB {
 	return PreloadWorkoutData(db).
-		Preload("Data.Points", func(tx *gorm.DB) *gorm.DB {
+		Preload("Records", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		})
 }
 
-func (m *MapPoint) AverageSpeed() float64 {
+func (m *WorkoutRecord) AverageSpeed() float64 {
 	if m.Duration.Seconds() == 0 {
 		return 0
 	}
@@ -278,7 +251,7 @@ func (m *MapPoint) AverageSpeed() float64 {
 	return m.Distance / m.Duration.Seconds()
 }
 
-func (m *MapPoint) EnhancedElevation() float64 {
+func (m *WorkoutRecord) EnhancedElevation() float64 {
 	if v, ok := m.ExtraMetrics["elevation"]; ok && !math.IsNaN(v) {
 		return v
 	}
@@ -288,10 +261,9 @@ func (m *MapPoint) EnhancedElevation() float64 {
 
 // StatsForRange aggregates statistics for a slice of points identified by start and end indices (inclusive).
 // Returns false when the provided range is invalid or the data contains no points.
-func (d *MapData) StatsForRange(startIdx, endIdx int) (MapDataRangeStats, bool) {
+func (d *WorkoutGeoMeta) StatsForRange(points []WorkoutRecord, startIdx, endIdx int) (MapDataRangeStats, bool) {
 	stats := MapDataRangeStats{}
 
-	points := d.Points
 	if len(points) == 0 || startIdx < 0 || endIdx >= len(points) || startIdx > endIdx {
 		return stats, false
 	}
@@ -353,7 +325,7 @@ func newRangeAggregator(stats *MapDataRangeStats, startIdx int) *rangeAggregator
 	return &rangeAggregator{stats: stats, minSetFrom: startIdx}
 }
 
-func (r *rangeAggregator) processMetrics(points []MapPoint, startIdx, endIdx int) {
+func (r *rangeAggregator) processMetrics(points []WorkoutRecord, startIdx, endIdx int) {
 	for i := startIdx; i <= endIdx; i++ {
 		p := points[i]
 
@@ -368,14 +340,14 @@ func (r *rangeAggregator) processMetrics(points []MapPoint, startIdx, endIdx int
 	}
 }
 
-func (r *rangeAggregator) handleElevation(p MapPoint) {
+func (r *rangeAggregator) handleElevation(p WorkoutRecord) {
 	ele := p.EnhancedElevation()
 
 	r.stats.MinElevation = min(r.stats.MinElevation, ele)
 	r.stats.MaxElevation = max(r.stats.MaxElevation, ele)
 }
 
-func (r *rangeAggregator) handleSlope(p MapPoint) {
+func (r *rangeAggregator) handleSlope(p WorkoutRecord) {
 	r.sumSlope += p.SlopeGrade
 	r.slopeCnt++
 
@@ -390,7 +362,7 @@ func (r *rangeAggregator) handleSlope(p MapPoint) {
 	r.stats.MaxSlope = max(r.stats.MaxSlope, p.SlopeGrade)
 }
 
-func (r *rangeAggregator) handleUpDown(points []MapPoint, idx, startIdx int) {
+func (r *rangeAggregator) handleUpDown(points []WorkoutRecord, idx, startIdx int) {
 	if idx <= startIdx {
 		return
 	}
@@ -406,7 +378,7 @@ func (r *rangeAggregator) handleUpDown(points []MapPoint, idx, startIdx int) {
 	r.stats.TotalDown += -delta
 }
 
-func (r *rangeAggregator) handleCadence(p MapPoint) {
+func (r *rangeAggregator) handleCadence(p WorkoutRecord) {
 	cad, ok := p.ExtraMetrics["cadence"]
 	if !ok || cad <= 0 {
 		return
@@ -422,7 +394,7 @@ func (r *rangeAggregator) handleCadence(p MapPoint) {
 	}
 }
 
-func (r *rangeAggregator) handleHeartRate(p MapPoint) {
+func (r *rangeAggregator) handleHeartRate(p WorkoutRecord) {
 	hr, ok := p.ExtraMetrics["heart-rate"]
 	if !ok || hr <= 0 {
 		return
@@ -438,7 +410,7 @@ func (r *rangeAggregator) handleHeartRate(p MapPoint) {
 	}
 }
 
-func (r *rangeAggregator) handleRespirationRate(p MapPoint) {
+func (r *rangeAggregator) handleRespirationRate(p WorkoutRecord) {
 	rr, ok := p.ExtraMetrics["respiration-rate"]
 	if !ok || rr <= 0 {
 		return
@@ -454,7 +426,7 @@ func (r *rangeAggregator) handleRespirationRate(p MapPoint) {
 	}
 }
 
-func (r *rangeAggregator) handlePower(p MapPoint) {
+func (r *rangeAggregator) handlePower(p WorkoutRecord) {
 	power, ok := p.ExtraMetrics["power"]
 	if !ok || power <= 0 {
 		return
@@ -470,7 +442,7 @@ func (r *rangeAggregator) handlePower(p MapPoint) {
 	}
 }
 
-func (r *rangeAggregator) handleTemperature(p MapPoint) {
+func (r *rangeAggregator) handleTemperature(p WorkoutRecord) {
 	temp, ok := p.ExtraMetrics["temperature"]
 	if !ok || math.IsNaN(temp) {
 		return
@@ -492,7 +464,7 @@ func (r *rangeAggregator) handleTemperature(p MapPoint) {
 	r.maxTemp = max(r.maxTemp, temp)
 }
 
-func (r *rangeAggregator) processDurations(points []MapPoint, startIdx, endIdx int) {
+func (r *rangeAggregator) processDurations(points []WorkoutRecord, startIdx, endIdx int) {
 	for i := startIdx; i <= endIdx; i++ {
 		p := points[i]
 
@@ -576,7 +548,7 @@ func (r *rangeAggregator) finalize() {
 	}
 }
 
-func (m *MapPoint) DistanceTo(m2 *MapPoint) float64 {
+func (m *WorkoutRecord) DistanceTo(m2 *WorkoutRecord) float64 {
 	if m == nil || m2 == nil {
 		return math.Inf(1)
 	}
@@ -584,7 +556,7 @@ func (m *MapPoint) DistanceTo(m2 *MapPoint) float64 {
 	return m.AsGPXPoint().Distance2D(m2.AsGPXPoint())
 }
 
-func (m *MapPoint) AsGPXPoint() *gpx.Point {
+func (m *WorkoutRecord) AsGPXPoint() *gpx.Point {
 	ele := gpx.NewNullableFloat64(m.Elevation)
 
 	return &gpx.Point{Latitude: m.Lat, Longitude: m.Lng, Elevation: *ele}
@@ -727,7 +699,7 @@ func maxSpeedForSegment(segment gpx.GPXTrackSegment) float64 {
 	return ms
 }
 
-func createMapData(gpxContent *gpx.GPX) *MapData {
+func createMapData(gpxContent *gpx.GPX) *WorkoutGeoMeta {
 	if len(gpxContent.Tracks) == 0 {
 		return nil
 	}
@@ -765,7 +737,7 @@ func createMapData(gpxContent *gpx.GPX) *MapData {
 	gpxContent.ReduceGpxToSingleTrack()
 	mapCenter := center(gpxContent)
 
-	data := &MapData{
+	data := &WorkoutGeoMeta{
 		Creator: gpxContent.Creator,
 		Center:  mapCenter,
 		WorkoutData: WorkoutData{
@@ -802,7 +774,7 @@ func createMapData(gpxContent *gpx.GPX) *MapData {
 	return data
 }
 
-func (m *MapData) correctNaN() {
+func (m *WorkoutGeoMeta) correctNaN() {
 	if math.IsNaN(m.MinElevation) {
 		m.MinElevation = 0
 	}
@@ -828,13 +800,15 @@ func (m *MapData) correctNaN() {
 	}
 }
 
-func MapDataFromGPX(gpxContent *gpx.GPX) *MapData {
+func MapDataAndRecordsFromGPX(gpxContent *gpx.GPX) (*WorkoutGeoMeta, []WorkoutRecord) {
 	data := createMapData(gpxContent)
 
 	points := allGPXPoints(gpxContent)
 	if len(points) == 0 {
-		return data
+		return data, nil
 	}
+
+	records := make([]WorkoutRecord, 0, len(points))
 
 	totalDist := 0.0
 	totalDist2D := 0.0
@@ -866,7 +840,7 @@ func MapDataFromGPX(gpxContent *gpx.GPX) *MapData {
 		extraMetrics.Set("elevation", correctAltitude(gpxContent.Creator, pt.Point.Latitude, pt.Point.Longitude, pt.Elevation.Value()))
 		extraMetrics.ParseGPXExtensions(pt.Extensions)
 
-		data.Points = append(data.Points, MapPoint{
+		records = append(records, WorkoutRecord{
 			Lat:             pt.Point.Latitude,
 			Lng:             pt.Point.Longitude,
 			Elevation:       pt.Elevation.Value(),
@@ -881,12 +855,18 @@ func MapDataFromGPX(gpxContent *gpx.GPX) *MapData {
 		})
 	}
 
-	if len(data.Points) > 0 {
-		data.Start = data.Points[0].Time
-		data.Stop = data.Points[len(data.Points)-1].Time
+	if len(records) > 0 {
+		data.Start = records[0].Time
+		data.Stop = records[len(records)-1].Time
 	}
 
 	data.correctNaN()
+
+	return data, records
+}
+
+func MapDataFromGPX(gpxContent *gpx.GPX) *WorkoutGeoMeta {
+	data, _ := MapDataAndRecordsFromGPX(gpxContent)
 
 	return data
 }

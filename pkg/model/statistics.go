@@ -135,7 +135,7 @@ func (u *User) GetStatistics(statConfig StatConfig) (*Statistics, error) {
 			statConfig.GetBucketFormatExpression(sqlDialect),
 			statConfig.GetDayBucketFormatExpression(sqlDialect),
 		).
-		Joins("join map_data on workouts.id = map_data.workout_id").
+		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("user_id = ?", u.ID)
 
 	if statConfig.Since != "" && statConfig.Since != "forever" {
@@ -235,7 +235,7 @@ func (u *User) GetTotals(t WorkoutType, startDate, endDate *time.Time) (*Bucket,
 			"sum(total_up) as up",
 			"'all' as bucket",
 		).
-		Joins("join map_data on workouts.id = map_data.workout_id").
+		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("user_id = ?", u.ID).
 		Where("workouts.type = ?", t)
 
@@ -255,12 +255,12 @@ func (u *User) GetTotals(t WorkoutType, startDate, endDate *time.Time) (*Bucket,
 	return r, nil
 }
 
-func (u *User) GetAllRecords(startDate, endDate *time.Time) ([]*WorkoutRecord, error) {
+func (u *User) GetAllPersonalRecords(startDate, endDate *time.Time) ([]*WorkoutPersonalRecord, error) {
 	if u.IsAnonymous() {
 		return nil, ErrAnonymousUser
 	}
 
-	rs := []*WorkoutRecord{}
+	rs := []*WorkoutPersonalRecord{}
 
 	for _, w := range DistanceWorkoutTypes() {
 		r, err := u.GetRecords(w, startDate, endDate)
@@ -288,7 +288,7 @@ func (u *User) getStoredDistanceRecords(t WorkoutType, startDate, endDate *time.
 	}
 
 	rows := []struct {
-		WorkoutIntervalRecord
+		WorkoutIntervalBest
 		Date time.Time
 	}{}
 
@@ -296,7 +296,8 @@ func (u *User) getStoredDistanceRecords(t WorkoutType, startDate, endDate *time.
 		Select("workout_interval_records.*, workouts.date as date").
 		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
 		Where("workouts.user_id = ?", u.ID).
-		Where("workouts.type = ?", t)
+		Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypeSpeed)
 
 	if startDate != nil {
 		q = q.Where("workouts.date >= ?", *startDate)
@@ -324,7 +325,7 @@ func (u *User) getStoredDistanceRecords(t WorkoutType, startDate, endDate *time.
 			TargetDistance: r.TargetDistance,
 			Distance:       r.Distance,
 			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
-			AverageSpeed:   r.AverageSpeed,
+			AverageSpeed:   r.Average,
 			WorkoutID:      r.WorkoutID,
 			Date:           r.Date,
 			StartIndex:     r.StartIndex,
@@ -368,7 +369,7 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 	}
 
 	rows := []struct {
-		WorkoutIntervalRecord
+		WorkoutIntervalBest
 		Date time.Time
 	}{}
 
@@ -377,6 +378,7 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
 		Where("workouts.user_id = ?", u.ID).
 		Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypeSpeed).
 		Where("workout_interval_records.label = ?", label)
 
 	if startDate != nil {
@@ -415,7 +417,7 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 			TargetDistance: r.TargetDistance,
 			Distance:       r.Distance,
 			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
-			AverageSpeed:   r.AverageSpeed,
+			AverageSpeed:   r.Average,
 			WorkoutID:      r.WorkoutID,
 			Date:           r.Date,
 			StartIndex:     r.StartIndex,
@@ -446,7 +448,7 @@ func (u *User) GetClimbRanking(t WorkoutType, startDate, endDate *time.Time, lim
 			continue
 		}
 
-		for _, climb := range w.Data.Climbs {
+		for _, climb := range w.Climbs {
 			if climb.Type != "climb" {
 				continue
 			}
@@ -500,12 +502,12 @@ func (u *User) GetClimbRanking(t WorkoutType, startDate, endDate *time.Time, lim
 }
 
 //nolint:gocyclo // queries gather several aggregates in one pass
-func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*WorkoutRecord, error) {
+func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*WorkoutPersonalRecord, error) {
 	if t == "" {
 		t = u.Profile.TotalsShow
 	}
 
-	r := &WorkoutRecord{WorkoutType: t}
+	r := &WorkoutPersonalRecord{WorkoutType: t}
 
 	mapping := map[*Float64Record]string{
 		&r.Distance:            "max(total_distance)",
@@ -518,7 +520,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 	for k, v := range mapping {
 		query := u.db.
 			Table("workouts").
-			Joins("join map_data on workouts.id = map_data.workout_id").
+			Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 			Where("user_id = ?", u.ID).
 			Where("workouts.type = ?", t).
 			Select("workouts.id as id", v+" as value", "workouts.date as date").
@@ -542,7 +544,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 
 	query := u.db.
 		Table("workouts").
-		Joins("join map_data on workouts.id = map_data.workout_id").
+		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("user_id = ?", u.ID).
 		Where("workouts.type = ?", t).
 		Select("workouts.id as id", "max(total_duration) as value", "workouts.date as date").

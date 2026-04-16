@@ -72,7 +72,7 @@ func NewTotalsResponse(b *model.Bucket) TotalsResponse {
 }
 
 // NewWorkoutRecordResponse converts a database WorkoutRecord to API response
-func NewWorkoutRecordResponse(wr *model.WorkoutRecord) WorkoutRecordResponse {
+func NewWorkoutRecordResponse(wr *model.WorkoutPersonalRecord) WorkoutRecordResponse {
 	response := WorkoutRecordResponse{
 		WorkoutType: string(wr.WorkoutType),
 		Active:      wr.Active,
@@ -158,7 +158,7 @@ func NewWorkoutRecordResponse(wr *model.WorkoutRecord) WorkoutRecordResponse {
 }
 
 // NewWorkoutRecordsResponse converts database workout records to API responses
-func NewWorkoutRecordsResponse(wrs []*model.WorkoutRecord) []WorkoutRecordResponse {
+func NewWorkoutRecordsResponse(wrs []*model.WorkoutPersonalRecord) []WorkoutRecordResponse {
 	results := make([]WorkoutRecordResponse, len(wrs))
 	for i, wr := range wrs {
 		results[i] = NewWorkoutRecordResponse(wr)

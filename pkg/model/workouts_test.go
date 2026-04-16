@@ -67,7 +67,7 @@ func TestWorkout_Parse(t *testing.T) {
 	assert.InDelta(t, 39, w.Data.Center.Lat, 1)
 	assert.InDelta(t, -77, w.Data.Center.Lng, 1)
 
-	assert.Len(t, w.Data.Points, 206)
+	assert.Len(t, w.Records, 206)
 	assert.InDelta(t, 3125, w.Data.TotalDistance, 1)
 	assert.InDelta(t, 3096, w.Data.TotalDistance2D, 1)
 	assert.InDelta(t, 3.297, w.Data.AverageSpeed, 0.01)
@@ -84,12 +84,13 @@ func TestWorkout_UpdateData(t *testing.T) {
 
 	ud := w.UpdatedAt
 	d := w.Data
+	drs := append([]WorkoutRecord(nil), w.Records...)
 	assert.NotZero(t, d.ID)
 	assert.NotZero(t, w.Data.ID)
 
-	d.CalculateSlopes()
+	w.CalculateSlopes()
 
-	w.setData(dummyMapData())
+	w.setData(dummyMapData(), nil, nil)
 	require.NoError(t, w.Save(db))
 
 	assert.NotEqual(t, d, w.Data)
@@ -97,7 +98,12 @@ func TestWorkout_UpdateData(t *testing.T) {
 	ud = w.UpdatedAt
 
 	require.NoError(t, w.UpdateData(db))
-	assert.Equal(t, d.Points, w.Data.Points)
+	assert.Len(t, w.Records, len(drs))
+	if assert.NotEmpty(t, w.Records) {
+		assert.Equal(t, drs[0].Time, w.Records[0].Time)
+		assert.Equal(t, drs[len(drs)-1].Time, w.Records[len(w.Records)-1].Time)
+		assert.InDelta(t, drs[len(drs)-1].TotalDistance, w.Records[len(w.Records)-1].TotalDistance, 0.01)
+	}
 	assert.NotEqual(t, ud, w.UpdatedAt)
 }
 
@@ -112,7 +118,7 @@ func TestWorkout_SaveAndGet(t *testing.T) {
 	newW, err := GetWorkoutDetails(db, w.ID)
 	require.NoError(t, err)
 	assert.Equal(t, w.ID, newW.ID)
-	assert.Equal(t, w.Data.Points, newW.Data.Points)
+	assert.Equal(t, w.Records, newW.Records)
 }
 
 func TestWorkout_Recreate(t *testing.T) {

@@ -49,17 +49,17 @@ const (
 	MinLength             float64 = 300.0
 )
 
-// Segment represents a detected climb or descent.
-type Segment struct {
-	MapDataID uint64 `gorm:"not null;primaryKey;index:idx_map_data_climbs_parent_order,unique" json:"-"`
-	SortOrder int    `gorm:"not null;primaryKey;index:idx_map_data_climbs_parent_order,unique" json:"-"`
+// WorkoutClimb represents a detected climb or descent.
+type WorkoutClimb struct {
+	WorkoutID uint64 `gorm:"not null;primaryKey;index:idx_workout_climbs_parent_order,unique" json:"-"`
+	SortOrder int    `gorm:"not null;primaryKey;index:idx_workout_climbs_parent_order,unique" json:"-"`
 
 	Index    int           `json:"index"`
 	Type     SlopeKind     `json:"type"`
 	StartIdx int           `json:"start_idx"`
-	Start    MapPoint      `gorm:"serializer:json" json:"start"`
+	Start    WorkoutRecord `gorm:"serializer:json" json:"start"`
 	EndIdx   int           `json:"end_idx"`
-	End      MapPoint      `gorm:"serializer:json" json:"end"`
+	End      WorkoutRecord `gorm:"serializer:json" json:"end"`
 	Gain     float64       `json:"gain,omitempty"`
 	Length   float64       `json:"length_m"`
 	AvgSlope float64       `json:"avg_slope"`
@@ -67,22 +67,18 @@ type Segment struct {
 	Category Category      `json:"category"`
 }
 
-func (Segment) TableName() string {
-	return "map_data_climbs"
-}
-
-func (s *Segment) IsClimb() bool {
+func (s *WorkoutClimb) IsClimb() bool {
 	return s.Type == SlopeKindClimb
 }
 
 // Detector holds the state for the segment detection process.
 type Detector struct {
-	segments  []Segment
+	segments  []WorkoutClimb
 	kind      SlopeKind
 	slopeSign float64
 	state     SlopeState
 
-	currentSegmentPoints []*MapPoint
+	currentSegmentPoints []*WorkoutRecord
 
 	startIdx      int
 	pauseStartIdx int
@@ -90,17 +86,18 @@ type Detector struct {
 	pauseDescent  float64
 }
 
-// CalculateSlopes processes a slice of MapPoints and returns a slice of ClimbDetection.
-func (m *MapData) CalculateSlopes() {
-	climbs := DetectSignificantSegments(m.Points, SlopeKindClimb)
-	descents := DetectSignificantSegments(m.Points, SlopeKindDescent)
+// CalculateSlopes processes workout records and stores detected climbs on the workout.
+func (w *Workout) CalculateSlopes() {
+	points := w.Records
+	climbs := DetectSignificantSegments(points, SlopeKindClimb)
+	descents := DetectSignificantSegments(points, SlopeKindDescent)
 
 	climbs = append(climbs, descents...)
-	slices.SortFunc(climbs, func(a, b Segment) int {
+	slices.SortFunc(climbs, func(a, b WorkoutClimb) int {
 		return cmp.Compare(a.Start.TotalDistance, b.Start.TotalDistance)
 	})
 
-	m.Climbs = climbs
+	w.Climbs = climbs
 }
 
 // NewDetector initializes a new Detector for a given kind.
@@ -118,7 +115,7 @@ func NewDetector(kind SlopeKind) *Detector {
 }
 
 // SmoothSlopeGrades computes a weighted average slope at each point.
-func SmoothSlopeGrades(points []MapPoint, windowMeters float64) {
+func SmoothSlopeGrades(points []WorkoutRecord, windowMeters float64) {
 	for i := range points {
 		centerDist := points[i].TotalDistance
 		var weightedSlopeSum, totalWeight float64
@@ -147,7 +144,7 @@ func SmoothSlopeGrades(points []MapPoint, windowMeters float64) {
 }
 
 // DetectSignificantSegments processes a slice of points to find climbs or descents.
-func DetectSignificantSegments(points []MapPoint, kind SlopeKind) []Segment {
+func DetectSignificantSegments(points []WorkoutRecord, kind SlopeKind) []WorkoutClimb {
 	detector := NewDetector(kind)
 
 	if len(points) < 2 {
@@ -179,7 +176,7 @@ func DetectSignificantSegments(points []MapPoint, kind SlopeKind) []Segment {
 				detector.state = StateInSegment
 				detector.startIdx = i - 1
 				// Add previous and current point to start the segment.
-				detector.currentSegmentPoints = []*MapPoint{prevPoint, currentPoint}
+				detector.currentSegmentPoints = []*WorkoutRecord{prevPoint, currentPoint}
 			}
 
 		case StateInSegment:
@@ -211,7 +208,7 @@ func DetectSignificantSegments(points []MapPoint, kind SlopeKind) []Segment {
 
 				// Reset state to search for a new segment.
 				detector.state = StateSearching
-				detector.currentSegmentPoints = []*MapPoint{}
+				detector.currentSegmentPoints = []*WorkoutRecord{}
 			}
 		}
 	}
@@ -225,7 +222,7 @@ func DetectSignificantSegments(points []MapPoint, kind SlopeKind) []Segment {
 }
 
 // validateAndAppendSegment is a private method that validates and appends a segment to the detector's slice.
-func (d *Detector) validateAndAppendSegment(segmentPoints []*MapPoint) {
+func (d *Detector) validateAndAppendSegment(segmentPoints []*WorkoutRecord) {
 	if len(segmentPoints) < 2 {
 		return
 	}
@@ -257,7 +254,7 @@ func (d *Detector) validateAndAppendSegment(segmentPoints []*MapPoint) {
 		cat = ClassifyClimbCategory(length, avgSlope)
 	}
 
-	segment := Segment{
+	segment := WorkoutClimb{
 		Index:    len(d.segments) + 1,
 		StartIdx: d.startIdx,
 		EndIdx:   d.startIdx + len(segmentPoints) - 1,

@@ -7,22 +7,34 @@ import (
 	"gorm.io/gorm"
 )
 
-// WorkoutIntervalRecord stores best distance intervals per workout for ranking purposes.
-type WorkoutIntervalRecord struct {
+type WorkoutIntervalBestType string
+
+const (
+	WorkoutIntervalBestTypeSpeed WorkoutIntervalBestType = "speed"
+	WorkoutIntervalBestTypePower WorkoutIntervalBestType = "power"
+)
+
+// WorkoutIntervalBest stores best distance intervals per workout for ranking purposes.
+type WorkoutIntervalBest struct {
 	Model
 	WorkoutID       uint64  `gorm:"index:idx_workout_target"`
 	Label           string  `gorm:"size:64"`
 	TargetDistance  float64 `gorm:"index:idx_workout_target"`
 	Distance        float64
 	DurationSeconds float64
-	AverageSpeed    float64
+	Average         float64
+	Type            WorkoutIntervalBestType `gorm:"size:16;not null;default:speed;index:idx_workout_target"`
 	StartIndex      int
 	EndIndex        int
 }
 
+func (WorkoutIntervalBest) TableName() string {
+	return "workout_interval_records"
+}
+
 // WorkoutIntervalRecordWithRank represents a stored interval together with its computed rank.
 type WorkoutIntervalRecordWithRank struct {
-	WorkoutIntervalRecord
+	WorkoutIntervalBest
 	Rank int64 `gorm:"column:rank"`
 }
 
@@ -32,12 +44,13 @@ func GetWorkoutIntervalRecordsWithRank(db *gorm.DB, userID uint64, workoutType W
 	base := db.
 		Table("workout_interval_records as wir").
 		Select(`wir.*, RANK() OVER (
-			PARTITION BY wir.label
+			PARTITION BY wir.type, wir.label
 			ORDER BY wir.duration_seconds ASC, wir.distance DESC, workouts.date ASC, wir.workout_id ASC
 		) AS rank`).
 		Joins("join workouts on workouts.id = wir.workout_id").
 		Where("workouts.user_id = ?", userID).
-		Where("workouts.type = ?", workoutType)
+		Where("workouts.type = ?", workoutType).
+		Where("wir.type = ?", WorkoutIntervalBestTypeSpeed)
 
 	rows := []WorkoutIntervalRecordWithRank{}
 	if err := db.Table("(?) as ranked", base).
@@ -64,11 +77,11 @@ func betterDistanceRecord(a, b DistanceRecord) bool {
 
 //nolint:gocyclo // sliding window search evaluates all targets in one pass
 func fastestDistancesForWorkout(w *Workout, targets []DistanceRecordTarget) []DistanceRecord {
-	if w == nil || w.Data == nil || len(w.Data.Points) < 2 {
+	if w == nil || w.Data == nil || len(w.Records) < 2 {
 		return nil
 	}
 
-	points := w.Data.Points
+	points := w.Records
 	prefixDistance := make([]float64, len(points)+1)
 	prefixMoving := make([]time.Duration, len(points)+1)
 
@@ -139,7 +152,7 @@ func biggestClimbRecord(workouts []*Workout) *ClimbRecord {
 			continue
 		}
 
-		for _, climb := range w.Data.Climbs {
+		for _, climb := range w.Climbs {
 			if climb.Type != "climb" {
 				continue
 			}

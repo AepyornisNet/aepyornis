@@ -9,21 +9,21 @@ import (
 )
 
 type BreakdownItem struct {
-	FirstPoint      *MapPoint     `json:"firstPoint"`      // First GPS point in this item
-	LastPoint       *MapPoint     `json:"lastPoint"`       // Last GPS point in this item
-	StartIndex      int           `json:"startIndex"`      // Start index in the points slice
-	EndIndex        int           `json:"endIndex"`        // End index in the points slice
-	UnitName        string        `json:"unitName"`        // Unit name
-	UnitCount       float64       `json:"unitCount"`       // Count of the unit per item
-	Counter         int           `json:"counter"`         // Counter of this item in the list of items
-	Distance        float64       `json:"distance"`        // Distance in this item
-	Distance2D      float64       `json:"distance2D"`      // 2D distance in this item
-	TotalDistance   float64       `json:"totalDistance"`   // Total distance in all items up to and including this item
-	TotalDistance2D float64       `json:"totalDistance2D"` // Total 2D distance in all items up to and including this item
-	Duration        time.Duration `json:"duration"`        // Duration in this item (moving time)
-	TotalDuration   time.Duration `json:"totalDuration"`   // Total duration in all items up to and including this item (moving time)
-	Speed           float64       `json:"speed"`           // Speed in this item
-	PauseDuration   time.Duration `json:"pauseDuration"`   // Paused duration in this item
+	FirstPoint      *WorkoutRecord `json:"firstPoint"`      // First GPS point in this item
+	LastPoint       *WorkoutRecord `json:"lastPoint"`       // Last GPS point in this item
+	StartIndex      int            `json:"startIndex"`      // Start index in the points slice
+	EndIndex        int            `json:"endIndex"`        // End index in the points slice
+	UnitName        string         `json:"unitName"`        // Unit name
+	UnitCount       float64        `json:"unitCount"`       // Count of the unit per item
+	Counter         int            `json:"counter"`         // Counter of this item in the list of items
+	Distance        float64        `json:"distance"`        // Distance in this item
+	Distance2D      float64        `json:"distance2D"`      // 2D distance in this item
+	TotalDistance   float64        `json:"totalDistance"`   // Total distance in all items up to and including this item
+	TotalDistance2D float64        `json:"totalDistance2D"` // Total 2D distance in all items up to and including this item
+	Duration        time.Duration  `json:"duration"`        // Duration in this item (moving time)
+	TotalDuration   time.Duration  `json:"totalDuration"`   // Total duration in all items up to and including this item (moving time)
+	Speed           float64        `json:"speed"`           // Speed in this item
+	PauseDuration   time.Duration  `json:"pauseDuration"`   // Paused duration in this item
 
 	MinElevation float64 `json:"minElevation"`
 	MaxElevation float64 `json:"maxElevation"`
@@ -45,7 +45,7 @@ type BreakdownItem struct {
 	IsWorst      bool    `json:"isWorst"` // Whether this item is the worst of the list
 }
 
-func (bi *BreakdownItem) createNext(fp *MapPoint) BreakdownItem {
+func (bi *BreakdownItem) createNext(fp *WorkoutRecord) BreakdownItem {
 	return BreakdownItem{
 		UnitCount:     bi.UnitCount,
 		UnitName:      bi.UnitName,
@@ -57,7 +57,7 @@ func (bi *BreakdownItem) createNext(fp *MapPoint) BreakdownItem {
 	}
 }
 
-func (bi *BreakdownItem) canHave(count float64, unit string, fp *MapPoint) bool {
+func (bi *BreakdownItem) canHave(count float64, unit string, fp *WorkoutRecord) bool {
 	switch unit {
 	case "distance":
 		return bi.canHaveDistance(fp.Distance, float64(bi.Counter)*count)
@@ -130,13 +130,13 @@ func calculateBestAndWorst(items []BreakdownItem) {
 
 func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem {
 	if w.Data == nil ||
-		len(w.Data.Points) == 0 {
+		len(w.Records) == 0 {
 		return nil
 	}
 
 	var items []BreakdownItem
 
-	points := w.Data.Points
+	points := w.Records
 
 	nextItem := BreakdownItem{
 		UnitCount:  count,
@@ -153,7 +153,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 			nextItem.EndIndex = i
 			nextItem.LastPoint = &points[i]
 			nextItem.CalcultateSpeed()
-			if stats, ok := w.Data.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
+			if stats, ok := w.Data.StatsForRange(w.Records, nextItem.StartIndex, nextItem.EndIndex); ok {
 				nextItem.applyRangeStats(stats)
 			}
 			items = append(items, nextItem)
@@ -180,7 +180,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 
 	if nextItem.FirstPoint != nil {
 		nextItem.CalcultateSpeed()
-		if stats, ok := w.Data.StatsForRange(nextItem.StartIndex, nextItem.EndIndex); ok {
+		if stats, ok := w.Data.StatsForRange(w.Records, nextItem.StartIndex, nextItem.EndIndex); ok {
 			nextItem.applyRangeStats(stats)
 		}
 		items = append(items, nextItem)

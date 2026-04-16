@@ -100,7 +100,7 @@ func (uc *userController) GetTotals(c echo.Context) error {
 				"sum(total_up) as up",
 				"'all' as bucket",
 			).
-			Joins("join map_data on workouts.id = map_data.workout_id"),
+			Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 		targetUser.ID,
 		viewer.ID,
 		viewerActorIRI,
@@ -320,7 +320,7 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, err := u.GetAllRecords(startDate, endDate)
+	records, err := u.GetAllPersonalRecords(startDate, endDate)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -950,12 +950,12 @@ func (uc *userController) renderHandle(c echo.Context, username string) string {
 	return fmt.Sprintf("@%s@%s", username, host)
 }
 
-func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, viewerActorIRI string, startDate, endDate *time.Time) ([]*model.WorkoutRecord, error) {
+func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, viewerActorIRI string, startDate, endDate *time.Time) ([]*model.WorkoutPersonalRecord, error) {
 	if targetUser.IsAnonymous() {
 		return nil, model.ErrAnonymousUser
 	}
 
-	rs := []*model.WorkoutRecord{}
+	rs := []*model.WorkoutPersonalRecord{}
 
 	for _, w := range model.DistanceWorkoutTypes() {
 		r, err := uc.getVisibleRecordForType(targetUser, viewer, viewerActorIRI, w, startDate, endDate)
@@ -971,7 +971,7 @@ func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, view
 	return rs, nil
 }
 
-func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User, viewerActorIRI string, t model.WorkoutType, startDate, endDate *time.Time) (*model.WorkoutRecord, error) {
+func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User, viewerActorIRI string, t model.WorkoutType, startDate, endDate *time.Time) (*model.WorkoutPersonalRecord, error) {
 	if t == "" {
 		t = model.WorkoutTypeRunning
 		if targetUser != nil {
@@ -979,7 +979,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 		}
 	}
 
-	r := &model.WorkoutRecord{WorkoutType: t}
+	r := &model.WorkoutPersonalRecord{WorkoutType: t}
 
 	mapping := map[*model.Float64Record]string{
 		&r.Distance:            "max(total_distance)",
@@ -991,7 +991,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 
 	for k, v := range mapping {
 		query := model.ScopeVisibleWorkouts(
-			uc.context.GetDB().Table("workouts").Joins("join map_data on workouts.id = map_data.workout_id"),
+			uc.context.GetDB().Table("workouts").Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 			targetUser.ID,
 			viewer.ID,
 			viewerActorIRI,
@@ -1016,7 +1016,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 	}
 
 	durationQuery := model.ScopeVisibleWorkouts(
-		uc.context.GetDB().Table("workouts").Joins("join map_data on workouts.id = map_data.workout_id"),
+		uc.context.GetDB().Table("workouts").Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 		targetUser.ID,
 		viewer.ID,
 		viewerActorIRI,
@@ -1055,7 +1055,7 @@ func (uc *userController) getVisibleDistanceRanking(
 	limit, offset int,
 ) ([]model.DistanceRecord, int64, error) {
 	rows := []struct {
-		model.WorkoutIntervalRecord
+		model.WorkoutIntervalBest
 		Date time.Time
 	}{}
 
@@ -1067,6 +1067,7 @@ func (uc *userController) getVisibleDistanceRanking(
 		viewer.ID,
 		viewerActorIRI,
 	).Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", model.WorkoutIntervalBestTypeSpeed).
 		Where("workout_interval_records.label = ?", label)
 
 	if startDate != nil {
@@ -1103,7 +1104,7 @@ func (uc *userController) getVisibleDistanceRanking(
 			TargetDistance: row.TargetDistance,
 			Distance:       row.Distance,
 			Duration:       time.Duration(row.DurationSeconds * float64(time.Second)),
-			AverageSpeed:   row.AverageSpeed,
+			AverageSpeed:   row.Average,
 			WorkoutID:      row.WorkoutID,
 			Date:           row.Date,
 			StartIndex:     row.StartIndex,
@@ -1146,7 +1147,7 @@ func (uc *userController) getVisibleClimbRanking(targetUser, viewer *model.User,
 			continue
 		}
 
-		for _, climb := range workout.Data.Climbs {
+		for _, climb := range workout.Climbs {
 			if climb.Type != "climb" {
 				continue
 			}

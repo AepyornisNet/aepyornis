@@ -666,12 +666,12 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 
 	resp := dto.Response[dto.WorkoutBreakdownResponse]{}
 
-	preferLaps := (params.Mode == "" || params.Mode == "auto" || params.Mode == "laps") && workout.Data != nil && len(workout.Data.Laps) > 1
+	preferLaps := (params.Mode == "" || params.Mode == "auto" || params.Mode == "laps") && len(workout.Laps) > 1
 
 	if preferLaps {
 		resp.Results = dto.WorkoutBreakdownResponse{
 			Mode:  "laps",
-			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Points, requester.PreferredUnits()),
+			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Laps, workout.Records, requester.PreferredUnits()),
 		}
 
 		return c.JSON(http.StatusOK, resp)
@@ -725,11 +725,11 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if workout.Data == nil || len(workout.Data.Points) == 0 {
+	if workout.Data == nil || len(workout.Records) == 0 {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
-	points := workout.Data.Points
+	points := workout.Records
 	startIdx := 0
 	endIdx := len(points) - 1
 
@@ -745,7 +745,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
-	stats, ok := workout.Data.StatsForRange(startIdx, endIdx)
+	stats, ok := workout.Data.StatsForRange(workout.Records, startIdx, endIdx)
 	if !ok {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
@@ -1384,14 +1384,14 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("workout has no file"))
 	}
 
-	basename := workout.GPX.Filename
+	basename := workout.File.Filename
 	if basename == "" {
 		basename = "workout_" + strconv.FormatUint(workout.ID, 10) + ".gpx"
 	}
 
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
 
-	return c.Blob(http.StatusOK, "application/binary", workout.GPX.Content)
+	return c.Blob(http.StatusOK, "application/binary", workout.File.Content)
 }
 
 // DownloadWorkoutAttachment downloads a workout attachment

@@ -38,7 +38,7 @@ type RouteSegment struct {
 	AddressString string       `json:"addressString"`                     // The generic location of the workout
 	Filename      string       `json:"filename"`                          // The filename of the file
 
-	Points []MapPoint `gorm:"serializer:json" json:"points"` // The GPS points of the workout
+	Points []WorkoutRecord `gorm:"serializer:json" json:"points"` // The GPS points of the workout
 
 	Content             []byte               `gorm:"type:bytes" json:"content"`            // The file content
 	Checksum            []byte               `gorm:"not null;uniqueIndex" json:"checksum"` // The checksum of the content
@@ -85,7 +85,7 @@ func NewRouteSegment(notes string, filename string, content []byte) (*RouteSegme
 }
 
 func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams) ([]byte, error) {
-	points := workout.Data.Points[params.Start-1 : params.End-1]
+	points := workout.Records[params.Start-1 : params.End-1]
 
 	s := gpx.GPXTrackSegment{}
 
@@ -134,7 +134,7 @@ func (rs *RouteSegment) UpdateFromContent() error {
 	rs.MaxElevation = data.MaxElevation
 	rs.TotalUp = data.TotalUp
 	rs.TotalDown = data.TotalDown
-	rs.Points = data.Points
+	rs.Points = parsed[0].Records
 
 	// Detect whether the route is circular so matching can wrap around the end of the track.
 	if len(rs.Points) > 1 {
