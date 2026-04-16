@@ -517,89 +517,7 @@ func (w *Workout) create(db *gorm.DB) error {
 			return fmt.Errorf("create workout row: %w", err)
 		}
 
-		if err := saveWorkoutStats(tx, w); err != nil {
-			return fmt.Errorf("save workout stats: %w", err)
-		}
-
-		if err := saveWorkoutGeoMeta(tx, w); err != nil {
-			return fmt.Errorf("save workout geo meta: %w", err)
-		}
-
-		if w.Records != nil {
-			for i := range w.Records {
-				w.Records[i].WorkoutID = w.ID
-				w.Records[i].SortOrder = i
-			}
-
-			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutRecord{}).Error; err != nil {
-				return err
-			}
-
-			if len(w.Records) > 0 {
-				if err := tx.CreateInBatches(&w.Records, mapDataPointsInsertBatchSize).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		if w.Laps != nil {
-			for i := range w.Laps {
-				w.Laps[i].WorkoutID = w.ID
-				w.Laps[i].SortOrder = i
-				if err := saveLapStats(tx, &w.Laps[i]); err != nil {
-					return err
-				}
-			}
-
-			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutLap{}).Error; err != nil {
-				return err
-			}
-
-			if len(w.Laps) > 0 {
-				if err := tx.CreateInBatches(&w.Laps, mapDataClimbsInsertBatchSize).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		if w.Climbs != nil {
-			for i := range w.Climbs {
-				w.Climbs[i].WorkoutID = w.ID
-				w.Climbs[i].SortOrder = i
-			}
-
-			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutClimb{}).Error; err != nil {
-				return err
-			}
-
-			if len(w.Climbs) > 0 {
-				if err := tx.CreateInBatches(&w.Climbs, mapDataClimbsInsertBatchSize).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		if w.File != nil {
-			w.File.WorkoutID = w.ID
-
-			if w.File.ID == 0 {
-				if err := tx.Create(w.File).Error; err != nil {
-					return fmt.Errorf("save workout file: %w", err)
-				}
-			} else {
-				if err := tx.Save(w.File).Error; err != nil {
-					return fmt.Errorf("save workout file: %w", err)
-				}
-			}
-		}
-
-		if w.RouteSegmentMatches != nil {
-			if err := replaceWorkoutRouteSegmentMatches(tx, w.ID, w.RouteSegmentMatches); err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return persistWorkoutRelations(tx, w)
 	})
 }
 
@@ -631,90 +549,128 @@ func (w *Workout) save(db *gorm.DB) error {
 			}
 		}
 
-		if err := saveWorkoutStats(tx, w); err != nil {
-			return err
-		}
-
-		if err := saveWorkoutGeoMeta(tx, w); err != nil {
-			return err
-		}
-
-		if w.Records != nil {
-			for i := range w.Records {
-				w.Records[i].WorkoutID = w.ID
-				w.Records[i].SortOrder = i
-			}
-
-			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutRecord{}).Error; err != nil {
-				return err
-			}
-
-			if len(w.Records) > 0 {
-				if err := tx.CreateInBatches(&w.Records, mapDataPointsInsertBatchSize).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		if w.Laps != nil {
-			for i := range w.Laps {
-				w.Laps[i].WorkoutID = w.ID
-				w.Laps[i].SortOrder = i
-				if err := saveLapStats(tx, &w.Laps[i]); err != nil {
-					return err
-				}
-			}
-
-			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutLap{}).Error; err != nil {
-				return err
-			}
-
-			if len(w.Laps) > 0 {
-				if err := tx.CreateInBatches(&w.Laps, mapDataClimbsInsertBatchSize).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		if w.Climbs != nil {
-			for i := range w.Climbs {
-				w.Climbs[i].WorkoutID = w.ID
-				w.Climbs[i].SortOrder = i
-			}
-
-			if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutClimb{}).Error; err != nil {
-				return err
-			}
-
-			if len(w.Climbs) > 0 {
-				if err := tx.CreateInBatches(&w.Climbs, mapDataClimbsInsertBatchSize).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		if w.File != nil {
-			w.File.WorkoutID = w.ID
-
-			if w.File.ID == 0 {
-				if err := tx.Create(w.File).Error; err != nil {
-					return err
-				}
-			} else {
-				if err := tx.Save(w.File).Error; err != nil {
-					return err
-				}
-			}
-		}
-
-		if w.RouteSegmentMatches != nil {
-			if err := replaceWorkoutRouteSegmentMatches(tx, w.ID, w.RouteSegmentMatches); err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return persistWorkoutRelations(tx, w)
 	})
+}
+
+func persistWorkoutRelations(tx *gorm.DB, w *Workout) error {
+	if err := saveWorkoutStats(tx, w); err != nil {
+		return err
+	}
+
+	if err := saveWorkoutGeoMeta(tx, w); err != nil {
+		return err
+	}
+
+	if err := persistWorkoutRecords(tx, w); err != nil {
+		return err
+	}
+
+	if err := persistWorkoutLaps(tx, w); err != nil {
+		return err
+	}
+
+	if err := persistWorkoutClimbs(tx, w); err != nil {
+		return err
+	}
+
+	if err := persistWorkoutFile(tx, w); err != nil {
+		return err
+	}
+
+	if err := persistWorkoutRouteSegmentMatches(tx, w); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func persistWorkoutRecords(tx *gorm.DB, w *Workout) error {
+	if w.Records == nil {
+		return nil
+	}
+
+	for i := range w.Records {
+		w.Records[i].WorkoutID = w.ID
+		w.Records[i].SortOrder = i
+	}
+
+	if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutRecord{}).Error; err != nil {
+		return err
+	}
+
+	if len(w.Records) == 0 {
+		return nil
+	}
+
+	return tx.CreateInBatches(&w.Records, mapDataPointsInsertBatchSize).Error
+}
+
+func persistWorkoutLaps(tx *gorm.DB, w *Workout) error {
+	if w.Laps == nil {
+		return nil
+	}
+
+	for i := range w.Laps {
+		w.Laps[i].WorkoutID = w.ID
+		w.Laps[i].SortOrder = i
+		if err := saveLapStats(tx, &w.Laps[i]); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutLap{}).Error; err != nil {
+		return err
+	}
+
+	if len(w.Laps) == 0 {
+		return nil
+	}
+
+	return tx.CreateInBatches(&w.Laps, mapDataClimbsInsertBatchSize).Error
+}
+
+func persistWorkoutClimbs(tx *gorm.DB, w *Workout) error {
+	if w.Climbs == nil {
+		return nil
+	}
+
+	for i := range w.Climbs {
+		w.Climbs[i].WorkoutID = w.ID
+		w.Climbs[i].SortOrder = i
+	}
+
+	if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutClimb{}).Error; err != nil {
+		return err
+	}
+
+	if len(w.Climbs) == 0 {
+		return nil
+	}
+
+	return tx.CreateInBatches(&w.Climbs, mapDataClimbsInsertBatchSize).Error
+}
+
+func persistWorkoutFile(tx *gorm.DB, w *Workout) error {
+	if w.File == nil {
+		return nil
+	}
+
+	w.File.WorkoutID = w.ID
+
+	if w.File.ID == 0 {
+		return tx.Create(w.File).Error
+	}
+
+	return tx.Save(w.File).Error
+}
+
+func persistWorkoutRouteSegmentMatches(tx *gorm.DB, w *Workout) error {
+	if w.RouteSegmentMatches == nil {
+		return nil
+	}
+
+	return replaceWorkoutRouteSegmentMatches(tx, w.ID, w.RouteSegmentMatches)
 }
 
 func (w *Workout) ReparseFile() (*Workout, error) {
@@ -1093,8 +1049,7 @@ func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
 	data, records := MapDataAndRecordsFromGPX(gpxContent)
 	totalDistance, totalDistance2D, totalDuration := WorkoutTotalsFromRecords(records)
 	statsValues := WorkoutStatsFromRecords(records)
-	pauseDuration := time.Duration(0)
-	pauseDuration = WorkoutPauseDurationFromAverages(totalDistance, totalDuration, statsValues.AverageSpeedNoPause)
+	pauseDuration := WorkoutPauseDurationFromAverages(totalDistance, totalDuration, statsValues.AverageSpeedNoPause)
 	workoutType, _ := WorkoutTypeFromData(GPXType(gpxContent))
 	dateEnd := WorkoutEndFromRecords(records)
 	stats := &WorkoutStats{
