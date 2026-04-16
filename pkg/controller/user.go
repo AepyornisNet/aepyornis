@@ -956,6 +956,10 @@ func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, view
 		return nil, model.ErrAnonymousUser
 	}
 
+	if viewer != nil && targetUser != nil && viewer.ID != 0 && viewer.ID == targetUser.ID {
+		return targetUser.GetAllPersonalRecords(startDate, endDate)
+	}
+
 	rs := []*model.WorkoutPersonalRecord{}
 
 	for _, w := range model.DistanceWorkoutTypes() {
