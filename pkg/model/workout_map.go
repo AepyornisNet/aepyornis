@@ -7,7 +7,6 @@ import (
 
 	"github.com/codingsince1985/geo-golang"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"github.com/labstack/gommon/log"
 	"github.com/paulmach/orb"
 	"github.com/tkrajina/gpxgo/gpx"
@@ -59,21 +58,6 @@ func correctAltitude(creator string, lat, long, alt float64) float64 {
 	return h
 }
 
-type WorkoutGeoMeta struct {
-	Model
-	Address *geo.Address `gorm:"serializer:json" json:"address"` // The address of the workout
-
-	Workout       *Workout  `gorm:"foreignKey:WorkoutID" json:"-"`         // The user who owns this profile
-	Creator       string    `json:"creator"`                               // The tool that created this workout
-	AddressString string    `json:"addressString"`                         // The generic location of the workout
-	Center        MapCenter `gorm:"serializer:json" json:"center"`         // The center of the workout (in coordinates)
-	WorkoutID     uint64    `gorm:"not null;uniqueIndex" json:"workoutID"` // The workout this data belongs to
-}
-
-func (WorkoutGeoMeta) TableName() string {
-	return "workout_geo_meta"
-}
-
 // MapDataRangeStats describes aggregate statistics for a contiguous slice of map points.
 // It is intentionally rich so callers can derive per-item breakdowns as well as overall averages.
 type MapDataRangeStats struct {
@@ -92,133 +76,8 @@ type MapCenter struct {
 	Lng float64 `json:"lng"` // Longitude
 }
 
-type WorkoutRecord struct {
-	WorkoutID uint64 `gorm:"not null;primaryKey;index:idx_workout_records_parent_order,unique" json:"-"`
-	SortOrder int    `gorm:"not null;primaryKey;index:idx_workout_records_parent_order,unique" json:"-"`
-
-	Time time.Time `json:"time"` // The time the point was recorded
-
-	ExtraMetrics    ExtraMetrics  `json:"extraMetrics"`    // Extra metrics at this point
-	Lat             float64       `json:"lat"`             // The latitude of the point
-	Lng             float64       `json:"lng"`             // The longitude of the point
-	Elevation       float64       `json:"elevation"`       // The elevation of the point
-	Distance        float64       `json:"distance"`        // The distance from the previous point
-	Distance2D      float64       `json:"distance2D"`      // The 2D distance from the previous point
-	TotalDistance   float64       `json:"totalDistance"`   // The total distance of the workout up to this point
-	TotalDistance2D float64       `json:"totalDistance2D"` // The total 2D distance of the workout up to this point
-	Duration        time.Duration `json:"duration"`        // The duration from the previous point
-	TotalDuration   time.Duration `json:"totalDuration"`   // The total duration of the workout up to this point
-	SlopeGrade      float64       `json:"slopeGrade"`      // The grade of the slope at this point
-}
-
-func (WorkoutRecord) TableName() string {
-	return "workout_records"
-}
-
 func (m *MapCenter) ToOrbPoint() *orb.Point {
 	return &orb.Point{m.Lng, m.Lat}
-}
-
-func (m *WorkoutRecord) ToOrbPoint() *orb.Point {
-	return &orb.Point{m.Lng, m.Lat}
-}
-
-func (m *WorkoutGeoMeta) UpdateExtraMetrics(points []WorkoutRecord) []string {
-	if m == nil ||
-		len(points) == 0 {
-		return nil
-	}
-
-	metrics := []string{}
-	found := map[string]bool{}
-
-	for _, d := range points {
-		for k := range d.ExtraMetrics {
-			if found[k] {
-				continue
-			}
-
-			metrics = append(metrics, k)
-			found[k] = true
-		}
-	}
-
-	slices.Sort(metrics)
-
-	return metrics
-}
-
-func addressIsUnset(a *geo.Address) bool {
-	if a == nil {
-		return true
-	}
-
-	if a.Country == "" {
-		return true
-	}
-
-	return false
-}
-
-func (m *WorkoutGeoMeta) UpdateAddress() {
-	if addressIsUnset(m.Address) && !m.Center.IsZero() {
-		m.Address = m.Center.Address()
-	}
-
-	if addressIsUnset(m.Address) && m.hasAddressString() {
-		return
-	}
-
-	m.AddressString = m.addressString()
-}
-
-func (m *WorkoutGeoMeta) hasAddressString() bool {
-	switch m.AddressString {
-	case "", UnknownLocation:
-		return false
-	default:
-		return true
-	}
-}
-
-func (m *WorkoutGeoMeta) addressString() string {
-	if addressIsUnset(m.Address) {
-		return UnknownLocation
-	}
-
-	r := ""
-	if m.Address.CountryCode != "" {
-		r += templatehelpers.CountryToFlag(m.Address.CountryCode) + " "
-	}
-
-	switch {
-	case m.Address.City != "":
-		r += m.Address.City
-	case m.Address.Street != "":
-		r += m.Address.Street
-	default:
-		return r + m.Address.FormattedAddress
-	}
-
-	if shouldAddState(m.Address) {
-		r += ", " + m.Address.State
-	}
-
-	return r
-}
-
-func shouldAddState(address *geo.Address) bool {
-	return address.CountryCode == "US"
-}
-
-func (m *WorkoutGeoMeta) Save(db *gorm.DB) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Save(m).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
 }
 
 func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
@@ -242,22 +101,6 @@ func PreloadWorkoutDetails(db *gorm.DB) *gorm.DB {
 		Preload("Records", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		})
-}
-
-func (m *WorkoutRecord) AverageSpeed() float64 {
-	if m.Duration.Seconds() == 0 {
-		return 0
-	}
-
-	return m.Distance / m.Duration.Seconds()
-}
-
-func (m *WorkoutRecord) EnhancedElevation() float64 {
-	if v, ok := m.ExtraMetrics["elevation"]; ok && !math.IsNaN(v) {
-		return v
-	}
-
-	return m.Elevation
 }
 
 // StatsForRange aggregates statistics for a slice of points identified by start and end indices (inclusive).
@@ -547,20 +390,6 @@ func (r *rangeAggregator) finalize() {
 	if r.foundSpeed {
 		r.stats.MinSpeed = r.minSpeed
 	}
-}
-
-func (m *WorkoutRecord) DistanceTo(m2 *WorkoutRecord) float64 {
-	if m == nil || m2 == nil {
-		return math.Inf(1)
-	}
-
-	return m.AsGPXPoint().Distance2D(m2.AsGPXPoint())
-}
-
-func (m *WorkoutRecord) AsGPXPoint() *gpx.Point {
-	ele := gpx.NewNullableFloat64(m.Elevation)
-
-	return &gpx.Point{Latitude: m.Lat, Longitude: m.Lng, Elevation: *ele}
 }
 
 // center returns the center point (lat, lng) of gpx points

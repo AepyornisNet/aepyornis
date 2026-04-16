@@ -93,14 +93,6 @@ type Workout struct {
 	Dirty               bool                 `json:"dirty"`                                                   // Whether the workout has been modified and the details should be re-rendered
 }
 
-type WorkoutFile struct {
-	Model
-	Filename  string `json:"filename"`                              // The filename of the file
-	Content   []byte `gorm:"type:bytes" json:"content"`             // The file content
-	Checksum  []byte `gorm:"not null;uniqueIndex" json:"checksum"`  // The checksum of the content
-	WorkoutID uint64 `gorm:"not null;uniqueIndex" json:"workoutID"` // The ID of the workout
-}
-
 func omitWorkoutAssociations(tx *gorm.DB) *gorm.DB {
 	return tx.Omit(clause.Associations).Omit("Stats", "Data", "File", "Equipment", "RouteSegmentMatches", "Records", "Laps", "Climbs", "Attachments")
 }
@@ -312,14 +304,6 @@ func (w *Workout) Address() string {
 
 func (w *Workout) Distance() float64 {
 	return w.TotalDistance
-}
-
-func (d *WorkoutFile) Save(db *gorm.DB) error {
-	if d.Content == nil {
-		return ErrInvalidData
-	}
-
-	return db.Save(d).Error
 }
 
 func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, error) {
