@@ -29,7 +29,7 @@ func GenerateWorkoutFIT(workout *model.Workout) ([]byte, error) {
 		start = time.Now().UTC()
 	}
 
-	totalDuration := workout.TotalDuration()
+	totalDuration := workout.TotalDuration
 	if totalDuration <= 0 {
 		totalDuration = time.Second
 	}
@@ -47,13 +47,13 @@ func GenerateWorkoutFIT(workout *model.Workout) ([]byte, error) {
 	activity.Records = buildWorkoutRecords(workout, start)
 	activity.Laps = buildWorkoutLaps(workout, start, end)
 
-	timerDuration := max(totalDuration-workout.PauseDuration(), 0)
+	timerDuration := max(totalDuration-workout.PauseDuration, 0)
 	session := mesgdef.NewSession(nil).
 		SetTimestamp(end).
 		SetStartTime(start).
 		SetSport(fitSportForWorkout(workout)).
 		SetSubSport(fitSubSportForWorkout(workout)).
-		SetTotalDistanceScaled(workout.TotalDistance()).
+		SetTotalDistanceScaled(workout.TotalDistance).
 		SetTotalElapsedTimeScaled(totalDuration.Seconds()).
 		SetTotalTimerTimeScaled(timerDuration.Seconds()).
 		SetAvgSpeedScaled(workout.AverageSpeed()).
@@ -112,11 +112,11 @@ func WorkoutNoteContent(workout *model.Workout) string {
 	}
 
 	parts := []string{workout.Name}
-	if d := workout.TotalDistance(); d > 0 {
+	if d := workout.TotalDistance; d > 0 {
 		parts = append(parts, fmt.Sprintf("distance: %.2f km", d/1000.0))
 	}
 
-	if dur := workout.TotalDuration(); dur > 0 {
+	if dur := workout.TotalDuration; dur > 0 {
 		parts = append(parts, "duration: "+dur.Round(time.Second).String())
 	}
 
@@ -192,9 +192,9 @@ func buildWorkoutLaps(workout *model.Workout, start, end time.Time) []*mesgdef.L
 		return []*mesgdef.Lap{mesgdef.NewLap(nil).
 			SetStartTime(start).
 			SetTimestamp(end).
-			SetTotalDistanceScaled(workout.TotalDistance()).
-			SetTotalElapsedTimeScaled(workout.TotalDuration().Seconds()).
-			SetTotalTimerTimeScaled(max(workout.TotalDuration()-workout.PauseDuration(), 0).Seconds()).
+			SetTotalDistanceScaled(workout.TotalDistance).
+			SetTotalElapsedTimeScaled(workout.TotalDuration.Seconds()).
+			SetTotalTimerTimeScaled(max(workout.TotalDuration-workout.PauseDuration, 0).Seconds()).
 			SetAvgSpeedScaled(workout.AverageSpeed())}
 	}
 
@@ -249,27 +249,20 @@ func fitSportForWorkout(workout *model.Workout) typedef.Sport {
 		return typedef.SportGeneric
 	}
 
-	sport := typedef.SportFromString(string(workout.Type))
+	sport := typedef.SportFromString(workout.Type.String())
 	if sport != typedef.SportInvalid {
 		return sport
-	}
-
-	if workout.Data != nil {
-		sport = typedef.SportFromString(workout.Data.Type)
-		if sport != typedef.SportInvalid {
-			return sport
-		}
 	}
 
 	return typedef.SportGeneric
 }
 
 func fitSubSportForWorkout(workout *model.Workout) typedef.SubSport {
-	if workout == nil || workout.Data == nil {
+	if workout == nil {
 		return typedef.SubSportGeneric
 	}
 
-	s := typedef.SubSportFromString(workout.Data.SubType)
+	s := typedef.SubSportFromString(workout.SubType)
 	if s == typedef.SubSportInvalid {
 		return typedef.SubSportGeneric
 	}

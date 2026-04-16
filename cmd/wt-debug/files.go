@@ -48,8 +48,8 @@ func (c *cli) workoutsParseCmd() *cobra.Command {
 					continue
 				}
 
-				fmt.Printf("  repetitions: %d\n", f.TotalRepetitions())
-				fmt.Printf("  duration: %s\n", f.TotalDuration())
+				fmt.Printf("  repetitions: %d\n", f.TotalRepetitions)
+				fmt.Printf("  duration: %s\n", f.TotalDuration)
 				fmt.Printf("  start: %s\n", f.Date)
 			}
 
@@ -82,8 +82,8 @@ func (c *cli) workoutsCalculateCmd() *cobra.Command {
 				fmt.Println("Parsing was successful!")
 				fmt.Printf("- name: %s\n", workout.Name)
 				fmt.Printf("- center: (%.5f, %.5f): %s\n", workout.Data.Center.Lat, workout.Data.Center.Lng, workout.Data.AddressString)
-				fmt.Printf("- total distance: %.0fm (%s %s)\n", workout.TotalDistance(), dstF(workout.TotalDistance()), dst)
-				fmt.Printf("- total duration: %.0fs (%s)\n", workout.TotalDuration().Seconds(), workout.TotalDuration().String())
+				fmt.Printf("- total distance: %.0fm (%s %s)\n", workout.TotalDistance, dstF(workout.TotalDistance), dst)
+				fmt.Printf("- total duration: %.0fs (%s)\n", workout.TotalDuration.Seconds(), workout.TotalDuration.String())
 
 				if len(workout.Records) > 0 {
 					lp := workout.Records[len(workout.Records)-1]

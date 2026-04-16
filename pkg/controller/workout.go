@@ -818,13 +818,11 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 			title = string(w.Type)
 		}
 
-		if w.Data != nil {
-			if w.Data.TotalDistance > 0 {
-				title += " - " + formatDistance(w.Data.TotalDistance)
-			}
-			if w.Data.TotalDuration.Seconds() > 0 {
-				title += " " + formatDuration(int64(w.Data.TotalDuration.Seconds()))
-			}
+		if w.TotalDistance > 0 {
+			title += " - " + formatDistance(w.TotalDistance)
+		}
+		if w.TotalDuration.Seconds() > 0 {
+			title += " " + formatDuration(int64(w.TotalDuration.Seconds()))
 		}
 
 		events[i] = dto.CalendarEventResponse{

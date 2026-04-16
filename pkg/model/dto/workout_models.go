@@ -311,16 +311,7 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 
 	// Add map data if available
 	if w.Data != nil {
-		wr.SubType = w.Data.SubType
 		wr.AddressString = w.Data.AddressString
-		wr.TotalDistance = &w.Data.TotalDistance
-
-		// Convert durations to seconds (int64)
-		totalDurationSecs := int64(w.Data.TotalDuration.Seconds())
-		wr.TotalDuration = &totalDurationSecs
-
-		wr.TotalWeight = &w.Data.TotalWeight
-		wr.TotalRepetitions = &w.Data.TotalRepetitions
 		wr.TotalUp = &w.Data.TotalUp
 		wr.TotalDown = &w.Data.TotalDown
 		wr.AverageSpeed = &w.Data.AverageSpeed
@@ -335,10 +326,16 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		wr.AveragePower = &w.Data.AveragePower
 		wr.MaxPower = &w.Data.MaxPower
 
-		// Convert pause duration to seconds (int64)
-		pauseDurationSecs := int64(w.Data.PauseDuration.Seconds())
-		wr.PauseDuration = &pauseDurationSecs
 	}
+
+	wr.SubType = w.SubType
+	wr.TotalDistance = &w.TotalDistance
+	totalDurationSecs := int64(w.TotalDuration.Seconds())
+	wr.TotalDuration = &totalDurationSecs
+	wr.TotalWeight = &w.TotalWeight
+	wr.TotalRepetitions = &w.TotalRepetitions
+	pauseDurationSecs := int64(w.PauseDuration.Seconds())
+	wr.PauseDuration = &pauseDurationSecs
 
 	if len(w.Attachments) > 0 {
 		wr.Attachments = make([]WorkoutAttachmentItem, 0, len(w.Attachments))
@@ -378,23 +375,23 @@ func NewWorkoutPopupData(w *model.Workout) WorkoutPopupData {
 	}
 
 	// Add type-specific fields
-	if w.Type.IsDistance() && w.Data != nil {
-		popup.TotalDistance = &w.Data.TotalDistance
+	if w.Type.IsDistance() {
+		popup.TotalDistance = &w.TotalDistance
 	}
 
-	if w.Type.IsDuration() && w.Data != nil {
-		duration := int64(w.Data.TotalDuration.Seconds())
+	if w.Type.IsDuration() {
+		duration := int64(w.TotalDuration.Seconds())
 		popup.TotalDuration = &duration
 	}
 
-	if w.Type.IsRepetition() && w.Data != nil {
-		popup.TotalRepetitions = &w.Data.TotalRepetitions
+	if w.Type.IsRepetition() {
+		popup.TotalRepetitions = &w.TotalRepetitions
 		repFreq := w.RepetitionFrequencyPerMinute()
 		popup.RepetitionFrequencyPerMin = &repFreq
 	}
 
-	if w.Type.IsWeight() && w.Data != nil {
-		popup.TotalWeight = &w.Data.TotalWeight
+	if w.Type.IsWeight() {
+		popup.TotalWeight = &w.TotalWeight
 	}
 
 	if w.Type.IsDistance() && w.Type.IsDuration() && w.Data != nil {
@@ -752,7 +749,7 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 			Lat: w.Data.Center.Lat,
 			Lng: w.Data.Center.Lng,
 		},
-		ExtraMetrics: w.Data.ExtraMetrics,
+		ExtraMetrics: w.ExtraMetrics,
 	}
 
 	// Add detailed points in compact format
@@ -798,7 +795,7 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 			mapData.Details.Speed[i] = speed
 
 			// Add extra metrics
-			for _, metric := range w.Data.ExtraMetrics {
+			for _, metric := range w.ExtraMetrics {
 				if metric == "speed" || metric == "elevation" {
 					continue // Already handled
 				}

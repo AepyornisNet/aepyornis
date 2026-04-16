@@ -113,8 +113,8 @@ func (c *cli) workoutsShowCmd() *cobra.Command {
 			t.AddRow("Name", wo.Name)
 
 			t.AddRow("Location", wo.Address())
-			t.AddRow("Distance (m)", templatehelpers.RoundFloat64(wo.TotalDistance()))
-			t.AddRow("Duration (s)", templatehelpers.RoundFloat64(wo.TotalDuration().Seconds()))
+			t.AddRow("Distance (m)", templatehelpers.RoundFloat64(wo.TotalDistance))
+			t.AddRow("Duration (s)", templatehelpers.RoundFloat64(wo.TotalDuration.Seconds()))
 
 			t.Render()
 

@@ -84,10 +84,10 @@ func (n *WorkoutNote) PopulateFromWorkout(workout *model.Workout, fitURL vocab.I
 		n.WorkoutSport = workout.CustomType
 	}
 
-	n.WorkoutDuration = int64(workout.TotalDuration().Seconds())
-	n.WorkoutPauseDuration = int64(workout.PauseDuration().Seconds())
-	n.WorkoutDistance = workout.TotalDistance()
-	n.WorkoutDistance2D = workout.TotalDistance2D()
+	n.WorkoutDuration = int64(workout.TotalDuration.Seconds())
+	n.WorkoutPauseDuration = int64(workout.PauseDuration.Seconds())
+	n.WorkoutDistance = workout.TotalDistance
+	n.WorkoutDistance2D = workout.TotalDistance2D
 	n.WorkoutElevationGain = workout.TotalUp()
 	n.WorkoutElevationLoss = workout.TotalDown()
 	n.WorkoutAverageSpeed = workout.AverageSpeed()
@@ -95,7 +95,7 @@ func (n *WorkoutNote) PopulateFromWorkout(workout *model.Workout, fitURL vocab.I
 	n.WorkoutMaxSpeed = workout.MaxSpeed()
 	n.WorkoutAverageCadence = workout.AverageCadence()
 	n.WorkoutMaxCadence = workout.MaxCadence()
-	n.WorkoutRepetitions = workout.TotalRepetitions()
+	n.WorkoutRepetitions = workout.TotalRepetitions
 	n.WorkoutWeight = workout.Weight()
 
 	if workout.Data != nil {

@@ -63,6 +63,7 @@ func ScopeVisibleWorkouts(query *gorm.DB, ownerID uint64, viewerID uint64, viewe
 type Workout struct {
 	Model
 	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`                                    // The timestamp the workout was recorded
+	DateEnd             time.Time            `json:"date_end"`                                                                           // The stop time of the workout
 	Visibility          WorkoutVisibility    `json:"visibility"`                                                                         // The visibility of the workout (private, followers, public)
 	User                *User                `gorm:"foreignKey:UserID" json:"user"`                                                      // The user who owns the workout
 	Data                *WorkoutGeoMeta      `gorm:"constraint:OnDelete:CASCADE" json:"data,omitempty"`                                  // The map data associated with the workout
@@ -70,7 +71,15 @@ type Workout struct {
 	Name                string               `gorm:"not null" json:"name"`                                                               // The name of the workout
 	Notes               string               `json:"notes"`                                                                              // The notes associated with the workout, in markdown
 	Type                WorkoutType          `json:"type"`                                                                               // The type of the workout
+	SubType             string               `json:"subType"`                                                                            // The subtype of the workout
 	CustomType          string               `json:"custom_type"`                                                                        // The type of the workout, custom
+	TotalDistance       float64              `json:"totalDistance"`                                                                      // The total distance of the workout
+	TotalDistance2D     float64              `json:"totalDistance2D"`                                                                    // The total 2D distance of the workout
+	TotalDuration       time.Duration        `json:"totalDuration"`                                                                      // The total duration of the workout
+	PauseDuration       time.Duration        `json:"pauseDuration"`                                                                      // The total pause duration of the workout
+	TotalRepetitions    int                  `json:"totalRepetitions"`                                                                   // The number of repetitions of the workout
+	TotalWeight         float64              `json:"totalWeight"`                                                                        // The weight of the workout
+	ExtraMetrics        []string             `gorm:"serializer:json" json:"extraMetrics"`                                                // Extra metrics available
 	Equipment           []Equipment          `gorm:"constraint:OnDelete:CASCADE;many2many:workout_equipment" json:"equipment,omitempty"` // Which equipment is used for this workout
 	RouteSegmentMatches []*RouteSegmentMatch `gorm:"constraint:OnDelete:CASCADE" json:"routeSegmentMatches,omitempty"`                   // Which route segments match
 	Attachments         []WorkoutAttachment  `gorm:"constraint:OnDelete:CASCADE" json:"attachments,omitempty"`
@@ -120,7 +129,7 @@ func (w *Workout) HasElevationData() bool {
 }
 
 func (w *Workout) HasPause() bool {
-	return w.PauseDuration() == 0
+	return w.PauseDuration == 0
 }
 
 func (w *Workout) HasFile() bool {
@@ -147,20 +156,8 @@ func (w *Workout) HasTracks() bool {
 	return w.Type.IsLocation()
 }
 
-func (w *Workout) TotalRepetitions() int {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.TotalRepetitions
-}
-
 func (w *Workout) Weight() float64 {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.TotalWeight
+	return w.TotalWeight
 }
 
 func (w *Workout) AverageSpeed() float64 {
@@ -172,47 +169,19 @@ func (w *Workout) AverageSpeed() float64 {
 }
 
 func (w *Workout) GetEnd() time.Time {
-	if w.TotalDuration() <= 0 {
+	if w.TotalDuration <= 0 {
 		return w.GetDate().Add(minEventDuration)
 	}
 
 	return w.GetDate().Add(w.Duration())
 }
 
-func (w *Workout) TotalDuration() time.Duration {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.TotalDuration
-}
-
-func (w *Workout) TotalDistance() float64 {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.TotalDistance
-}
-
-func (w *Workout) TotalDistance2D() float64 {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.TotalDistance2D
-}
-
 func (w *Workout) Repetitions() int {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.TotalRepetitions
+	return w.TotalRepetitions
 }
 
 func (w *Workout) Duration() time.Duration {
-	return w.TotalDuration()
+	return w.TotalDuration
 }
 
 func (w *Workout) FullAddress() string {
@@ -299,14 +268,6 @@ func (w *Workout) AverageCadence() float64 {
 	return w.Data.AverageCadence
 }
 
-func (w *Workout) PauseDuration() time.Duration {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.PauseDuration
-}
-
 func (w *Workout) Creator() string {
 	if w.Data == nil {
 		return ""
@@ -344,11 +305,7 @@ func (w *Workout) Address() string {
 }
 
 func (w *Workout) Distance() float64 {
-	if w.Data == nil {
-		return 0
-	}
-
-	return w.Data.TotalDistance
+	return w.TotalDistance
 }
 
 func (d *WorkoutFile) Save(db *gorm.DB) error {
@@ -397,7 +354,7 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 		}
 
 		if workoutType == WorkoutTypeAutoDetect {
-			w.Type = autoDetectWorkoutType(w.Data, w.Data.WorkoutData.Name)
+			w.Type = autoDetectWorkoutType(w.Data, string(w.Type), w.Name)
 		} else {
 			w.Type = workoutType
 		}
@@ -429,7 +386,7 @@ func (w *Workout) SetContent(filename string, content []byte) {
 	}
 }
 
-func workoutTypeFromData(gpxType string) (WorkoutType, bool) {
+func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	switch strings.ToLower(gpxType) {
 	case "running", "run":
 		return WorkoutTypeRunning, true
@@ -462,21 +419,21 @@ func workoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	}
 }
 
-func autoDetectWorkoutType(data *WorkoutGeoMeta, dataName string) WorkoutType {
-	if data != nil {
-		if workoutType, ok := workoutTypeFromData(data.WorkoutData.Type); ok {
-			return workoutType
-		}
+func autoDetectWorkoutType(data *WorkoutGeoMeta, dataType string, dataName string) WorkoutType {
+	if workoutType, ok := WorkoutTypeFromData(dataType); ok {
+		return workoutType
 	}
 
-	if dataName == "" && data != nil {
-		dataName = data.WorkoutData.Name
+	if data != nil {
+		if workoutType, ok := WorkoutTypeFromData(data.Creator); ok {
+			return workoutType
+		}
 	}
 
 	if len(dataName) > 0 {
 		nameField := strings.Fields(dataName)
 		if len(nameField) > 0 {
-			if workoutType, ok := workoutTypeFromData(nameField[0]); ok {
+			if workoutType, ok := WorkoutTypeFromData(nameField[0]); ok {
 				return workoutType
 			}
 		}
@@ -646,7 +603,7 @@ func (w *Workout) create(db *gorm.DB) error {
 		}
 
 		if w.RouteSegmentMatches != nil {
-			if err := tx.Model(w).Association("RouteSegmentMatches").Replace(w.RouteSegmentMatches); err != nil {
+			if err := replaceWorkoutRouteSegmentMatches(tx, w.ID, w.RouteSegmentMatches); err != nil {
 				return err
 			}
 		}
@@ -751,7 +708,7 @@ func (w *Workout) save(db *gorm.DB) error {
 		}
 
 		if w.RouteSegmentMatches != nil {
-			if err := tx.Model(w).Association("RouteSegmentMatches").Replace(w.RouteSegmentMatches); err != nil {
+			if err := replaceWorkoutRouteSegmentMatches(tx, w.ID, w.RouteSegmentMatches); err != nil {
 				return err
 			}
 		}
@@ -781,7 +738,29 @@ func (w *Workout) ReparseFile() (*Workout, error) {
 	return workouts[0], nil
 }
 
-func (w *Workout) setData(data *WorkoutGeoMeta, records []WorkoutRecord, laps []WorkoutLap) {
+func (w *Workout) setData(updated *Workout) {
+	if updated == nil || updated.Data == nil {
+		return
+	}
+
+	data := updated.Data
+	records := updated.Records
+	laps := updated.Laps
+
+	if !w.Locked {
+		w.DateEnd = updated.DateEnd
+		w.SubType = updated.SubType
+		w.TotalDistance = updated.TotalDistance
+		w.TotalDistance2D = updated.TotalDistance2D
+		w.TotalDuration = updated.TotalDuration
+		w.PauseDuration = updated.PauseDuration
+		w.TotalRepetitions = updated.TotalRepetitions
+		w.TotalWeight = updated.TotalWeight
+		w.ExtraMetrics = append([]string(nil), updated.ExtraMetrics...)
+	} else if w.Data != nil {
+		data.Address = w.Data.Address
+	}
+
 	if w.Data == nil {
 		w.Data = data
 		w.Data.WorkoutID = w.ID
@@ -794,13 +773,6 @@ func (w *Workout) setData(data *WorkoutGeoMeta, records []WorkoutRecord, laps []
 	data.ID = w.Data.ID
 	data.CreatedAt = w.Data.CreatedAt
 	data.WorkoutID = w.ID
-
-	if w.Locked {
-		data.TotalDistance = w.Data.TotalDistance
-		data.TotalDistance2D = w.Data.TotalDistance2D
-		data.TotalDuration = w.Data.TotalDuration
-		data.Address = w.Data.Address
-	}
 
 	w.Records = append([]WorkoutRecord(nil), records...)
 	w.Laps = append([]WorkoutLap(nil), laps...)
@@ -866,18 +838,18 @@ func (w *Workout) calculateAverageSpeeds() {
 	w.Data.AverageSpeed = 0
 	w.Data.AverageSpeedNoPause = 0
 
-	if w.Data.TotalDuration == 0 {
+	if w.TotalDuration == 0 {
 		return
 	}
 
-	w.Data.AverageSpeed = w.Data.TotalDistance / w.Data.TotalDuration.Seconds()
+	w.Data.AverageSpeed = w.TotalDistance / w.TotalDuration.Seconds()
 
-	if w.Data.TotalDuration == w.Data.PauseDuration {
+	if w.TotalDuration == w.PauseDuration {
 		w.Data.AverageSpeedNoPause = w.Data.AverageSpeed
 		return
 	}
 
-	w.Data.AverageSpeedNoPause = w.Data.TotalDistance / (w.Data.TotalDuration - w.Data.PauseDuration).Seconds()
+	w.Data.AverageSpeedNoPause = w.TotalDistance / (w.TotalDuration - w.PauseDuration).Seconds()
 }
 
 func (w *Workout) UpdateData(db *gorm.DB) error {
@@ -897,7 +869,7 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 		return errors.New("parsed workout has no map data")
 	}
 
-	w.setData(updatedWorkout.Data, updatedWorkout.Records, updatedWorkout.Laps)
+	w.setData(updatedWorkout)
 
 	if err := w.Data.Save(db); err != nil {
 		return err
@@ -936,7 +908,7 @@ func (w *Workout) RepetitionFrequencyPerMinute() float64 {
 		return 0
 	}
 
-	return float64(w.Data.TotalRepetitions) / w.Duration().Minutes()
+	return float64(w.TotalRepetitions) / w.Duration().Minutes()
 }
 
 func (w *Workout) HasCalories() bool {
@@ -988,7 +960,7 @@ func (w *Workout) UpdateExtraMetrics() {
 		return
 	}
 
-	w.Data.UpdateExtraMetrics(w.Records)
+	w.ExtraMetrics = w.Data.UpdateExtraMetrics(w.Records)
 }
 
 // UpdateRecords recalculates and persists best distance intervals for this workout.
@@ -1033,19 +1005,11 @@ func (w *Workout) UpdateRecords(db *gorm.DB) error {
 }
 
 func (w *Workout) HasExtraMetrics() bool {
-	if w.Data == nil {
-		return false
-	}
-
-	return len(w.Data.ExtraMetrics) > 0
+	return len(w.ExtraMetrics) > 0
 }
 
 func (w *Workout) HasExtraMetric(name string) bool {
-	if w.Data == nil {
-		return false
-	}
-
-	return slices.Contains(w.Data.ExtraMetrics, name)
+	return slices.Contains(w.ExtraMetrics, name)
 }
 
 func (w *Workout) EquipmentIDs() []uint64 {
@@ -1072,6 +1036,42 @@ func (w *Workout) Export() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func replaceWorkoutRouteSegmentMatches(tx *gorm.DB, workoutID uint64, matches []*RouteSegmentMatch) error {
+	if tx == nil {
+		return errors.New("nil db")
+	}
+
+	if err := tx.Where("workout_id = ?", workoutID).Delete(&RouteSegmentMatch{}).Error; err != nil {
+		return err
+	}
+
+	if len(matches) == 0 {
+		return nil
+	}
+
+	rows := make([]*RouteSegmentMatch, 0, len(matches))
+	for _, m := range matches {
+		if m == nil || m.RouteSegmentID == 0 {
+			continue
+		}
+
+		rows = append(rows, &RouteSegmentMatch{
+			RouteSegmentID: m.RouteSegmentID,
+			WorkoutID:      workoutID,
+			FirstID:        m.FirstID,
+			LastID:         m.LastID,
+			Distance:       m.Distance,
+			Duration:       m.Duration,
+		})
+	}
+
+	if len(rows) == 0 {
+		return nil
+	}
+
+	return tx.Omit(clause.Associations).CreateInBatches(&rows, mapDataPointsInsertBatchSize).Error
+}
+
 func init() {
 	WorkoutParser = defaultWorkoutParser
 }
@@ -1083,10 +1083,23 @@ func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
 	}
 
 	data, records := MapDataAndRecordsFromGPX(gpxContent)
+	totalDistance, totalDistance2D, totalDuration := WorkoutTotalsFromRecords(records)
+	pauseDuration := time.Duration(0)
+	if data != nil {
+		pauseDuration = WorkoutPauseDurationFromAverages(totalDistance, totalDuration, data.AverageSpeedNoPause)
+	}
+	workoutType, _ := WorkoutTypeFromData(GPXType(gpxContent))
+	dateEnd := WorkoutEndFromRecords(records)
 	w := &Workout{
-		Data:    data,
-		Records: append([]WorkoutRecord(nil), records...),
-		Name:    data.WorkoutData.Name,
+		Data:            data,
+		Records:         append([]WorkoutRecord(nil), records...),
+		Name:            GPXName(gpxContent),
+		Type:            workoutType,
+		DateEnd:         dateEnd,
+		TotalDistance:   totalDistance,
+		TotalDistance2D: totalDistance2D,
+		TotalDuration:   totalDuration,
+		PauseDuration:   pauseDuration,
 	}
 
 	if date := GPXDate(gpxContent); date != nil {

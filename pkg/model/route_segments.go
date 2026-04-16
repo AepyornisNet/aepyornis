@@ -129,7 +129,7 @@ func (rs *RouteSegment) UpdateFromContent() error {
 
 	data := parsed[0].Data
 
-	rs.TotalDistance = data.TotalDistance
+	rs.TotalDistance = parsed[0].TotalDistance
 	rs.MinElevation = data.MinElevation
 	rs.MaxElevation = data.MaxElevation
 	rs.TotalUp = data.TotalUp
@@ -155,7 +155,19 @@ func (rs *RouteSegment) Create(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
-	return db.Create(rs).Error
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("RouteSegmentMatches").Create(rs).Error; err != nil {
+			return err
+		}
+
+		if rs.RouteSegmentMatches != nil {
+			if err := replaceRouteSegmentMatches(tx, rs.ID, rs.RouteSegmentMatches); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (rs *RouteSegment) Save(db *gorm.DB) error {
@@ -163,13 +175,47 @@ func (rs *RouteSegment) Save(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
-	if rs.RouteSegmentMatches != nil {
-		if err := db.Model(rs).Association("RouteSegmentMatches").Replace(rs.RouteSegmentMatches); err != nil {
-			return err
+	return db.Transaction(func(tx *gorm.DB) error {
+		if rs.RouteSegmentMatches != nil {
+			if err := replaceRouteSegmentMatches(tx, rs.ID, rs.RouteSegmentMatches); err != nil {
+				return err
+			}
 		}
+
+		return tx.Omit("RouteSegmentMatches").Save(rs).Error
+	})
+}
+
+func replaceRouteSegmentMatches(tx *gorm.DB, routeSegmentID uint64, matches []*RouteSegmentMatch) error {
+	if err := tx.Where("route_segment_id = ?", routeSegmentID).Delete(&RouteSegmentMatch{}).Error; err != nil {
+		return err
 	}
 
-	return db.Save(rs).Error
+	if len(matches) == 0 {
+		return nil
+	}
+
+	rows := make([]*RouteSegmentMatch, 0, len(matches))
+	for _, m := range matches {
+		if m == nil || m.WorkoutID == 0 {
+			continue
+		}
+
+		rows = append(rows, &RouteSegmentMatch{
+			RouteSegmentID: routeSegmentID,
+			WorkoutID:      m.WorkoutID,
+			FirstID:        m.FirstID,
+			LastID:         m.LastID,
+			Distance:       m.Distance,
+			Duration:       m.Duration,
+		})
+	}
+
+	if len(rows) == 0 {
+		return nil
+	}
+
+	return tx.Omit(clause.Associations).CreateInBatches(&rows, mapDataPointsInsertBatchSize).Error
 }
 
 func (rs *RouteSegment) Address() string {

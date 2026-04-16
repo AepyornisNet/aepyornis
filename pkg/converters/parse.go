@@ -93,11 +93,26 @@ func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte
 	if data == nil {
 		data = &model.WorkoutGeoMeta{}
 	}
+	totalDistance, totalDistance2D, totalDuration := model.WorkoutTotalsFromRecords(records)
+	pauseDuration := model.WorkoutPauseDurationFromAverages(totalDistance, totalDuration, data.AverageSpeedNoPause)
+	gpxType := model.GPXType(g)
+	workoutType, found := model.WorkoutTypeFromData(gpxType)
+	customType := ""
+	if !found {
+		customType = gpxType
+	}
 
 	w := &model.Workout{
-		Data:    data,
-		Records: append([]model.WorkoutRecord(nil), records...),
-		Name:    data.WorkoutData.Name,
+		Data:            data,
+		Records:         append([]model.WorkoutRecord(nil), records...),
+		Name:            model.GPXName(g),
+		Type:            workoutType,
+		CustomType:      customType,
+		DateEnd:         model.WorkoutEndFromRecords(records),
+		TotalDistance:   totalDistance,
+		TotalDistance2D: totalDistance2D,
+		TotalDuration:   totalDuration,
+		PauseDuration:   pauseDuration,
 	}
 
 	if date := model.GPXDate(g); date != nil {

@@ -124,10 +124,10 @@ func (m *WorkoutRecord) ToOrbPoint() *orb.Point {
 	return &orb.Point{m.Lng, m.Lat}
 }
 
-func (m *WorkoutGeoMeta) UpdateExtraMetrics(points []WorkoutRecord) {
+func (m *WorkoutGeoMeta) UpdateExtraMetrics(points []WorkoutRecord) []string {
 	if m == nil ||
 		len(points) == 0 {
-		return
+		return nil
 	}
 
 	metrics := []string{}
@@ -146,7 +146,7 @@ func (m *WorkoutGeoMeta) UpdateExtraMetrics(points []WorkoutRecord) {
 
 	slices.Sort(metrics)
 
-	m.ExtraMetrics = metrics
+	return metrics
 }
 
 func addressIsUnset(a *geo.Address) bool {
@@ -741,32 +741,16 @@ func createMapData(gpxContent *gpx.GPX) *WorkoutGeoMeta {
 		Creator: gpxContent.Creator,
 		Center:  mapCenter,
 		WorkoutData: WorkoutData{
-			TotalDistance:   totalDistance,
-			TotalDistance2D: totalDistance2D,
-			TotalDuration:   totalDuration,
-			PauseDuration:   pauseDuration,
 			WorkoutStats: WorkoutStats{
 				MinElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, minElevation),
 				MaxElevation:        correctAltitude(gpxContent.Creator, mapCenter.Lat, mapCenter.Lng, maxElevation),
 				MaxSpeed:            maxSpeed,
-				AverageSpeed:        totalDistance / totalDuration.Seconds(),
-				AverageSpeedNoPause: totalDistance / (totalDuration - pauseDuration).Seconds(),
+				AverageSpeed:        safeAverageSpeed(totalDistance, totalDuration),
+				AverageSpeedNoPause: safeAverageSpeed(totalDistance, totalDuration-pauseDuration),
 				TotalUp:             uphill,
 				TotalDown:           downhill,
 			},
 		},
-	}
-
-	if len(gpxContent.Tracks) > 0 {
-		firstTrack := gpxContent.Tracks[0]
-		data.WorkoutData.Type = firstTrack.Type
-		if data.WorkoutData.Name == "" {
-			data.WorkoutData.Name = firstTrack.Name
-		}
-	}
-
-	if data.WorkoutData.Name == "" && gpxContent.Name != "" {
-		data.WorkoutData.Name = gpxContent.Name
 	}
 
 	data.correctNaN()
@@ -781,14 +765,6 @@ func (m *WorkoutGeoMeta) correctNaN() {
 
 	if math.IsNaN(m.MaxElevation) {
 		m.MaxElevation = 0
-	}
-
-	if math.IsNaN(m.TotalDistance) {
-		m.TotalDistance = 0
-	}
-
-	if math.IsNaN(m.TotalDistance2D) {
-		m.TotalDistance2D = 0
 	}
 
 	if math.IsNaN(m.TotalDown) {
@@ -855,14 +831,68 @@ func MapDataAndRecordsFromGPX(gpxContent *gpx.GPX) (*WorkoutGeoMeta, []WorkoutRe
 		})
 	}
 
-	if len(records) > 0 {
-		data.Start = records[0].Time
-		data.Stop = records[len(records)-1].Time
-	}
-
 	data.correctNaN()
 
 	return data, records
+}
+
+func GPXName(gpxContent *gpx.GPX) string {
+	if gpxContent == nil {
+		return ""
+	}
+
+	if len(gpxContent.Tracks) > 0 && gpxContent.Tracks[0].Name != "" {
+		return gpxContent.Tracks[0].Name
+	}
+
+	return gpxContent.Name
+}
+
+func GPXType(gpxContent *gpx.GPX) string {
+	if gpxContent == nil || len(gpxContent.Tracks) == 0 {
+		return ""
+	}
+
+	return gpxContent.Tracks[0].Type
+}
+
+func WorkoutTotalsFromRecords(records []WorkoutRecord) (float64, float64, time.Duration) {
+	if len(records) == 0 {
+		return 0, 0, 0
+	}
+
+	last := records[len(records)-1]
+
+	return last.TotalDistance, last.TotalDistance2D, last.TotalDuration
+}
+
+func WorkoutEndFromRecords(records []WorkoutRecord) time.Time {
+	if len(records) == 0 {
+		return time.Time{}
+	}
+
+	return records[len(records)-1].Time
+}
+
+func WorkoutPauseDurationFromAverages(totalDistance float64, totalDuration time.Duration, averageSpeedNoPause float64) time.Duration {
+	if totalDistance <= 0 || totalDuration <= 0 || averageSpeedNoPause <= 0 {
+		return 0
+	}
+
+	movingDuration := time.Duration((totalDistance / averageSpeedNoPause) * float64(time.Second))
+	if movingDuration >= totalDuration {
+		return 0
+	}
+
+	return totalDuration - movingDuration
+}
+
+func safeAverageSpeed(totalDistance float64, totalDuration time.Duration) float64 {
+	if totalDistance <= 0 || totalDuration <= 0 {
+		return 0
+	}
+
+	return totalDistance / totalDuration.Seconds()
 }
 
 func MapDataFromGPX(gpxContent *gpx.GPX) *WorkoutGeoMeta {

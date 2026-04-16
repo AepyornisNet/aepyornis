@@ -129,10 +129,10 @@ func (m *ManualWorkout) Update(w *model.Workout) error {
 	setIfNotNil(&w.CustomType, m.CustomType)
 
 	setIfNotNil(&w.Data.AddressString, m.Location)
-	setIfNotNil(&w.Data.TotalDistance, m.ToDistance())
-	setIfNotNil(&w.Data.TotalDuration, m.ToDuration())
-	setIfNotNil(&w.Data.TotalRepetitions, m.Repetitions)
-	setIfNotNil(&w.Data.TotalWeight, m.ToWeight())
+	setIfNotNil(&w.TotalDistance, m.ToDistance())
+	setIfNotNil(&w.TotalDuration, m.ToDuration())
+	setIfNotNil(&w.TotalRepetitions, m.Repetitions)
+	setIfNotNil(&w.TotalWeight, m.ToWeight())
 
 	if m.Location != nil && w.FullAddress() != *m.Location {
 		a, err := geocoder.Find(*m.Location)

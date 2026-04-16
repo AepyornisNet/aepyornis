@@ -5,18 +5,6 @@ import "time"
 type (
 	WorkoutData struct {
 		WorkoutStats
-		Name             string        `json:"name"`                                // The name of the workout
-		Type             string        `json:"type"`                                // The type of the workout
-		SubType          string        `json:"subType"`                             // The subtype of the workout
-		Start            time.Time     `json:"start"`                               // The start time of the workout
-		Stop             time.Time     `json:"stop"`                                // The stop time of the workout
-		TotalDistance    float64       `json:"totalDistance"`                       // The total distance of the workout
-		TotalDistance2D  float64       `json:"totalDistance2D"`                     // The total 2D distance of the workout
-		TotalDuration    time.Duration `json:"totalDuration"`                       // The total duration of the workout
-		PauseDuration    time.Duration `json:"pauseDuration"`                       // The total pause duration of the workout
-		TotalRepetitions int           `json:"totalRepetitions"`                    // The number of repetitions of the workout
-		TotalWeight      float64       `json:"totalWeight"`                         // The weight of the workout
-		ExtraMetrics     []string      `gorm:"serializer:json" json:"extraMetrics"` // Extra metrics available
 	}
 
 	WorkoutLap struct {
@@ -83,38 +71,6 @@ func (d *WorkoutData) MergeNonZero(from WorkoutData) {
 		return
 	}
 
-	if !from.Start.IsZero() {
-		d.Start = from.Start
-	}
-
-	if !from.Stop.IsZero() {
-		d.Stop = from.Stop
-	}
-
-	if from.SubType != "" {
-		d.SubType = from.SubType
-	}
-
-	if from.TotalDistance != 0 {
-		d.TotalDistance = from.TotalDistance
-	}
-
-	if from.TotalDuration != 0 {
-		d.TotalDuration = from.TotalDuration
-	}
-
-	if from.PauseDuration != 0 {
-		d.PauseDuration = from.PauseDuration
-	}
-
-	if from.TotalRepetitions != 0 {
-		d.TotalRepetitions = from.TotalRepetitions
-	}
-
-	if from.TotalWeight != 0 {
-		d.TotalWeight = from.TotalWeight
-	}
-
 	if from.MinElevation != 0 {
 		d.MinElevation = from.MinElevation
 	}
@@ -159,11 +115,27 @@ func (d *WorkoutData) MergeNonZero(from WorkoutData) {
 		d.MaxHeartRate = from.MaxHeartRate
 	}
 
+	if from.AverageRespirationRate != 0 {
+		d.AverageRespirationRate = from.AverageRespirationRate
+	}
+
+	if from.MaxRespirationRate != 0 {
+		d.MaxRespirationRate = from.MaxRespirationRate
+	}
+
 	if from.AveragePower != 0 {
 		d.AveragePower = from.AveragePower
 	}
 
 	if from.MaxPower != 0 {
 		d.MaxPower = from.MaxPower
+	}
+
+	if from.AverageTemperature != 0 {
+		d.AverageTemperature = from.AverageTemperature
+	}
+
+	if from.MaxTemperature != 0 {
+		d.MaxTemperature = from.MaxTemperature
 	}
 }

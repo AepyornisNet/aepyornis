@@ -68,8 +68,8 @@ func TestWorkout_Parse(t *testing.T) {
 	assert.InDelta(t, -77, w.Data.Center.Lng, 1)
 
 	assert.Len(t, w.Records, 206)
-	assert.InDelta(t, 3125, w.Data.TotalDistance, 1)
-	assert.InDelta(t, 3096, w.Data.TotalDistance2D, 1)
+	assert.InDelta(t, 3125, w.TotalDistance, 1)
+	assert.InDelta(t, 3096, w.TotalDistance2D, 1)
 	assert.InDelta(t, 3.297, w.Data.AverageSpeed, 0.01)
 	assert.InDelta(t, 3.297, w.Data.AverageSpeedNoPause, 0.01)
 	assert.Equal(t, "Some name", w.Name)
@@ -90,7 +90,7 @@ func TestWorkout_UpdateData(t *testing.T) {
 
 	w.CalculateSlopes()
 
-	w.setData(dummyMapData(), nil, nil)
+	w.setData(&Workout{Data: dummyMapData()})
 	require.NoError(t, w.Save(db))
 
 	assert.NotEqual(t, d, w.Data)

@@ -37,6 +37,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	data, records := mapDataFromActivity(act, gpxFile)
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
+	_, totalDistance2D, _ := model.WorkoutTotalsFromRecords(records)
 
 	workouts := make([]*model.Workout, 0, len(act.Sessions))
 
@@ -48,32 +49,43 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 		pauseDuration := maxDuration(elapsedDuration-moveDuration, 0)
 
 		clonedData := cloneMapData(data)
+		if clonedData == nil {
+			clonedData = &model.WorkoutGeoMeta{}
+		}
+
+		workoutType, found := model.WorkoutTypeFromData(session.Sport.String())
+		customType := ""
+		if !found {
+			customType = session.Sport.String()
+		}
+		workoutName := formatFitWorkoutName(session.Sport.String(), startTime)
+		subType := ""
+		if session.SubSport != typedef.SubSportInvalid {
+			subType = session.SubSport.String()
+		}
+
 		w := &model.Workout{
-			Data:    clonedData,
-			Date:    startTime,
-			Records: append([]model.WorkoutRecord(nil), records...),
+			Data:            clonedData,
+			Date:            startTime,
+			DateEnd:         startTime.Add(elapsedDuration),
+			Name:            workoutName,
+			Type:            workoutType,
+			SubType:         subType,
+			CustomType:      customType,
+			Records:         append([]model.WorkoutRecord(nil), records...),
+			TotalDistance:   session.TotalDistanceScaled(),
+			TotalDistance2D: totalDistance2D,
+			TotalDuration:   elapsedDuration,
+			PauseDuration:   pauseDuration,
 		}
 
 		if w.Data != nil {
 			w.Data.WorkoutData.MergeNonZero(model.WorkoutData{
-				Name:          formatFitWorkoutName(session.Sport.String(), startTime),
-				Type:          session.Sport.String(),
-				Start:         startTime,
-				Stop:          startTime.Add(elapsedDuration),
-				TotalDistance: session.TotalDistanceScaled(),
-				TotalDuration: elapsedDuration,
-				PauseDuration: pauseDuration,
-				WorkoutStats:  stats,
+				WorkoutStats: stats,
 			})
 		}
 
 		w.Laps = append([]model.WorkoutLap(nil), laps...)
-
-		if session.SubSport != typedef.SubSportInvalid {
-			w.Data.WorkoutData.SubType = session.SubSport.String()
-		}
-
-		w.Name = w.Data.WorkoutData.Name
 		setContentAndName(w, filename, "fit", content)
 		w.UpdateAverages()
 		w.UpdateExtraMetrics()
@@ -392,8 +404,6 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 		prevDistance  float64
 	)
 
-	startTime := fitActivityStartTime(act)
-
 	for i, r := range act.Records {
 		ts := r.Timestamp.Local()
 		if ts.IsZero() {
@@ -513,11 +523,6 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 		Creator: act.FileId.Manufacturer.String(),
 		Center:  model.MapCenter{},
 		WorkoutData: model.WorkoutData{
-			Start:         startTime,
-			Stop:          points[len(points)-1].Time,
-			TotalDistance: totalDistance,
-			TotalDuration: totalDuration,
-			PauseDuration: pauseDuration,
 			WorkoutStats: model.WorkoutStats{
 				MinElevation:        minElevation,
 				MaxElevation:        maxElevation,
@@ -526,16 +531,6 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 				MaxSpeed:            maxSpeed,
 			},
 		},
-	}
-
-	// Populate workout type/name from the first session when available
-	if len(act.Sessions) > 0 {
-		s := act.Sessions[0]
-		data.WorkoutData.Type = s.Sport.String()
-		data.WorkoutData.SubType = s.SubSport.String()
-		if data.WorkoutData.Name == "" {
-			data.WorkoutData.Name = formatFitWorkoutName(s.Sport.String(), startTime)
-		}
 	}
 
 	data.UpdateExtraMetrics(points)
@@ -562,10 +557,6 @@ func sanitizeMapData(data *model.WorkoutGeoMeta) {
 
 	if math.IsNaN(data.MaxElevation) {
 		data.MaxElevation = 0
-	}
-
-	if math.IsNaN(data.TotalDistance) {
-		data.TotalDistance = 0
 	}
 
 	if math.IsNaN(data.TotalDown) {

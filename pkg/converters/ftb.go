@@ -57,20 +57,23 @@ func readFtbXMLFile(zf *zip.File) ([]*model.Workout, error) {
 }
 
 func convertToWorkout(iw indoorWorkout) *model.Workout {
-	wd := model.WorkoutData{
-		Name:             iw.ExportFileName,
-		Type:             iw.WorkoutType,
-		Start:            iw.StartTime(),
-		Stop:             iw.EndTime(),
+	start := iw.StartTime()
+	end := iw.EndTime()
+	name := strings.TrimSuffix(path.Base(iw.ExportFileName), path.Ext(iw.ExportFileName))
+	workoutType, found := model.WorkoutTypeFromData(iw.WorkoutType)
+	customType := ""
+	if !found {
+		customType = iw.WorkoutType
+	}
+	w := &model.Workout{
+		Data:             &model.WorkoutGeoMeta{},
+		Date:             start,
+		DateEnd:          end,
+		Name:             name,
+		Type:             workoutType,
+		CustomType:       customType,
 		TotalDuration:    time.Duration(iw.Duration * int64(time.Millisecond)),
 		TotalRepetitions: iw.Repetitions,
-	}
-
-	name := strings.TrimSuffix(path.Base(wd.Name), path.Ext(wd.Name))
-	w := &model.Workout{
-		Data: &model.WorkoutGeoMeta{WorkoutData: wd},
-		Date: wd.Start,
-		Name: name,
 	}
 
 	w.UpdateAverages()
