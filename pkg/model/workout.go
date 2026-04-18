@@ -87,6 +87,7 @@ type Workout struct {
 	RouteSegmentMatches []*RouteSegmentMatch `gorm:"constraint:OnDelete:CASCADE" json:"routeSegmentMatches,omitempty"`                   // Which route segments match
 	Attachments         []WorkoutAttachment  `gorm:"constraint:OnDelete:CASCADE" json:"attachments,omitempty"`
 	Records             []WorkoutRecord      `gorm:"constraint:OnDelete:CASCADE" json:"records"`              // The GPS points of the workout
+	Events              []WorkoutEvent       `gorm:"constraint:OnDelete:CASCADE" json:"events,omitempty"`     // Parsed workout events (e.g. FIT timer start/stop)
 	Laps                []WorkoutLap         `gorm:"constraint:OnDelete:CASCADE" json:"laps"`                 // The laps of the workout
 	Climbs              []WorkoutClimb       `gorm:"constraint:OnDelete:CASCADE" json:"climbs"`               // Auto-detected climbs
 	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"` // The ID of the user who owns the workout
@@ -95,7 +96,7 @@ type Workout struct {
 }
 
 func omitWorkoutAssociations(tx *gorm.DB) *gorm.DB {
-	return tx.Omit(clause.Associations).Omit("Stats", "Data", "File", "Equipment", "RouteSegmentMatches", "Records", "Laps", "Climbs", "Attachments")
+	return tx.Omit(clause.Associations).Omit("Stats", "Data", "File", "Equipment", "RouteSegmentMatches", "Records", "Events", "Laps", "Climbs", "Attachments")
 }
 
 func (w *Workout) HasCustomType() bool {
@@ -484,6 +485,9 @@ func GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 		Preload("Records", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
+		Preload("Events", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		}).
 		Preload("User").
 		Preload("Equipment").
 		First(&w, id).
@@ -566,6 +570,10 @@ func persistWorkoutRelations(tx *gorm.DB, w *Workout) error {
 		return err
 	}
 
+	if err := persistWorkoutEvents(tx, w); err != nil {
+		return err
+	}
+
 	if err := persistWorkoutLaps(tx, w); err != nil {
 		return err
 	}
@@ -628,6 +636,27 @@ func persistWorkoutLaps(tx *gorm.DB, w *Workout) error {
 	}
 
 	return tx.CreateInBatches(&w.Laps, mapDataClimbsInsertBatchSize).Error
+}
+
+func persistWorkoutEvents(tx *gorm.DB, w *Workout) error {
+	if w.Events == nil {
+		return nil
+	}
+
+	for i := range w.Events {
+		w.Events[i].WorkoutID = w.ID
+		w.Events[i].SortOrder = i
+	}
+
+	if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutEvent{}).Error; err != nil {
+		return err
+	}
+
+	if len(w.Events) == 0 {
+		return nil
+	}
+
+	return tx.CreateInBatches(&w.Events, mapDataClimbsInsertBatchSize).Error
 }
 
 func persistWorkoutClimbs(tx *gorm.DB, w *Workout) error {
@@ -701,6 +730,7 @@ func (w *Workout) setData(updated *Workout) {
 
 	data := updated.Data
 	records := updated.Records
+	events := updated.Events
 	laps := updated.Laps
 
 	if !w.Locked {
@@ -722,6 +752,7 @@ func (w *Workout) setData(updated *Workout) {
 		w.Data = data
 		w.Data.WorkoutID = w.ID
 		w.Records = append([]WorkoutRecord(nil), records...)
+		w.Events = append([]WorkoutEvent(nil), events...)
 		w.Laps = append([]WorkoutLap(nil), laps...)
 
 		return
@@ -732,6 +763,7 @@ func (w *Workout) setData(updated *Workout) {
 	data.WorkoutID = w.ID
 
 	w.Records = append([]WorkoutRecord(nil), records...)
+	w.Events = append([]WorkoutEvent(nil), events...)
 	w.Laps = append([]WorkoutLap(nil), laps...)
 	w.Data = data
 }

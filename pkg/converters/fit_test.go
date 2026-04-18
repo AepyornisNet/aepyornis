@@ -1,9 +1,11 @@
 package converters
 
 import (
+	"math"
 	"testing"
 	"time"
 
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/muktihari/fit/kit/datetime"
 	"github.com/muktihari/fit/profile/filedef"
 	"github.com/muktihari/fit/profile/mesgdef"
@@ -54,4 +56,60 @@ func TestFitActivityStartTime_SkipsEpochLocalTimestamp(t *testing.T) {
 
 	got := fitActivityStartTime(act)
 	assert.Equal(t, realStart.Local(), got, "should fall through to session start time when LocalTimestamp is FIT epoch")
+}
+
+func TestDeriveFitSessionDurations_UsesSessionValuesWhenValid(t *testing.T) {
+	elapsed, moving, pause := deriveFitSessionDurations(
+		3600,
+		3600,
+		3000,
+		3000,
+		nil,
+		nil,
+	)
+
+	assert.Equal(t, time.Hour, elapsed)
+	assert.Equal(t, 50*time.Minute, moving)
+	assert.Equal(t, 10*time.Minute, pause)
+}
+
+func TestDeriveFitSessionDurations_FallsBackToLapsWhenSessionMissing(t *testing.T) {
+	laps := []model.WorkoutLap{
+		{TotalDuration: 10 * time.Minute, PauseDuration: 2 * time.Minute},
+		{TotalDuration: 20 * time.Minute, PauseDuration: 5 * time.Minute},
+	}
+
+	elapsed, moving, pause := deriveFitSessionDurations(
+		math.MaxUint32,
+		0,
+		math.MaxUint32,
+		0,
+		laps,
+		nil,
+	)
+
+	assert.Equal(t, 30*time.Minute, elapsed)
+	assert.Equal(t, 23*time.Minute, moving)
+	assert.Equal(t, 7*time.Minute, pause)
+}
+
+func TestDeriveFitSessionDurations_FallsBackToRecordsWhenNoSessionOrLaps(t *testing.T) {
+	records := []model.WorkoutRecord{
+		{Duration: 0, TotalDuration: 0, Distance: 0, TotalDistance: 0},
+		{Duration: 60 * time.Second, TotalDuration: 60 * time.Second, Distance: 120, TotalDistance: 120},
+		{Duration: 60 * time.Second, TotalDuration: 120 * time.Second, Distance: 0, TotalDistance: 120},
+	}
+
+	elapsed, moving, pause := deriveFitSessionDurations(
+		math.MaxUint32,
+		0,
+		math.MaxUint32,
+		0,
+		nil,
+		records,
+	)
+
+	assert.Equal(t, 120*time.Second, elapsed)
+	assert.Equal(t, 60*time.Second, moving)
+	assert.Equal(t, 60*time.Second, pause)
 }

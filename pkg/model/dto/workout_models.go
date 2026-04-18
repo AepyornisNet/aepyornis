@@ -7,6 +7,7 @@ import (
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
+	"gorm.io/datatypes"
 )
 
 // WorkoutResponse represents a workout in API v2 responses
@@ -181,9 +182,20 @@ type WorkoutDetailResponse struct {
 	Equipment           []EquipmentResponse             `json:"equipment,omitempty"`
 	MapData             *MapDataResponse                `json:"map_data,omitempty"`
 	Climbs              []ClimbSegmentResponse          `json:"climbs,omitempty"`
+	Events              []WorkoutEventResponse          `json:"events,omitempty"`
 	RouteSegmentMatches []RouteSegmentMatchResponse     `json:"route_segment_matches,omitempty"`
 	Records             []WorkoutIntervalRecordResponse `json:"records,omitempty"`
 	Laps                []WorkoutLapResponse            `json:"laps,omitempty"`
+}
+
+// WorkoutEventResponse represents parsed workout event data.
+type WorkoutEventResponse struct {
+	Timestamp      time.Time      `json:"timestamp"`
+	StartTimestamp time.Time      `json:"start_timestamp"`
+	Event          string         `json:"event"`
+	EventType      string         `json:"event_type"`
+	EventGroup     uint8          `json:"event_group"`
+	Payload        datatypes.JSON `json:"payload,omitempty"`
 }
 
 // MapDataResponse represents workout map data in API v2 responses
@@ -417,6 +429,20 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 		wr.Equipment = make([]EquipmentResponse, len(w.Equipment))
 		for i, e := range w.Equipment {
 			wr.Equipment[i] = NewEquipmentResponse(&e)
+		}
+	}
+
+	if len(w.Events) > 0 {
+		wr.Events = make([]WorkoutEventResponse, len(w.Events))
+		for i, e := range w.Events {
+			wr.Events[i] = WorkoutEventResponse{
+				Timestamp:      e.Timestamp,
+				StartTimestamp: e.StartTimestamp,
+				Event:          e.Event,
+				EventType:      e.EventType,
+				EventGroup:     e.EventGroup,
+				Payload:        e.Payload,
+			}
 		}
 	}
 

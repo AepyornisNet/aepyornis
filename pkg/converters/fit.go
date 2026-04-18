@@ -2,6 +2,7 @@ package converters
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -13,9 +14,11 @@ import (
 	"github.com/muktihari/fit/kit/datetime"
 	"github.com/muktihari/fit/kit/semicircles"
 	"github.com/muktihari/fit/profile/filedef"
+	"github.com/muktihari/fit/profile/mesgdef"
 	"github.com/muktihari/fit/profile/typedef"
 	"github.com/spf13/cast"
 	"github.com/tkrajina/gpxgo/gpx"
+	"gorm.io/datatypes"
 )
 
 func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
@@ -35,6 +38,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 
 	gpxFile := buildGPXFromActivity(act)
 	data, records := mapDataFromActivity(act, gpxFile)
+	events := parseWorkoutEvents(act)
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
 	_, totalDistance2D, _ := model.WorkoutTotalsFromRecords(records)
@@ -44,9 +48,14 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	for _, session := range act.Sessions {
 		startTime := firstNonZeroTime(session.StartTime.Local(), activityTime)
 
-		moveDuration := durationFromSeconds(session.TotalTimerTimeScaled())
-		elapsedDuration := durationFromSeconds(session.TotalElapsedTimeScaled())
-		pauseDuration := maxDuration(elapsedDuration-moveDuration, 0)
+		elapsedDuration, _, pauseDuration := deriveFitSessionDurations(
+			session.TotalElapsedTime,
+			session.TotalElapsedTimeScaled(),
+			session.TotalTimerTime,
+			session.TotalTimerTimeScaled(),
+			laps,
+			records,
+		)
 
 		clonedData := cloneMapData(data)
 		if clonedData == nil {
@@ -75,6 +84,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 			SubType:         subType,
 			CustomType:      customType,
 			Records:         append([]model.WorkoutRecord(nil), records...),
+			Events:          append([]model.WorkoutEvent(nil), events...),
 			TotalDistance:   session.TotalDistanceScaled(),
 			TotalDistance2D: totalDistance2D,
 			TotalDuration:   elapsedDuration,
@@ -90,6 +100,84 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	}
 
 	return workouts, nil
+}
+
+func parseWorkoutEvents(act *filedef.Activity) []model.WorkoutEvent {
+	if act == nil || len(act.Events) == 0 {
+		return nil
+	}
+
+	events := make([]model.WorkoutEvent, 0, len(act.Events))
+
+	for _, e := range act.Events {
+		if e == nil {
+			continue
+		}
+
+		ts := e.Timestamp.Local()
+		if !fitTimeIsValid(ts) {
+			continue
+		}
+
+		events = append(events, model.WorkoutEvent{
+			Timestamp:      ts,
+			StartTimestamp: e.StartTimestamp.Local(),
+			Event:          e.Event.String(),
+			EventType:      e.EventType.String(),
+			EventGroup:     e.EventGroup,
+			Payload:        buildFitEventPayload(e),
+		})
+	}
+
+	return events
+}
+
+func buildFitEventPayload(e *mesgdef.Event) datatypes.JSON {
+	if e == nil {
+		return nil
+	}
+
+	event := e.Event.String()
+	switch event {
+	case "timer":
+		triggerType := typedef.TimerTrigger(e.Data)
+		if triggerType == typedef.TimerTriggerInvalid {
+			return nil
+		}
+
+		return mustJSONPayload(struct {
+			Trigger string `json:"trigger"`
+		}{
+			Trigger: triggerType.String(),
+		})
+	case "front_gear_change":
+		return mustJSONPayload(struct {
+			FrontGearNum uint8 `json:"front_gear_num"`
+			FrontGear    uint8 `json:"front_gear"`
+		}{
+			FrontGearNum: e.FrontGearNum,
+			FrontGear:    e.FrontGear,
+		})
+	case "rear_gear_change":
+		return mustJSONPayload(struct {
+			RearGearNum uint8 `json:"rear_gear_num"`
+			RearGear    uint8 `json:"rear_gear"`
+		}{
+			RearGearNum: e.RearGearNum,
+			RearGear:    e.RearGear,
+		})
+	default:
+		return nil
+	}
+}
+
+func mustJSONPayload(v any) datatypes.JSON {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+
+	return datatypes.JSON(b)
 }
 
 //gocyclo:ignore
@@ -287,6 +375,84 @@ func durationFromSeconds(seconds float64) time.Duration {
 	}
 
 	return time.Duration(seconds * float64(time.Second))
+}
+
+func durationFromFITUint32(raw uint32, scaled float64) time.Duration {
+	if raw == math.MaxUint32 {
+		return 0
+	}
+
+	return durationFromSeconds(scaled)
+}
+
+func sumLapElapsedDuration(laps []model.WorkoutLap) time.Duration {
+	total := time.Duration(0)
+	for _, lap := range laps {
+		total += lap.TotalDuration
+	}
+
+	return total
+}
+
+func sumLapMovingDuration(laps []model.WorkoutLap) time.Duration {
+	total := time.Duration(0)
+	for _, lap := range laps {
+		total += maxDuration(lap.TotalDuration-lap.PauseDuration, 0)
+	}
+
+	return total
+}
+
+func movingDurationFromRecords(records []model.WorkoutRecord) time.Duration {
+	if len(records) < 2 {
+		return 0
+	}
+
+	stats, ok := model.StatsForRange(records, 0, len(records)-1)
+	if !ok {
+		return 0
+	}
+
+	return stats.MovingDuration
+}
+
+func elapsedDurationFromRecords(records []model.WorkoutRecord) time.Duration {
+	_, _, duration := model.WorkoutTotalsFromRecords(records)
+
+	return duration
+}
+
+func deriveFitSessionDurations(
+	totalElapsedRaw uint32,
+	totalElapsedScaled float64,
+	totalTimerRaw uint32,
+	totalTimerScaled float64,
+	laps []model.WorkoutLap,
+	records []model.WorkoutRecord,
+) (time.Duration, time.Duration, time.Duration) {
+	elapsed := durationFromFITUint32(totalElapsedRaw, totalElapsedScaled)
+	if elapsed == 0 {
+		elapsed = sumLapElapsedDuration(laps)
+	}
+	if elapsed == 0 {
+		elapsed = elapsedDurationFromRecords(records)
+	}
+
+	moving := durationFromFITUint32(totalTimerRaw, totalTimerScaled)
+	if moving == 0 {
+		moving = sumLapMovingDuration(laps)
+	}
+	if moving == 0 {
+		moving = movingDurationFromRecords(records)
+	}
+
+	if elapsed > 0 && moving > elapsed {
+		moving = elapsed
+	}
+
+	pause := maxDuration(elapsed-moving, 0)
+
+	return elapsed, moving, pause
 }
 
 func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {

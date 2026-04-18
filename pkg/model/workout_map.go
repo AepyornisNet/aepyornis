@@ -98,6 +98,9 @@ func PreloadWorkoutData(db *gorm.DB) *gorm.DB {
 
 func PreloadWorkoutDetails(db *gorm.DB) *gorm.DB {
 	return PreloadWorkoutData(db).
+		Preload("Events", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("sort_order ASC")
+		}).
 		Preload("Records", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		})

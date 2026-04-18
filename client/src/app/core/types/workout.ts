@@ -64,6 +64,7 @@ export type WorkoutDetail = {
   equipment?: Equipment[];
   map_data?: MapData;
   climbs?: ClimbSegment[];
+  events?: WorkoutEvent[];
   route_segment_matches?: RouteSegmentMatch[];
   records?: WorkoutIntervalRecord[];
   laps?: WorkoutLap[];
@@ -258,6 +259,15 @@ export type WorkoutIntervalRecord = {
   start_index?: number;
   end_index?: number;
   rank: number;
+};
+
+export type WorkoutEvent = {
+  timestamp: string;
+  start_timestamp: string;
+  event: string;
+  event_type: string;
+  event_group: number;
+  payload?: Record<string, unknown>;
 };
 
 export type Equipment = {

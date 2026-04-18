@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/tkrajina/gpxgo/gpx"
@@ -13,6 +14,12 @@ import (
 var (
 	ErrUnsupportedFile = errors.New("unsupported file")
 	SupportedFileTypes = []string{".fit", ".ftb", ".gpx", ".tcx", ".zip"}
+)
+
+const (
+	// Ignore tiny stop/go noise; only material pauses become synthetic timer events.
+	minSyntheticPauseDuration = 5 * time.Second
+	maxSyntheticPauseSpeed    = 0.3 // m/s
 )
 
 type (
@@ -108,6 +115,7 @@ func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte
 		Data:            data,
 		Stats:           stats,
 		Records:         append([]model.WorkoutRecord(nil), records...),
+		Events:          synthesizeTimerEventsFromRecords(records),
 		Name:            model.GPXName(g),
 		Creator:         g.Creator,
 		Type:            workoutType,
@@ -168,4 +176,89 @@ func setContentAndName(w *model.Workout, filename string, fileType string, conte
 	}
 
 	w.SetContent(finalName, content)
+}
+
+func synthesizeTimerEventsFromRecords(records []model.WorkoutRecord) []model.WorkoutEvent {
+	if len(records) < 2 {
+		return nil
+	}
+
+	isPauseInterval := func(prev, cur model.WorkoutRecord, dt time.Duration) bool {
+		if dt <= 0 {
+			return false
+		}
+
+		speed := 0.0
+		if dt.Seconds() > 0 {
+			speed = cur.Distance / dt.Seconds()
+		}
+
+		return speed <= maxSyntheticPauseSpeed
+	}
+
+	events := make([]model.WorkoutEvent, 0)
+	paused := false
+	pausedAt := time.Time{}
+	pausedFor := time.Duration(0)
+
+	emitPause := func(stopAt, startAt time.Time) {
+		if stopAt.IsZero() || startAt.IsZero() || !startAt.After(stopAt) {
+			return
+		}
+
+		events = append(events,
+			model.WorkoutEvent{
+				Timestamp: stopAt,
+				Event:     "timer",
+				EventType: "stop",
+			},
+			model.WorkoutEvent{
+				Timestamp: startAt,
+				Event:     "timer",
+				EventType: "start",
+			},
+		)
+	}
+
+	for i := 1; i < len(records); i++ {
+		prev := records[i-1]
+		cur := records[i]
+
+		dt := cur.Duration
+		if dt <= 0 && !prev.Time.IsZero() && !cur.Time.IsZero() {
+			dt = cur.Time.Sub(prev.Time)
+		}
+
+		if isPauseInterval(prev, cur, dt) {
+			if !paused {
+				paused = true
+				pausedAt = prev.Time
+				pausedFor = 0
+			}
+
+			pausedFor += dt
+			continue
+		}
+
+		if paused {
+			if pausedFor >= minSyntheticPauseDuration {
+				emitPause(pausedAt, cur.Time)
+			}
+
+			paused = false
+			pausedAt = time.Time{}
+			pausedFor = 0
+		}
+	}
+
+	if paused && pausedFor >= minSyntheticPauseDuration {
+		lastTime := records[len(records)-1].Time
+		emitPause(pausedAt, lastTime)
+	}
+
+	if len(events) == 0 {
+		return nil
+	}
+
+	return events
 }
