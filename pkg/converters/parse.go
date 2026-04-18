@@ -183,53 +183,19 @@ func synthesizeTimerEventsFromRecords(records []model.WorkoutRecord) []model.Wor
 		return nil
 	}
 
-	isPauseInterval := func(prev, cur model.WorkoutRecord, dt time.Duration) bool {
-		if dt <= 0 {
-			return false
-		}
-
-		speed := 0.0
-		if dt.Seconds() > 0 {
-			speed = cur.Distance / dt.Seconds()
-		}
-
-		return speed <= maxSyntheticPauseSpeed
-	}
-
 	events := make([]model.WorkoutEvent, 0)
 	paused := false
 	pausedAt := time.Time{}
 	pausedFor := time.Duration(0)
 
-	emitPause := func(stopAt, startAt time.Time) {
-		if stopAt.IsZero() || startAt.IsZero() || !startAt.After(stopAt) {
-			return
-		}
-
-		events = append(events,
-			model.WorkoutEvent{
-				Timestamp: stopAt,
-				Event:     "timer",
-				EventType: "stop",
-			},
-			model.WorkoutEvent{
-				Timestamp: startAt,
-				Event:     "timer",
-				EventType: "start",
-			},
-		)
-	}
-
 	for i := 1; i < len(records); i++ {
 		prev := records[i-1]
 		cur := records[i]
 
-		dt := cur.Duration
-		if dt <= 0 && !prev.Time.IsZero() && !cur.Time.IsZero() {
-			dt = cur.Time.Sub(prev.Time)
-		}
+		dt := recordIntervalDuration(prev, cur)
+		pauseInterval := isPauseInterval(cur, dt)
 
-		if isPauseInterval(prev, cur, dt) {
+		if pauseInterval {
 			if !paused {
 				paused = true
 				pausedAt = prev.Time
@@ -242,7 +208,7 @@ func synthesizeTimerEventsFromRecords(records []model.WorkoutRecord) []model.Wor
 
 		if paused {
 			if pausedFor >= minSyntheticPauseDuration {
-				emitPause(pausedAt, cur.Time)
+				events = appendSyntheticPauseEvents(events, pausedAt, cur.Time)
 			}
 
 			paused = false
@@ -253,7 +219,7 @@ func synthesizeTimerEventsFromRecords(records []model.WorkoutRecord) []model.Wor
 
 	if paused && pausedFor >= minSyntheticPauseDuration {
 		lastTime := records[len(records)-1].Time
-		emitPause(pausedAt, lastTime)
+		events = appendSyntheticPauseEvents(events, pausedAt, lastTime)
 	}
 
 	if len(events) == 0 {
@@ -261,4 +227,36 @@ func synthesizeTimerEventsFromRecords(records []model.WorkoutRecord) []model.Wor
 	}
 
 	return events
+}
+
+func recordIntervalDuration(prev, cur model.WorkoutRecord) time.Duration {
+	if cur.Duration > 0 {
+		return cur.Duration
+	}
+
+	if !prev.Time.IsZero() && !cur.Time.IsZero() {
+		return cur.Time.Sub(prev.Time)
+	}
+
+	return 0
+}
+
+func isPauseInterval(cur model.WorkoutRecord, dt time.Duration) bool {
+	if dt <= 0 {
+		return false
+	}
+
+	speed := cur.Distance / dt.Seconds()
+	return speed <= maxSyntheticPauseSpeed
+}
+
+func appendSyntheticPauseEvents(events []model.WorkoutEvent, stopAt, startAt time.Time) []model.WorkoutEvent {
+	if stopAt.IsZero() || startAt.IsZero() || !startAt.After(stopAt) {
+		return events
+	}
+
+	return append(events,
+		model.WorkoutEvent{Timestamp: stopAt, Event: "timer", EventType: "stop"},
+		model.WorkoutEvent{Timestamp: startAt, Event: "timer", EventType: "start"},
+	)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"gorm.io/datatypes"
 )
@@ -322,14 +323,49 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 // @Router       /profile/refresh-workouts [post]
 func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 	user := pc.context.GetUser(c)
+	db := pc.context.GetDB()
 
-	if err := user.MarkWorkoutsDirty(pc.context.GetDB()); err != nil {
+	var workoutIDs []uint64
+	if err := db.Model(&model.Workout{}).
+		Where("user_id = ?", user.ID).
+		Pluck("id", &workoutIDs).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if err := user.MarkWorkoutsDirty(db); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	enqueued := 0
+	failed := 0
+	for _, workoutID := range workoutIDs {
+		if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), pc.context, workoutID); err != nil {
+			failed++
+			pc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workoutID, "error", err)
+			continue
+		}
+
+		enqueued++
+	}
+
+	if len(workoutIDs) > 0 && failed == len(workoutIDs) {
+		return renderApiError(c, http.StatusInternalServerError, errors.New("failed to enqueue workout refresh jobs"))
+	}
+
+	var message string
+	switch {
+	case len(workoutIDs) == 0:
+		message = "No workouts found"
+	case failed > 0:
+		message = "All workouts marked for refresh; some workouts could not be scheduled"
+	default:
+		message = "Workouts will be refreshed soon"
 	}
 
 	resp := dto.Response[map[string]string]{
 		Results: map[string]string{
-			"message": "All workouts marked for refresh",
+			"message": message,
+			"count":   strconv.Itoa(enqueued),
 		},
 	}
 
