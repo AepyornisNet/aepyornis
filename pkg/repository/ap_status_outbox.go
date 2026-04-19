@@ -10,12 +10,12 @@ import (
 )
 
 type APOutbox interface {
-	CreateWorkout(outboxWorkout *model.APOutboxWorkout) error
-	CreateEntry(entry *model.APOutboxEntry) error
+	CreateWorkout(outboxWorkout *model.APStatusWorkout) error
+	CreateEntry(entry *model.APStatus) error
 	CountEntriesByUser(userID uint64) (int64, error)
-	GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APOutboxEntry, error)
-	GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APOutboxEntry, error)
-	GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APOutboxEntry, error)
+	GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APStatus, error)
+	GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APStatus, error)
+	GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APStatus, error)
 	ResolveWorkoutIDByObjectOrActivityID(userID uint64, objectOrActivityID string) (uint64, error)
 	DeleteEntryForWorkout(userID uint64, workoutID uint64) error
 	PublishedMap(userID uint64, workoutIDs []uint64) (map[uint64]bool, error)
@@ -29,7 +29,7 @@ func NewAPOutbox(db *gorm.DB) APOutbox {
 	return &apOutboxRepository{db: db}
 }
 
-func (r *apOutboxRepository) CreateWorkout(outboxWorkout *model.APOutboxWorkout) error {
+func (r *apOutboxRepository) CreateWorkout(outboxWorkout *model.APStatusWorkout) error {
 	if outboxWorkout == nil {
 		return errors.New("outbox workout is nil")
 	}
@@ -45,7 +45,7 @@ func (r *apOutboxRepository) CreateWorkout(outboxWorkout *model.APOutboxWorkout)
 	return r.db.Create(outboxWorkout).Error
 }
 
-func (r *apOutboxRepository) CreateEntry(entry *model.APOutboxEntry) error {
+func (r *apOutboxRepository) CreateEntry(entry *model.APStatus) error {
 	if entry == nil {
 		return errors.New("outbox entry is nil")
 	}
@@ -67,15 +67,15 @@ func (r *apOutboxRepository) CreateEntry(entry *model.APOutboxEntry) error {
 
 func (r *apOutboxRepository) CountEntriesByUser(userID uint64) (int64, error) {
 	var total int64
-	if err := r.db.Model(&model.APOutboxEntry{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	if err := r.db.Model(&model.APStatus{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
 		return 0, err
 	}
 
 	return total, nil
 }
 
-func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APOutboxEntry, error) {
-	entries := make([]model.APOutboxEntry, 0)
+func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APStatus, error) {
+	entries := make([]model.APStatus, 0)
 	if limit <= 0 {
 		limit = 20
 	}
@@ -92,10 +92,10 @@ func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset i
 	return entries, err
 }
 
-func (r *apOutboxRepository) GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APOutboxEntry, error) {
-	entry := &model.APOutboxEntry{}
+func (r *apOutboxRepository) GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APStatus, error) {
+	entry := &model.APStatus{}
 	if err := r.db.
-		Preload("APOutboxWorkout").
+		Preload("APStatusWorkout").
 		Where("user_id = ? AND public_uuid = ?", userID, outboxID).
 		First(entry).
 		Error; err != nil {
@@ -105,11 +105,11 @@ func (r *apOutboxRepository) GetEntryByUUIDAndUser(userID uint64, outboxID uuid.
 	return entry, nil
 }
 
-func (r *apOutboxRepository) GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APOutboxEntry, error) {
-	entry := &model.APOutboxEntry{}
-	if err := r.db.Model(&model.APOutboxEntry{}).
-		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_outbox.ap_outbox_workout_id").
-		Where("ap_outbox.user_id = ?", userID).
+func (r *apOutboxRepository) GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APStatus, error) {
+	entry := &model.APStatus{}
+	if err := r.db.Model(&model.APStatus{}).
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
+		Where("ap_statuses.user_id = ?", userID).
 		Where("ap_outbox_workout.workout_id = ?", workoutID).
 		First(entry).Error; err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func (r *apOutboxRepository) GetEntryForWorkout(userID uint64, workoutID uint64)
 }
 
 func (r *apOutboxRepository) DeleteEntryForWorkout(userID uint64, workoutID uint64) error {
-	outboxWorkout := &model.APOutboxWorkout{}
+	outboxWorkout := &model.APStatusWorkout{}
 	if err := r.db.Where("user_id = ? AND workout_id = ?", userID, workoutID).First(outboxWorkout).Error; err != nil {
 		return err
 	}
@@ -137,13 +137,13 @@ func (r *apOutboxRepository) ResolveWorkoutIDByObjectOrActivityID(userID uint64,
 	}
 
 	found := &row{}
-	q := r.db.Table("ap_outbox").
+	q := r.db.Table("ap_statuses").
 		Select("ap_outbox_workout.workout_id AS workout_id").
-		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_outbox.ap_outbox_workout_id").
-		Where("ap_outbox.object_id = ? OR ap_outbox.activity_id = ?", objectOrActivityID, objectOrActivityID)
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
+		Where("ap_statuses.object_id = ? OR ap_statuses.activity_id = ?", objectOrActivityID, objectOrActivityID)
 
 	if userID != 0 {
-		q = q.Where("ap_outbox.user_id = ?", userID)
+		q = q.Where("ap_statuses.user_id = ?", userID)
 	}
 
 	if err := q.Take(found).Error; err != nil {
@@ -164,10 +164,10 @@ func (r *apOutboxRepository) PublishedMap(userID uint64, workoutIDs []uint64) (m
 	}
 
 	rows := make([]row, 0, len(workoutIDs))
-	if err := r.db.Model(&model.APOutboxEntry{}).
+	if err := r.db.Model(&model.APStatus{}).
 		Select("ap_outbox_workout.workout_id").
-		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_outbox.ap_outbox_workout_id").
-		Where("ap_outbox.user_id = ?", userID).
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
+		Where("ap_statuses.user_id = ?", userID).
 		Where("ap_outbox_workout.workout_id IN ?", workoutIDs).
 		Find(&rows).Error; err != nil {
 		return nil, err

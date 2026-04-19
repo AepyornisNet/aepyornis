@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func PublishReplyToActivityPub(ctx context.Context, c *container.Container, author *model.User, workout *model.Workout, reply *model.WorkoutReply) error {
+func PublishReplyToActivityPub(ctx context.Context, c *container.Container, author *model.User, workout *model.Workout, reply *model.APStatus) error {
 	if c == nil || author == nil || workout == nil || reply == nil {
 		return nil
 	}
@@ -72,27 +72,25 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 		return err
 	}
 
-	createEntry := &model.APOutboxEntry{
-		PublicUUID:  createUUID,
-		UserID:      author.ID,
-		Kind:        model.APOutboxReplyCreateKind,
-		ActivityID:  createActivityID,
-		ObjectID:    createObjectID,
-		Activity:    createActivityJSON,
-		Payload:     noteJSON,
-		NoteText:    reply.Content,
-		PublishedAt: publishedAt,
-	}
-	if err := c.APOutboxRepo().CreateEntry(createEntry); err != nil {
+	if err := c.GetDB().Model(&model.APStatus{}).Where("id = ?", reply.ID).Updates(map[string]any{
+		"activity_id":  createActivityID,
+		"object_id":    createObjectID,
+		"activity":     createActivityJSON,
+		"payload":      noteJSON,
+		"published_at": publishedAt,
+		"origin":       "local",
+		"status_type":  model.APStatusTypeReply,
+		"user_id":      author.ID,
+	}).Error; err != nil {
 		return err
 	}
+	reply.ActivityID = createActivityID
+	reply.ObjectID = createObjectID
+	reply.Activity = createActivityJSON
+	reply.Payload = noteJSON
+	reply.PublishedAt = &publishedAt
 
-	if err := c.GetDB().Model(&model.WorkoutReply{}).Where("id = ?", reply.ID).Update("object_iri", createObjectID).Error; err != nil {
-		return err
-	}
-	reply.ObjectIRI = createObjectID
-
-	if err := EnqueueAPDeliveriesForEntry(ctx, c, createEntry.ID); err != nil {
+	if err := EnqueueAPDeliveriesForEntry(ctx, c, reply.ID); err != nil {
 		return err
 	}
 

@@ -31,6 +31,7 @@ func NewApInboxController(c *container.Container) ApInboxController {
 			c.APOutboxRepo(),
 			c.WorkoutLikeRepo(),
 			c.WorkoutReplyRepo(),
+			c.APStatusRepo(),
 		),
 	}
 }
@@ -78,6 +79,8 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to read request body: %w", err))
 	}
+
+	ac.context.Logger().With("payload", string(payload)).Debug("Received ap inbox request")
 
 	var activity vocab.Activity
 	err = jsonld.Unmarshal(payload, &activity)

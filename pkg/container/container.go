@@ -80,12 +80,20 @@ func (c *Container) APOutboxRepo() repository.APOutbox {
 	return c.repositories.APOutbox
 }
 
-func (c *Container) APOutboxDeliveryRepo() repository.APOutboxDelivery {
+func (c *Container) APStatusRepo() repository.APStatus {
 	if c.repositories == nil {
 		return nil
 	}
 
-	return c.repositories.APOutboxDelivery
+	return c.repositories.APStatus
+}
+
+func (c *Container) APStatusDeliveryRepo() repository.APStatusDelivery {
+	if c.repositories == nil {
+		return nil
+	}
+
+	return c.repositories.APStatusDelivery
 }
 
 func (c *Container) FollowerRepo() repository.Follower {

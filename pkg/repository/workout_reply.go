@@ -14,12 +14,12 @@ import (
 type WorkoutReply interface {
 	ReplyByActorIRI(workoutID uint64, objectIRI, actorIRI, actorName, content string) error
 	UpdateReplyByObjectIRI(workoutID uint64, objectIRI, actorIRI, actorName, content string) error
-	CreateLocalReply(workoutID, userID uint64, content string) (*model.WorkoutReply, error)
+	CreateLocalReply(workoutID, userID uint64, content string) (*model.APStatus, error)
 	DeleteReplyByObjectIRI(workoutID uint64, objectIRI string) error
 	ResolveWorkoutIDByObjectIRI(objectIRI string) (uint64, error)
 	CountMapByWorkoutIDs(workoutIDs []uint64) (map[uint64]int64, error)
 	CountByWorkoutID(workoutID uint64) (int64, error)
-	ListByWorkoutID(workoutID uint64, limit int, offset int) ([]model.WorkoutReply, error)
+	ListByWorkoutID(workoutID uint64, limit int, offset int) ([]model.APStatus, error)
 }
 
 type workoutReplyRepository struct {
@@ -45,21 +45,28 @@ func (r *workoutReplyRepository) ReplyByActorIRI(workoutID uint64, objectIRI, ac
 	}
 
 	content = templatehelpers.SanitizeReplyHTML(content)
+	parentObjectID, err := r.parentObjectIDForWorkout(workoutID)
+	if err != nil {
+		return err
+	}
 
-	reply := &model.WorkoutReply{
-		WorkoutID: workoutID,
-		ObjectIRI: objectIRI,
-		ActorIRI:  &actorIRI,
-		Content:   content,
+	reply := &model.APStatus{
+		ObjectID:          objectIRI,
+		ActivityID:        objectIRI,
+		ActorIRI:          &actorIRI,
+		Activity:          []byte("{}"),
+		Content:           content,
+		StatusType:        model.APStatusTypeReply,
+		Origin:            "remote",
+		InReplyToObjectID: &parentObjectID,
 	}
 
 	if actorName != "" {
 		reply.ActorName = &actorName
 	}
 
-	// Use upsert to handle duplicates (same actor/object combination)
 	return r.db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "workout_id"}, {Name: "object_iri"}},
+		Columns:   []clause.Column{{Name: "object_id"}},
 		DoNothing: true,
 	}).Create(reply).Error
 }
@@ -79,16 +86,19 @@ func (r *workoutReplyRepository) UpdateReplyByObjectIRI(workoutID uint64, object
 	}
 
 	content = templatehelpers.SanitizeReplyHTML(content)
-
-	updates := map[string]any{
-		"content": content,
+	parentObjectID, err := r.parentObjectIDForWorkout(workoutID)
+	if err != nil {
+		return err
 	}
+
+	updates := map[string]any{"content": content}
 	if actorName != "" {
 		updates["actor_name"] = actorName
 	}
 
-	result := r.db.Model(&model.WorkoutReply{}).
-		Where("workout_id = ? AND object_iri = ? AND actor_iri = ?", workoutID, objectIRI, actorIRI).
+	result := r.db.Model(&model.APStatus{}).
+		Where("status_type = ?", model.APStatusTypeReply).
+		Where("object_id = ? AND actor_iri = ? AND in_reply_to_object_id = ?", objectIRI, actorIRI, parentObjectID).
 		Updates(updates)
 	if result.Error != nil {
 		return result.Error
@@ -100,7 +110,7 @@ func (r *workoutReplyRepository) UpdateReplyByObjectIRI(workoutID uint64, object
 	return nil
 }
 
-func (r *workoutReplyRepository) CreateLocalReply(workoutID, userID uint64, content string) (*model.WorkoutReply, error) {
+func (r *workoutReplyRepository) CreateLocalReply(workoutID, userID uint64, content string) (*model.APStatus, error) {
 	if workoutID == 0 {
 		return nil, errors.New("workout id is required")
 	}
@@ -112,15 +122,22 @@ func (r *workoutReplyRepository) CreateLocalReply(workoutID, userID uint64, cont
 	}
 
 	content = templatehelpers.SanitizeReplyHTML(content)
+	parentObjectID, err := r.parentObjectIDForWorkout(workoutID)
+	if err != nil {
+		return nil, err
+	}
 
-	// Generate a local object IRI for this reply
 	objectIRI := "local:" + strconv.FormatUint(workoutID, 10) + ":" + strconv.FormatUint(userID, 10) + ":" + strconv.FormatInt(time.Now().UnixNano(), 10)
 
-	reply := &model.WorkoutReply{
-		WorkoutID: workoutID,
-		ObjectIRI: objectIRI,
-		UserID:    &userID,
-		Content:   content,
+	reply := &model.APStatus{
+		ObjectID:          objectIRI,
+		ActivityID:        objectIRI,
+		UserID:            &userID,
+		Activity:          []byte("{}"),
+		Content:           content,
+		StatusType:        model.APStatusTypeReply,
+		Origin:            "local",
+		InReplyToObjectID: &parentObjectID,
 	}
 
 	if err := r.db.Create(reply).Error; err != nil {
@@ -138,7 +155,12 @@ func (r *workoutReplyRepository) DeleteReplyByObjectIRI(workoutID uint64, object
 		return errors.New("object iri is required")
 	}
 
-	return r.db.Where("workout_id = ? AND object_iri = ?", workoutID, objectIRI).Delete(&model.WorkoutReply{}).Error
+	parentObjectID, err := r.parentObjectIDForWorkout(workoutID)
+	if err != nil {
+		return err
+	}
+
+	return r.db.Where("status_type = ? AND object_id = ? AND in_reply_to_object_id = ?", model.APStatusTypeReply, objectIRI, parentObjectID).Delete(&model.APStatus{}).Error
 }
 
 func (r *workoutReplyRepository) ResolveWorkoutIDByObjectIRI(objectIRI string) (uint64, error) {
@@ -146,14 +168,14 @@ func (r *workoutReplyRepository) ResolveWorkoutIDByObjectIRI(objectIRI string) (
 		return 0, errors.New("object iri is required")
 	}
 
-	type row struct {
-		WorkoutID uint64
-	}
-
+	type row struct{ WorkoutID uint64 }
 	found := &row{}
-	if err := r.db.Model(&model.WorkoutReply{}).
-		Select("workout_id").
-		Where("object_iri = ?", objectIRI).
+	if err := r.db.Table("ap_statuses AS reply").
+		Select("ap_outbox_workout.workout_id AS workout_id").
+		Joins("JOIN ap_statuses AS parent ON parent.object_id = reply.in_reply_to_object_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = parent.ap_status_workout_id").
+		Where("reply.status_type = ?", model.APStatusTypeReply).
+		Where("reply.object_id = ?", objectIRI).
 		Take(found).Error; err != nil {
 		return 0, err
 	}
@@ -173,10 +195,13 @@ func (r *workoutReplyRepository) CountMapByWorkoutIDs(workoutIDs []uint64) (map[
 	}
 
 	rows := []row{}
-	if err := r.db.Model(&model.WorkoutReply{}).
-		Select("workout_id, COUNT(id) as total").
-		Where("workout_id IN ?", workoutIDs).
-		Group("workout_id").
+	if err := r.db.Table("ap_statuses AS reply").
+		Select("ap_outbox_workout.workout_id AS workout_id, COUNT(reply.id) as total").
+		Joins("JOIN ap_statuses AS parent ON parent.object_id = reply.in_reply_to_object_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = parent.ap_status_workout_id").
+		Where("reply.status_type = ?", model.APStatusTypeReply).
+		Where("ap_outbox_workout.workout_id IN ?", workoutIDs).
+		Group("ap_outbox_workout.workout_id").
 		Find(&rows).Error; err != nil {
 		return nil, err
 	}
@@ -194,14 +219,19 @@ func (r *workoutReplyRepository) CountByWorkoutID(workoutID uint64) (int64, erro
 	}
 
 	var count int64
-	if err := r.db.Model(&model.WorkoutReply{}).Where("workout_id = ?", workoutID).Count(&count).Error; err != nil {
+	if err := r.db.Table("ap_statuses AS reply").
+		Joins("JOIN ap_statuses AS parent ON parent.object_id = reply.in_reply_to_object_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = parent.ap_status_workout_id").
+		Where("reply.status_type = ?", model.APStatusTypeReply).
+		Where("ap_outbox_workout.workout_id = ?", workoutID).
+		Count(&count).Error; err != nil {
 		return 0, err
 	}
 
 	return count, nil
 }
 
-func (r *workoutReplyRepository) ListByWorkoutID(workoutID uint64, limit int, offset int) ([]model.WorkoutReply, error) {
+func (r *workoutReplyRepository) ListByWorkoutID(workoutID uint64, limit int, offset int) ([]model.APStatus, error) {
 	if workoutID == 0 {
 		return nil, errors.New("workout id is required")
 	}
@@ -209,10 +239,14 @@ func (r *workoutReplyRepository) ListByWorkoutID(workoutID uint64, limit int, of
 		limit = 20
 	}
 
-	replies := make([]model.WorkoutReply, 0)
-	if err := r.db.Preload("User").
-		Where("workout_id = ?", workoutID).
-		Order("COALESCE(published_at, created_at) DESC, id DESC").
+	replies := make([]model.APStatus, 0)
+	if err := r.db.Table("ap_statuses AS reply").
+		Select("reply.*").
+		Joins("JOIN ap_statuses AS parent ON parent.object_id = reply.in_reply_to_object_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = parent.ap_status_workout_id").
+		Where("reply.status_type = ?", model.APStatusTypeReply).
+		Where("ap_outbox_workout.workout_id = ?", workoutID).
+		Order("COALESCE(reply.published_at, reply.created_at) DESC, reply.id DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&replies).Error; err != nil {
@@ -220,4 +254,19 @@ func (r *workoutReplyRepository) ListByWorkoutID(workoutID uint64, limit int, of
 	}
 
 	return replies, nil
+}
+
+func (r *workoutReplyRepository) parentObjectIDForWorkout(workoutID uint64) (string, error) {
+	type row struct{ ObjectID string }
+	found := &row{}
+	if err := r.db.Table("ap_statuses").
+		Select("ap_statuses.object_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
+		Where("ap_statuses.status_type = ?", model.APStatusTypeWorkout).
+		Where("ap_outbox_workout.workout_id = ?", workoutID).
+		Take(found).Error; err != nil {
+		return "", err
+	}
+
+	return found.ObjectID, nil
 }

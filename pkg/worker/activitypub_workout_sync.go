@@ -117,7 +117,7 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 		return err
 	}
 
-	outboxWorkout := &model.APOutboxWorkout{
+	outboxWorkout := &model.APStatusWorkout{
 		UserID:         user.ID,
 		WorkoutID:      workout.ID,
 		FitFilename:    ap.WorkoutFITFilename(workout),
@@ -129,17 +129,18 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 		return err
 	}
 
-	entry := &model.APOutboxEntry{
+	entry := &model.APStatus{
 		PublicUUID:        entryUUID,
-		UserID:            user.ID,
-		APOutboxWorkoutID: &outboxWorkout.ID,
-		Kind:              model.APOutboxWorkoutKind,
+		UserID:            &user.ID,
+		APStatusWorkoutID: &outboxWorkout.ID,
+		StatusType:        model.APStatusTypeWorkout,
+		Origin:            "local",
 		ActivityID:        entryURL,
 		ObjectID:          objectURL,
 		Activity:          activityJSON,
 		Payload:           noteJSON,
-		NoteText:          noteContent,
-		PublishedAt:       publishedAt,
+		Content:           noteContent,
+		PublishedAt:       &publishedAt,
 	}
 
 	if err := c.APOutboxRepo().CreateEntry(entry); err != nil {
@@ -149,7 +150,7 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 	return EnqueueAPDeliveriesForEntry(ctx, c, entry.ID)
 }
 
-func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, entry *model.APOutboxEntry, workout *model.Workout) error {
+func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, entry *model.APStatus, workout *model.Workout) error {
 	if entry == nil {
 		return errors.New("outbox entry is nil")
 	}
@@ -184,7 +185,7 @@ func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, 
 		return err
 	}
 
-	return c.GetDB().Model(&model.APOutboxEntry{}).
+	return c.GetDB().Model(&model.APStatus{}).
 		Where("id = ?", entry.ID).
 		Update("activity", activityJSON).Error
 }

@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type APOutboxWorkout struct {
+type APStatusWorkout struct {
 	Model
 
 	UserID uint64 `gorm:"index:idx_ap_outbox_workout_user_workout;not null" json:"user_id"`
@@ -21,11 +21,11 @@ type APOutboxWorkout struct {
 	FitContentType string `gorm:"type:varchar(128);not null;default:application/vnd.ant.fit" json:"fit_content_type"`
 }
 
-func (APOutboxWorkout) TableName() string {
+func (APStatusWorkout) TableName() string {
 	return "ap_outbox_workout"
 }
 
-func (w *APOutboxWorkout) BeforeCreate(_ *gorm.DB) error {
+func (w *APStatusWorkout) BeforeCreate(_ *gorm.DB) error {
 	if len(w.FitContent) > 0 {
 		h := sha256.Sum256(w.FitContent)
 		w.FitChecksum = h[:]

@@ -1,8 +1,10 @@
 package activitypub
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
@@ -32,11 +34,21 @@ type InboxWorkoutReplyRepository interface {
 	ResolveWorkoutIDByObjectIRI(objectIRI string) (uint64, error)
 }
 
+type InboxStatusRepository interface {
+	ResolveWorkoutIDByObjectOrActivityID(userID uint64, objectOrActivityID string) (uint64, error)
+	ResolveWorkoutIDByObjectIRI(objectIRI string) (uint64, error)
+	ReplyByActorIRI(workoutID uint64, objectIRI, actorIRI, actorName, content string) error
+	UpdateReplyByObjectIRI(workoutID uint64, objectIRI, actorIRI, actorName, content string) error
+	DeleteReplyByObjectIRI(workoutID uint64, objectIRI string) error
+	UpsertRemoteWorkoutStatus(actorIRI, actorName, activityID, objectID, content string, activityJSON, payloadJSON []byte) error
+}
+
 type InboxActivityHandler struct {
 	followerRepo     InboxFollowerRepository
 	outboxRepo       InboxOutboxRepository
 	workoutLikeRepo  InboxWorkoutLikeRepository
 	workoutReplyRepo InboxWorkoutReplyRepository
+	statusRepo       InboxStatusRepository
 }
 
 func NewInboxActivityHandler(
@@ -44,12 +56,14 @@ func NewInboxActivityHandler(
 	outboxRepo InboxOutboxRepository,
 	workoutLikeRepo InboxWorkoutLikeRepository,
 	workoutReplyRepo InboxWorkoutReplyRepository,
+	statusRepo InboxStatusRepository,
 ) *InboxActivityHandler {
 	return &InboxActivityHandler{
 		followerRepo:     followerRepo,
 		outboxRepo:       outboxRepo,
 		workoutLikeRepo:  workoutLikeRepo,
 		workoutReplyRepo: workoutReplyRepo,
+		statusRepo:       statusRepo,
 	}
 }
 
@@ -288,6 +302,10 @@ func (h *InboxActivityHandler) createActivity(requestingActor *vocab.Actor, targ
 		return true, h.handleCreateReplyActivity(requestingActor, targetUserID, activity)
 	}
 
+	if isCreateWorkoutActivity(activity) {
+		return true, h.handleCreateWorkoutActivity(requestingActor, activity)
+	}
+
 	return false, nil
 }
 
@@ -393,6 +411,12 @@ func (h *InboxActivityHandler) handleCreateReplyActivity(requestingActor *vocab.
 	avatarURL := ActorIconIRI(requestingActor)
 	CacheActorProfile(requestingActor.ID.String(), actorName, avatarURL)
 
+	if h.statusRepo != nil {
+		if err := h.statusRepo.ReplyByActorIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content); err != nil {
+			return err
+		}
+	}
+
 	return h.workoutReplyRepo.ReplyByActorIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content)
 }
 
@@ -440,6 +464,13 @@ func (h *InboxActivityHandler) handleUpdateReplyActivity(requestingActor *vocab.
 	CacheActorProfile(requestingActor.ID.String(), actorName, avatarURL)
 
 	err := h.workoutReplyRepo.UpdateReplyByObjectIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content)
+	if h.statusRepo != nil {
+		statusErr := h.statusRepo.UpdateReplyByObjectIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content)
+		if statusErr != nil && !errors.Is(statusErr, gorm.ErrRecordNotFound) {
+			return statusErr
+		}
+	}
+
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil
 	}
@@ -463,6 +494,13 @@ func (h *InboxActivityHandler) handleDeleteReplyActivity(activity *vocab.Activit
 	}
 
 	err := h.workoutReplyRepo.DeleteReplyByObjectIRI(workoutID, targetObjectIRI)
+	if h.statusRepo != nil {
+		statusErr := h.statusRepo.DeleteReplyByObjectIRI(workoutID, targetObjectIRI)
+		if statusErr != nil && !errors.Is(statusErr, gorm.ErrRecordNotFound) {
+			return statusErr
+		}
+	}
+
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil
 	}
@@ -514,4 +552,104 @@ func extractDeleteTargetObjectIRI(it *vocab.Activity) string {
 	})
 
 	return target
+}
+
+func isCreateWorkoutActivity(it *vocab.Activity) bool {
+	if it == nil || !vocab.CreateType.Match(it.GetType()) {
+		return false
+	}
+
+	if isCreateReplyActivity(it) {
+		return false
+	}
+
+	isNote := false
+	_ = vocab.OnObject(it.Object, func(obj *vocab.Object) error {
+		if vocab.NoteType.Match(obj.GetType()) {
+			isNote = true
+		}
+
+		return nil
+	})
+
+	if isNote {
+		return true
+	}
+
+	return false
+}
+
+func (h *InboxActivityHandler) handleCreateWorkoutActivity(requestingActor *vocab.Actor, activity *vocab.Activity) error {
+	if requestingActor == nil || h.statusRepo == nil {
+		return nil
+	}
+
+	objectIRI, content, _ := extractReplyInfo(activity)
+	if objectIRI == "" {
+		return nil
+	}
+
+	activityJSON, err := json.Marshal(activity)
+	if err != nil {
+		return err
+	}
+
+	objectPayload, objectRaw, ok := extractCreateObjectPayload(activity)
+	if !ok {
+		return nil
+	}
+
+	if content == "" {
+		content = objectPayload
+	}
+
+	actorName := ""
+	if requestingActor.Name != nil {
+		actorName = requestingActor.Name.String()
+	}
+
+	return h.statusRepo.UpsertRemoteWorkoutStatus(
+		requestingActor.ID.String(),
+		actorName,
+		firstNonEmpty(activity.ID.String(), objectIRI),
+		objectIRI,
+		content,
+		activityJSON,
+		objectRaw,
+	)
+}
+
+func extractCreateObjectPayload(it *vocab.Activity) (string, []byte, bool) {
+	if it == nil || vocab.IsNil(it.Object) {
+		return "", nil, false
+	}
+
+	var objectJSON []byte
+	if err := vocab.OnObject(it.Object, func(obj *vocab.Object) error {
+		raw, marshalErr := json.Marshal(obj)
+		if marshalErr != nil {
+			return marshalErr
+		}
+
+		objectJSON = raw
+		return nil
+	}); err != nil {
+		return "", nil, false
+	}
+
+	if len(objectJSON) == 0 {
+		return "", nil, false
+	}
+
+	return string(objectJSON), objectJSON, true
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+
+	return ""
 }

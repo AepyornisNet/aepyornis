@@ -3,8 +3,9 @@ package repository
 import "gorm.io/gorm"
 
 type Repositories struct {
+	APStatus         APStatus
 	APOutbox         APOutbox
-	APOutboxDelivery APOutboxDelivery
+	APStatusDelivery APStatusDelivery
 	Equipment        Equipment
 	Follower         Follower
 	Measurement      Measurement
@@ -17,8 +18,9 @@ type Repositories struct {
 
 func New(db *gorm.DB) *Repositories {
 	return &Repositories{
+		APStatus:         NewAPStatus(db),
 		APOutbox:         NewAPOutbox(db),
-		APOutboxDelivery: NewAPOutboxDelivery(db),
+		APStatusDelivery: NewAPStatusDelivery(db),
 		Equipment:        NewEquipment(db),
 		Follower:         NewFollower(db),
 		Measurement:      NewMeasurement(db),

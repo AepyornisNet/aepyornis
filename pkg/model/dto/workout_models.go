@@ -1162,10 +1162,10 @@ type WorkoutReplyResponse struct {
 	PublishedAt *time.Time           `json:"published_at,omitempty"`
 }
 
-func NewWorkoutReplyResponse(r *model.WorkoutReply) WorkoutReplyResponse {
+func NewWorkoutReplyResponse(r *model.APStatus) WorkoutReplyResponse {
 	res := WorkoutReplyResponse{
 		ID:          r.ID,
-		ObjectIRI:   r.ObjectIRI,
+		ObjectIRI:   r.ObjectID,
 		UserID:      r.UserID,
 		ActorIRI:    r.ActorIRI,
 		ActorName:   r.ActorName,
@@ -1191,7 +1191,7 @@ type WorkoutLikeResponse struct {
 	CreatedAt time.Time            `json:"created_at"`
 }
 
-func NewWorkoutLikeResponse(l *model.WorkoutLike) WorkoutLikeResponse {
+func NewWorkoutLikeResponse(l *model.APStatusLike) WorkoutLikeResponse {
 	res := WorkoutLikeResponse{
 		ID:        l.ID,
 		UserID:    l.UserID,

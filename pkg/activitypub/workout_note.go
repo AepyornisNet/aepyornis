@@ -251,14 +251,14 @@ func (n *WorkoutNote) PopulateRepliesCollection(workoutID uint64, replyCount int
 }
 
 // BuildRepliesCollectionWithItems constructs an OrderedCollection with reply items
-func BuildRepliesCollectionWithItems(noteID vocab.IRI, replies []model.WorkoutReply) vocab.OrderedCollection {
+func BuildRepliesCollectionWithItems(noteID vocab.IRI, replies []model.APStatus) vocab.OrderedCollection {
 	repliesID := vocab.IRI(noteID.String() + "/replies")
 
 	items := vocab.ItemCollection{}
 	for _, r := range replies {
 		// Either link to the remote object or to local note
-		if r.ObjectIRI != "" {
-			items = append(items, vocab.IRI(r.ObjectIRI))
+		if r.ObjectID != "" {
+			items = append(items, vocab.IRI(r.ObjectID))
 		}
 	}
 
