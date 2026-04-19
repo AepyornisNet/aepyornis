@@ -41,6 +41,41 @@ type InboxHandlerContext struct {
 	Activity         *vocab.Activity
 }
 
+type InboxActivityHandler struct {
+	followerRepo     InboxFollowerRepository
+	outboxRepo       InboxOutboxRepository
+	workoutLikeRepo  InboxWorkoutLikeRepository
+	workoutReplyRepo InboxWorkoutReplyRepository
+}
+
+func NewInboxActivityHandler(
+	followerRepo InboxFollowerRepository,
+	outboxRepo InboxOutboxRepository,
+	workoutLikeRepo InboxWorkoutLikeRepository,
+	workoutReplyRepo InboxWorkoutReplyRepository,
+) *InboxActivityHandler {
+	return &InboxActivityHandler{
+		followerRepo:     followerRepo,
+		outboxRepo:       outboxRepo,
+		workoutLikeRepo:  workoutLikeRepo,
+		workoutReplyRepo: workoutReplyRepo,
+	}
+}
+
+func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) (bool, error) {
+	ctx := InboxHandlerContext{
+		TargetUserID:     targetUserID,
+		RequestingActor:  requestingActor,
+		FollowerRepo:     h.followerRepo,
+		OutboxRepo:       h.outboxRepo,
+		WorkoutLikeRepo:  h.workoutLikeRepo,
+		WorkoutReplyRepo: h.workoutReplyRepo,
+		Activity:         activity,
+	}
+
+	return HandleInboxActivity(ctx)
+}
+
 func HandleInboxActivity(ctx InboxHandlerContext) (bool, error) {
 	if ctx.Activity == nil {
 		return false, nil

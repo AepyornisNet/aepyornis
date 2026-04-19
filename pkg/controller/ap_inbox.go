@@ -19,11 +19,20 @@ type ApInboxController interface {
 }
 
 type apInboxController struct {
-	context *container.Container
+	context              *container.Container
+	inboxActivityHandler *ap.InboxActivityHandler
 }
 
 func NewApInboxController(c *container.Container) ApInboxController {
-	return &apInboxController{context: c}
+	return &apInboxController{
+		context: c,
+		inboxActivityHandler: ap.NewInboxActivityHandler(
+			c.FollowerRepo(),
+			c.APOutboxRepo(),
+			c.WorkoutLikeRepo(),
+			c.WorkoutReplyRepo(),
+		),
+	}
 }
 
 func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User, error) {
@@ -84,16 +93,8 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 	var item vocab.Item = activity
 	handled := false
 
-	err = vocab.On[vocab.Activity](item, func(act *vocab.Activity) error {
-		routed, routeErr := ap.HandleInboxActivity(ap.InboxHandlerContext{
-			TargetUserID:     targetUser.ID,
-			RequestingActor:  &actor.Actor,
-			FollowerRepo:     ac.context.FollowerRepo(),
-			OutboxRepo:       ac.context.APOutboxRepo(),
-			WorkoutLikeRepo:  ac.context.WorkoutLikeRepo(),
-			WorkoutReplyRepo: ac.context.WorkoutReplyRepo(),
-			Activity:         act,
-		})
+	err = vocab.On(item, func(act *vocab.Activity) error {
+		routed, routeErr := ac.inboxActivityHandler.HandleActivity(&actor.Actor, targetUser.ID, act)
 		handled = routed
 		return routeErr
 	})
