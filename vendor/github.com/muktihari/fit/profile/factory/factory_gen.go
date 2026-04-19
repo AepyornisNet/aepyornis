@@ -780,6 +780,7 @@ var mesgs = [...]*[256]*proto.FieldBase{
 		193: {Name: "workout_rpe", Num: 193, Type: profile.Uint8, BaseType: basetype.Uint8, Scale: 1},
 		194: {Name: "avg_spo2", Num: 194, Type: profile.Uint8, BaseType: basetype.Uint8, Scale: 1, Units: "percent"},
 		195: {Name: "avg_stress", Num: 195, Type: profile.Uint8, BaseType: basetype.Uint8, Scale: 1, Units: "percent"},
+		196: {Name: "metabolic_calories", Num: 196, Type: profile.Uint16, BaseType: basetype.Uint16, Scale: 1, Units: "kcal"},
 		197: {Name: "sdrr_hrv", Num: 197, Type: profile.Uint8, BaseType: basetype.Uint8, Scale: 1, Units: "mS"},
 		198: {Name: "rmssd_hrv", Num: 198, Type: profile.Uint8, BaseType: basetype.Uint8, Scale: 1, Units: "mS"},
 		199: {Name: "total_fractional_ascent", Num: 199, Type: profile.Uint8, BaseType: basetype.Uint8, Scale: 100, Units: "m"},
@@ -2480,6 +2481,18 @@ var mesgs = [...]*[256]*proto.FieldBase{
 	mesgnum.SleepDisruptionOvernightSeverity: {
 		253: {Name: "timestamp", Num: 253, Type: profile.DateTime, BaseType: basetype.Uint32, Scale: 1},
 		0:   {Name: "severity", Num: 0, Type: profile.SleepDisruptionSeverity, BaseType: basetype.Enum, Scale: 1},
+	},
+	mesgnum.NapEvent: {
+		254: {Name: "message_index", Num: 254, Type: profile.MessageIndex, BaseType: basetype.Uint16, Scale: 1},
+		253: {Name: "timestamp", Num: 253, Type: profile.DateTime, BaseType: basetype.Uint32, Scale: 1},
+		0:   {Name: "start_time", Num: 0, Type: profile.DateTime, BaseType: basetype.Uint32, Scale: 1, Units: "seconds"},
+		1:   {Name: "start_timezone_offset", Num: 1, Type: profile.Sint16, BaseType: basetype.Sint16, Scale: 1, Units: "minutes"},
+		2:   {Name: "end_time", Num: 2, Type: profile.DateTime, BaseType: basetype.Uint32, Scale: 1, Units: "seconds"},
+		3:   {Name: "end_timezone_offset", Num: 3, Type: profile.Sint16, BaseType: basetype.Sint16, Scale: 1, Units: "minutes"},
+		4:   {Name: "feedback", Num: 4, Type: profile.NapPeriodFeedback, BaseType: basetype.Enum, Scale: 1},
+		5:   {Name: "is_deleted", Num: 5, Type: profile.Bool, BaseType: basetype.Enum, Scale: 1},
+		6:   {Name: "source", Num: 6, Type: profile.NapSource, BaseType: basetype.Enum, Scale: 1},
+		7:   {Name: "update_timestamp", Num: 7, Type: profile.DateTime, BaseType: basetype.Uint32, Scale: 1},
 	},
 	mesgnum.SkinTempOvernight: {
 		253: {Name: "timestamp", Num: 253, Type: profile.DateTime, BaseType: basetype.Uint32, Scale: 1},

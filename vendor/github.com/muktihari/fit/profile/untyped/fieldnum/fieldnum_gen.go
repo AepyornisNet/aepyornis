@@ -719,6 +719,16 @@ const (
 	MonitoringInfoCyclesToDistance                    = 3   // [ MonitoringInfo ] [Type: Uint16, Base: uint16, Array: [N], Scale: 5000, Offset: 0, Units: m/cycle]; Indexed by activity_type
 	MonitoringInfoCyclesToCalories                    = 4   // [ MonitoringInfo ] [Type: Uint16, Base: uint16, Array: [N], Scale: 5000, Offset: 0, Units: kcal/cycle]; Indexed by activity_type
 	MonitoringInfoRestingMetabolicRate                = 5   // [ MonitoringInfo ] [Type: Uint16, Base: uint16, Units: kcal / day];
+	NapEventMessageIndex                              = 254 // [ NapEvent ] [Type: MessageIndex, Base: uint16];
+	NapEventTimestamp                                 = 253 // [ NapEvent ] [Type: DateTime, Base: uint32];
+	NapEventStartTime                                 = 0   // [ NapEvent ] [Type: DateTime, Base: uint32, Units: seconds];
+	NapEventStartTimezoneOffset                       = 1   // [ NapEvent ] [Type: Sint16, Base: sint16, Units: minutes];
+	NapEventEndTime                                   = 2   // [ NapEvent ] [Type: DateTime, Base: uint32, Units: seconds];
+	NapEventEndTimezoneOffset                         = 3   // [ NapEvent ] [Type: Sint16, Base: sint16, Units: minutes];
+	NapEventFeedback                                  = 4   // [ NapEvent ] [Type: NapPeriodFeedback, Base: enum];
+	NapEventIsDeleted                                 = 5   // [ NapEvent ] [Type: Bool, Base: bool | enum];
+	NapEventSource                                    = 6   // [ NapEvent ] [Type: NapSource, Base: enum];
+	NapEventUpdateTimestamp                           = 7   // [ NapEvent ] [Type: DateTime, Base: uint32]; The timestamp representing when this nap event was last updated
 	NmeaSentenceTimestamp                             = 253 // [ NmeaSentence ] [Type: DateTime, Base: uint32, Units: s]; Timestamp message was output
 	NmeaSentenceTimestampMs                           = 0   // [ NmeaSentence ] [Type: Uint16, Base: uint16, Units: ms]; Fractional part of timestamp, added to timestamp
 	NmeaSentenceSentence                              = 1   // [ NmeaSentence ] [Type: String, Base: string]; NMEA sentence
@@ -1125,6 +1135,7 @@ const (
 	SessionWorkoutRpe                                 = 193 // [ Session ] [Type: Uint8, Base: uint8]; Common Borg CR10 / 0-10 RPE scale, multiplied 10x.. Aggregate score for all workouts in a single session.
 	SessionAvgSpo2                                    = 194 // [ Session ] [Type: Uint8, Base: uint8, Units: percent]; Average SPO2 for the monitoring session
 	SessionAvgStress                                  = 195 // [ Session ] [Type: Uint8, Base: uint8, Units: percent]; Average stress for the monitoring session
+	SessionMetabolicCalories                          = 196 // [ Session ] [Type: Uint16, Base: uint16, Units: kcal];
 	SessionSdrrHrv                                    = 197 // [ Session ] [Type: Uint8, Base: uint8, Units: mS]; Standard deviation of R-R interval (SDRR) - Heart rate variability measure most useful for wellness users.
 	SessionRmssdHrv                                   = 198 // [ Session ] [Type: Uint8, Base: uint8, Units: mS]; Root mean square successive difference (RMSSD) - Heart rate variability measure most useful for athletes
 	SessionTotalFractionalAscent                      = 199 // [ Session ] [Type: Uint8, Base: uint8, Scale: 100, Offset: 0, Units: m]; fractional part of total_ascent
