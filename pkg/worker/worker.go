@@ -110,6 +110,9 @@ func (w *Worker) Client() *gue.Client {
 // Start runs the worker pools and the scheduler. It blocks until ctx is cancelled.
 func (w *Worker) Start(ctx context.Context) {
 	w.logger.Info("Background worker starting", "delay_seconds", w.delay.Seconds())
+	if w.cfg.Debug {
+		w.requeueFailedJobsOnStartup(ctx)
+	}
 
 	go func() {
 		if err := w.mainPool.Run(ctx); err != nil && ctx.Err() == nil {
@@ -130,6 +133,25 @@ func (w *Worker) Start(ctx context.Context) {
 	}
 
 	w.runScheduler(ctx)
+}
+
+// requeueFailedJobsOnStartup makes previously failed jobs immediately eligible.
+// This ensures jobs are retried after process restarts instead of waiting for long backoff windows.
+func (w *Worker) requeueFailedJobsOnStartup(ctx context.Context) {
+	now := time.Now().UTC()
+	result := w.db.WithContext(ctx).Exec(
+		"UPDATE gue_jobs SET run_at = ?, updated_at = ? WHERE error_count > 0",
+		now,
+		now,
+	)
+	if result.Error != nil {
+		w.logger.Error("Failed to requeue previously failed jobs on startup", "error", result.Error)
+		return
+	}
+
+	if result.RowsAffected > 0 {
+		w.logger.Info("Requeued failed jobs on startup", "count", result.RowsAffected)
+	}
 }
 
 // runScheduler periodically scans for work that has no direct event source and enqueues gue jobs.
