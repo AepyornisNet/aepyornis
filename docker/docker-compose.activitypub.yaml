@@ -1,8 +1,10 @@
 services:
-  ap1-db:
+  ap-db:
     image: postgres:16-alpine
     restart: unless-stopped
     shm_size: 128mb
+    ports:
+      - 5432:5432
     networks:
       - workout-tracker
     environment:
@@ -16,24 +18,92 @@ services:
       retries: 5
     volumes:
       - ap1-db-data:/var/lib/postgresql/data/
+      - ./init/activitypub-shared-db.sql:/docker-entrypoint-initdb.d/01-activitypub-shared-db.sql:ro
 
-  ap2-db:
+  ap-db-init:
     image: postgres:16-alpine
-    restart: unless-stopped
-    shm_size: 128mb
+    restart: "no"
+    depends_on:
+      ap-db:
+        condition: service_healthy
     networks:
       - workout-tracker
     environment:
-      POSTGRES_DB: workout_tracker_ap2
-      POSTGRES_USER: workout_tracker
-      POSTGRES_PASSWORD: workout_tracker
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      PGPASSWORD: workout_tracker
+    command: >
+      sh -ec '
+        until pg_isready -h ap-db -U workout_tracker -d workout_tracker_ap1; do sleep 1; done
+        if ! psql -h ap-db -U workout_tracker -d postgres -Atc "SELECT datname FROM pg_database" | grep -Fxq workout_tracker_ap2; then
+          createdb -h ap-db -U workout_tracker workout_tracker_ap2
+        fi
+        if ! psql -h ap-db -U workout_tracker -d postgres -Atc "SELECT datname FROM pg_database" | grep -Fxq mastodon; then
+          createdb -h ap-db -U workout_tracker mastodon
+        fi
+      '
+
+  mastodon-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - workout-tracker
     volumes:
-      - ap2-db-data:/var/lib/postgresql/data/
+      - mastodon-redis-data:/data
+
+  mastodon-web:
+    image: ghcr.io/mastodon/mastodon:v4.3.7
+    restart: unless-stopped
+    depends_on:
+      ap-db:
+        condition: service_healthy
+      ap-db-init:
+        condition: service_completed_successfully
+      mastodon-redis:
+        condition: service_started
+    networks:
+      - workout-tracker
+    env_file:
+      - ./mastodon.activitypub.env.local
+    command: bash -c "bundle exec rails db:prepare && bundle exec puma -C config/puma.rb"
+    volumes:
+      - mastodon-public-system:/mastodon/public/system
+      - ap-caddy-data:/caddy-data:ro
+
+  mastodon-streaming:
+    image: ghcr.io/mastodon/mastodon:v4.3.7
+    restart: unless-stopped
+    depends_on:
+      ap-db:
+        condition: service_healthy
+      ap-db-init:
+        condition: service_completed_successfully
+      mastodon-redis:
+        condition: service_started
+    networks:
+      - workout-tracker
+    env_file:
+      - ./mastodon.activitypub.env.local
+    command: node ./streaming
+    volumes:
+      - ap-caddy-data:/caddy-data:ro
+
+  mastodon-sidekiq:
+    image: ghcr.io/mastodon/mastodon:v4.3.7
+    restart: unless-stopped
+    depends_on:
+      ap-db:
+        condition: service_healthy
+      ap-db-init:
+        condition: service_completed_successfully
+      mastodon-redis:
+        condition: service_started
+    networks:
+      - workout-tracker
+    env_file:
+      - ./mastodon.activitypub.env.local
+    command: bundle exec sidekiq
+    volumes:
+      - mastodon-public-system:/mastodon/public/system
+      - ap-caddy-data:/caddy-data:ro
 
   ap1-workout-tracker:
     build:
@@ -43,14 +113,14 @@ services:
     restart: unless-stopped
     tty: true
     depends_on:
-      ap1-db:
+      ap-db:
         condition: service_healthy
     networks:
       - workout-tracker
     environment:
       WT_JWT_ENCRYPTION_KEY_FILE: /run/secrets/jwt_encryption_key
       WT_DATABASE_DRIVER: postgres
-      WT_DSN: host=ap1-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap1 port=5432 sslmode=disable TimeZone=UTC
+      WT_DSN: host=ap-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap1 port=5432 sslmode=disable TimeZone=UTC
       WT_ACTIVITY_PUB_ACTIVE: true
       WT_HOST: wt-ap1.test
       SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
@@ -79,14 +149,16 @@ services:
     restart: unless-stopped
     tty: true
     depends_on:
-      ap2-db:
+      ap-db:
         condition: service_healthy
+      ap-db-init:
+        condition: service_completed_successfully
     networks:
       - workout-tracker
     environment:
       WT_JWT_ENCRYPTION_KEY_FILE: /run/secrets/jwt_encryption_key
       WT_DATABASE_DRIVER: postgres
-      WT_DSN: host=ap2-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap2 port=5432 sslmode=disable TimeZone=UTC
+      WT_DSN: host=ap-db user=workout_tracker password=workout_tracker dbname=workout_tracker_ap2 port=5432 sslmode=disable TimeZone=UTC
       WT_ACTIVITY_PUB_ACTIVE: true
       WT_HOST: wt-ap2.test
       SSL_CERT_FILE: /caddy-data/caddy/pki/authorities/local/root.crt
@@ -110,6 +182,15 @@ services:
   ap-edge:
     image: caddy:2.10-alpine
     restart: unless-stopped
+    command: >
+      sh -ec '
+        caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
+        caddy_pid=$$!
+        while [ ! -f /data/caddy/pki/authorities/local/root.crt ]; do sleep 1; done
+        chmod o+rx /data/caddy/pki /data/caddy/pki/authorities /data/caddy/pki/authorities/local || true
+        chmod o+r /data/caddy/pki/authorities/local/root.crt || true
+        wait "$${caddy_pid}"
+      '
     depends_on:
       ap1-workout-tracker:
         condition: service_started
@@ -119,6 +200,10 @@ services:
         condition: service_started
       ap2-workout-tracker-client:
         condition: service_started
+      mastodon-web:
+        condition: service_started
+      mastodon-streaming:
+        condition: service_started
     ports:
       - 80:80
       - 443:443
@@ -127,6 +212,7 @@ services:
         aliases:
           - wt-ap1.test
           - wt-ap2.test
+          - mastodon.test
     volumes:
       - ./Caddyfile.activitypub:/etc/caddy/Caddyfile:ro
       - ap-caddy-data:/data
@@ -166,7 +252,8 @@ secrets:
 
 volumes:
   ap1-db-data:
-  ap2-db-data:
+  mastodon-redis-data:
+  mastodon-public-system:
   ap-asset-volume:
   ap-cache-volume:
   ap-caddy-data:

@@ -78,6 +78,10 @@ make dev-activitypub
 This starts two independent servers on `https://wt-ap1.test` and
 `https://wt-ap2.test`, each with its own Postgres database.
 
+It also starts a local Mastodon instance at `https://mastodon.test` that uses
+the same internal reverse proxy and CA, so you can test federation flows
+between Workout Tracker and Mastodon in the same development setup.
+
 The ActivityPub setup uses a local HTTPS reverse proxy with an internal CA.
 Both app containers trust this CA so inter-instance HTTPS requests are accepted.
 

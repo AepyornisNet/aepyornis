@@ -57,6 +57,28 @@ dev-postgres:
 			up --build
 
 dev-activitypub:
+	@if [ ! -f ./docker/mastodon.activitypub.env.local ]; then \
+		if ! command -v openssl >/dev/null 2>&1; then \
+			echo "openssl is required to generate ./docker/mastodon.activitypub.env.local"; \
+			exit 1; \
+		fi; \
+		secret_key_base="$$(openssl rand -hex 64)"; \
+		otp_secret="$$(openssl rand -hex 16)"; \
+		vapid_private_key="$$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')"; \
+		vapid_public_key="$$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')"; \
+		deterministic_key="$$(openssl rand -hex 64)"; \
+		derivation_salt="$$(openssl rand -hex 16)"; \
+		primary_key="$$(openssl rand -hex 64)"; \
+		cp ./docker/mastodon.activitypub.env.example ./docker/mastodon.activitypub.env.local; \
+		sed -i "s|replace-with-local-dev-secret-key-base|$$secret_key_base|" ./docker/mastodon.activitypub.env.local; \
+		sed -i "s|replace-with-local-dev-otp-secret|$$otp_secret|" ./docker/mastodon.activitypub.env.local; \
+		sed -i "s|replace-with-local-dev-vapid-private-key|$$vapid_private_key|" ./docker/mastodon.activitypub.env.local; \
+		sed -i "s|replace-with-local-dev-vapid-public-key|$$vapid_public_key|" ./docker/mastodon.activitypub.env.local; \
+		sed -i "s|replace-with-local-dev-deterministic-key|$$deterministic_key|" ./docker/mastodon.activitypub.env.local; \
+		sed -i "s|replace-with-local-dev-key-derivation-salt|$$derivation_salt|" ./docker/mastodon.activitypub.env.local; \
+		sed -i "s|replace-with-local-dev-primary-key|$$primary_key|" ./docker/mastodon.activitypub.env.local; \
+		echo "Created ./docker/mastodon.activitypub.env.local from example"; \
+	fi
 	docker compose \
 			--project-directory ./docker/ \
 			--file ./docker/docker-compose.activitypub.yaml \

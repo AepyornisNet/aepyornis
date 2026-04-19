@@ -13,3 +13,11 @@ wt-ap2.test {
 	reverse_proxy @ap2_backend ap2-workout-tracker:8080
 	reverse_proxy ap2-workout-tracker-client:4200
 }
+
+mastodon.test {
+	bind 0.0.0.0
+	tls internal
+	@mastodon_streaming path /api/v1/streaming*
+	reverse_proxy @mastodon_streaming mastodon-streaming:4000
+	reverse_proxy mastodon-web:3000
+}
