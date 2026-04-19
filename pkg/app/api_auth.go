@@ -19,7 +19,7 @@ func (a *App) ValidateAPIKeyMiddleware(key string, c echo.Context) (bool, error)
 		return false, dto.ErrInvalidAPIKey
 	}
 
-	if !u.IsActive() || !u.Profile.APIActive {
+	if !u.IsActive() || !u.APIActive {
 		return false, dto.ErrInvalidAPIKey
 	}
 

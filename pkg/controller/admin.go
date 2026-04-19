@@ -114,8 +114,11 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user.Name = updateData.Name
-	user.Username = updateData.Username
+	user.Email = updateData.Email
+	user.Profile.DisplayName = updateData.Name
+	if updateData.Username != "" {
+		user.Profile.Username = updateData.Username
+	}
 	user.Admin = updateData.Admin
 	user.Active = updateData.Active
 

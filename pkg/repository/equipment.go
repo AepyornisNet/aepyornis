@@ -24,7 +24,7 @@ func NewEquipment(db *gorm.DB) Equipment {
 
 func (r *equipmentRepository) GetByUserID(userID uint64, id uint64) (*model.Equipment, error) {
 	var equipment model.Equipment
-	if err := r.db.Preload("Workouts").Preload("Workouts.Data").Where(&model.Equipment{UserID: userID}).First(&equipment, id).Error; err != nil {
+	if err := r.db.Preload("Workouts").Preload("Workouts.Data").Where(&model.Equipment{ProfileID: userID}).First(&equipment, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -37,7 +37,7 @@ func (r *equipmentRepository) GetByUserIDs(userID uint64, ids []uint64) ([]*mode
 		return equipment, nil
 	}
 
-	if err := r.db.Where("user_id = ?", userID).Find(&equipment, ids).Error; err != nil {
+	if err := r.db.Where("profile_id = ?", userID).Find(&equipment, ids).Error; err != nil {
 		return nil, err
 	}
 
@@ -46,7 +46,7 @@ func (r *equipmentRepository) GetByUserIDs(userID uint64, ids []uint64) ([]*mode
 
 func (r *equipmentRepository) CountByUserID(userID uint64) (int64, error) {
 	var total int64
-	if err := r.db.Model(&model.Equipment{}).Where(&model.Equipment{UserID: userID}).Count(&total).Error; err != nil {
+	if err := r.db.Model(&model.Equipment{}).Where(&model.Equipment{ProfileID: userID}).Count(&total).Error; err != nil {
 		return 0, err
 	}
 
@@ -56,7 +56,7 @@ func (r *equipmentRepository) CountByUserID(userID uint64) (int64, error) {
 func (r *equipmentRepository) ListByUserID(userID uint64, limit int, offset int) ([]*model.Equipment, error) {
 	var equipment []*model.Equipment
 
-	q := r.db.Where(&model.Equipment{UserID: userID}).Order("name DESC")
+	q := r.db.Where(&model.Equipment{ProfileID: userID}).Order("name DESC")
 	if limit > 0 {
 		q = q.Limit(limit)
 	}

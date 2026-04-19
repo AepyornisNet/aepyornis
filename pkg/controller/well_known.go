@@ -81,7 +81,7 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 			{
 				Rel:  "self",
 				Type: "application/activity+json",
-				Href: fmt.Sprintf("https://%s/ap/users/%s", wc.context.GetConfig().Host, user.Username),
+				Href: fmt.Sprintf("https://%s/ap/users/%s", wc.context.GetConfig().Host, user.Profile.Username),
 			},
 		},
 	}

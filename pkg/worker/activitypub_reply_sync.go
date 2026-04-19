@@ -20,11 +20,15 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 		return nil
 	}
 
-	if !author.ActivityPubEnabled() || author.PrivateKey == "" {
+	if !author.ActivityPubEnabled() || author.Profile.PrivateKey == "" {
 		return nil
 	}
 
-	parentEntry, err := c.APOutboxRepo().GetEntryForWorkout(workout.UserID, workout.ID)
+	if workout.Profile == nil || workout.Profile.UserID == nil {
+		return nil
+	}
+
+	parentEntry, err := c.APOutboxRepo().GetEntryForWorkout(*workout.Profile.UserID, workout.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil

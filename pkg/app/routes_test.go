@@ -24,13 +24,13 @@ func configuredApp(t *testing.T) *App {
 func defaultUser(db *gorm.DB) *model.User {
 	u := &model.User{
 		UserData: model.UserData{
-			Username: "my-username",
-			Name:     "my-name",
 			Active:   true,
 		},
 		UserSecrets: model.UserSecrets{
+			Email:    "my-username@example.com",
 			Password: "my-password",
 		},
+		Profile: model.Profile{Username: "my-username", DisplayName: "my-name"},
 	}
 
 	u.SetDB(db)

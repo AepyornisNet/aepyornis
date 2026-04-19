@@ -56,7 +56,7 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 		resp.Results.Profile.AutoImportDirectory = ""
 	}
 
-	if user.Profile.APIActive {
+	if user.APIActive {
 		resp.Results.Profile.APIKey = user.APIKey
 	}
 
@@ -89,32 +89,33 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 			return renderApiError(c, http.StatusBadRequest, err)
 		}
 		bd := datatypes.Date(t)
-		user.Birthdate = &bd
+		user.Profile.Birthdate = &bd
 	} else {
-		user.Birthdate = nil
+		user.Profile.Birthdate = nil
 	}
 
-	user.Profile.PreferredUnits = updateData.PreferredUnits
-	user.Profile.Language = updateData.Language
-	user.Profile.Theme = updateData.Theme
-	user.Profile.TotalsShow = model.WorkoutType(updateData.TotalsShow)
-	user.Profile.Timezone = updateData.Timezone
+	user.PreferredUnits = updateData.PreferredUnits
+	user.Language = updateData.Language
+	user.Theme = updateData.Theme
+	user.TotalsShow = model.WorkoutType(updateData.TotalsShow)
+	user.TZ = updateData.Timezone
 	if !updateData.DefaultWorkoutVisibility.IsValid() {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid default workout visibility"))
 	}
-	user.Profile.DefaultWorkoutVisibility = updateData.DefaultWorkoutVisibility
+	user.DefaultWorkoutVisibility = updateData.DefaultWorkoutVisibility
 	if !pc.context.GetConfig().AutoImportEnabled {
 		if updateData.AutoImportDirectory != "" {
 			return renderApiError(c, http.StatusBadRequest, errors.New("auto import is disabled"))
 		}
 
-		user.Profile.AutoImportDirectory = ""
+		user.AutoImportDirectory = ""
 	} else {
-		user.Profile.AutoImportDirectory = updateData.AutoImportDirectory
+		user.AutoImportDirectory = updateData.AutoImportDirectory
 	}
-	user.Profile.APIActive = updateData.APIActive
-	user.Profile.PreferFullDate = updateData.PreferFullDate
-	user.Profile.UserID = user.ID
+	user.APIActive = updateData.APIActive
+	user.PreferFullDate = updateData.PreferFullDate
+	userID := user.ID
+	user.Profile.UserID = &userID
 
 	if err := user.Profile.Save(pc.context.GetDB()); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -132,7 +133,7 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 		resp.Results.Profile.AutoImportDirectory = ""
 	}
 
-	if user.Profile.APIActive {
+	if user.APIActive {
 		resp.Results.Profile.APIKey = user.APIKey
 	}
 
@@ -227,8 +228,9 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 
 	user.ActivityPub = !user.ActivityPub
 
-	if user.ActivityPub && (user.PublicKey == "" || user.PrivateKey == "") {
-		if err := user.GenerateActivityPubKeys(false); err != nil {
+	if user.ActivityPub && (user.Profile.PublicKey == "" || user.Profile.PrivateKey == "") {
+		user.Profile.User = user
+		if err := user.Profile.GenerateActivityPubKeys(false); err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 	}
@@ -327,12 +329,12 @@ func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 
 	var workoutIDs []uint64
 	if err := db.Model(&model.Workout{}).
-		Where("user_id = ?", user.ID).
+		Where("profile_id = ?", user.Profile.ID).
 		Pluck("id", &workoutIDs).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := user.MarkWorkoutsDirty(db); err != nil {
+	if err := user.Profile.MarkWorkoutsDirty(db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

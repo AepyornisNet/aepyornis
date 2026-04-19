@@ -33,13 +33,12 @@ func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, e
 	}
 
 	user := ec.context.GetUser(c)
+	profileID := user.Profile.ID
 
-	e, err := ec.context.EquipmentRepo().GetByUserID(user.ID, id)
+	e, err := ec.context.EquipmentRepo().GetByUserID(profileID, id)
 	if err != nil {
 		return nil, err
 	}
-
-	e.User = *user
 
 	return e, nil
 }
@@ -59,6 +58,7 @@ func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, e
 // @Router       /equipment [get]
 func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
 	user := ec.context.GetUser(c)
+	profileID := user.Profile.ID
 
 	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
@@ -66,12 +66,12 @@ func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	totalCount, err := ec.context.EquipmentRepo().CountByUserID(user.ID)
+	totalCount, err := ec.context.EquipmentRepo().CountByUserID(profileID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	equipment, err := ec.context.EquipmentRepo().ListByUserID(user.ID, pagination.PerPage, pagination.GetOffset())
+	equipment, err := ec.context.EquipmentRepo().ListByUserID(profileID, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -133,7 +133,7 @@ func (ec *equipmentController) CreateEquipment(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	e.UserID = user.ID
+	e.ProfileID = user.Profile.ID
 
 	if err := ec.context.EquipmentRepo().Save(&e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -170,7 +170,7 @@ func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 
 	e.DefaultFor = nil
 
-	if e.UserID != user.ID {
+	if e.ProfileID != user.Profile.ID {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
@@ -178,7 +178,7 @@ func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	e.UserID = user.ID
+	e.ProfileID = user.Profile.ID
 
 	if err := ec.context.EquipmentRepo().Save(e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -210,7 +210,7 @@ func (ec *equipmentController) DeleteEquipment(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if e.UserID != user.ID {
+	if e.ProfileID != user.Profile.ID {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 

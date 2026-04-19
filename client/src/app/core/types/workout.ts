@@ -14,7 +14,7 @@ export type Workout = {
   type: string;
   sub_type?: string;
   custom_type?: string;
-  user_id: number;
+  profile_id: number;
   user?: UserProfile;
   visibility?: '' | 'followers' | 'public';
   locked: boolean;
@@ -283,7 +283,7 @@ export type Equipment = {
   notes?: string;
   active: boolean;
   default_for?: string[];
-  user_id: number;
+  profile_id: number;
   created_at: string;
   updated_at: string;
 };

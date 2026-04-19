@@ -27,14 +27,14 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 
 	localUser := &model.User{
 		UserData: model.UserData{
-			Username:    "admin",
-			Name:        "Admin",
 			Active:      true,
 			ActivityPub: true,
 		},
 		UserSecrets: model.UserSecrets{
+			Email:    "admin@example.com",
 			Password: "pass",
 		},
+		Profile: model.Profile{Username: "admin", DisplayName: "Admin"},
 	}
 	localUser.SetDB(db)
 	require.NoError(t, localUser.Create(db))
@@ -85,14 +85,14 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 
 	localUser := &model.User{
 		UserData: model.UserData{
-			Username:    "admin",
-			Name:        "Admin",
 			Active:      true,
 			ActivityPub: true,
 		},
 		UserSecrets: model.UserSecrets{
+			Email:    "admin@example.com",
 			Password: "pass",
 		},
+		Profile: model.Profile{Username: "admin", DisplayName: "Admin"},
 	}
 	localUser.SetDB(db)
 	require.NoError(t, localUser.Create(db))

@@ -42,15 +42,15 @@ func (v WorkoutVisibility) IsValid() bool {
 
 func ScopeVisibleWorkouts(query *gorm.DB, ownerID uint64, viewerID uint64, viewerActorIRI string) *gorm.DB {
 	if viewerID != 0 && viewerID == ownerID {
-		return query.Where("workouts.user_id = ?", ownerID)
+		return query.Where("workouts.profile_id = ?", ownerID)
 	}
 
 	if viewerActorIRI == "" {
-		return query.Where("workouts.user_id = ? AND workouts.visibility = ?", ownerID, WorkoutVisibilityPublic)
+		return query.Where("workouts.profile_id = ? AND workouts.visibility = ?", ownerID, WorkoutVisibilityPublic)
 	}
 
 	return query.Where(
-		"workouts.user_id = ? AND (workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers WHERE followers.user_id = ? AND followers.actor_iri = ? AND followers.approved = ?)))",
+		"workouts.profile_id = ? AND (workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers WHERE followers.user_id = ? AND followers.actor_iri = ? AND followers.approved = ?)))",
 		ownerID,
 		WorkoutVisibilityPublic,
 		WorkoutVisibilityFollowers,
@@ -62,10 +62,14 @@ func ScopeVisibleWorkouts(query *gorm.DB, ownerID uint64, viewerID uint64, viewe
 
 type Workout struct {
 	Model
-	Date                time.Time            `gorm:"not null;uniqueIndex:idx_start_user" json:"date"`   // The timestamp the workout was recorded
-	DateEnd             time.Time            `json:"date_end"`                                          // The stop time of the workout
-	Visibility          WorkoutVisibility    `json:"visibility"`                                        // The visibility of the workout (private, followers, public)
-	User                *User                `gorm:"foreignKey:UserID" json:"user"`                     // The user who owns the workout
+
+	ProfileID uint64   `gorm:"not null;index;uniqueIndex:idx_start_user" json:"profile_id"` // The ID of the user who owns the workout
+	Profile   *Profile `gorm:"foreignKey:ProfileID" json:"profile"`                         // The user who owns the workout
+
+	Date       time.Time         `gorm:"not null;uniqueIndex:idx_start_user" json:"date"` // The timestamp the workout was recorded
+	DateEnd    time.Time         `json:"date_end"`                                        // The stop time of the workout
+	Visibility WorkoutVisibility `json:"visibility"`                                      // The visibility of the workout (private, followers, public)
+
 	Data                *WorkoutGeoMeta      `gorm:"constraint:OnDelete:CASCADE" json:"data,omitempty"` // The map data associated with the workout
 	File                *WorkoutFile         `gorm:"constraint:OnDelete:CASCADE" json:"file,omitempty"` // The file data associated with the workout
 	Name                string               `gorm:"not null" json:"name"`                              // The name of the workout
@@ -86,13 +90,12 @@ type Workout struct {
 	Equipment           []Equipment          `gorm:"constraint:OnDelete:CASCADE;many2many:workout_equipment" json:"equipment,omitempty"` // Which equipment is used for this workout
 	RouteSegmentMatches []*RouteSegmentMatch `gorm:"constraint:OnDelete:CASCADE" json:"routeSegmentMatches,omitempty"`                   // Which route segments match
 	Attachments         []WorkoutAttachment  `gorm:"constraint:OnDelete:CASCADE" json:"attachments,omitempty"`
-	Records             []WorkoutRecord      `gorm:"constraint:OnDelete:CASCADE" json:"records"`              // The GPS points of the workout
-	Events              []WorkoutEvent       `gorm:"constraint:OnDelete:CASCADE" json:"events,omitempty"`     // Parsed workout events (e.g. FIT timer start/stop)
-	Laps                []WorkoutLap         `gorm:"constraint:OnDelete:CASCADE" json:"laps"`                 // The laps of the workout
-	Climbs              []WorkoutClimb       `gorm:"constraint:OnDelete:CASCADE" json:"climbs"`               // Auto-detected climbs
-	UserID              uint64               `gorm:"not null;index;uniqueIndex:idx_start_user" json:"userID"` // The ID of the user who owns the workout
-	Locked              bool                 `json:"locked"`                                                  // Whether the workout's main attributes should be auto-updated
-	Dirty               bool                 `json:"dirty"`                                                   // Whether the workout has been modified and the details should be re-rendered
+	Records             []WorkoutRecord      `gorm:"constraint:OnDelete:CASCADE" json:"records"`          // The GPS points of the workout
+	Events              []WorkoutEvent       `gorm:"constraint:OnDelete:CASCADE" json:"events,omitempty"` // Parsed workout events (e.g. FIT timer start/stop)
+	Laps                []WorkoutLap         `gorm:"constraint:OnDelete:CASCADE" json:"laps"`             // The laps of the workout
+	Climbs              []WorkoutClimb       `gorm:"constraint:OnDelete:CASCADE" json:"climbs"`           // Auto-detected climbs
+	Locked              bool                 `json:"locked"`                                              // Whether the workout's main attributes should be auto-updated
+	Dirty               bool                 `json:"dirty"`                                               // Whether the workout has been modified and the details should be re-rendered
 }
 
 func omitWorkoutAssociations(tx *gorm.DB) *gorm.DB {
@@ -104,8 +107,8 @@ func (w *Workout) HasCustomType() bool {
 }
 
 func (w *Workout) AfterFind(tx *gorm.DB) error {
-	if w.User != nil {
-		w.User.db = tx
+	if w.Profile != nil && w.Profile.User != nil {
+		w.Profile.User.db = tx
 	}
 
 	return nil
@@ -300,8 +303,8 @@ func (w *Workout) Distance() float64 {
 	return w.TotalDistance
 }
 
-func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, error) {
-	if u == nil {
+func NewWorkout(p *Profile, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, error) {
+	if p == nil {
 		return nil, ErrNoUser
 	}
 
@@ -328,8 +331,8 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 		}
 
 		w := parsedWorkout
-		w.User = u
-		w.UserID = u.ID
+		w.Profile = p
+		w.ProfileID = p.ID
 		w.Dirty = true
 		w.Notes = notes
 
@@ -437,7 +440,7 @@ func autoDetectWorkoutType(stats *WorkoutStats, creator string, dataType string,
 func GetRecentWorkoutsWithOffset(db *gorm.DB, count int, offset int) ([]*Workout, error) {
 	var w []*Workout
 
-	if err := PreloadWorkoutData(db).Preload("User").Order("date DESC").Limit(count).Offset(offset).Find(&w).Error; err != nil {
+	if err := PreloadWorkoutData(db).Preload("Profile").Preload("Profile.User").Order("date DESC").Limit(count).Offset(offset).Find(&w).Error; err != nil {
 		return nil, err
 	}
 
@@ -488,7 +491,8 @@ func GetWorkout(db *gorm.DB, id uint64) (*Workout, error) {
 		Preload("Events", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("sort_order ASC")
 		}).
-		Preload("User").
+		Preload("Profile").
+		Preload("Profile.User").
 		Preload("Equipment").
 		First(&w, id).
 		Error; err != nil {
@@ -536,9 +540,9 @@ func (w *Workout) Save(db *gorm.DB) error {
 
 func (w *Workout) save(db *gorm.DB) error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		if w.ID == 0 && w.UserID != 0 && !w.Date.IsZero() {
+		if w.ID == 0 && w.ProfileID != 0 && !w.Date.IsZero() {
 			var existing Workout
-			if err := tx.Select("id").Where("user_id = ? AND date = ?", w.UserID, w.Date).First(&existing).Error; err == nil {
+			if err := tx.Select("id").Where("profile_id = ? AND date = ?", w.ProfileID, w.Date).First(&existing).Error; err == nil {
 				w.ID = existing.ID
 			}
 		}
@@ -916,7 +920,11 @@ func (w *Workout) CaloriesBurned() float64 {
 		return 0
 	}
 
-	weight := w.User.WeightAt(w.Date)
+	if w.Profile == nil || w.Profile.User == nil {
+		return 0
+	}
+
+	weight := w.Profile.User.WeightAt(w.Date)
 	// Calories burned = weight * time * intensity (MET)
 	cb := weight * w.Duration().Hours() * w.MET()
 

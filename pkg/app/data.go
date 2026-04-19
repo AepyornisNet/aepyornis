@@ -53,12 +53,12 @@ func (a *App) setUser(c echo.Context) error {
 		return ErrInvalidJWTToken
 	}
 
-	username, ok := claims["name"].(string)
-	if !ok || strings.TrimSpace(username) == "" {
+	email, ok := claims["name"].(string)
+	if !ok || strings.TrimSpace(email) == "" {
 		return ErrInvalidJWTToken
 	}
 
-	dbUser, err := a.container.UserRepo().GetByUsername(username)
+	dbUser, err := a.container.UserRepo().GetByEmail(email)
 	if err != nil {
 		return ErrInvalidJWTToken
 	}
@@ -72,7 +72,7 @@ func (a *App) setUser(c echo.Context) error {
 }
 
 func (a *App) setContextUser(c echo.Context, user *model.User) {
-	c.Set("user_language", user.Profile.Language)
+	c.Set("user_language", user.Language)
 	c.Set("user_info", user)
 
 	if user.ActivityPubEnabled() {
@@ -81,9 +81,9 @@ func (a *App) setContextUser(c echo.Context, user *model.User) {
 			WebRoot:        a.container.GetConfig().WebRoot,
 			FallbackHost:   c.Request().Host,
 			FallbackScheme: c.Scheme(),
-		}, user.Username)
+		}, user.Profile.Username)
 
-		c.Set("user_ap_actor", ap.NewUserActor(actorURL, user.PrivateKey))
+		c.Set("user_ap_actor", ap.NewUserActor(actorURL, user.Profile.PrivateKey))
 	}
 }
 

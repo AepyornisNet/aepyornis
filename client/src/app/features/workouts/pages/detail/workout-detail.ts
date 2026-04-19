@@ -84,7 +84,7 @@ export class WorkoutDetailPage implements OnInit {
       return false;
     }
 
-    return workout.user_id === userInfo.profile.id;
+    return workout.user?.id === userInfo.profile.id;
   });
   public readonly sportLabel = getSportLabel;
   public readonly sportSubtypeLabel = getSportSubtypeLabel;
@@ -125,12 +125,23 @@ export class WorkoutDetailPage implements OnInit {
   }
 
   public likeAuthorName(like: WorkoutLike): string {
-    if (like.user?.name) {
-      return like.user.name;
+    const userName = like.user?.name?.trim();
+    if (userName) {
+      return userName;
+    }
+
+    const userHandle = this.formatUserHandle(like);
+    if (userHandle) {
+      return userHandle;
     }
 
     if (like.actor_name) {
       return like.actor_name;
+    }
+
+    const parsed = this.parseActorIri(like.actor_iri);
+    if (parsed?.username) {
+      return `${parsed.username}@${parsed.host}`;
     }
 
     if (like.actor_iri) {
@@ -149,8 +160,9 @@ export class WorkoutDetailPage implements OnInit {
   }
 
   public likeHandle(like: WorkoutLike): string {
-    if (like.user?.username) {
-      return `@${like.user.username}`;
+    const userHandle = this.formatUserHandle(like);
+    if (userHandle) {
+      return `@${userHandle}`;
     }
 
     const parsed = this.parseActorIri(like.actor_iri);
@@ -163,6 +175,20 @@ export class WorkoutDetailPage implements OnInit {
     }
 
     return like.actor_iri || '';
+  }
+
+  private formatUserHandle(like: WorkoutLike): string {
+    const username = like.user?.username?.trim();
+    if (!username) {
+      return '';
+    }
+
+    const domain = like.user?.domain?.trim();
+    if (domain) {
+      return `${username}@${domain}`;
+    }
+
+    return username;
   }
 
   private parseActorIri(actorIri?: string): { host: string; username: string } | null {

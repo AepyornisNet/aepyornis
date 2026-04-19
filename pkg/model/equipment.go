@@ -18,9 +18,9 @@ type Equipment struct {
 
 	Workouts []Workout `gorm:"many2many:workout_equipment" json:"workouts"`
 
-	User User `json:"user"`
+	Profile   Profile `json:"profile"`
+	ProfileID uint64  `gorm:"not null;index" json:"profileID"` // The ID of the profile who owns the workout
 
-	UserID uint64 `gorm:"not null;index" json:"userID"`             // The ID of the user who owns the workout
 	Active bool   `gorm:"default:true" json:"active" form:"active"` // Whether this equipment is active
 	Notes  string `json:"notes" form:"notes"`                       // The notes associated with the equipment, in markdown
 }

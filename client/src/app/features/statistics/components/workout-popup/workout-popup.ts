@@ -133,7 +133,7 @@ export class WorkoutPopup {
    */
   public readonly distanceUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
-    return userInfo?.profile?.preferred_units?.distance || 'km';
+    return userInfo?.profile?.profile?.preferred_units?.distance || 'km';
   });
 
   /**
@@ -141,7 +141,7 @@ export class WorkoutPopup {
    */
   public readonly weightUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
-    return userInfo?.profile?.preferred_units?.weight || 'kg';
+    return userInfo?.profile?.profile?.preferred_units?.weight || 'kg';
   });
 
   /**
@@ -149,6 +149,6 @@ export class WorkoutPopup {
    */
   public readonly speedUnit = computed(() => {
     const userInfo = this.userService.getUserInfo()();
-    return userInfo?.profile?.preferred_units?.speed || 'km/h';
+    return userInfo?.profile?.profile?.preferred_units?.speed || 'km/h';
   });
 }

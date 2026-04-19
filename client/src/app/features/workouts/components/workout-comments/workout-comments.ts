@@ -54,12 +54,24 @@ export class WorkoutCommentsComponent {
   }
 
   public getAuthorName(reply: WorkoutReply): string {
-    if (reply.user) {
-      return reply.user.name;
+    const userName = reply.user?.name?.trim();
+    if (userName) {
+      return userName;
+    }
+
+    const userHandle = this.formatUserHandle(reply);
+    if (userHandle) {
+      return userHandle;
     }
     if (reply.actor_name) {
       return reply.actor_name;
     }
+
+    const parsed = this.parseActorIri(reply.actor_iri);
+    if (parsed?.username) {
+      return `${parsed.username}@${parsed.host}`;
+    }
+
     if (reply.actor_iri) {
       return reply.actor_iri;
     }
@@ -79,8 +91,9 @@ export class WorkoutCommentsComponent {
   }
 
   public getAuthorHandle(reply: WorkoutReply): string {
-    if (reply.user?.username) {
-      return `@${reply.user.username}`;
+    const userHandle = this.formatUserHandle(reply);
+    if (userHandle) {
+      return `@${userHandle}`;
     }
 
     const parsed = this.parseActorIri(reply.actor_iri);
@@ -102,6 +115,20 @@ export class WorkoutCommentsComponent {
   public getInitial(reply: WorkoutReply): string {
     const name = this.getAuthorName(reply);
     return (name.charAt(0) || '?').toUpperCase();
+  }
+
+  private formatUserHandle(reply: WorkoutReply): string {
+    const username = reply.user?.username?.trim();
+    if (!username) {
+      return '';
+    }
+
+    const domain = reply.user?.domain?.trim();
+    if (domain) {
+      return `${username}@${domain}`;
+    }
+
+    return username;
   }
 
   private parseActorIri(actorIri?: string): { host: string; username: string } | null {

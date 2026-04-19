@@ -73,7 +73,7 @@ func (c *cli) workoutsCalculateCmd() *cobra.Command {
 				return err
 			}
 
-			workouts, err := model.NewWorkout(model.AnonymousUser(), model.WorkoutTypeAutoDetect, "", filename, content)
+			workouts, err := model.NewWorkout(&model.Profile{Username: "anonymous", DisplayName: "Anonymous"}, model.WorkoutTypeAutoDetect, "", filename, content)
 			if err != nil {
 				return err
 			}

@@ -46,19 +46,19 @@ func autoImportForUser(ctx context.Context, c *container.Container, l *slog.Logg
 		return err
 	}
 
-	ok, err := u.Profile.CanImportFromDirectory()
+	ok, err := u.CanImportFromDirectory()
 	if err != nil {
-		return fmt.Errorf("could not use auto-import dir %v for user %v: %w", u.Profile.AutoImportDirectory, u.Username, err)
+		return fmt.Errorf("could not use auto-import dir %v for user %v: %w", u.AutoImportDirectory, u.Email, err)
 	}
 
 	if !ok {
 		return nil
 	}
 
-	l = l.With("user", u.Username)
-	l.Info("Importing from '" + u.Profile.AutoImportDirectory + "'")
+	l = l.With("user", u.Email)
+	l.Info("Importing from '" + u.AutoImportDirectory + "'")
 
-	files, err := filepath.Glob(filepath.Join(u.Profile.AutoImportDirectory, "*"))
+	files, err := filepath.Glob(filepath.Join(u.AutoImportDirectory, "*"))
 	if err != nil {
 		return err
 	}
@@ -85,10 +85,10 @@ func importForUser(ctx context.Context, c *container.Container, logger *slog.Log
 
 	if importErr := importFile(ctx, c, logger, u, path); importErr != nil {
 		logger.Error("Could not import: " + importErr.Error())
-		return moveImportFile(logger, u.Profile.AutoImportDirectory, path, "failed")
+		return moveImportFile(logger, u.AutoImportDirectory, path, "failed")
 	}
 
-	return moveImportFile(logger, u.Profile.AutoImportDirectory, path, "done")
+	return moveImportFile(logger, u.AutoImportDirectory, path, "done")
 }
 
 func importFile(ctx context.Context, c *container.Container, logger *slog.Logger, u *model.User, path string) error {
@@ -101,7 +101,8 @@ func importFile(ctx context.Context, c *container.Container, logger *slog.Logger
 		return err
 	}
 
-	ws, addErr := u.AddWorkout(db, model.WorkoutTypeAutoDetect, "", path, dat)
+	u.Profile.User = u
+	ws, addErr := u.Profile.AddWorkout(db, model.WorkoutTypeAutoDetect, "", path, dat)
 	if len(addErr) > 0 {
 		return addErr[0]
 	}

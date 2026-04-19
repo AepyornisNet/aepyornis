@@ -53,7 +53,7 @@ func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) 
 			return fmt.Errorf("deliver_activitypub: get user %d: %w", item.UserID, err)
 		}
 
-		if u.PrivateKey == "" {
+		if u.Profile.PrivateKey == "" {
 			l.Warn("Skipping ActivityPub delivery due to missing private key", "user_id", u.ID)
 			return nil
 		}
@@ -68,12 +68,12 @@ func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) 
 			WebRoot:        cfg.WebRoot,
 			FallbackHost:   "",
 			FallbackScheme: "https",
-		}, u.Username)
+		}, u.Profile.Username)
 
 		deliverCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 
-		if err := ap.SendSignedActivity(deliverCtx, actorURL, u.PrivateKey, item.ActorInbox, item.Activity); err != nil {
+		if err := ap.SendSignedActivity(deliverCtx, actorURL, u.Profile.PrivateKey, item.ActorInbox, item.Activity); err != nil {
 			return fmt.Errorf("deliver_activitypub: send to %s: %w", item.ActorIRI, err)
 		}
 

@@ -196,7 +196,7 @@ func localActorURL(c *container.Container, user *model.User) (string, error) {
 		WebRoot:        c.GetConfig().WebRoot,
 		FallbackHost:   c.GetConfig().Host,
 		FallbackScheme: "https",
-	}, user.Username)
+	}, user.Profile.Username)
 
 	if actorURL == "" {
 		return "", errors.New("could not determine local actor URL")

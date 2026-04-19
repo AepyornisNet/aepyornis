@@ -86,7 +86,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   private isUpdatingFromZoom = false; // Flag to prevent infinite loops
 
   private readonly speedUnit = computed(
-    () => this.userService.getUserInfo()()?.profile?.preferred_units?.speed || 'km/h',
+    () => this.userService.getUserInfo()()?.profile?.profile?.preferred_units?.speed || 'km/h',
   );
 
   private get mapDataValue(): MapDataDetails | undefined {

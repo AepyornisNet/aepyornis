@@ -26,14 +26,14 @@
         <form [formGroup]="userForm" (ngSubmit)="saveUser()">
           <!-- Username -->
           <div class="mb-3">
+            <label class="form-label" for="email"> {{ 'Email' | translate }} </label>
+            <input class="form-control" formControlName="email" id="email" required type="email" />
+          </div>
+
+          <!-- Username -->
+          <div class="mb-3">
             <label class="form-label" for="username"> {{ 'Username' | translate }} </label>
-            <input
-              class="form-control"
-              formControlName="username"
-              id="username"
-              required
-              type="text"
-            />
+            <input class="form-control" formControlName="username" id="username" type="text" />
           </div>
 
           <!-- Name -->

@@ -33,7 +33,8 @@ export class UserEdit implements OnInit {
   public ngOnInit(): void {
     // Initialize form
     this.userForm = this.fb.group({
-      username: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      username: [''],
       name: ['', Validators.required],
       password: [''],
       active: [false],
@@ -60,6 +61,7 @@ export class UserEdit implements OnInit {
         this.user.set(response.results);
         // Populate form with loaded data
         this.userForm.patchValue({
+          email: response.results.email,
           username: response.results.username,
           name: response.results.name,
           password: '', // Don't populate password
@@ -85,7 +87,8 @@ export class UserEdit implements OnInit {
     try {
       const formValue = this.userForm.value;
       const updateData = {
-        username: formValue.username,
+        email: formValue.email,
+        ...(formValue.username && { username: formValue.username }),
         name: formValue.name,
         active: formValue.active,
         admin: formValue.admin,

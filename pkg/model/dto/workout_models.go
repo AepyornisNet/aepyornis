@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -22,7 +23,7 @@ type WorkoutResponse struct {
 	SubType              string                  `json:"sub_type"`
 	Creator              string                  `json:"creator,omitempty"`
 	CustomType           string                  `json:"custom_type,omitempty"`
-	UserID               uint64                  `json:"user_id"`
+	ProfileID            uint64                  `json:"profile_id"`
 	User                 *UserProfileResponse    `json:"user,omitempty"`
 	Visibility           model.WorkoutVisibility `json:"visibility,omitempty"`
 	Locked               bool                    `json:"locked"`
@@ -313,7 +314,7 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		Type:            string(w.Type),
 		Creator:         w.Creator,
 		CustomType:      w.CustomType,
-		UserID:          w.UserID,
+		ProfileID:       w.ProfileID,
 		Visibility:      w.Visibility,
 		Locked:          w.Locked,
 		CreatedAt:       w.CreatedAt,
@@ -323,9 +324,40 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		HasLocationData: w.HasTracks(),
 	}
 
-	// Add user data if available (preloaded)
-	if w.User != nil {
-		userResp := NewUserProfileResponse(w.User)
+	// Add user data when profile/user info is available.
+	// Workout.Profile is the source of truth for username/display name on feed responses.
+	if w.Profile != nil {
+		var userResp UserProfileResponse
+		if w.Profile.User != nil {
+			userResp = NewUserProfileResponse(w.Profile.User)
+		}
+
+		if userResp.ID == 0 && w.Profile.UserID != nil {
+			userResp.ID = *w.Profile.UserID
+		}
+
+		if strings.TrimSpace(userResp.Username) == "" {
+			userResp.Username = strings.TrimSpace(w.Profile.Username)
+		}
+
+		if userResp.Domain == nil && w.Profile.Domain != nil {
+			d := strings.TrimSpace(*w.Profile.Domain)
+			if d != "" {
+				userResp.Domain = &d
+			}
+		}
+
+		if strings.TrimSpace(userResp.Name) == "" {
+			userResp.Name = strings.TrimSpace(w.Profile.DisplayName)
+		}
+
+		if strings.TrimSpace(userResp.Name) == "" {
+			userResp.Name = userResp.Username
+			if userResp.Domain != nil && userResp.Username != "" {
+				userResp.Name = fmt.Sprintf("%s@%s", userResp.Username, *userResp.Domain)
+			}
+		}
+
 		wr.User = &userResp
 	}
 
@@ -928,6 +960,10 @@ func newZoneMetricsBuilder(w *model.Workout, metrics []string) *zoneMetricsBuild
 		return &zoneMetricsBuilder{}
 	}
 
+	if w.Profile == nil {
+		return &zoneMetricsBuilder{}
+	}
+
 	hasMetric := func(name string) bool {
 		for _, metric := range metrics {
 			if metric == name {
@@ -938,7 +974,7 @@ func newZoneMetricsBuilder(w *model.Workout, metrics []string) *zoneMetricsBuild
 	}
 
 	return &zoneMetricsBuilder{
-		user:     w.User,
+		user:     w.Profile.User,
 		date:     w.Date,
 		maxHR:    0,
 		restHR:   0,
@@ -1055,12 +1091,12 @@ func float64Ptr(val float64) *float64 {
 }
 
 func (z *zoneMetricsBuilder) populateUserMetrics() {
-	if z.user == nil {
+	if z.user == nil || z.user.Profile.ID == 0 {
 		return
 	}
 
 	if z.maxHR == 0 {
-		z.maxHR = z.user.MaxHeartRateAt(z.date)
+		z.maxHR = z.user.Profile.MaxHeartRateAt(z.date)
 	}
 	if z.restHR == 0 {
 		z.restHR = z.user.RestingHeartRateAt(z.date)

@@ -57,9 +57,13 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 
 		syncWorkoutAttachmentImage(db, l, w)
 
-		user, err := c.UserRepo().GetByID(w.UserID)
+		if w.Profile == nil || w.Profile.UserID == nil {
+			return nil
+		}
+
+		user, err := c.UserRepo().GetByID(*w.Profile.UserID)
 		if err != nil {
-			return fmt.Errorf("update_workout: get user %d: %w", w.UserID, err)
+			return fmt.Errorf("update_workout: get user %d: %w", *w.Profile.UserID, err)
 		}
 
 		if err := SyncWorkoutActivityPub(ctx, c, user, w, nil); err != nil {

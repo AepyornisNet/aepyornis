@@ -536,9 +536,9 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
       slope: mapData.slope?.[index],
       heartRate: mapData.extra_metrics?.['heart-rate']?.[index],
       power: mapData.extra_metrics?.['power']?.[index],
-      distanceUnit: userInfo?.profile?.preferred_units?.distance || 'km',
-      speedUnit: userInfo?.profile?.preferred_units?.speed || 'km/h',
-      elevationUnit: userInfo?.profile?.preferred_units?.elevation || 'm',
+      distanceUnit: userInfo?.profile?.profile?.preferred_units?.distance || 'km',
+      speedUnit: userInfo?.profile?.profile?.preferred_units?.speed || 'km/h',
+      elevationUnit: userInfo?.profile?.profile?.preferred_units?.elevation || 'm',
     };
   }
 

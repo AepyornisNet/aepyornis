@@ -24,14 +24,14 @@ func createRepositoryUser(t *testing.T, db *gorm.DB, username, name, apiKey stri
 
 	u := &model.User{
 		UserData: model.UserData{
-			Username: username,
-			Name:     name,
 			Active:   true,
 		},
 		UserSecrets: model.UserSecrets{
+			Email:    username + "@example.com",
 			Password: "my-password",
 			APIKey:   apiKey,
 		},
+		Profile: model.Profile{Username: username, DisplayName: name},
 	}
 
 	require.NoError(t, u.Create(db))
@@ -44,12 +44,12 @@ func TestUserRepository_GetByUsername(t *testing.T) {
 	created := createRepositoryUser(t, db, "repo-user", "Repo User", "repo-api-key")
 
 	repo := NewUser(db)
-	loaded, err := repo.GetByUsername(created.Username)
+	loaded, err := repo.GetByUsername(created.Profile.Username)
 
 	require.NoError(t, err)
 	assert.Equal(t, created.ID, loaded.ID)
-	assert.Equal(t, created.Username, loaded.Username)
-	assert.Equal(t, created.Name, loaded.Name)
+	assert.Equal(t, created.Profile.Username, loaded.Profile.Username)
+	assert.Equal(t, created.Profile.DisplayName, loaded.Profile.DisplayName)
 }
 
 func TestUserRepository_GetByID(t *testing.T) {
@@ -61,9 +61,9 @@ func TestUserRepository_GetByID(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, created.ID, loaded.ID)
-	assert.Equal(t, created.Username, loaded.Username)
-	assert.Equal(t, created.Name, loaded.Name)
-	assert.NotNil(t, loaded.PreferredUnits())
+	assert.Equal(t, created.Profile.Username, loaded.Profile.Username)
+	assert.Equal(t, created.Profile.DisplayName, loaded.Profile.DisplayName)
+	assert.NotEmpty(t, loaded.PreferredUnits.Distance())
 }
 
 func TestUserRepository_GetByAPIKey(t *testing.T) {
@@ -75,7 +75,7 @@ func TestUserRepository_GetByAPIKey(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, created.ID, loaded.ID)
-	assert.Equal(t, created.Username, loaded.Username)
+	assert.Equal(t, created.Profile.Username, loaded.Profile.Username)
 	assert.Equal(t, created.APIKey, loaded.APIKey)
 }
 

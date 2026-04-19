@@ -19,9 +19,8 @@ import (
 func defaultAPIUser(db *gorm.DB) *model.User {
 	u := defaultUser(db)
 	u.APIKey = "my-api-key"
-	u.Profile.APIActive = true
+	u.APIActive = true
 	u.Save(db)
-	u.Profile.Save(db)
 
 	return u
 }
@@ -36,7 +35,7 @@ func validateAPIUser(t *testing.T, u *model.User, b []byte) {
 	err := json.Unmarshal(b, &resp)
 	require.NoError(t, err)
 
-	assert.Equal(t, u.Username, resp.Results.Username)
+	assert.Equal(t, u.Profile.Username, resp.Results.Username)
 	assert.Empty(t, resp.Results.Profile.APIKey)
 }
 
@@ -66,7 +65,7 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-		assert.Contains(t, string(b), u.Username)
+		assert.Contains(t, string(b), u.Profile.Username)
 
 		validateAPIUser(t, u, b)
 	})
@@ -110,7 +109,7 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-		assert.Contains(t, string(b), u.Username)
+		assert.Contains(t, string(b), u.Profile.Username)
 
 		validateAPIUser(t, u, b)
 	})

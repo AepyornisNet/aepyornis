@@ -59,13 +59,39 @@ export class FeedPost {
     return weight.toFixed(1);
   }
 
+  public getWorkoutAuthorName(workout: Workout): string {
+    const name = workout.user?.name?.trim();
+    if (name) {
+      return name;
+    }
+
+    const handle = this.formatUserHandle(workout.user);
+    if (handle) {
+      return handle;
+    }
+
+    return 'Unknown';
+  }
+
   public getAuthorName(reply: WorkoutReply): string {
-    if (reply.user?.name) {
-      return reply.user.name;
+    const userName = reply.user?.name?.trim();
+    if (userName) {
+      return userName;
+    }
+
+    const userHandle = this.formatUserHandle(reply.user);
+    if (userHandle) {
+      return userHandle;
     }
     if (reply.actor_name) {
       return reply.actor_name;
     }
+
+    const parsed = this.parseActorIri(reply.actor_iri);
+    if (parsed?.username) {
+      return `${parsed.username}@${parsed.host}`;
+    }
+
     if (reply.actor_iri) {
       return reply.actor_iri;
     }
@@ -170,6 +196,53 @@ export class FeedPost {
       console.error('Failed to load workout replies:', error);
     } finally {
       this.loadingReplies.set(false);
+    }
+  }
+
+  private formatUserHandle(user?: WorkoutReply['user'] | Workout['user']): string {
+    const username = user?.username?.trim();
+    if (!username) {
+      return '';
+    }
+
+    const domain = user?.domain?.trim();
+    if (domain) {
+      return `${username}@${domain}`;
+    }
+
+    return username;
+  }
+
+  private parseActorIri(actorIri?: string): { host: string; username: string } | null {
+    if (!actorIri) {
+      return null;
+    }
+
+    try {
+      const url = new URL(actorIri);
+      const segments = url.pathname.split('/').filter((segment) => segment.length > 0);
+
+      let username = '';
+      const usersIndex = segments.findIndex((segment) => segment === 'users' || segment === 'u');
+      if (usersIndex >= 0 && usersIndex + 1 < segments.length) {
+        username = segments[usersIndex + 1];
+      } else {
+        const mentionSegment = segments.find((segment) => segment.startsWith('@'));
+        if (mentionSegment) {
+          username = mentionSegment.slice(1);
+        } else if (segments.length > 0) {
+          username = segments[segments.length - 1];
+        }
+      }
+
+      username = decodeURIComponent(username).replace(/^@+/, '').trim();
+
+      return {
+        host: url.host,
+        username,
+      };
+    } catch {
+      return null;
     }
   }
 }

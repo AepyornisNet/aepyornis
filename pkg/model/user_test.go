@@ -16,12 +16,13 @@ func init() { //nolint:gochecknoinits
 
 func defaultUser() *User {
 	return &User{
-		UserData: UserData{
-			Username: "my-username",
-			Name:     "my-name",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "my-email@example.com",
 			Password: "my-password",
+		},
+		Profile: Profile{
+			Username:    "my-username",
+			DisplayName: "my-name",
 		},
 	}
 }
@@ -48,7 +49,11 @@ func createDefaultUser(t *testing.T, db *gorm.DB) {
 func getUserByUsernameForTest(db *gorm.DB, username string) (*User, error) {
 	var u User
 
-	err := db.Preload("Profile").Preload("Equipment").Where(&UserData{Username: username}).First(&u).Error
+	err := db.
+		Preload("Profile").
+		Joins("JOIN profiles ON profiles.user_id = users.id").
+		Where("profiles.username = ?", username).
+		First(&u).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -56,7 +61,7 @@ func getUserByUsernameForTest(db *gorm.DB, username string) (*User, error) {
 		return nil, err
 	}
 
-	if u.ID == u.Profile.UserID {
+	if u.Profile.UserID != nil && u.ID == *u.Profile.UserID {
 		u.Profile.User = &u
 	}
 
@@ -68,7 +73,7 @@ func getUserByUsernameForTest(db *gorm.DB, username string) (*User, error) {
 func getUserByIDForTest(db *gorm.DB, userID uint64) (*User, error) {
 	var u User
 
-	err := db.Preload("Profile").Preload("Equipment").First(&u, userID).Error
+	err := db.Preload("Profile").First(&u, userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -84,12 +89,8 @@ func getUserByIDForTest(db *gorm.DB, userID uint64) (*User, error) {
 func listUserWorkoutsForTest(db *gorm.DB, user *User) ([]*Workout, error) {
 	workouts := make([]*Workout, 0)
 
-	if err := PreloadWorkoutData(db).Where(&Workout{UserID: user.ID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := PreloadWorkoutData(db).Where(&Workout{ProfileID: user.Profile.ID}).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
-	}
-
-	for _, workout := range workouts {
-		workout.User = user
 	}
 
 	return workouts, nil
@@ -137,76 +138,52 @@ func TestUser_PasswordIsValid(t *testing.T) {
 func TestUser_IsNotActive(t *testing.T) {
 	u := User{
 		UserData: UserData{
-			Username: "my-username",
 			Active:   false,
 		},
 		UserSecrets: UserSecrets{
+			Email:    "my-email@example.com",
 			Password: "my-password",
 		},
+		Profile: Profile{Username: "my-username", DisplayName: "my-name"},
 	}
 
 	require.NoError(t, u.IsValid())
 	assert.False(t, u.IsActive())
 }
 
-func TestUser_UsernameIsEmail(t *testing.T) {
+func TestUser_EmailAddressIsValid(t *testing.T) {
 	u := User{
-		UserData: UserData{
-			Username: "my-username@localhost",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "my-username@localhost",
 			Password: "my-password",
 		},
+		Profile: Profile{Username: "my-username", DisplayName: "my-name"},
 	}
 
 	require.NoError(t, u.IsValid())
 	assert.False(t, u.IsActive())
 }
 
-func TestUser_UsernameIsNotValid(t *testing.T) {
-	for _, username := range []string{
-		"invalid-char-;",
-		"invalid-char-@",
-		"invalid-char-<script>",
-		"invalid-char space",
-	} {
-		u := User{
-			UserData: UserData{
-				Username: username,
-				Name:     "my-name",
-			},
-			UserSecrets: UserSecrets{
-				Password: "my-password",
-			},
-		}
-
-		require.ErrorIs(t, u.IsValid(), ErrUsernameInvalid)
-		assert.False(t, u.IsActive())
-	}
-}
-
-func TestUser_UsernameIsTooLong(t *testing.T) {
+func TestUser_EmailIsNotValid(t *testing.T) {
 	u := User{
-		UserData: UserData{
-			Username: "too-long-too-long-too-long-too-long-too-long-too-long-too-long-too-long",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "not-an-email",
 			Password: "my-password",
 		},
+		Profile: Profile{Username: "my-username", DisplayName: "my-name"},
 	}
 
-	require.ErrorIs(t, u.IsValid(), ErrUsernameInvalidLength)
+	require.ErrorIs(t, u.IsValid(), ErrEmailInvalid)
 	assert.False(t, u.IsActive())
 }
 
 func TestUser_PasswordNotSet(t *testing.T) {
 	u := User{
-		UserData: UserData{
-			Username: "username",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "my-email@example.com",
 			Password: "",
 		},
+		Profile: Profile{Username: "username", DisplayName: "my-name"},
 	}
 
 	require.ErrorIs(t, u.IsValid(), ErrPasswordInvalidLength)
@@ -216,12 +193,11 @@ func TestUser_PasswordNotSet(t *testing.T) {
 func TestUser_BeforeCreateNoPassword(t *testing.T) {
 	db := createMemoryDB(t)
 	u := &User{
-		UserData: UserData{
-			Username: "username",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "my-email@example.com",
 			Password: "",
 		},
+		Profile: Profile{Username: "username", DisplayName: "my-name"},
 	}
 
 	require.Error(t, u.Create(db))
@@ -235,13 +211,11 @@ func TestUser_BeforeCreateNoPassword(t *testing.T) {
 func TestDatabaseUserCreate(t *testing.T) {
 	db := createMemoryDB(t)
 	u := &User{
-		UserData: UserData{
-			Username: "username",
-			Name:     "my-name",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "username@example.com",
 			Password: "my-password",
 		},
+		Profile: Profile{Username: "username", DisplayName: "my-name"},
 	}
 
 	require.NoError(t, u.Create(db))
@@ -252,23 +226,22 @@ func TestDatabaseUserCreate(t *testing.T) {
 
 	u, err := getUserByUsernameForTest(db, "username")
 	require.NoError(t, err)
-	assert.Equal(t, "my-name", u.Name)
+	assert.Equal(t, "my-name", u.Profile.DisplayName)
 
 	u, err = getUserByIDForTest(db, u.ID)
 	require.NoError(t, err)
-	assert.Equal(t, "my-name", u.Name)
+	assert.Equal(t, "my-name", u.Profile.DisplayName)
 }
 
 func TestDatabaseUsers(t *testing.T) {
 	db := createMemoryDB(t)
 
 	u1 := User{
-		UserData: UserData{
-			Username: "username1",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "username1@example.com",
 			Password: "my-password",
 		},
+		Profile: Profile{Username: "username1", DisplayName: "username1"},
 	}
 	require.NoError(t, u1.Create(db))
 
@@ -277,12 +250,11 @@ func TestDatabaseUsers(t *testing.T) {
 	assert.EqualValues(t, 1, users)
 
 	u2 := User{
-		UserData: UserData{
-			Username: "username2",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "username2@example.com",
 			Password: "my-password",
 		},
+		Profile: Profile{Username: "username2", DisplayName: "username2"},
 	}
 	require.NoError(t, u2.Create(db))
 
@@ -299,14 +271,14 @@ func TestDatabaseUserSave(t *testing.T) {
 
 	u, err := getUserByUsernameForTest(db, "my-username")
 	require.NoError(t, err)
-	assert.Equal(t, "my-name", u.Name)
+	assert.Equal(t, "my-name", u.Profile.DisplayName)
 
-	u.Name = "other-name"
-	require.NoError(t, u.Save(db))
+	u.Profile.DisplayName = "other-name"
+	require.NoError(t, u.Profile.Save(db))
 
 	u, err = getUserByUsernameForTest(db, "my-username")
 	require.NoError(t, err)
-	assert.Equal(t, "other-name", u.Name)
+	assert.Equal(t, "other-name", u.Profile.DisplayName)
 }
 
 func TestDatabaseUserCreateDoubleUsername(t *testing.T) {
@@ -342,28 +314,26 @@ func TestDatabaseUserDeleteUser(t *testing.T) {
 func TestDatabaseProfileSave(t *testing.T) {
 	db := createMemoryDB(t)
 	u := &User{
-		UserData: UserData{
-			Username: "username",
-			Name:     "my-name",
-		},
 		UserSecrets: UserSecrets{
+			Email:    "username@example.com",
 			Password: "my-password",
 		},
+		Profile: Profile{Username: "username", DisplayName: "my-name"},
 	}
-	u.Profile.Language = "en"
+	u.Profile.DisplayName = "en"
 
 	require.NoError(t, u.Create(db))
 	assert.NotEmpty(t, u.Profile.ID)
 
 	u, err := getUserByUsernameForTest(db, "username")
 	require.NoError(t, err)
-	assert.Equal(t, "en", u.Profile.Language)
+	assert.Equal(t, "en", u.Profile.DisplayName)
 
-	u.Profile.Language = "de"
+	u.Profile.DisplayName = "de"
 	require.NoError(t, u.Profile.Save(db))
 	u, err = getUserByUsernameForTest(db, "username")
 	require.NoError(t, err)
-	assert.Equal(t, "de", u.Profile.Language)
+	assert.Equal(t, "de", u.Profile.DisplayName)
 }
 
 func TestDatabaseUserWorkouts(t *testing.T) {
@@ -378,7 +348,8 @@ func TestDatabaseUserWorkouts(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, workouts)
 
-	w1, addErr := u.AddWorkout(
+	u.Profile.User = u
+	w1, addErr := u.Profile.AddWorkout(
 		db,
 		WorkoutTypeAutoDetect,
 		"some notes",
@@ -396,7 +367,7 @@ func TestDatabaseUserWorkouts(t *testing.T) {
 	f1, err := gpxFS.ReadFile("sample1.gpx")
 	require.NoError(t, err)
 
-	w2, addErr := u.AddWorkout(
+	w2, addErr := u.Profile.AddWorkout(
 		db,
 		WorkoutTypeAutoDetect,
 		"some notes",

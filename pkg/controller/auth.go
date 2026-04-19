@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/container"
@@ -13,7 +14,7 @@ import (
 )
 
 var (
-	ErrLoginFailed     = errors.New("username or password incorrect")
+	ErrLoginFailed     = errors.New("email or password incorrect")
 	ErrInvalidJWTToken = errors.New("invalid JWT token")
 )
 
@@ -47,16 +48,16 @@ func (ac *authController) SignIn(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if req.Username == "" || req.Password == "" {
+	if req.Email == "" || req.Password == "" {
 		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
 	}
 
-	storedUser, err := ac.context.UserRepo().GetByUsername(req.Username)
+	storedUser, err := ac.context.UserRepo().GetByEmail(req.Email)
 	if err != nil || !storedUser.ValidLogin(req.Password) {
 		return renderApiError(c, http.StatusUnauthorized, ErrLoginFailed)
 	}
 
-	ac.context.GetSessionManager().Put(c.Request().Context(), "username", storedUser.Username)
+	ac.context.GetSessionManager().Put(c.Request().Context(), "email", storedUser.Email)
 
 	if err := ac.createToken(storedUser, c); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -110,12 +111,12 @@ func (ac *authController) Register(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if req.Username == "" || req.Password == "" {
+	if req.Email == "" || req.Password == "" {
 		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
 	}
 
 	if req.Name == "" {
-		req.Name = req.Username
+		req.Name = req.Email
 	}
 
 	language := req.Language
@@ -125,25 +126,37 @@ func (ac *authController) Register(c echo.Context) error {
 
 	u := &model.User{
 		UserData: model.UserData{
-			Username: req.Username,
-			Name:     req.Name,
-			Admin:    false,
-			Active:   false,
+			Admin:  false,
+			Active: false,
 		},
+		UserSecrets: model.UserSecrets{Email: req.Email},
 	}
+
+	u.ResetDefaults()
+	u.Language = language
+
+	profileUsername := strings.TrimSpace(req.Username)
+	if profileUsername == "" {
+		at := strings.IndexByte(req.Email, '@')
+		if at > 0 {
+			profileUsername = req.Email[:at]
+		} else {
+			profileUsername = req.Email
+		}
+	}
+	u.Profile.Username = profileUsername
+	u.Profile.DisplayName = req.Name
 
 	if err := u.SetPassword(req.Password); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	u.Profile.ResetDefaults()
-	u.Profile.Language = language
-
 	if ac.context.GetConfig().ActivityPubActive {
 		u.ActivityPub = true
-		u.Profile.DefaultWorkoutVisibility = model.WorkoutVisibilityFollowers
+		u.DefaultWorkoutVisibility = model.WorkoutVisibilityFollowers
+		u.Profile.User = u
 
-		if err := u.GenerateActivityPubKeys(false); err != nil {
+		if err := u.Profile.GenerateActivityPubKeys(false); err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 	}
@@ -171,7 +184,7 @@ func (ac *authController) createToken(u *model.User, c echo.Context) error {
 
 	exp := time.Now().Add(time.Hour * 24 * 10)
 
-	claims["name"] = u.Username
+	claims["name"] = u.Email
 	claims["exp"] = exp.Unix()
 
 	t, err := token.SignedString(ac.context.GetConfig().JWTSecret())

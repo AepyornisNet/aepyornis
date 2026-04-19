@@ -2,13 +2,10 @@ package model
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/mail"
+	"os"
 	"time"
 
 	gorand "github.com/cat-dealer/go-rand/v2"
@@ -23,36 +20,39 @@ import (
 const (
 	PasswordMinimumLength = 4
 	PasswordMaximumLength = 128
-	UsernameMinimumLength = 1
-	UsernameMaximumLength = 32
 )
 
 var (
 	ErrPasswordInvalidLength = errors.New("password has invalid length")
-	ErrUsernameInvalidLength = errors.New("username has invalid length")
-	ErrUsernameInvalid       = errors.New("username is not valid")
+	ErrEmailInvalid          = errors.New("email is not valid")
 	ErrNoUser                = errors.New("no user attached")
 )
 
 type UserSecrets struct {
-	Password   string `gorm:"type:varchar(128);not null"` //nolint:gosec // The user's password as bcrypt hash
-	Salt       string `gorm:"type:varchar(16);not null"`  // The salt used to hash the user's password
-	APIKey     string `gorm:"type:varchar(32)"`           //nolint:gosec // The user's API key
-	PublicKey  string `gorm:"type:text"`                  // The user's public key for ActivityPub federation
-	PrivateKey string `gorm:"type:text"`                  //nolint:gosec // The user's private key for ActivityPub federation
+	Email    string `gorm:"uniqueIndex;not null;type:varchar" json:"email"` // The user's username
+	Password string `gorm:"type:varchar(128);not null"`                     // The user's password as bcrypt hash
+	Salt     string `gorm:"type:varchar(16);not null"`                      // The salt used to hash the user's password
+	APIKey   string `gorm:"type:varchar(32)"`                               // The user's API key
 }
 
 type UserData struct {
 	Model
 	LastVersion string `gorm:"last_version" json:"lastVersion"` // Which version of the app the user has last seen and acknowledged
 
-	Username  string          `form:"username" gorm:"uniqueIndex;not null;type:varchar(32)" json:"username"` // The user's username
-	Name      string          `form:"name" gorm:"type:varchar(64);not null" json:"name"`                     // The user's name
-	Birthdate *datatypes.Date `form:"birthdate" json:"birthdate,omitempty"`                                  // The user's birthdate
+	PreferredUnits UserPreferredUnits `gorm:"serializer:json" json:"preferredUnits"` // The user's preferred units
 
-	ActivityPub bool `form:"activity_pub" json:"activity_pub"` // Whether the user has enabled ActivityPub federation
-	Active      bool `form:"active" json:"active"`             // Whether the user is active
-	Admin       bool `form:"admin" json:"admin"`               // Whether the user is an admin
+	Language                 string            `json:"language"`                   // The user's preferred language
+	Theme                    string            `json:"theme"`                      // The user's preferred color scheme
+	TotalsShow               WorkoutType       `json:"totals_show"`                // What workout type of totals to show
+	TZ                       string            `json:"timezone"`                   // The user's preferred timezone
+	AutoImportDirectory      string            `json:"auto_import_directory"`      // The user's preferred directory for auto-import
+	DefaultWorkoutVisibility WorkoutVisibility `json:"default_workout_visibility"` // Default visibility for newly created workouts
+	PreferFullDate           bool              `json:"prefer_full_date"`           // Whether to show full dates in the workout details
+	APIActive                bool              `json:"api_active"`                 // Whether the user's API key is active
+
+	ActivityPub bool `json:"activity_pub"` // Whether the user has enabled ActivityPub federation
+	Active      bool `json:"active"`       // Whether the user is active
+	Admin       bool `json:"admin"`        // Whether the user is an admin
 }
 
 type User struct {
@@ -62,8 +62,6 @@ type User struct {
 	UserData
 	UserSecrets `swaggerignore:"true"`
 
-	Workouts     []Workout     `gorm:"constraint:OnDelete:CASCADE" json:"-"` // The user's workouts
-	Equipment    []Equipment   `gorm:"constraint:OnDelete:CASCADE" json:"-"` // The user's equipment
 	Measurements []Measurement `gorm:"constraint:OnDelete:CASCADE" json:"-"` // The user's measurements
 
 	Profile Profile `gorm:"constraint:OnDelete:CASCADE" json:"profile"` // The user's profile settings
@@ -112,23 +110,15 @@ func (u *User) ShowFullDate() bool {
 		return false
 	}
 
-	return u.Profile.PreferFullDate
-}
-
-func (u *User) PreferredUnits() *UserPreferredUnits {
-	if u == nil {
-		return &UserPreferredUnits{}
-	}
-
-	return &u.Profile.PreferredUnits
+	return u.PreferFullDate
 }
 
 func (u *User) Timezone() *time.Location {
-	if u == nil || u.Profile.Timezone == "" {
+	if u == nil || u.TZ == "" {
 		return time.UTC
 	}
 
-	loc, err := time.LoadLocation(u.Profile.Timezone)
+	loc, err := time.LoadLocation(u.TZ)
 	if err != nil {
 		return time.UTC
 	}
@@ -147,24 +137,12 @@ func (u *User) SetDB(db *gorm.DB) {
 	u.db = db
 }
 
-func (u *User) APIActive() bool {
-	if u == nil {
-		return false
-	}
-
-	if !u.Profile.APIActive {
-		return false
-	}
-
-	return u.APIKey != ""
-}
-
 func (u *User) IsActive() bool {
 	if u == nil {
 		return false
 	}
 
-	if !u.Active || u.Password == "" || u.Username == "" {
+	if !u.Active || u.Password == "" || u.Email == "" {
 		return false
 	}
 
@@ -188,16 +166,8 @@ func (u *User) IsValid() error {
 		return ErrPasswordInvalidLength
 	}
 
-	if len(u.Username) < UsernameMinimumLength || len(u.Username) > UsernameMaximumLength {
-		return ErrUsernameInvalidLength
-	}
-
-	// Validate whether the username is a valid complete email address,
-	// or a local part of a valid email address
-	if _, err := mail.ParseAddress(u.Username); err != nil {
-		if _, err := mail.ParseAddress(u.Username + "@localhost"); err != nil {
-			return ErrUsernameInvalid
-		}
+	if _, err := mail.ParseAddress(u.Email); err != nil {
+		return ErrEmailInvalid
 	}
 
 	return nil
@@ -232,42 +202,6 @@ func (u *User) GenerateAPIKey(force bool) {
 	u.APIKey = gorand.String(32, gorand.GetAlphaNumericPool())
 }
 
-func (u *User) GenerateActivityPubKeys(force bool) error {
-	if !force && u.PublicKey != "" && u.PrivateKey != "" {
-		return nil
-	}
-
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return err
-	}
-
-	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
-	if err != nil {
-		return err
-	}
-
-	privatePEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: privateKeyBytes,
-	})
-
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return err
-	}
-
-	publicPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: publicKeyBytes,
-	})
-
-	u.PrivateKey = string(privatePEM)
-	u.PublicKey = string(publicPEM)
-
-	return nil
-}
-
 func (u *User) GenerateSalt() {
 	if u.Salt != "" {
 		return
@@ -276,67 +210,53 @@ func (u *User) GenerateSalt() {
 	u.Salt = gorand.String(8, gorand.GetAlphaNumericPool())
 }
 
+func (u *User) ResetDefaults() {
+	u.Language = DefaultProfileLanguage
+	u.Theme = DefaultProfileTheme
+	u.TotalsShow = WorkoutTypeRunning
+	u.PreferredUnits.SpeedRaw = "km/h"
+	u.PreferredUnits.DistanceRaw = "km"
+	u.PreferredUnits.ElevationRaw = "m"
+	u.PreferredUnits.WeightRaw = "kg"
+	u.PreferredUnits.HeightRaw = "cm"
+	u.DefaultWorkoutVisibility = WorkoutVisibilityPrivate
+}
+
+func (u *User) EffectiveDefaultWorkoutVisibility() WorkoutVisibility {
+	if u == nil || !u.DefaultWorkoutVisibility.IsValid() {
+		return WorkoutVisibilityPrivate
+	}
+
+	return u.DefaultWorkoutVisibility
+}
+
+func (u *User) CanImportFromDirectory() (bool, error) {
+	if u == nil {
+		return false, nil
+	}
+
+	if u.AutoImportDirectory == "" {
+		return false, nil
+	}
+
+	info, err := os.Stat(u.AutoImportDirectory)
+	if err != nil {
+		return false, err
+	}
+
+	if !info.IsDir() {
+		return false, fmt.Errorf("%v is not a directory", u.AutoImportDirectory)
+	}
+
+	return true, nil
+}
+
 func (u *User) Save(db *gorm.DB) error {
 	return db.Save(u).Error
 }
 
 func (u *User) Delete(db *gorm.DB) error {
 	return db.Select(clause.Associations).Delete(u).Error
-}
-
-func (u *User) MarkWorkoutsDirty(db *gorm.DB) error {
-	return db.Model(&Workout{}).Where(&Workout{UserID: u.ID}).Update("dirty", true).Error
-}
-
-func (u *User) AddWorkout(db *gorm.DB, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, []error) {
-	if u == nil {
-		return nil, []error{ErrNoUser}
-	}
-
-	ws, err := NewWorkout(u, workoutType, notes, filename, content)
-	if err != nil {
-		return nil, []error{fmt.Errorf("%w: %s", ErrInvalidData, err)}
-	}
-
-	errs := []error{}
-	defaultVisibility := u.Profile.EffectiveDefaultWorkoutVisibility()
-
-	for _, w := range ws {
-		w.Visibility = defaultVisibility
-
-		if err := w.Create(db); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		var equipment []*Equipment
-
-		for i, e := range u.Equipment {
-			if e.ValidFor(&w.Type) {
-				equipment = append(equipment, &u.Equipment[i])
-			}
-		}
-
-		if err := db.Model(&w).Association("Equipment").Replace(equipment); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return ws, errs
-}
-
-func (u *User) GetAllEquipment(db *gorm.DB) ([]*Equipment, error) {
-	var w []*Equipment
-
-	if err := db.Preload("Workouts").Where(&Equipment{UserID: u.ID}).Order("name DESC").Find(&w).Error; err != nil {
-		return nil, err
-	}
-
-	for _, e := range w {
-		e.User = *u
-	}
-
-	return w, nil
 }
 
 func (u *User) HeightAt(d time.Time) float64 {
@@ -370,19 +290,6 @@ func (u *User) RestingHeartRateAt(d time.Time) float64 {
 	val := u.measurementAt("resting_heart_rate", d)
 	if val == 0 {
 		return 60
-	}
-
-	return val
-}
-
-func (u *User) MaxHeartRateAt(d time.Time) float64 {
-	val := u.measurementAt("max_heart_rate", d)
-	if val == 0 {
-		if u.Birthdate == nil {
-			return 200
-		}
-
-		return calculateMaxHeartRate(time.Time(*u.Birthdate), d)
 	}
 
 	return val
@@ -422,4 +329,73 @@ func (u *User) measurementAt(key string, d time.Time) float64 {
 	}
 
 	return w
+}
+
+type UserPreferredUnits struct {
+	SpeedRaw     string `form:"speed" json:"speed"`         // The user's preferred speed unit
+	DistanceRaw  string `form:"distance" json:"distance"`   // The user's preferred distance unit
+	ElevationRaw string `form:"elevation" json:"elevation"` // The user's preferred elevation unit
+	WeightRaw    string `form:"weight" json:"weight"`       // The user's preferred weight unit
+	HeightRaw    string `form:"height" json:"height"`       // The user's preferred height unit
+}
+
+func (u UserPreferredUnits) Tempo() string {
+	return "min/" + u.Distance()
+}
+
+func (u UserPreferredUnits) HeartRate() string {
+	return "bpm"
+}
+
+func (u UserPreferredUnits) Height() string {
+	switch u.HeightRaw {
+	case "in":
+		return "in"
+	default:
+		return "cm"
+	}
+}
+
+func (u UserPreferredUnits) Temperature() string {
+	return "°C"
+}
+
+func (u UserPreferredUnits) Cadence() string {
+	return "spm"
+}
+
+func (u UserPreferredUnits) Elevation() string {
+	switch u.ElevationRaw {
+	case "ft":
+		return "ft"
+	default:
+		return "m"
+	}
+}
+
+func (u UserPreferredUnits) Weight() string {
+	switch u.WeightRaw {
+	case "lbs":
+		return "lbs"
+	default:
+		return "kg"
+	}
+}
+
+func (u UserPreferredUnits) Distance() string {
+	switch u.DistanceRaw {
+	case "mi":
+		return "mi"
+	default:
+		return "km"
+	}
+}
+
+func (u UserPreferredUnits) Speed() string {
+	switch u.SpeedRaw {
+	case "mph":
+		return "mph"
+	default:
+		return "km/h"
+	}
 }

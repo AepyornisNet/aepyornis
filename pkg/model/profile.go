@@ -1,9 +1,15 @@
 package model
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
-	"os"
+	"strings"
+	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -15,138 +21,166 @@ const (
 type Profile struct {
 	Model
 
-	User *User `gorm:"foreignKey:UserID" json:"-"` // The user who owns this profile
+	UserID *uint64 `json:"user_id,omitempty"`          // The ID of the user who owns this profile
+	User   *User   `gorm:"foreignKey:UserID" json:"-"` // The user who owns this profile
 
-	PreferredUnits UserPreferredUnits `gorm:"serializer:json" json:"preferredUnits"` // The user's preferred units
+	Local bool `json:"local"` // Whether the profile belongs to a user from this instance
 
-	Language                 string            `form:"language" json:"language"`                                     // The user's preferred language
-	Theme                    string            `form:"theme" json:"theme"`                                           // The user's preferred color scheme
-	TotalsShow               WorkoutType       `form:"totals_show" json:"totals_show"`                               // What workout type of totals to show
-	Timezone                 string            `form:"timezone" json:"timezone"`                                     // The user's preferred timezone
-	AutoImportDirectory      string            `form:"auto_import_directory" json:"auto_import_directory"`           // The user's preferred directory for auto-import
-	DefaultWorkoutVisibility WorkoutVisibility `form:"default_workout_visibility" json:"default_workout_visibility"` // Default visibility for newly created workouts
-	UserID                   uint64            `json:"userID"`                                                       // The ID of the user who owns this profile
-	APIActive                bool              `form:"api_active" json:"api_active"`                                 // Whether the user's API key is active
-	PreferFullDate           bool              `form:"prefer_full_date" json:"prefer_full_date"`                     // Whether to show full dates in the workout details
-	ShowTabs                 bool              `form:"show_tabs" json:"show_tabs"`                                   // Whether to show tabs in web UI
-}
+	Username    string          `gorm:"not null;type:varchar(128);uniqueIndex:idx_profiles_username_domain,priority:1" json:"username"` // The user's username
+	Domain      *string         `gorm:"type:varchar(255);uniqueIndex:idx_profiles_username_domain,priority:2" json:"domain,omitempty"`  // The profile domain for remote accounts
+	DisplayName string          `gorm:"type:varchar(64);not null" json:"display_name"`                                                  // The user's name
+	Birthdate   *datatypes.Date `json:"birthdate,omitempty"`                                                                            // The user's birthdate
 
-type UserPreferredUnits struct {
-	SpeedRaw     string `form:"speed" json:"speed"`         // The user's preferred speed unit
-	DistanceRaw  string `form:"distance" json:"distance"`   // The user's preferred distance unit
-	ElevationRaw string `form:"elevation" json:"elevation"` // The user's preferred elevation unit
-	WeightRaw    string `form:"weight" json:"weight"`       // The user's preferred weight unit
-	HeightRaw    string `form:"height" json:"height"`       // The user's preferred height unit
-}
+	Workouts  []Workout   `gorm:"constraint:OnDelete:CASCADE" json:"-"` // The profiles's workouts
+	Equipment []Equipment `gorm:"constraint:OnDelete:CASCADE" json:"-"` // The profiles's equipment
 
-func (u UserPreferredUnits) Tempo() string {
-	return "min/" + u.Distance()
-}
-
-func (u UserPreferredUnits) HeartRate() string {
-	return "bpm"
-}
-
-func (u UserPreferredUnits) Height() string {
-	switch u.HeightRaw {
-	case "in":
-		return "in"
-	default:
-		return "cm"
-	}
-}
-
-func (u UserPreferredUnits) Temperature() string {
-	return "°C"
-}
-
-func (u UserPreferredUnits) Cadence() string {
-	return "spm"
-}
-
-func (u UserPreferredUnits) Elevation() string {
-	switch u.ElevationRaw {
-	case "ft":
-		return "ft"
-	default:
-		return "m"
-	}
-}
-
-func (u UserPreferredUnits) Weight() string {
-	switch u.WeightRaw {
-	case "lbs":
-		return "lbs"
-	default:
-		return "kg"
-	}
-}
-
-func (u UserPreferredUnits) Distance() string {
-	switch u.DistanceRaw {
-	case "mi":
-		return "mi"
-	default:
-		return "km"
-	}
-}
-
-func (u UserPreferredUnits) Speed() string {
-	switch u.SpeedRaw {
-	case "mph":
-		return "mph"
-	default:
-		return "km/h"
-	}
-}
-
-func (p *Profile) ResetBools() {
-	p.PreferFullDate = false
-	p.ShowTabs = false
-	p.APIActive = false
-}
-
-func (p *Profile) ResetDefaults() {
-	p.Language = DefaultProfileLanguage
-	p.Theme = DefaultProfileTheme
-	p.TotalsShow = WorkoutTypeRunning
-	p.PreferredUnits.SpeedRaw = "km/h"
-	p.PreferredUnits.DistanceRaw = "km"
-	p.PreferredUnits.ElevationRaw = "m"
-	p.PreferredUnits.WeightRaw = "kg"
-	p.PreferredUnits.HeightRaw = "cm"
-	p.DefaultWorkoutVisibility = WorkoutVisibilityPrivate
-}
-
-func (p *Profile) EffectiveDefaultWorkoutVisibility() WorkoutVisibility {
-	if p == nil || !p.DefaultWorkoutVisibility.IsValid() {
-		return WorkoutVisibilityPrivate
-	}
-
-	return p.DefaultWorkoutVisibility
+	PublicKey  string `gorm:"type:text"` // The user's public key for ActivityPub federation
+	PrivateKey string `gorm:"type:text"` // The user's private key for ActivityPub federation
 }
 
 func (p *Profile) Save(db *gorm.DB) error {
 	return db.Save(p).Error
 }
 
-func (p *Profile) CanImportFromDirectory() (bool, error) {
-	if p == nil {
-		return false, nil
+func (p *Profile) BeforeSave(_ *gorm.DB) error {
+	p.normalizeDomain()
+	return nil
+}
+
+func (p *Profile) normalizeDomain() {
+	// Local profiles belong to a local user record and must not carry a domain.
+	if p.UserID != nil || p.User != nil {
+		p.Domain = nil
+		return
 	}
 
-	if p.AutoImportDirectory == "" {
-		return false, nil
+	if p.Domain == nil {
+		return
 	}
 
-	info, err := os.Stat(p.AutoImportDirectory)
+	d := strings.TrimSpace(*p.Domain)
+	if d == "" {
+		p.Domain = nil
+		return
+	}
+
+	p.Domain = &d
+}
+
+func (p *Profile) MarkWorkoutsDirty(db *gorm.DB) error {
+	if p == nil || p.ID == 0 {
+		return ErrNoUser
+	}
+
+	return db.Model(&Workout{}).Where(&Workout{ProfileID: p.ID}).Update("dirty", true).Error
+}
+
+func (p *Profile) GetAllEquipment(db *gorm.DB) ([]*Equipment, error) {
+	if p == nil || p.ID == 0 {
+		return nil, ErrNoUser
+	}
+
+	var equipment []*Equipment
+	if err := db.Preload("Workouts").Where(&Equipment{ProfileID: p.ID}).Order("name DESC").Find(&equipment).Error; err != nil {
+		return nil, err
+	}
+
+	return equipment, nil
+}
+
+func (p *Profile) MaxHeartRateAt(d time.Time) float64 {
+	val := p.measurementAt("max_heart_rate", d)
+	if val == 0 {
+		if p == nil || p.Birthdate == nil {
+			return 200
+		}
+
+		return calculateMaxHeartRate(time.Time(*p.Birthdate), d)
+	}
+
+	return val
+}
+
+func (p *Profile) measurementAt(key string, d time.Time) float64 {
+	if p == nil || p.User == nil || p.User.db == nil {
+		return 0
+	}
+
+	return p.User.measurementAt(key, d)
+}
+
+func (p *Profile) GenerateActivityPubKeys(force bool) error {
+	if !force && p.PublicKey != "" && p.PrivateKey != "" {
+		return nil
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	if !info.IsDir() {
-		return false, fmt.Errorf("%v is not a directory", p.AutoImportDirectory)
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return err
 	}
 
-	return true, nil
+	privatePEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})
+
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return err
+	}
+
+	publicPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: publicKeyBytes,
+	})
+
+	p.PrivateKey = string(privatePEM)
+	p.PublicKey = string(publicPEM)
+
+	return nil
+}
+
+func (p *Profile) AddWorkout(db *gorm.DB, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, []error) {
+	if p == nil {
+		return nil, []error{ErrNoUser}
+	}
+
+	ws, err := NewWorkout(p, workoutType, notes, filename, content)
+	if err != nil {
+		return nil, []error{fmt.Errorf("%w: %s", ErrInvalidData, err)}
+	}
+
+	errs := []error{}
+	defaultVisibility := WorkoutVisibilityPrivate
+	if p.User != nil {
+		defaultVisibility = p.User.EffectiveDefaultWorkoutVisibility()
+	}
+
+	for _, w := range ws {
+		w.Visibility = defaultVisibility
+
+		if err := w.Create(db); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		var equipment []*Equipment
+
+		for i, e := range p.Equipment {
+			if e.ValidFor(&w.Type) {
+				equipment = append(equipment, &p.Equipment[i])
+			}
+		}
+
+		if err := db.Model(&w).Association("Equipment").Replace(equipment); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return ws, errs
 }

@@ -56,8 +56,8 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 	person := vocab.Person{
 		Type:              vocab.PersonType,
 		ID:                vocab.ID(actorURL),
-		Name:              vocab.DefaultNaturalLanguage(user.Name),
-		PreferredUsername: vocab.DefaultNaturalLanguage(user.Username),
+		Name:              vocab.DefaultNaturalLanguage(user.Profile.DisplayName),
+		PreferredUsername: vocab.DefaultNaturalLanguage(user.Profile.Username),
 		Published:         user.CreatedAt.UTC(),
 		Inbox:             vocab.IRI(actorURL + "/inbox"),
 		Outbox:            vocab.IRI(actorURL + "/outbox"),
@@ -65,11 +65,11 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 		Followers:         vocab.IRI(actorURL + "/followers"),
 	}
 
-	if user.PublicKey != "" {
+	if user.Profile.PublicKey != "" {
 		person.PublicKey = vocab.PublicKey{
 			ID:           vocab.ID(actorURL + "#main-key"),
 			Owner:        vocab.IRI(actorURL),
-			PublicKeyPem: user.PublicKey,
+			PublicKeyPem: user.Profile.PublicKey,
 		}
 	}
 
@@ -140,7 +140,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 		WebRoot:        ac.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: "https",
-	}, targetUser.Username) + "/following"
+	}, targetUser.Profile.Username) + "/following"
 
 	totalItems := len(items)
 	collection := vocab.OrderedCollectionNew(vocab.ID(followingURL))
@@ -232,7 +232,7 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		WebRoot:        ac.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: "https",
-	}, targetUser.Username) + "/followers"
+	}, targetUser.Profile.Username) + "/followers"
 
 	totalItems := len(items)
 	collection := vocab.OrderedCollectionNew(vocab.ID(followersURL))

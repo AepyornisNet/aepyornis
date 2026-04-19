@@ -83,7 +83,7 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 	user := mc.context.GetUser(c)
 
-	d := &dto.Measurement{Units: user.PreferredUnits()}
+	d := &dto.Measurement{Units: &user.PreferredUnits}
 	if err := c.Bind(d); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}

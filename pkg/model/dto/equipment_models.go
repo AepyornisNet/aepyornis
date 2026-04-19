@@ -15,7 +15,7 @@ type EquipmentResponse struct {
 	Active      bool                 `json:"active"`
 	DefaultFor  []string             `json:"default_for,omitempty"`
 	Usage       *EquipmentUsageStats `json:"usage,omitempty"`
-	UserID      uint64               `json:"user_id"`
+	ProfileID   uint64               `json:"profile_id"`
 	CreatedAt   time.Time            `json:"created_at"`
 	UpdatedAt   time.Time            `json:"updated_at"`
 }
@@ -44,7 +44,7 @@ func NewEquipmentResponse(e *model.Equipment) EquipmentResponse {
 		Active:      e.Active,
 		DefaultFor:  defaultFor,
 		Usage:       nil,
-		UserID:      e.UserID,
+		ProfileID:   e.ProfileID,
 		CreatedAt:   e.CreatedAt,
 		UpdatedAt:   e.UpdatedAt,
 	}

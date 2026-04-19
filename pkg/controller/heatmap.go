@@ -85,7 +85,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 
 	query := hc.context.GetDB().Table("workout_records AS wr").
 		Joins("JOIN workouts ON workouts.id = wr.workout_id").
-		Where("workouts.user_id = ?", u.ID)
+		Where("workouts.profile_id = ?", u.Profile.ID)
 
 	if bounds != nil {
 		query = query.Where(
@@ -190,10 +190,6 @@ func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	wos, err := hc.context.WorkoutRepo().ListByUserID(u.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	for _, w := range wos {
-		w.User = u
 	}
 
 	for _, w := range wos {

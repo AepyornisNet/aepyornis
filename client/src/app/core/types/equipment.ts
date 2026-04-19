@@ -10,7 +10,7 @@ export type Equipment = {
   active: boolean;
   default_for?: string[];
   usage?: EquipmentUsageStats;
-  user_id: number;
+  profile_id: number;
   created_at: string;
   updated_at: string;
 };

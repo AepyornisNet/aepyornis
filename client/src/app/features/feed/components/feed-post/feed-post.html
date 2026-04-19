@@ -5,7 +5,7 @@
         <div class="d-flex align-items-start gap-2 flex-grow-1">
           <app-avatar [size]="44" [user]="workout.user" />
           <div class="flex-grow-1 min-w-0">
-            <div class="fw-semibold lh-sm">{{ workout.user?.name || 'Unknown' }}</div>
+            <div class="fw-semibold lh-sm">{{ getWorkoutAuthorName(workout) }}</div>
             @if (workout.address_string) {
               <div class="small text-body-secondary text-truncate">
                 {{ workout.address_string }}

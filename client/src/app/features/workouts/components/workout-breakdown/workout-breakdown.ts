@@ -38,17 +38,17 @@ export class WorkoutBreakdownComponent {
 
   public readonly distanceUnit = computed<string>(() => {
     const info = this.userService.getUserInfo()();
-    return info?.profile?.preferred_units?.distance ?? 'km';
+    return info?.profile?.profile?.preferred_units?.distance ?? 'km';
   });
 
   public readonly speedUnit = computed<string>(() => {
     const info = this.userService.getUserInfo()();
-    return info?.profile?.preferred_units?.speed ?? 'km/h';
+    return info?.profile?.profile?.preferred_units?.speed ?? 'km/h';
   });
 
   public readonly elevationUnit = computed<string>(() => {
     const info = this.userService.getUserInfo()();
-    return info?.profile?.preferred_units?.elevation ?? 'm';
+    return info?.profile?.profile?.preferred_units?.elevation ?? 'm';
   });
 
   public selectedIntervalIndex: number | null = null;

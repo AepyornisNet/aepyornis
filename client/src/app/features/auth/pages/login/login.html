@@ -20,18 +20,18 @@
                 }
 
                 <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-                  <!-- Username input -->
+                  <!-- Email input -->
                   <div class="form-floating mb-3">
                     <input
                       autocomplete="username"
                       class="form-control"
-                      formControlName="username"
-                      id="username"
-                      placeholder="Username"
+                      formControlName="email"
+                      id="email"
+                      placeholder="Email"
                       required
-                      type="text"
+                      type="email"
                     />
-                    <label for="username">{{ 'Username (email)' | translate }}</label>
+                    <label for="email">{{ 'Email' | translate }}</label>
                   </div>
 
                   <!-- Password input -->
@@ -82,18 +82,18 @@
                   }
 
                   <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
-                    <!-- Register Username input -->
+                    <!-- Register Email input -->
                     <div class="form-floating mb-3">
                       <input
                         autocomplete="username"
                         class="form-control"
-                        formControlName="username"
-                        id="registerUsername"
-                        placeholder="Username"
+                        formControlName="email"
+                        id="registerEmail"
+                        placeholder="Email"
                         required
-                        type="text"
+                        type="email"
                       />
-                      <label for="registerUsername">{{ 'Username (email)' | translate }}</label>
+                      <label for="registerEmail">{{ 'Email' | translate }}</label>
                     </div>
 
                     <!-- Register Password input -->

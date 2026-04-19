@@ -107,7 +107,7 @@ func (uc *userController) GetTotals(c echo.Context) error {
 		viewerActorIRI,
 	)
 
-	totalsShow := targetUser.Profile.TotalsShow
+	totalsShow := targetUser.TotalsShow
 
 	if totalsShow == model.WorkoutTypeAutoDetect {
 		totalsShow = model.WorkoutTypeRunning
@@ -407,9 +407,9 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             targetUser.ID,
-			Username:       targetUser.Username,
-			Name:           targetUser.Name,
-			Handle:         fmt.Sprintf("@%s@%s", targetUser.Username, host),
+			Username:       targetUser.Profile.Username,
+			Name:           targetUser.Profile.DisplayName,
+			Handle:         fmt.Sprintf("@%s@%s", targetUser.Profile.Username, host),
 			ActorURL:       targetActorIRI,
 			IconURL:        "",
 			IsExternal:     false,
@@ -486,9 +486,9 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             targetUser.ID,
-			Username:       targetUser.Username,
-			Name:           targetUser.Name,
-			Handle:         uc.renderHandle(c, targetUser.Username),
+			Username:       targetUser.Profile.Username,
+			Name:           targetUser.Profile.DisplayName,
+			Handle:         uc.renderHandle(c, targetUser.Profile.Username),
 			ActorURL:       targetActorIRI,
 			IconURL:        "",
 			IsExternal:     false,
@@ -552,9 +552,9 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
 		Results: dto.ActivityPubProfileSummaryResponse{
 			ID:             targetUser.ID,
-			Username:       targetUser.Username,
-			Name:           targetUser.Name,
-			Handle:         uc.renderHandle(c, targetUser.Username),
+			Username:       targetUser.Profile.Username,
+			Name:           targetUser.Profile.DisplayName,
+			Handle:         uc.renderHandle(c, targetUser.Profile.Username),
 			ActorURL:       targetActorIRI,
 			IconURL:        "",
 			IsExternal:     false,
@@ -939,7 +939,7 @@ func (uc *userController) localActorIRI(c echo.Context, user *model.User) string
 		WebRoot:        uc.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: c.Scheme(),
-	}, user.Username)
+	}, user.Profile.Username)
 }
 
 func (uc *userController) renderHandle(c echo.Context, username string) string {
@@ -980,7 +980,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 	if t == "" {
 		t = model.WorkoutTypeRunning
 		if targetUser != nil {
-			t = targetUser.Profile.TotalsShow
+			t = targetUser.TotalsShow
 		}
 	}
 

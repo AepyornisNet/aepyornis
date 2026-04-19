@@ -24,7 +24,7 @@ func defaultWorkout(t *testing.T) *Workout {
 	require.NoError(t, err)
 
 	w, err := NewWorkout(
-		u,
+		&u.Profile,
 		WorkoutTypeAutoDetect,
 		"some notes",
 		"file.gpx",
@@ -43,7 +43,7 @@ func TestWorkout_ParseWithType(t *testing.T) {
 	require.NoError(t, err)
 
 	w, err := NewWorkout(
-		u,
+		&u.Profile,
 		WorkoutTypeWalking,
 		"some notes",
 		"file.gpx",

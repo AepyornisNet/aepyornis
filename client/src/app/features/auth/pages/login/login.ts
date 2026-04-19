@@ -58,14 +58,14 @@ export class Login implements OnInit {
   public ngOnInit(): void {
     // Initialize login form
     this.loginForm = this.fb.group({
-      username: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
 
     // Initialize register form with custom validator for password matching
     this.registerForm = this.fb.group(
       {
-        username: ['', Validators.required],
+        email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', Validators.required],
       },
@@ -112,7 +112,7 @@ export class Login implements OnInit {
 
     this.api
       .signIn({
-        username: String(formValue.username ?? ''),
+        email: String(formValue.email ?? ''),
         password: String(formValue.password ?? ''),
       })
       .subscribe({
@@ -152,9 +152,9 @@ export class Login implements OnInit {
 
     this.api
       .register({
-        username: String(formValue.username ?? ''),
+        email: String(formValue.email ?? ''),
         password: String(formValue.password ?? ''),
-        name: String(formValue.username ?? ''),
+        name: String(formValue.email ?? ''),
         language: currentLanguage,
       })
       .subscribe({

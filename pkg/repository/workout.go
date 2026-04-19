@@ -27,7 +27,7 @@ func (r *workoutRepository) GetByUserID(userID uint64, id uint64) (*model.Workou
 	var workout model.Workout
 
 	q := model.PreloadWorkoutDetails(r.db).Preload("File").Preload("Equipment")
-	if err := q.Where(&model.Workout{UserID: userID}).First(&workout, id).Error; err != nil {
+	if err := q.Where(&model.Workout{ProfileID: userID}).First(&workout, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -37,7 +37,7 @@ func (r *workoutRepository) GetByUserID(userID uint64, id uint64) (*model.Workou
 func (r *workoutRepository) ListByUserID(userID uint64) ([]*model.Workout, error) {
 	var workouts []*model.Workout
 
-	if err := model.PreloadWorkoutData(r.db).Where(&model.Workout{UserID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := model.PreloadWorkoutData(r.db).Where(&model.Workout{ProfileID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
 	}
 
@@ -47,7 +47,7 @@ func (r *workoutRepository) ListByUserID(userID uint64) ([]*model.Workout, error
 func (r *workoutRepository) ListByUserIDWithDetails(userID uint64) ([]*model.Workout, error) {
 	var workouts []*model.Workout
 
-	if err := model.PreloadWorkoutDetails(r.db).Where(&model.Workout{UserID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(r.db).Where(&model.Workout{ProfileID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
 	}
 
@@ -57,7 +57,7 @@ func (r *workoutRepository) ListByUserIDWithDetails(userID uint64) ([]*model.Wor
 func (r *workoutRepository) CountByUserAndFilters(userID uint64, filters *model.WorkoutFilters) (int64, error) {
 	var totalCount int64
 
-	q := r.db.Model(&model.Workout{}).Where("user_id = ?", userID)
+	q := r.db.Model(&model.Workout{}).Where("profile_id = ?", userID)
 	if filters != nil {
 		q = filters.ToQuery(q)
 	}
@@ -79,7 +79,7 @@ func (r *workoutRepository) ListByUserAndFilters(userID uint64, filters *model.W
 
 	q = model.PreloadWorkoutData(q).
 		Preload("File").
-		Where("user_id = ?", userID).
+		Where("profile_id = ?", userID).
 		Order("date DESC")
 
 	if limit > 0 {
@@ -100,8 +100,8 @@ func (r *workoutRepository) GetByIDForRead(id uint64, withRouteSegmentMatches bo
 	q := model.PreloadWorkoutDetails(r.db).
 		Preload("File").
 		Preload("Equipment").
-		Preload("User").
-		Preload("User.Profile")
+		Preload("Profile").
+		Preload("Profile.User")
 
 	if withRouteSegmentMatches {
 		q = q.Preload("RouteSegmentMatches.RouteSegment")
@@ -118,7 +118,7 @@ func (r *workoutRepository) GetByIDForRead(id uint64, withRouteSegmentMatches bo
 func (r *workoutRepository) GetDetailsByID(id uint64) (*model.Workout, error) {
 	var workout model.Workout
 
-	if err := model.PreloadWorkoutDetails(r.db).Preload("File").First(&workout, id).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(r.db).Preload("File").Preload("Profile").First(&workout, id).Error; err != nil {
 		return nil, err
 	}
 

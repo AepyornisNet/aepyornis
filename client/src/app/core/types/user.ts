@@ -4,7 +4,9 @@
 
 export type UserProfile = {
   id: number;
+  email: string;
   username: string;
+  domain?: string;
   name: string;
   icon_url?: string;
   birthdate?: string;
@@ -14,12 +16,7 @@ export type UserProfile = {
   last_version: string;
   created_at: string;
   updated_at: string;
-  preferred_units: UserPreferredUnits;
-  language: string;
-  theme: string;
-  timezone: string;
-  default_workout_visibility: '' | 'followers' | 'public';
-  prefer_full_date: boolean;
+  profile: ProfileSettings;
 };
 
 export type AppInfo = {
@@ -54,6 +51,7 @@ export type ProfileSettings = {
 
 export type FullUserProfile = {
   id: number;
+  email: string;
   username: string;
   name: string;
   birthdate?: string;
@@ -68,7 +66,8 @@ export type FullUserProfile = {
 
 export type UserUpdateRequest = {
   name: string;
-  username: string;
+  email: string;
+  username?: string;
   admin: boolean;
   active: boolean;
   password?: string;

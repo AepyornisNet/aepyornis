@@ -170,25 +170,27 @@ func NewApp(v version.Version) *App {
 func (a *App) createAdminUser() error {
 	u := &model.User{
 		UserData: model.UserData{
-			Username: "admin",
-			Name:     "Administrator",
-			Active:   true,
-			Admin:    true,
+			Active: true,
+			Admin:  true,
 		},
+		UserSecrets: model.UserSecrets{Email: "admin@localhost"},
 	}
+	u.Profile.Username = "admin"
+	u.Profile.DisplayName = "Administrator"
 
 	if err := u.SetPassword("admin"); err != nil {
 		return err
 	}
 
-	a.logger.Warn("Creating admin user '" + u.Username + "', with password 'admin'")
+	a.logger.Warn("Creating admin user '" + u.Email + "', with password 'admin'")
 
-	u.Profile.ResetDefaults()
+	u.ResetDefaults()
 	if a.Config.ActivityPubActive {
 		u.ActivityPub = true
-		u.Profile.DefaultWorkoutVisibility = model.WorkoutVisibilityFollowers
+		u.DefaultWorkoutVisibility = model.WorkoutVisibilityFollowers
+		u.Profile.User = u
 
-		if err := u.GenerateActivityPubKeys(false); err != nil {
+		if err := u.Profile.GenerateActivityPubKeys(false); err != nil {
 			return err
 		}
 	}

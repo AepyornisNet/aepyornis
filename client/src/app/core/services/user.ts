@@ -46,7 +46,7 @@ export class User {
 
     this.userInfo.set(user);
 
-    const lang = profile.language;
+    const lang = profile.profile?.language;
     if (lang && lang !== 'browser') {
       this.translate.use(lang);
       localStorage.setItem('locale', lang);

@@ -240,7 +240,10 @@ func (r *workoutReplyRepository) ListByWorkoutID(workoutID uint64, limit int, of
 	}
 
 	replies := make([]model.APStatus, 0)
-	if err := r.db.Table("ap_statuses AS reply").
+	if err := r.db.Model(&model.APStatus{}).
+		Preload("User").
+		Preload("User.Profile").
+		Table("ap_statuses AS reply").
 		Select("reply.*").
 		Joins("JOIN ap_statuses AS parent ON parent.object_id = reply.in_reply_to_object_id").
 		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = parent.ap_status_workout_id").

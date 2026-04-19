@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -8,23 +10,19 @@ import (
 
 // UserProfileResponse represents user profile info in API v2 responses
 type UserProfileResponse struct {
-	ID                       uint64                   `json:"id"`
-	Username                 string                   `json:"username"`
-	Name                     string                   `json:"name"`
-	Birthdate                *time.Time               `json:"birthdate,omitempty"`
-	ActivityPub              bool                     `json:"activity_pub"`
-	Active                   bool                     `json:"active"`
-	Admin                    bool                     `json:"admin"`
-	LastVersion              string                   `json:"last_version"`
-	CreatedAt                time.Time                `json:"created_at"`
-	UpdatedAt                time.Time                `json:"updated_at"`
-	PreferredUnits           model.UserPreferredUnits `json:"preferred_units"`
-	Language                 string                   `json:"language"`
-	Theme                    string                   `json:"theme"`
-	Timezone                 string                   `json:"timezone"`
-	DefaultWorkoutVisibility model.WorkoutVisibility  `json:"default_workout_visibility"`
-	PreferFullDate           bool                     `json:"prefer_full_date"`
-	Profile                  *ProfileSettings         `json:"profile,omitempty"`
+	ID          uint64           `json:"id"`
+	Email       string           `json:"email"`
+	Username    string           `json:"username"`
+	Domain      *string          `json:"domain,omitempty"`
+	Name        string           `json:"name"`
+	Birthdate   *time.Time       `json:"birthdate,omitempty"`
+	ActivityPub bool             `json:"activity_pub"`
+	Active      bool             `json:"active"`
+	Admin       bool             `json:"admin"`
+	LastVersion string           `json:"last_version"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+	Profile     *ProfileSettings `json:"profile,omitempty"`
 }
 
 // TODO: Remove duplicate fields between UserProfileResponse and ProfileSettings
@@ -71,38 +69,55 @@ type ActivityPubProfileSummaryResponse struct {
 
 // NewUserProfileResponse converts a database user to API response
 func NewUserProfileResponse(u *model.User) UserProfileResponse {
-	resp := UserProfileResponse{
-		ID:                       u.ID,
-		Username:                 u.Username,
-		Name:                     u.Name,
-		ActivityPub:              u.ActivityPub,
-		Active:                   u.Active,
-		Admin:                    u.Admin,
-		LastVersion:              u.LastVersion,
-		CreatedAt:                u.CreatedAt,
-		UpdatedAt:                u.UpdatedAt,
-		PreferredUnits:           u.Profile.PreferredUnits,
-		Language:                 u.Profile.Language,
-		Theme:                    u.Profile.Theme,
-		Timezone:                 u.Profile.Timezone,
-		DefaultWorkoutVisibility: u.Profile.EffectiveDefaultWorkoutVisibility(),
-		PreferFullDate:           u.Profile.PreferFullDate,
-		Profile: &ProfileSettings{
-			PreferredUnits:           u.Profile.PreferredUnits,
-			Language:                 u.Profile.Language,
-			Theme:                    u.Profile.Theme,
-			TotalsShow:               string(u.Profile.TotalsShow),
-			Timezone:                 u.Profile.Timezone,
-			AutoImportDirectory:      u.Profile.AutoImportDirectory,
-			DefaultWorkoutVisibility: u.Profile.EffectiveDefaultWorkoutVisibility(),
-			APIActive:                u.Profile.APIActive,
-			PreferFullDate:           u.Profile.PreferFullDate,
-		},
+	username := ""
+	name := ""
+	var domain *string
+	var birthdate *time.Time
+	if u.Profile.ID != 0 {
+		username = u.Profile.Username
+		name = strings.TrimSpace(u.Profile.DisplayName)
+		if u.Profile.Domain != nil {
+			d := strings.TrimSpace(*u.Profile.Domain)
+			if d != "" {
+				domain = &d
+			}
+		}
+		if name == "" {
+			name = username
+			if domain != nil {
+				name = fmt.Sprintf("%s@%s", username, *domain)
+			}
+		}
+		if u.Profile.Birthdate != nil {
+			bd := time.Time(*u.Profile.Birthdate)
+			birthdate = &bd
+		}
 	}
 
-	if u.Birthdate != nil {
-		bd := time.Time(*u.Birthdate)
-		resp.Birthdate = &bd
+	resp := UserProfileResponse{
+		ID:          u.ID,
+		Email:       u.Email,
+		Username:    username,
+		Domain:      domain,
+		Name:        name,
+		Birthdate:   birthdate,
+		ActivityPub: u.ActivityPub,
+		Active:      u.Active,
+		Admin:       u.Admin,
+		LastVersion: u.LastVersion,
+		CreatedAt:   u.CreatedAt,
+		UpdatedAt:   u.UpdatedAt,
+		Profile: &ProfileSettings{
+			PreferredUnits:           u.PreferredUnits,
+			Language:                 u.Language,
+			Theme:                    u.Theme,
+			TotalsShow:               string(u.TotalsShow),
+			Timezone:                 u.TZ,
+			AutoImportDirectory:      u.AutoImportDirectory,
+			DefaultWorkoutVisibility: u.EffectiveDefaultWorkoutVisibility(),
+			APIActive:                u.APIActive,
+			PreferFullDate:           u.PreferFullDate,
+		},
 	}
 
 	return resp

@@ -113,11 +113,20 @@ func NewRouteSegmentDetailResponse(rs *model.RouteSegment) RouteSegmentDetailRes
 	// Convert matches
 	response.Matches = make([]RouteSegmentMatch, len(rs.RouteSegmentMatches))
 	for i, m := range rs.RouteSegmentMatches {
+		var userID uint64
+		userName := ""
+		if m.Workout.Profile != nil {
+			if m.Workout.Profile.UserID != nil {
+				userID = *m.Workout.Profile.UserID
+			}
+			userName = m.Workout.Profile.DisplayName
+		}
+
 		response.Matches[i] = RouteSegmentMatch{
 			WorkoutID:    m.WorkoutID,
 			WorkoutName:  m.Workout.Name,
-			UserID:       m.Workout.UserID,
-			UserName:     m.Workout.User.Name,
+			UserID:       userID,
+			UserName:     userName,
 			Distance:     m.Distance,
 			Duration:     int(m.Duration.Seconds()),
 			AverageSpeed: m.AverageSpeed(),

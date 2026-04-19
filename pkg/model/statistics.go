@@ -21,7 +21,7 @@ type StatConfig struct {
 func loadWorkoutsForRecords(db *gorm.DB, userID uint64, t WorkoutType, startDate, endDate *time.Time) ([]*Workout, error) {
 	var workouts []*Workout
 
-	query := PreloadWorkoutData(db).Where("user_id = ?", userID).Where("workouts.type = ?", t)
+	query := PreloadWorkoutData(db).Where("profile_id = ?", userID).Where("workouts.type = ?", t)
 
 	if startDate != nil {
 		query = query.Where("workouts.date >= ?", *startDate)
@@ -137,7 +137,7 @@ func (u *User) GetStatistics(statConfig StatConfig) (*Statistics, error) {
 		).
 		Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 		Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
-		Where("user_id = ?", u.ID)
+		Where("profile_id = ?", u.Profile.ID)
 
 	if statConfig.Since != "" && statConfig.Since != "forever" {
 		q = q.Where(GetDateLimitExpression(sqlDialect), "-"+statConfig.GetSince())
@@ -158,7 +158,7 @@ func (u *User) GetStatistics(statConfig StatConfig) (*Statistics, error) {
 
 	var result Bucket
 
-	units := u.PreferredUnits()
+	units := &u.PreferredUnits
 
 	for rows.Next() {
 		if err := u.db.ScanRows(rows, &result); err != nil {
@@ -187,7 +187,7 @@ func (u *User) GetHighestWorkoutType() (*WorkoutType, error) {
 	err := u.db.
 		Table("workouts").
 		Select("workouts.type").
-		Where("user_id = ?", u.ID).
+		Where("profile_id = ?", u.Profile.ID).
 		Group("workouts.type").
 		Order("count(*) DESC").
 		Limit(1).
@@ -206,7 +206,7 @@ func (u *User) GetDefaultTotals(startDate, endDate *time.Time) (*Bucket, error) 
 		return nil, ErrAnonymousUser
 	}
 
-	t := u.Profile.TotalsShow
+	t := u.TotalsShow
 	if t == WorkoutTypeAutoDetect {
 		ht, err := u.GetHighestWorkoutType()
 		if err != nil {
@@ -238,7 +238,7 @@ func (u *User) GetTotals(t WorkoutType, startDate, endDate *time.Time) (*Bucket,
 		).
 		Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 		Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
-		Where("user_id = ?", u.ID).
+		Where("profile_id = ?", u.Profile.ID).
 		Where("workouts.type = ?", t)
 
 	if startDate != nil {
@@ -297,7 +297,7 @@ func (u *User) getStoredDistanceRecords(t WorkoutType, startDate, endDate *time.
 	q := u.db.Table("workout_interval_records").
 		Select("workout_interval_records.*, workouts.date as date").
 		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
-		Where("workouts.user_id = ?", u.ID).
+		Where("workouts.profile_id = ?", u.Profile.ID).
 		Where("workouts.type = ?", t).
 		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypeSpeed)
 
@@ -378,7 +378,7 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 	base := u.db.Table("workout_interval_records").
 		Select("workout_interval_records.*, workouts.date as date").
 		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
-		Where("workouts.user_id = ?", u.ID).
+		Where("workouts.profile_id = ?", u.Profile.ID).
 		Where("workouts.type = ?", t).
 		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypeSpeed).
 		Where("workout_interval_records.label = ?", label)
@@ -438,7 +438,7 @@ func (u *User) GetClimbRanking(t WorkoutType, startDate, endDate *time.Time, lim
 		return nil, 0, fmt.Errorf("climb ranking is only supported for distance workout types: %s", t)
 	}
 
-	workouts, err := loadWorkoutsForRecords(u.db, u.ID, t, startDate, endDate)
+	workouts, err := loadWorkoutsForRecords(u.db, u.Profile.ID, t, startDate, endDate)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -506,7 +506,7 @@ func (u *User) GetClimbRanking(t WorkoutType, startDate, endDate *time.Time, lim
 //nolint:gocyclo // queries gather several aggregates in one pass
 func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*WorkoutPersonalRecord, error) {
 	if t == "" {
-		t = u.Profile.TotalsShow
+		t = u.TotalsShow
 	}
 
 	r := &WorkoutPersonalRecord{WorkoutType: t}
@@ -524,7 +524,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 			Table("workouts").
 			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 			Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
-			Where("user_id = ?", u.ID).
+			Where("profile_id = ?", u.Profile.ID).
 			Where("workouts.type = ?", t).
 			Select("workouts.id as id", v+" as value", "workouts.date as date").
 			Order(v + " DESC").
@@ -548,7 +548,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 	query := u.db.
 		Table("workouts").
 		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
-		Where("user_id = ?", u.ID).
+		Where("profile_id = ?", u.Profile.ID).
 		Where("workouts.type = ?", t).
 		Select("workouts.id as id", "max(total_duration) as value", "workouts.date as date").
 		Order("max(total_duration) DESC").
@@ -579,7 +579,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 	}
 
 	if t.IsDistance() {
-		workouts, werr := loadWorkoutsForRecords(u.db, u.ID, t, startDate, endDate)
+		workouts, werr := loadWorkoutsForRecords(u.db, u.Profile.ID, t, startDate, endDate)
 		if werr != nil {
 			return nil, werr
 		}

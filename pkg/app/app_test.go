@@ -83,9 +83,9 @@ func TestApp_Configure_CreatesActivityPubEnabledAdminWhenEnabled(t *testing.T) {
 
 	assert.True(t, admin.Admin)
 	assert.True(t, admin.ActivityPub)
-	assert.NotEmpty(t, admin.PublicKey)
-	assert.NotEmpty(t, admin.PrivateKey)
-	assert.Equal(t, model.WorkoutVisibilityFollowers, admin.Profile.DefaultWorkoutVisibility)
+	assert.NotEmpty(t, admin.Profile.PublicKey)
+	assert.NotEmpty(t, admin.Profile.PrivateKey)
+	assert.Equal(t, model.WorkoutVisibilityFollowers, admin.DefaultWorkoutVisibility)
 }
 
 func TestApp_Configure_CreatesPrivateAdminDefaultsWhenActivityPubDisabled(t *testing.T) {
@@ -100,5 +100,5 @@ func TestApp_Configure_CreatesPrivateAdminDefaultsWhenActivityPubDisabled(t *tes
 
 	assert.True(t, admin.Admin)
 	assert.False(t, admin.ActivityPub)
-	assert.Equal(t, model.WorkoutVisibilityPrivate, admin.Profile.DefaultWorkoutVisibility)
+	assert.Equal(t, model.WorkoutVisibilityPrivate, admin.DefaultWorkoutVisibility)
 }

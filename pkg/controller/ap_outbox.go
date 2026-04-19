@@ -79,7 +79,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 		WebRoot:        ac.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: c.Scheme(),
-	}, targetUser.Username)
+	}, targetUser.Profile.Username)
 	outboxURL := actorURL + "/outbox"
 
 	total, err := ac.context.APOutboxRepo().CountEntriesByUser(targetUser.ID)

@@ -73,7 +73,7 @@ func (r *workoutLikeRepository) ListByWorkoutID(workoutID uint64) ([]model.APSta
 	}
 
 	likes := make([]model.APStatusLike, 0)
-	if err := r.db.Preload("User").
+	if err := r.db.Preload("User").Preload("User.Profile").
 		Joins("JOIN ap_statuses ON ap_statuses.id = ap_status_likes.status_id").
 		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
 		Where("ap_outbox_workout.workout_id = ?", workoutID).
@@ -157,8 +157,17 @@ func (r *workoutLikeRepository) workoutStatusID(workoutID uint64) (uint64, error
 		return found.StatusID, nil
 	}
 
-	var workout model.Workout
-	if err := r.db.Select("id,user_id").Where("id = ?", workoutID).Take(&workout).Error; err != nil {
+	type workoutOwnerRow struct {
+		WorkoutID uint64
+		UserID    uint64
+	}
+
+	workout := &workoutOwnerRow{}
+	if err := r.db.Table("workouts").
+		Select("workouts.id AS workout_id, profiles.user_id AS user_id").
+		Joins("JOIN profiles ON profiles.id = workouts.profile_id").
+		Where("workouts.id = ?", workoutID).
+		Take(workout).Error; err != nil {
 		return 0, err
 	}
 
