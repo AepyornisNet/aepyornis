@@ -97,8 +97,8 @@ export class UserEdit implements OnInit {
         this.user.set(response.results);
         // Clear password field after successful update
         this.userForm.patchValue({ password: '' });
-        // Navigate back to admin page
-        this.router.navigate(['/admin']);
+        // Navigate back to accounts settings
+        this.router.navigate(['/admin/accounts']);
       }
     } catch (err) {
       this.error.set('Failed to save user: ' + (err instanceof Error ? err.message : String(err)));

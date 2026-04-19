@@ -1,0 +1,95 @@
+@if (error()) {
+  <div class="alert alert-danger" role="alert">
+    {{ error() }}
+  </div>
+}
+
+@if (loading()) {
+  <div class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">{{ 'Loading' | translate }}</span>
+    </div>
+  </div>
+} @else {
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <h3 class="h5 mb-0">
+        {{ 'Manage users ({{count}})' | translate: { count: users().length } }}
+      </h3>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'Username' | translate }}</th>
+              <th scope="col">{{ 'Name' | translate }}</th>
+              <th scope="col">{{ 'Active' | translate }}</th>
+              <th scope="col">{{ 'Admin' | translate }}</th>
+              <th scope="col">{{ 'Actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.name }}</td>
+                <td>
+                  @if (user.active) {
+                    <span class="text-success">✓</span>
+                  } @else {
+                    <span class="text-danger">✗</span>
+                  }
+                </td>
+                <td>
+                  @if (user.admin) {
+                    <span class="text-success">✓</span>
+                  } @else {
+                    <span class="text-danger">✗</span>
+                  }
+                </td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <a
+                      class="link-primary"
+                      [routerLink]="['/admin/users', user.id, 'edit']"
+                      [title]="'Edit user' | translate"
+                    >
+                      <app-icon name="edit" size="20" />
+                    </a>
+                    @if (deleteConfirm() === user.id) {
+                      <span class="text-muted small me-2">{{ 'Delete?' | translate }}</span>
+                      <button
+                        class="btn btn-sm btn-link text-danger p-0"
+                        type="button"
+                        (click)="deleteUser(user.id)"
+                      >
+                        {{ 'Yes' | translate }}
+                      </button>
+                      <button
+                        class="btn btn-sm btn-link text-secondary p-0"
+                        type="button"
+                        (click)="cancelDelete()"
+                      >
+                        {{ 'No' | translate }}
+                      </button>
+                    } @else {
+                      <button
+                        class="btn btn-sm btn-link text-danger p-0"
+                        type="button"
+                        [title]="'Delete user' | translate"
+                        (click)="confirmDelete(user.id)"
+                      >
+                        <app-icon name="delete" size="20" />
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+}

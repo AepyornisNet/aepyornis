@@ -1,1 +1,6 @@
-// Admin page styles
+.admin-nav-card {
+  @media (min-width: 992px) {
+    position: sticky;
+    top: 1rem;
+  }
+}

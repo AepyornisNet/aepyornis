@@ -192,6 +192,25 @@ export const routes: Routes = [
         path: 'admin',
         loadComponent: () => import('./features/admin/pages/admin/admin').then((m) => m.Admin),
         canActivate: [adminGuard],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'accounts',
+          },
+          {
+            path: 'accounts',
+            loadComponent: () =>
+              import('./features/admin/pages/accounts/accounts').then((m) => m.AdminAccounts),
+          },
+          {
+            path: 'application-settings',
+            loadComponent: () =>
+              import('./features/admin/pages/application-settings/application-settings').then(
+                (m) => m.AdminApplicationSettings,
+              ),
+          },
+        ],
       },
       {
         path: 'admin/users/:id/edit',
