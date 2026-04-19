@@ -2,6 +2,7 @@ package activitypub
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
@@ -31,16 +32,6 @@ type InboxWorkoutReplyRepository interface {
 	ResolveWorkoutIDByObjectIRI(objectIRI string) (uint64, error)
 }
 
-type InboxHandlerContext struct {
-	TargetUserID     uint64
-	RequestingActor  *vocab.Actor
-	FollowerRepo     InboxFollowerRepository
-	OutboxRepo       InboxOutboxRepository
-	WorkoutLikeRepo  InboxWorkoutLikeRepository
-	WorkoutReplyRepo InboxWorkoutReplyRepository
-	Activity         *vocab.Activity
-}
-
 type InboxActivityHandler struct {
 	followerRepo     InboxFollowerRepository
 	outboxRepo       InboxOutboxRepository
@@ -63,108 +54,85 @@ func NewInboxActivityHandler(
 }
 
 func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) (bool, error) {
-	ctx := InboxHandlerContext{
-		TargetUserID:     targetUserID,
-		RequestingActor:  requestingActor,
-		FollowerRepo:     h.followerRepo,
-		OutboxRepo:       h.outboxRepo,
-		WorkoutLikeRepo:  h.workoutLikeRepo,
-		WorkoutReplyRepo: h.workoutReplyRepo,
-		Activity:         activity,
-	}
-
-	return HandleInboxActivity(ctx)
-}
-
-func HandleInboxActivity(ctx InboxHandlerContext) (bool, error) {
-	if ctx.Activity == nil {
+	if activity == nil {
 		return false, nil
 	}
 
-	switch ctx.Activity.GetType() {
+	switch activity.GetType() {
 	case vocab.FollowType:
-		return true, handleFollowActivity(ctx)
-	case vocab.AcceptType, vocab.RejectType:
-		return true, handleFollowLifecycleActivity(ctx)
+		return true, h.handleFollowActivity(requestingActor, targetUserID)
+	case vocab.AcceptType:
+		return true, h.handleFollowAcceptActivity(targetUserID, activity)
+	case vocab.RejectType:
+		return true, h.handleFollowRejectActivity(targetUserID, activity)
 	case vocab.CreateType:
-		return routeCreateActivity(ctx)
+		return h.createActivity(requestingActor, targetUserID, activity)
 	case vocab.UpdateType:
-		return routeUpdateActivity(ctx)
+		return h.updateActivity(requestingActor, targetUserID, activity)
 	case vocab.DeleteType, vocab.RemoveType:
-		return routeDeleteActivity(ctx)
+		return h.deleteActivity(activity)
 	case vocab.UndoType:
-		return routeUndoActivity(ctx)
-	default:
-		return false, nil
-	}
-}
-
-func routeReactionActivity(ctx InboxHandlerContext) (bool, error) {
-	switch ctx.Activity.GetType() {
+		return h.undoActivity(requestingActor, targetUserID, activity)
 	case vocab.LikeType:
-		return true, handleLikeActivity(ctx)
+		return true, h.handleLikeActivity(requestingActor, targetUserID, activity)
 	default:
 		return false, nil
 	}
 }
 
-func routeUndoActivity(ctx InboxHandlerContext) (bool, error) {
-	if isUndoFollowActivity(ctx.Activity) {
-		return true, handleUndoFollowActivity(ctx)
-	}
-
-	if isUndoLikeActivity(ctx.Activity) {
-		return true, handleUndoLikeActivity(ctx)
-	}
-
-	return false, nil
-}
-
-func handleFollowActivity(ctx InboxHandlerContext) error {
-	if ctx.RequestingActor == nil {
+func (h *InboxActivityHandler) handleFollowActivity(requestingActor *vocab.Actor, targetUserID uint64) error {
+	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	_, err := ctx.FollowerRepo.UpsertFollowerRequest(
-		ctx.TargetUserID,
-		ctx.RequestingActor.ID.String(),
-		actorInboxIRI(ctx.RequestingActor),
+	_, err := h.followerRepo.UpsertFollowerRequest(
+		targetUserID,
+		requestingActor.ID.String(),
+		actorInboxIRI(requestingActor),
 	)
 
 	return err
 }
 
-func handleFollowLifecycleActivity(ctx InboxHandlerContext) error {
-	followTargetIRI := extractFollowLifecycleTarget(ctx.Activity)
+func (h *InboxActivityHandler) handleFollowAcceptActivity(targetUserID uint64, activity *vocab.Activity) error {
+	followTargetIRI := extractFollowLifecycleTarget(activity)
 	if followTargetIRI == "" {
-		return nil
+		return errors.New("invalid target follower given")
 	}
 
-	var lifecycleErr error
-	if vocab.AcceptType.Match(ctx.Activity.GetType()) {
-		_, lifecycleErr = ctx.FollowerRepo.MarkFollowingApprovedByActorIRI(ctx.TargetUserID, followTargetIRI)
-	} else {
-		_, lifecycleErr = ctx.FollowerRepo.MarkFollowingRejectedByActorIRI(ctx.TargetUserID, followTargetIRI)
-	}
-
-	if lifecycleErr != nil && !errors.Is(lifecycleErr, gorm.ErrRecordNotFound) {
-		return lifecycleErr
+	_, err := h.followerRepo.MarkFollowingApprovedByActorIRI(targetUserID, followTargetIRI)
+	if err != nil {
+		return fmt.Errorf("failed writing follower approve: %w", err)
 	}
 
 	return nil
 }
 
-func handleLikeActivity(ctx InboxHandlerContext) error {
-	if ctx.RequestingActor == nil {
+func (h *InboxActivityHandler) handleFollowRejectActivity(targetUserID uint64, activity *vocab.Activity) error {
+	followTargetIRI := extractFollowLifecycleTarget(activity)
+	if followTargetIRI == "" {
+		return errors.New("invalid target follower given")
+	}
+
+	_, err := h.followerRepo.MarkFollowingRejectedByActorIRI(targetUserID, followTargetIRI)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return fmt.Errorf("failed writing follower reject: %w", err)
+	}
+
+	return nil
+}
+
+func (h *InboxActivityHandler) handleLikeActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) error {
+	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	targetObjectIRI := activityObjectIRI(ctx.Activity)
+	targetObjectIRI := activityObjectIRI(activity)
 	if targetObjectIRI == "" {
 		return nil
 	}
 
-	workoutID, resolveErr := ctx.OutboxRepo.ResolveWorkoutIDByObjectOrActivityID(ctx.TargetUserID, targetObjectIRI)
+	workoutID, resolveErr := h.outboxRepo.ResolveWorkoutIDByObjectOrActivityID(targetUserID, targetObjectIRI)
 	if resolveErr != nil {
 		if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 			return nil
@@ -173,28 +141,28 @@ func handleLikeActivity(ctx InboxHandlerContext) error {
 		return resolveErr
 	}
 
-	return ctx.WorkoutLikeRepo.LikeByActorIRI(workoutID, ctx.RequestingActor.ID.String())
+	return h.workoutLikeRepo.LikeByActorIRI(workoutID, requestingActor.ID.String())
 }
 
-func handleUndoFollowActivity(ctx InboxHandlerContext) error {
-	if ctx.RequestingActor == nil {
+func (h *InboxActivityHandler) handleUndoFollowActivity(requestingActor *vocab.Actor, targetUserID uint64) error {
+	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	return ctx.FollowerRepo.DeleteFollowerByActorIRI(ctx.TargetUserID, ctx.RequestingActor.ID.String())
+	return h.followerRepo.DeleteFollowerByActorIRI(targetUserID, requestingActor.ID.String())
 }
 
-func handleUndoLikeActivity(ctx InboxHandlerContext) error {
-	if ctx.RequestingActor == nil {
+func (h *InboxActivityHandler) handleUndoLikeActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) error {
+	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	targetObjectIRI := extractUndoLikeTarget(ctx.Activity)
+	targetObjectIRI := activityObjectIRI(activity)
 	if targetObjectIRI == "" {
 		return nil
 	}
 
-	workoutID, resolveErr := ctx.OutboxRepo.ResolveWorkoutIDByObjectOrActivityID(ctx.TargetUserID, targetObjectIRI)
+	workoutID, resolveErr := h.outboxRepo.ResolveWorkoutIDByObjectOrActivityID(targetUserID, targetObjectIRI)
 	if resolveErr != nil {
 		if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 			return nil
@@ -203,7 +171,7 @@ func handleUndoLikeActivity(ctx InboxHandlerContext) error {
 		return resolveErr
 	}
 
-	return ctx.WorkoutLikeRepo.UnlikeByActorIRI(workoutID, ctx.RequestingActor.ID.String())
+	return h.workoutLikeRepo.UnlikeByActorIRI(workoutID, requestingActor.ID.String())
 }
 
 func actorInboxIRI(actor *vocab.Actor) string {
@@ -315,43 +283,41 @@ func activityObjectIRI(it *vocab.Activity) string {
 	return actorIRIFromItem(it.Object)
 }
 
-func extractUndoLikeTarget(it *vocab.Activity) string {
-	if !isUndoLikeActivity(it) || vocab.IsNil(it.Object) {
-		return ""
-	}
-
-	targetIRI := ""
-	_ = vocab.OnActivity(it.Object, func(obj *vocab.Activity) error {
-		if !vocab.LikeType.Match(obj.GetType()) {
-			return nil
-		}
-
-		targetIRI = activityObjectIRI(obj)
-		return nil
-	})
-
-	return targetIRI
-}
-
-func routeCreateActivity(ctx InboxHandlerContext) (bool, error) {
-	if isCreateReplyActivity(ctx.Activity) {
-		return true, handleCreateReplyActivity(ctx)
+func (h *InboxActivityHandler) createActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) (bool, error) {
+	if isCreateReplyActivity(activity) {
+		return true, h.handleCreateReplyActivity(requestingActor, targetUserID, activity)
 	}
 
 	return false, nil
 }
 
-func routeUpdateActivity(ctx InboxHandlerContext) (bool, error) {
-	if isUpdateReplyActivity(ctx.Activity) {
-		return true, handleUpdateReplyActivity(ctx)
+func (h *InboxActivityHandler) updateActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) (bool, error) {
+	if isUpdateReplyActivity(activity) {
+		return true, h.handleUpdateReplyActivity(requestingActor, targetUserID, activity)
 	}
 
 	return false, nil
 }
 
-func routeDeleteActivity(ctx InboxHandlerContext) (bool, error) {
-	if isDeleteReplyActivity(ctx.Activity) {
-		return true, handleDeleteReplyActivity(ctx)
+func (h *InboxActivityHandler) deleteActivity(activity *vocab.Activity) (bool, error) {
+	if isDeleteReplyActivity(activity) {
+		return true, h.handleDeleteReplyActivity(activity)
+	}
+
+	return false, nil
+}
+
+func (h *InboxActivityHandler) undoActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) (bool, error) {
+	obj, err := vocab.ToActivity(activity.Object)
+	if err != nil {
+		return false, err
+	}
+
+	switch obj.GetType() {
+	case vocab.FollowType:
+		return true, h.handleUndoFollowActivity(requestingActor, targetUserID)
+	case vocab.LikeType:
+		return true, h.handleUndoLikeActivity(requestingActor, targetUserID, obj)
 	}
 
 	return false, nil
@@ -399,17 +365,17 @@ func isDeleteReplyActivity(it *vocab.Activity) bool {
 	return extractDeleteTargetObjectIRI(it) != ""
 }
 
-func handleCreateReplyActivity(ctx InboxHandlerContext) error {
-	if ctx.RequestingActor == nil {
+func (h *InboxActivityHandler) handleCreateReplyActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) error {
+	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	replyObjectIRI, content, inReplyToIRI := extractReplyInfo(ctx.Activity)
+	replyObjectIRI, content, inReplyToIRI := extractReplyInfo(activity)
 	if replyObjectIRI == "" || inReplyToIRI == "" {
 		return nil
 	}
 
-	workoutID, resolveErr := ctx.OutboxRepo.ResolveWorkoutIDByObjectOrActivityID(ctx.TargetUserID, inReplyToIRI)
+	workoutID, resolveErr := h.outboxRepo.ResolveWorkoutIDByObjectOrActivityID(targetUserID, inReplyToIRI)
 	if resolveErr != nil {
 		if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 			return nil
@@ -420,29 +386,29 @@ func handleCreateReplyActivity(ctx InboxHandlerContext) error {
 
 	// Get actor name from the requesting actor
 	actorName := ""
-	if ctx.RequestingActor.Name != nil {
-		actorName = ctx.RequestingActor.Name.String()
+	if requestingActor.Name != nil {
+		actorName = requestingActor.Name.String()
 	}
 
-	avatarURL := ActorIconIRI(ctx.RequestingActor)
-	CacheActorProfile(ctx.RequestingActor.ID.String(), actorName, avatarURL)
+	avatarURL := ActorIconIRI(requestingActor)
+	CacheActorProfile(requestingActor.ID.String(), actorName, avatarURL)
 
-	return ctx.WorkoutReplyRepo.ReplyByActorIRI(workoutID, replyObjectIRI, ctx.RequestingActor.ID.String(), actorName, content)
+	return h.workoutReplyRepo.ReplyByActorIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content)
 }
 
-func handleUpdateReplyActivity(ctx InboxHandlerContext) error {
-	if ctx.RequestingActor == nil {
+func (h *InboxActivityHandler) handleUpdateReplyActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) error {
+	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	replyObjectIRI, content, inReplyToIRI := extractReplyInfo(ctx.Activity)
+	replyObjectIRI, content, inReplyToIRI := extractReplyInfo(activity)
 	if replyObjectIRI == "" || content == "" {
 		return nil
 	}
 
 	var workoutID uint64
 	if inReplyToIRI != "" {
-		resolvedWorkoutID, resolveErr := ctx.OutboxRepo.ResolveWorkoutIDByObjectOrActivityID(ctx.TargetUserID, inReplyToIRI)
+		resolvedWorkoutID, resolveErr := h.outboxRepo.ResolveWorkoutIDByObjectOrActivityID(targetUserID, inReplyToIRI)
 		if resolveErr != nil {
 			if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 				return nil
@@ -453,7 +419,7 @@ func handleUpdateReplyActivity(ctx InboxHandlerContext) error {
 
 		workoutID = resolvedWorkoutID
 	} else {
-		resolvedWorkoutID, resolveErr := ctx.WorkoutReplyRepo.ResolveWorkoutIDByObjectIRI(replyObjectIRI)
+		resolvedWorkoutID, resolveErr := h.workoutReplyRepo.ResolveWorkoutIDByObjectIRI(replyObjectIRI)
 		if resolveErr != nil {
 			if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 				return nil
@@ -466,14 +432,14 @@ func handleUpdateReplyActivity(ctx InboxHandlerContext) error {
 	}
 
 	actorName := ""
-	if ctx.RequestingActor.Name != nil {
-		actorName = ctx.RequestingActor.Name.String()
+	if requestingActor.Name != nil {
+		actorName = requestingActor.Name.String()
 	}
 
-	avatarURL := ActorIconIRI(ctx.RequestingActor)
-	CacheActorProfile(ctx.RequestingActor.ID.String(), actorName, avatarURL)
+	avatarURL := ActorIconIRI(requestingActor)
+	CacheActorProfile(requestingActor.ID.String(), actorName, avatarURL)
 
-	err := ctx.WorkoutReplyRepo.UpdateReplyByObjectIRI(workoutID, replyObjectIRI, ctx.RequestingActor.ID.String(), actorName, content)
+	err := h.workoutReplyRepo.UpdateReplyByObjectIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil
 	}
@@ -481,13 +447,13 @@ func handleUpdateReplyActivity(ctx InboxHandlerContext) error {
 	return err
 }
 
-func handleDeleteReplyActivity(ctx InboxHandlerContext) error {
-	targetObjectIRI := extractDeleteTargetObjectIRI(ctx.Activity)
+func (h *InboxActivityHandler) handleDeleteReplyActivity(activity *vocab.Activity) error {
+	targetObjectIRI := extractDeleteTargetObjectIRI(activity)
 	if targetObjectIRI == "" {
 		return nil
 	}
 
-	workoutID, resolveErr := ctx.WorkoutReplyRepo.ResolveWorkoutIDByObjectIRI(targetObjectIRI)
+	workoutID, resolveErr := h.workoutReplyRepo.ResolveWorkoutIDByObjectIRI(targetObjectIRI)
 	if resolveErr != nil {
 		if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 			return nil
@@ -496,7 +462,7 @@ func handleDeleteReplyActivity(ctx InboxHandlerContext) error {
 		return resolveErr
 	}
 
-	err := ctx.WorkoutReplyRepo.DeleteReplyByObjectIRI(workoutID, targetObjectIRI)
+	err := h.workoutReplyRepo.DeleteReplyByObjectIRI(workoutID, targetObjectIRI)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil
 	}
