@@ -32,16 +32,15 @@ func NewContainer(
 	sessionManager *scs.SessionManager,
 	logger *slog.Logger,
 	gueClient *gue.Client,
-	repositories *repository.Repositories,
 ) *Container {
 	injector := do.New()
+	repository.Package(injector)
 	do.ProvideValue(injector, db)
 	do.ProvideValue(injector, config)
 	do.ProvideValue(injector, v)
 	do.ProvideValue(injector, sessionManager)
 	do.ProvideValue(injector, logger)
 	do.ProvideValue(injector, gueClient)
-	do.ProvideValue(injector, repositories)
 
 	return &Container{
 		injector: injector,
@@ -76,107 +75,48 @@ func (c *Container) GetGueClient() *gue.Client {
 	return do.MustInvoke[*gue.Client](c.injector)
 }
 
-func (c *Container) GetRepositories() *repository.Repositories {
-	return do.MustInvoke[*repository.Repositories](c.injector)
-}
-
 func (c *Container) APOutboxRepo() repository.APOutbox {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.APOutbox
+	return do.MustInvoke[repository.APOutbox](c.injector)
 }
 
 func (c *Container) APStatusRepo() repository.APStatus {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.APStatus
+	return do.MustInvoke[repository.APStatus](c.injector)
 }
 
 func (c *Container) APStatusDeliveryRepo() repository.APStatusDelivery {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.APStatusDelivery
+	return do.MustInvoke[repository.APStatusDelivery](c.injector)
 }
 
 func (c *Container) FollowerRepo() repository.Follower {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.Follower
+	return do.MustInvoke[repository.Follower](c.injector)
 }
 
 func (c *Container) EquipmentRepo() repository.Equipment {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.Equipment
+	return do.MustInvoke[repository.Equipment](c.injector)
 }
 
 func (c *Container) RouteSegmentRepo() repository.RouteSegment {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.RouteSegment
+	return do.MustInvoke[repository.RouteSegment](c.injector)
 }
 
 func (c *Container) MeasurementRepo() repository.Measurement {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.Measurement
+	return do.MustInvoke[repository.Measurement](c.injector)
 }
 
 func (c *Container) WorkoutRepo() repository.Workout {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.Workout
+	return do.MustInvoke[repository.Workout](c.injector)
 }
 
 func (c *Container) WorkoutLikeRepo() repository.WorkoutLike {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.WorkoutLike
+	return do.MustInvoke[repository.WorkoutLike](c.injector)
 }
 
 func (c *Container) WorkoutReplyRepo() repository.WorkoutReply {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.WorkoutReply
+	return do.MustInvoke[repository.WorkoutReply](c.injector)
 }
 
 func (c *Container) UserRepo() repository.User {
-	repositories := c.GetRepositories()
-	if repositories == nil {
-		return nil
-	}
-
-	return repositories.User
+	return do.MustInvoke[repository.User](c.injector)
 }
 
 func (c *Container) Enqueue(ctx context.Context, j *gue.Job) error {

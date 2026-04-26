@@ -40,14 +40,12 @@ type routeSegmentController struct {
 }
 
 func NewRouteSegmentController(injector do.Injector) RouteSegmentController {
-	repositories := do.MustInvoke[*repository.Repositories](injector)
-
 	return &routeSegmentController{
 		client:           do.MustInvoke[*gue.Client](injector),
 		db:               do.MustInvoke[*gorm.DB](injector),
 		logger:           do.MustInvoke[*slog.Logger](injector),
-		routeSegmentRepo: repositories.RouteSegment,
-		workoutRepo:      repositories.Workout,
+		routeSegmentRepo: do.MustInvoke[repository.RouteSegment](injector),
+		workoutRepo:      do.MustInvoke[repository.Workout](injector),
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -21,8 +22,8 @@ type routeSegmentRepository struct {
 	db *gorm.DB
 }
 
-func NewRouteSegment(db *gorm.DB) RouteSegment {
-	return &routeSegmentRepository{db: db}
+func NewRouteSegment(injector do.Injector) (RouteSegment, error) {
+	return &routeSegmentRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *routeSegmentRepository) GetByID(id uint64) (*model.RouteSegment, error) {

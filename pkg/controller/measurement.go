@@ -22,7 +22,7 @@ type measurementController struct {
 
 func NewMeasurementController(injector do.Injector) MeasurementController {
 	return &measurementController{
-		measurementRepo: do.MustInvoke[*repository.Repositories](injector).Measurement,
+		measurementRepo: do.MustInvoke[repository.Measurement](injector),
 	}
 }
 

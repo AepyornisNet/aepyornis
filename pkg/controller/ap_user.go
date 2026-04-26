@@ -32,12 +32,10 @@ type apUserController struct {
 const followersPageSize = 20
 
 func NewApUserController(injector do.Injector) ApUserController {
-	repositories := do.MustInvoke[*repository.Repositories](injector)
-
 	return &apUserController{
 		cfg:          do.MustInvoke[*container.Config](injector),
-		followerRepo: repositories.Follower,
-		userRepo:     repositories.User,
+		followerRepo: do.MustInvoke[repository.Follower](injector),
+		userRepo:     do.MustInvoke[repository.User](injector),
 	}
 }
 

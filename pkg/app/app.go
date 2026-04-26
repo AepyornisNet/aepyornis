@@ -12,7 +12,6 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	_ "github.com/AepyornisNet/aepyornis/pkg/model/migrations"
-	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/alexedwards/scs/v2"
@@ -39,7 +38,6 @@ type App struct {
 	Version        version.Version
 	Config         *container.Config
 	injector       do.Injector
-	repositories   *repository.Repositories
 }
 
 func (a *App) Serve() error {
@@ -72,8 +70,6 @@ func (a *App) Configure() error {
 	if err := a.ConfigureDatabase(); err != nil {
 		return err
 	}
-
-	a.repositories = repository.New(a.db)
 
 	a.ConfigureGeocoder()
 

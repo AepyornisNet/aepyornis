@@ -5,6 +5,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/fsouza/slognil"
+	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -19,12 +20,19 @@ func createRepositoryMemoryDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+func createRepositoryInjector(db *gorm.DB) do.Injector {
+	injector := do.New()
+	do.ProvideValue(injector, db)
+
+	return injector
+}
+
 func createRepositoryUser(t *testing.T, db *gorm.DB, username, name, apiKey string) *model.User {
 	t.Helper()
 
 	u := &model.User{
 		UserData: model.UserData{
-			Active:   true,
+			Active: true,
 		},
 		UserSecrets: model.UserSecrets{
 			Email:    username + "@example.com",
@@ -43,7 +51,8 @@ func TestUserRepository_GetByUsername(t *testing.T) {
 	db := createRepositoryMemoryDB(t)
 	created := createRepositoryUser(t, db, "repo-user", "Repo User", "repo-api-key")
 
-	repo := NewUser(db)
+	repo, err := NewUser(createRepositoryInjector(db))
+	require.NoError(t, err)
 	loaded, err := repo.GetByUsername(created.Profile.Username)
 
 	require.NoError(t, err)
@@ -56,7 +65,8 @@ func TestUserRepository_GetByID(t *testing.T) {
 	db := createRepositoryMemoryDB(t)
 	created := createRepositoryUser(t, db, "repo-id-user", "Repo ID User", "repo-id-key")
 
-	repo := NewUser(db)
+	repo, err := NewUser(createRepositoryInjector(db))
+	require.NoError(t, err)
 	loaded, err := repo.GetByID(created.ID)
 
 	require.NoError(t, err)
@@ -70,7 +80,8 @@ func TestUserRepository_GetByAPIKey(t *testing.T) {
 	db := createRepositoryMemoryDB(t)
 	created := createRepositoryUser(t, db, "repo-key-user", "Repo Key User", "repo-key")
 
-	repo := NewUser(db)
+	repo, err := NewUser(createRepositoryInjector(db))
+	require.NoError(t, err)
 	loaded, err := repo.GetByAPIKey(created.APIKey)
 
 	require.NoError(t, err)
@@ -84,7 +95,8 @@ func TestUserRepository_GetAll(t *testing.T) {
 	createRepositoryUser(t, db, "repo-list-1", "Repo List 1", "repo-list-key-1")
 	createRepositoryUser(t, db, "repo-list-2", "Repo List 2", "repo-list-key-2")
 
-	repo := NewUser(db)
+	repo, err := NewUser(createRepositoryInjector(db))
+	require.NoError(t, err)
 	users, err := repo.GetAll()
 
 	require.NoError(t, err)

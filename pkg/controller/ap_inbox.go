@@ -27,17 +27,15 @@ type apInboxController struct {
 }
 
 func NewApInboxController(injector do.Injector) ApInboxController {
-	repositories := do.MustInvoke[*repository.Repositories](injector)
-
 	return &apInboxController{
 		logger:   do.MustInvoke[*slog.Logger](injector),
-		userRepo: repositories.User,
+		userRepo: do.MustInvoke[repository.User](injector),
 		inboxActivityHandler: aputil.NewInboxActivityHandler(
-			repositories.Follower,
-			repositories.APOutbox,
-			repositories.WorkoutLike,
-			repositories.WorkoutReply,
-			repositories.APStatus,
+			do.MustInvoke[repository.Follower](injector),
+			do.MustInvoke[repository.APOutbox](injector),
+			do.MustInvoke[repository.WorkoutLike](injector),
+			do.MustInvoke[repository.WorkoutReply](injector),
+			do.MustInvoke[repository.APStatus](injector),
 		),
 	}
 }

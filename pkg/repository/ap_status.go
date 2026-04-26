@@ -7,6 +7,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
+	"github.com/samber/do/v2"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -25,8 +26,8 @@ type apStatusRepository struct {
 	db *gorm.DB
 }
 
-func NewAPStatus(db *gorm.DB) APStatus {
-	return &apStatusRepository{db: db}
+func NewAPStatus(injector do.Injector) (APStatus, error) {
+	return &apStatusRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *apStatusRepository) ResolveWorkoutIDByObjectOrActivityID(userID uint64, objectOrActivityID string) (uint64, error) {

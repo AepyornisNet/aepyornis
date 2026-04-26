@@ -39,14 +39,12 @@ type apOutboxController struct {
 const outboxPageSize = 20
 
 func NewApOutboxController(injector do.Injector) ApOutboxController {
-	repositories := do.MustInvoke[*repository.Repositories](injector)
-
 	return &apOutboxController{
-		apOutboxRepo:     repositories.APOutbox,
+		apOutboxRepo:     do.MustInvoke[repository.APOutbox](injector),
 		cfg:              do.MustInvoke[*container.Config](injector),
 		db:               do.MustInvoke[*gorm.DB](injector),
-		userRepo:         repositories.User,
-		workoutReplyRepo: repositories.WorkoutReply,
+		userRepo:         do.MustInvoke[repository.User](injector),
+		workoutReplyRepo: do.MustInvoke[repository.WorkoutReply](injector),
 	}
 }
 

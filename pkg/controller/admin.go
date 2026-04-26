@@ -34,7 +34,7 @@ func NewAdminController(injector do.Injector, resetConfiguration func() error) A
 		cfg:                do.MustInvoke[*container.Config](injector),
 		db:                 do.MustInvoke[*gorm.DB](injector),
 		resetConfiguration: resetConfiguration,
-		userRepo:           do.MustInvoke[*repository.Repositories](injector).User,
+		userRepo:           do.MustInvoke[repository.User](injector),
 		version:            do.MustInvoke[*version.Version](injector),
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -17,8 +18,8 @@ type apOutboxDeliveryRepository struct {
 	db *gorm.DB
 }
 
-func NewAPStatusDelivery(db *gorm.DB) APStatusDelivery {
-	return &apOutboxDeliveryRepository{db: db}
+func NewAPStatusDelivery(injector do.Injector) (APStatusDelivery, error) {
+	return &apOutboxDeliveryRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *apOutboxDeliveryRepository) RecordDelivery(outboxEntryID uint64, actorIRI string) error {

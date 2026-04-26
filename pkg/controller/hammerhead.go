@@ -81,7 +81,7 @@ func NewHammerheadController(injector do.Injector) HammerheadController {
 		db:             do.MustInvoke[*gorm.DB](injector),
 		logger:         do.MustInvoke[*slog.Logger](injector),
 		sessionManager: do.MustInvoke[*scs.SessionManager](injector),
-		userRepo:       do.MustInvoke[*repository.Repositories](injector).User,
+		userRepo:       do.MustInvoke[repository.User](injector),
 		workerClient:   do.MustInvoke[*gue.Client](injector),
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,

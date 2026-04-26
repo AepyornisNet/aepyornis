@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -19,8 +20,8 @@ type workoutRepository struct {
 	db *gorm.DB
 }
 
-func NewWorkout(db *gorm.DB) Workout {
-	return &workoutRepository{db: db}
+func NewWorkout(injector do.Injector) (Workout, error) {
+	return &workoutRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *workoutRepository) GetByUserID(userID uint64, id uint64) (*model.Workout, error) {

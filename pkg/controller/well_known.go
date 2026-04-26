@@ -27,7 +27,7 @@ type wellKnownController struct {
 func NewWellKnownController(injector do.Injector) WellKnownController {
 	return &wellKnownController{
 		cfg:      do.MustInvoke[*container.Config](injector),
-		userRepo: do.MustInvoke[*repository.Repositories](injector).User,
+		userRepo: do.MustInvoke[repository.User](injector),
 	}
 }
 

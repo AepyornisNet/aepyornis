@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -29,8 +30,8 @@ type followerRepository struct {
 	db *gorm.DB
 }
 
-func NewFollower(db *gorm.DB) Follower {
-	return &followerRepository{db: db}
+func NewFollower(injector do.Injector) (Follower, error) {
+	return &followerRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *followerRepository) UpsertFollowerRequest(userID uint64, actorIRI, actorInbox string) (*model.Follower, error) {

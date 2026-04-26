@@ -47,7 +47,7 @@ func NewProfileController(injector do.Injector) ProfileController {
 	return &profileController{
 		cfg:          do.MustInvoke[*container.Config](injector),
 		db:           do.MustInvoke[*gorm.DB](injector),
-		followerRepo: do.MustInvoke[*repository.Repositories](injector).Follower,
+		followerRepo: do.MustInvoke[repository.Follower](injector),
 		logger:       do.MustInvoke[*slog.Logger](injector),
 		client:       do.MustInvoke[*gue.Client](injector),
 		version:      do.MustInvoke[*version.Version](injector),

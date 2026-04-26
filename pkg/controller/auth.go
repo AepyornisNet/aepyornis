@@ -40,7 +40,7 @@ func NewAuthController(injector do.Injector) AuthController {
 		cfg:            do.MustInvoke[*container.Config](injector),
 		db:             do.MustInvoke[*gorm.DB](injector),
 		sessionManager: do.MustInvoke[*scs.SessionManager](injector),
-		userRepo:       do.MustInvoke[*repository.Repositories](injector).User,
+		userRepo:       do.MustInvoke[repository.User](injector),
 	}
 }
 

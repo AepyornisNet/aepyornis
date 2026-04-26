@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -21,8 +22,8 @@ type measurementRepository struct {
 	db *gorm.DB
 }
 
-func NewMeasurement(db *gorm.DB) Measurement {
-	return &measurementRepository{db: db}
+func NewMeasurement(injector do.Injector) (Measurement, error) {
+	return &measurementRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *measurementRepository) CountByUserID(userID uint64) (int64, error) {

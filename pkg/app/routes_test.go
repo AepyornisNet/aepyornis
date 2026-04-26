@@ -24,7 +24,7 @@ func configuredApp(t *testing.T) *App {
 func defaultUser(db *gorm.DB) *model.User {
 	u := &model.User{
 		UserData: model.UserData{
-			Active:   true,
+			Active: true,
 		},
 		UserSecrets: model.UserSecrets{
 			Email:    "my-username@example.com",

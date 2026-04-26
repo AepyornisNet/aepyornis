@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -34,7 +35,10 @@ func TestWorkoutLikeRepository_LikeByUserAndMaps(t *testing.T) {
 	liker := createRepositoryUser(t, db, "likes-liker", "Likes Liker", "likes-liker-key")
 	workout := createRepositoryWorkout(t, db, owner)
 
-	repo := NewWorkoutLike(db)
+	injector := do.New()
+	do.ProvideValue(injector, db)
+	repo, err := NewWorkoutLike(injector)
+	require.NoError(t, err)
 
 	require.NoError(t, repo.LikeByUser(workout.ID, liker.ID))
 	require.NoError(t, repo.LikeByUser(workout.ID, liker.ID))
@@ -57,7 +61,10 @@ func TestWorkoutLikeRepository_LikeByActorAndUndo(t *testing.T) {
 	owner := createRepositoryUser(t, db, "likes-owner-actor", "Likes Owner Actor", "likes-owner-actor-key")
 	workout := createRepositoryWorkout(t, db, owner)
 
-	repo := NewWorkoutLike(db)
+	injector := do.New()
+	do.ProvideValue(injector, db)
+	repo, err := NewWorkoutLike(injector)
+	require.NoError(t, err)
 	actorIRI := "https://remote.example/users/runner"
 
 	require.NoError(t, repo.LikeByActorIRI(workout.ID, actorIRI))

@@ -6,6 +6,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/google/uuid"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -25,8 +26,8 @@ type apOutboxRepository struct {
 	db *gorm.DB
 }
 
-func NewAPOutbox(db *gorm.DB) APOutbox {
-	return &apOutboxRepository{db: db}
+func NewAPOutbox(injector do.Injector) (APOutbox, error) {
+	return &apOutboxRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *apOutboxRepository) CreateWorkout(outboxWorkout *model.APStatusWorkout) error {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -22,8 +23,8 @@ type workoutLikeRepository struct {
 	db *gorm.DB
 }
 
-func NewWorkoutLike(db *gorm.DB) WorkoutLike {
-	return &workoutLikeRepository{db: db}
+func NewWorkoutLike(injector do.Injector) (WorkoutLike, error) {
+	return &workoutLikeRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *workoutLikeRepository) LikeByUser(workoutID uint64, userID uint64) error {

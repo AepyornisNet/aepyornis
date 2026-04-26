@@ -7,6 +7,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -26,8 +27,8 @@ type workoutReplyRepository struct {
 	db *gorm.DB
 }
 
-func NewWorkoutReply(db *gorm.DB) WorkoutReply {
-	return &workoutReplyRepository{db: db}
+func NewWorkoutReply(injector do.Injector) (WorkoutReply, error) {
+	return &workoutReplyRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *workoutReplyRepository) ReplyByActorIRI(workoutID uint64, objectIRI, actorIRI, actorName, content string) error {

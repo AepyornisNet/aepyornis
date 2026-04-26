@@ -41,13 +41,11 @@ type userController struct {
 }
 
 func NewUserController(injector do.Injector) UserController {
-	repositories := do.MustInvoke[*repository.Repositories](injector)
-
 	return &userController{
 		cfg:          do.MustInvoke[*container.Config](injector),
 		db:           do.MustInvoke[*gorm.DB](injector),
-		followerRepo: repositories.Follower,
-		userRepo:     repositories.User,
+		followerRepo: do.MustInvoke[repository.Follower](injector),
+		userRepo:     do.MustInvoke[repository.User](injector),
 	}
 }
 

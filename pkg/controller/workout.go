@@ -62,20 +62,18 @@ type workoutController struct {
 var _ WorkoutController = (*workoutController)(nil)
 
 func NewWorkoutController(injector do.Injector) WorkoutController {
-	repositories := do.MustInvoke[*repository.Repositories](injector)
-
 	return &workoutController{
-		apOutboxRepo:         repositories.APOutbox,
-		apStatusDeliveryRepo: repositories.APStatusDelivery,
+		apOutboxRepo:         do.MustInvoke[repository.APOutbox](injector),
+		apStatusDeliveryRepo: do.MustInvoke[repository.APStatusDelivery](injector),
 		cfg:                  do.MustInvoke[*container.Config](injector),
 		client:               do.MustInvoke[*gue.Client](injector),
 		db:                   do.MustInvoke[*gorm.DB](injector),
-		equipmentRepo:        repositories.Equipment,
+		equipmentRepo:        do.MustInvoke[repository.Equipment](injector),
 		logger:               do.MustInvoke[*slog.Logger](injector),
-		userRepo:             repositories.User,
-		workoutLikeRepo:      repositories.WorkoutLike,
-		workoutReplyRepo:     repositories.WorkoutReply,
-		workoutRepo:          repositories.Workout,
+		userRepo:             do.MustInvoke[repository.User](injector),
+		workoutLikeRepo:      do.MustInvoke[repository.WorkoutLike](injector),
+		workoutReplyRepo:     do.MustInvoke[repository.WorkoutReply](injector),
+		workoutRepo:          do.MustInvoke[repository.Workout](injector),
 	}
 }
 

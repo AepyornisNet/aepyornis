@@ -25,7 +25,7 @@ type equipmentController struct {
 
 func NewEquipmentController(injector do.Injector) EquipmentController {
 	return &equipmentController{
-		equipmentRepo: do.MustInvoke[*repository.Repositories](injector).Equipment,
+		equipmentRepo: do.MustInvoke[repository.Equipment](injector),
 	}
 }
 

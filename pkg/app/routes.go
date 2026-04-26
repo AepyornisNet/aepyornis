@@ -74,7 +74,7 @@ func (a *App) ConfigureWebserver() error {
 		return fmt.Errorf("configure webserver: creating gue client: %w", err)
 	}
 
-	a.injector = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc, a.repositories).Injector()
+	a.injector = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc).Injector()
 
 	e.Use(session.LoadAndSave(a.sessionManager))
 	e.Use(a.ContextValueMiddleware)

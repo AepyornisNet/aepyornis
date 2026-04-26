@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -17,8 +18,8 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUser(db *gorm.DB) User {
-	return &userRepository{db: db}
+func NewUser(injector do.Injector) (User, error) {
+	return &userRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
 func (r *userRepository) GetAll() ([]*model.User, error) {

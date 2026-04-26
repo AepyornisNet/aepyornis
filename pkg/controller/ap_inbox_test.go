@@ -9,7 +9,6 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
-	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/fsouza/slognil"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/labstack/echo/v4"
@@ -21,8 +20,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	repos := repository.New(db)
-	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil, repos)
+	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil)
 	ctrl := NewApInboxController(ctr.Injector())
 
 	localUser := &model.User{
@@ -40,7 +38,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, localUser.Create(db))
 
 	remoteActorIRI := "https://wt-ap2.test/ap/users/admin"
-	_, err = repos.Follower.UpsertFollowingRequest(localUser.ID, remoteActorIRI, remoteActorIRI+"/inbox")
+	_, err = ctr.FollowerRepo().UpsertFollowingRequest(localUser.ID, remoteActorIRI, remoteActorIRI+"/inbox")
 	require.NoError(t, err)
 
 	payload := []byte(`{
@@ -70,7 +68,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, rec.Code)
 
-	approved, err := repos.Follower.IsFollowingApprovedByActorIRI(localUser.ID, remoteActorIRI)
+	approved, err := ctr.FollowerRepo().IsFollowingApprovedByActorIRI(localUser.ID, remoteActorIRI)
 	require.NoError(t, err)
 	assert.True(t, approved)
 }
@@ -79,8 +77,7 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	repos := repository.New(db)
-	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil, repos)
+	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil)
 	ctrl := NewApInboxController(ctr.Injector())
 
 	localUser := &model.User{

@@ -60,7 +60,6 @@ func New(injector do.Injector) (*Worker, error) {
 	db := do.MustInvoke[*gorm.DB](injector)
 	cfg := do.MustInvoke[*container.Config](injector)
 	logger := do.MustInvoke[*slog.Logger](injector).With("module", "worker")
-	repositories := do.MustInvoke[*repository.Repositories](injector)
 
 	if err := db.Exec(gueJobsSchema).Error; err != nil {
 		return nil, fmt.Errorf("worker: migrating gue_jobs schema: %w", err)
@@ -77,14 +76,14 @@ func New(injector do.Injector) (*Worker, error) {
 			cfg,
 			gc,
 			logger,
-			repositories.APOutbox,
-			repositories.APStatusDelivery,
-			repositories.User,
-			repositories.Workout,
+			do.MustInvoke[repository.APOutbox](injector),
+			do.MustInvoke[repository.APStatusDelivery](injector),
+			do.MustInvoke[repository.User](injector),
+			do.MustInvoke[repository.Workout](injector),
 		),
-		JobUpdateRouteSegment: makeUpdateRouteSegmentHandler(db, logger, repositories.RouteSegment),
-		JobAutoImport:         makeAutoImportHandler(cfg, db, gc, logger, repositories.User),
-		JobDeliverActivityPub: makeDeliverActivityPubHandler(cfg, logger, repositories.APStatusDelivery, repositories.User),
+		JobUpdateRouteSegment: makeUpdateRouteSegmentHandler(db, logger, do.MustInvoke[repository.RouteSegment](injector)),
+		JobAutoImport:         makeAutoImportHandler(cfg, db, gc, logger, do.MustInvoke[repository.User](injector)),
+		JobDeliverActivityPub: makeDeliverActivityPubHandler(cfg, logger, do.MustInvoke[repository.APStatusDelivery](injector), do.MustInvoke[repository.User](injector)),
 	}
 
 	geoWM := gue.WorkMap{

@@ -50,7 +50,7 @@ type rawCoordinateRow struct {
 func NewHeatmapController(injector do.Injector) HeatmapController {
 	return &heatmapController{
 		db:          do.MustInvoke[*gorm.DB](injector),
-		workoutRepo: do.MustInvoke[*repository.Repositories](injector).Workout,
+		workoutRepo: do.MustInvoke[repository.Workout](injector),
 	}
 }
 
