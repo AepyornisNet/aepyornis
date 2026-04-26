@@ -9,10 +9,10 @@ import (
 type APStatusWorkout struct {
 	Model
 
-	UserID uint64 `gorm:"index:idx_ap_outbox_workout_user_workout;not null" json:"user_id"`
-	User   *User  `json:"-"`
+	ProfileID *uint64  `gorm:"index:idx_ap_outbox_workout_profile_workout;uniqueIndex:idx_ap_outbox_workout_profile_workout" json:"profile_id,omitempty"`
+	Profile   *Profile `gorm:"foreignKey:ProfileID;constraint:OnDelete:CASCADE" json:"-"`
 
-	WorkoutID uint64   `gorm:"uniqueIndex:idx_ap_outbox_workout_user_workout;not null" json:"workout_id"`
+	WorkoutID uint64   `gorm:"uniqueIndex:idx_ap_outbox_workout_profile_workout;not null" json:"workout_id"`
 	Workout   *Workout `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 
 	FitFilename    string `gorm:"type:varchar(255);not null" json:"fit_filename"`

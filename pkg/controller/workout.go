@@ -241,7 +241,7 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
-		liked, likedErr := wc.workoutLikeRepo.LikedMapByUser(workoutIDs(workouts), user.ID)
+		liked, likedErr := wc.workoutLikeRepo.LikedMapByProfile(workoutIDs(workouts), user.Profile.ID)
 		if likedErr == nil {
 			applyLikeMetadata(results, counts, liked)
 		}
@@ -298,7 +298,7 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		result.LikesCount = counts[workout.ID]
 	}
 
-	liked, err := wc.workoutLikeRepo.LikedMapByUser([]uint64{workout.ID}, currentUser(c).ID)
+	liked, err := wc.workoutLikeRepo.LikedMapByProfile([]uint64{workout.ID}, currentUser(c).Profile.ID)
 	if err == nil {
 		result.LikedByMe = liked[workout.ID]
 	}
@@ -341,16 +341,17 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 	results := make([]dto.WorkoutLikeResponse, 0, len(likes))
 	for i := range likes {
 		likeResponse := dto.NewWorkoutLikeResponse(&likes[i])
-
-		if likes[i].ActorIRI != nil && *likes[i].ActorIRI != "" {
-			profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), *likes[i].ActorIRI)
-			if err == nil && profile != nil {
-				if name := strings.TrimSpace(profile.DisplayName); name != "" {
-					likeResponse.ActorName = &name
-				}
-				if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
-					avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
-					likeResponse.AvatarURL = &avatarURL
+		if likes[i].Profile != nil && likes[i].Profile.UserID == nil {
+			if actorIRI := strings.TrimSpace(likes[i].Profile.ActorURL()); actorIRI != "" {
+				profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), actorIRI)
+				if err == nil && profile != nil {
+					if name := strings.TrimSpace(profile.DisplayName); name != "" {
+						likeResponse.ActorName = &name
+					}
+					if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
+						avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
+						likeResponse.AvatarURL = &avatarURL
+					}
 				}
 			}
 		}
@@ -412,17 +413,19 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
 	results := make([]dto.WorkoutReplyResponse, 0, len(replies))
 	for i := range replies {
 		replyResponse := dto.NewWorkoutReplyResponse(&replies[i])
-		if replies[i].ActorIRI != nil && *replies[i].ActorIRI != "" {
-			profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), *replies[i].ActorIRI)
-			if err == nil && profile != nil {
-				if replyResponse.ActorName == nil {
-					if name := strings.TrimSpace(profile.DisplayName); name != "" {
-						replyResponse.ActorName = &name
+		if replies[i].Profile != nil && replies[i].Profile.UserID == nil {
+			if actorIRI := strings.TrimSpace(replies[i].Profile.ActorURL()); actorIRI != "" {
+				profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), actorIRI)
+				if err == nil && profile != nil {
+					if replyResponse.ActorName == nil {
+						if name := strings.TrimSpace(profile.DisplayName); name != "" {
+							replyResponse.ActorName = &name
+						}
 					}
-				}
-				if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
-					avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
-					replyResponse.AvatarURL = &avatarURL
+					if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
+						avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
+						replyResponse.AvatarURL = &avatarURL
+					}
 				}
 			}
 		}
@@ -468,7 +471,7 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
-	if err := wc.workoutLikeRepo.LikeByUser(workout.ID, viewer.ID); err != nil {
+	if err := wc.workoutLikeRepo.LikeByProfile(workout.ID, viewer.Profile.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -583,7 +586,7 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 		return nil, http.StatusBadRequest, errors.New("cannot like your own workout")
 	}
 
-	if err := wc.workoutLikeRepo.LikeByUser(localWorkoutID, viewer.ID); err != nil {
+	if err := wc.workoutLikeRepo.LikeByProfile(localWorkoutID, viewer.Profile.ID); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -635,13 +638,13 @@ func (wc *workoutController) CreateReply(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("content is required"))
 	}
 
-	reply, err := wc.workoutReplyRepo.CreateLocalReply(workout.ID, viewer.ID, params.Content)
+	reply, err := wc.workoutReplyRepo.CreateLocalReply(workout.ID, viewer.Profile.ID, params.Content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Reload reply with user data
-	if err := wc.db.Preload("User").Preload("User.Profile").First(reply, reply.ID).Error; err != nil {
+	// Reload reply with profile data
+	if err := wc.db.Preload("Profile").Preload("Profile.User").First(reply, reply.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -1198,7 +1201,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
-		liked, likedErr := wc.workoutLikeRepo.LikedMapByUser(workoutIDs(workouts), requester.ID)
+		liked, likedErr := wc.workoutLikeRepo.LikedMapByProfile(workoutIDs(workouts), requester.Profile.ID)
 		if likedErr == nil {
 			applyLikeMetadata(results, counts, liked)
 		}

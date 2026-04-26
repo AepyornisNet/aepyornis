@@ -139,7 +139,7 @@ func publishWorkoutToActivityPub(
 	}
 
 	outboxWorkout := &model.APStatusWorkout{
-		UserID:         user.ID,
+		ProfileID:      &user.Profile.ID,
 		WorkoutID:      workout.ID,
 		FitFilename:    aputil.WorkoutFITFilename(workout),
 		FitContent:     fitContent,
@@ -152,7 +152,7 @@ func publishWorkoutToActivityPub(
 
 	entry := &model.APStatus{
 		PublicUUID:        entryUUID,
-		UserID:            &user.ID,
+		ProfileID:         &user.Profile.ID,
 		APStatusWorkoutID: &outboxWorkout.ID,
 		StatusType:        model.APStatusTypeWorkout,
 		Origin:            "local",

@@ -138,11 +138,11 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	assert.Equal(t, http.StatusAccepted, rec.Code)
 
 	status := &model.APStatus{}
-	err = db.Where("object_id = ?", "https://wt-ap2.test/ap/users/admin/outbox/abc#object").First(status).Error
+	err = db.Preload("Profile").Where("object_id = ?", "https://wt-ap2.test/ap/users/admin/outbox/abc#object").First(status).Error
 	require.NoError(t, err)
 	assert.Equal(t, model.APStatusTypeWorkout, status.StatusType)
 	assert.Equal(t, "remote", status.Origin)
-	if assert.NotNil(t, status.ActorIRI) {
-		assert.Equal(t, remoteActorIRI, *status.ActorIRI)
+	if assert.NotNil(t, status.Profile) {
+		assert.Equal(t, remoteActorIRI, status.Profile.ActorURL())
 	}
 }

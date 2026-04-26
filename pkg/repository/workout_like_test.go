@@ -40,18 +40,24 @@ func TestWorkoutLikeRepository_LikeByUserAndMaps(t *testing.T) {
 	repo, err := NewWorkoutLike(injector)
 	require.NoError(t, err)
 
-	require.NoError(t, repo.LikeByUser(workout.ID, liker.ID))
-	require.NoError(t, repo.LikeByUser(workout.ID, liker.ID))
+	require.NoError(t, repo.LikeByProfile(workout.ID, liker.Profile.ID))
+	require.NoError(t, repo.LikeByProfile(workout.ID, liker.Profile.ID))
+
+	likes, err := repo.ListByWorkoutID(workout.ID)
+	require.NoError(t, err)
+	require.Len(t, likes, 1)
+	require.NotNil(t, likes[0].ProfileID)
+	assert.Equal(t, liker.Profile.ID, *likes[0].ProfileID)
 
 	counts, err := repo.CountMapByWorkoutIDs([]uint64{workout.ID})
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, counts[workout.ID])
 
-	likedByLiker, err := repo.LikedMapByUser([]uint64{workout.ID}, liker.ID)
+	likedByLiker, err := repo.LikedMapByProfile([]uint64{workout.ID}, liker.Profile.ID)
 	require.NoError(t, err)
 	assert.True(t, likedByLiker[workout.ID])
 
-	likedByOwner, err := repo.LikedMapByUser([]uint64{workout.ID}, owner.ID)
+	likedByOwner, err := repo.LikedMapByProfile([]uint64{workout.ID}, owner.Profile.ID)
 	require.NoError(t, err)
 	assert.False(t, likedByOwner[workout.ID])
 }
@@ -69,6 +75,12 @@ func TestWorkoutLikeRepository_LikeByActorAndUndo(t *testing.T) {
 
 	require.NoError(t, repo.LikeByActorIRI(workout.ID, actorIRI))
 	require.NoError(t, repo.LikeByActorIRI(workout.ID, actorIRI))
+
+	likes, err := repo.ListByWorkoutID(workout.ID)
+	require.NoError(t, err)
+	require.Len(t, likes, 1)
+	require.NotNil(t, likes[0].Profile)
+	assert.Equal(t, actorIRI, likes[0].Profile.ActorURL())
 
 	counts, err := repo.CountMapByWorkoutIDs([]uint64{workout.ID})
 	require.NoError(t, err)

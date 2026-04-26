@@ -3,6 +3,7 @@ package repository
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -47,7 +48,8 @@ func (r *apStatusRepository) ResolveWorkoutIDByObjectOrActivityID(userID uint64,
 		Where("ap_statuses.object_id = ? OR ap_statuses.activity_id = ?", objectOrActivityID, objectOrActivityID)
 
 	if userID != 0 {
-		q = q.Where("user_id = ?", userID)
+		q = q.Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
+			Where("owner_profiles.user_id = ?", userID)
 	}
 
 	if err := q.Take(found).Error; err == nil {
@@ -107,7 +109,17 @@ func (r *apStatusRepository) ReplyByActorIRI(workoutID uint64, objectIRI, actorI
 		return parentErr
 	}
 
+	profileURL := strings.TrimSpace(actorIRI)
+	profile, err := (&model.Profile{
+		DisplayName: strings.TrimSpace(actorName),
+		URL:         &profileURL,
+	}).UpsertRemote(r.db)
+	if err != nil {
+		return err
+	}
+
 	status := &model.APStatus{
+		ProfileID:         &profile.ID,
 		StatusType:        model.APStatusTypeReply,
 		Origin:            "remote",
 		ActivityID:        objectIRI,
@@ -115,12 +127,7 @@ func (r *apStatusRepository) ReplyByActorIRI(workoutID uint64, objectIRI, actorI
 		InReplyToObjectID: &parentObjectID,
 		Activity:          []byte("{}"),
 		Content:           sanitized,
-		ActorIRI:          &actorIRI,
 		PublishedAt:       &now,
-	}
-
-	if actorName != "" {
-		status.ActorName = &actorName
 	}
 
 	return r.db.Clauses(clause.OnConflict{
@@ -146,13 +153,19 @@ func (r *apStatusRepository) UpdateReplyByObjectIRI(workoutID uint64, objectIRI,
 	updates := map[string]any{
 		"content": templatehelpers.SanitizeReplyHTML(content),
 	}
-	if actorName != "" {
-		updates["actor_name"] = actorName
+
+	profileURL := strings.TrimSpace(actorIRI)
+	profile, err := (&model.Profile{
+		DisplayName: strings.TrimSpace(actorName),
+		URL:         &profileURL,
+	}).UpsertRemote(r.db)
+	if err != nil {
+		return err
 	}
 
 	result := r.db.Model(&model.APStatus{}).
 		Where("status_type = ?", model.APStatusTypeReply).
-		Where("object_id = ? AND actor_iri = ?", objectIRI, actorIRI).
+		Where("object_id = ? AND profile_id = ?", objectIRI, profile.ID).
 		Updates(updates)
 	if result.Error != nil {
 		return result.Error
@@ -193,7 +206,17 @@ func (r *apStatusRepository) UpsertRemoteWorkoutStatus(actorIRI, actorName, acti
 	}
 
 	now := time.Now().UTC()
+	profileURL := strings.TrimSpace(actorIRI)
+	profile, err := (&model.Profile{
+		DisplayName: strings.TrimSpace(actorName),
+		URL:         &profileURL,
+	}).UpsertRemote(r.db)
+	if err != nil {
+		return err
+	}
+
 	status := &model.APStatus{
+		ProfileID:   &profile.ID,
 		StatusType:  model.APStatusTypeWorkout,
 		Origin:      "remote",
 		ActivityID:  activityID,
@@ -201,12 +224,7 @@ func (r *apStatusRepository) UpsertRemoteWorkoutStatus(actorIRI, actorName, acti
 		Activity:    datatypes.JSON(activityJSON),
 		Payload:     datatypes.JSON(payloadJSON),
 		Content:     content,
-		ActorIRI:    &actorIRI,
 		PublishedAt: &now,
-	}
-
-	if actorName != "" {
-		status.ActorName = &actorName
 	}
 
 	return r.db.Clauses(clause.OnConflict{
@@ -216,7 +234,6 @@ func (r *apStatusRepository) UpsertRemoteWorkoutStatus(actorIRI, actorName, acti
 			"activity":    datatypes.JSON(activityJSON),
 			"payload":     datatypes.JSON(payloadJSON),
 			"content":     content,
-			"actor_name":  status.ActorName,
 			"updated_at":  time.Now().UTC(),
 		}),
 	}).Create(status).Error

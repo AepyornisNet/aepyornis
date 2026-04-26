@@ -1202,16 +1202,27 @@ func NewWorkoutReplyResponse(r *model.APStatus) WorkoutReplyResponse {
 	res := WorkoutReplyResponse{
 		ID:          r.ID,
 		ObjectIRI:   r.ObjectID,
-		UserID:      r.UserID,
-		ActorIRI:    r.ActorIRI,
-		ActorName:   r.ActorName,
 		Content:     templatehelpers.SanitizeReplyHTML(r.Content),
 		CreatedAt:   r.CreatedAt,
 		PublishedAt: r.PublishedAt,
 	}
-	if r.User != nil {
-		userProfile := NewUserProfileResponse(r.User)
-		res.User = &userProfile
+
+	if r.Profile != nil {
+		res.UserID = r.Profile.UserID
+		if actorIRI := strings.TrimSpace(r.Profile.ActorURL()); actorIRI != "" {
+			res.ActorIRI = &actorIRI
+		}
+		if name := strings.TrimSpace(r.Profile.DisplayName); name != "" {
+			res.ActorName = &name
+		}
+		if r.Profile.AvatarRemoteURL != nil && strings.TrimSpace(*r.Profile.AvatarRemoteURL) != "" {
+			avatarURL := strings.TrimSpace(*r.Profile.AvatarRemoteURL)
+			res.AvatarURL = &avatarURL
+		}
+		if r.Profile.User != nil {
+			userProfile := NewUserProfileResponse(r.Profile.User)
+			res.User = &userProfile
+		}
 	}
 	return res
 }
@@ -1230,14 +1241,25 @@ type WorkoutLikeResponse struct {
 func NewWorkoutLikeResponse(l *model.APStatusLike) WorkoutLikeResponse {
 	res := WorkoutLikeResponse{
 		ID:        l.ID,
-		UserID:    l.UserID,
-		ActorIRI:  l.ActorIRI,
 		CreatedAt: l.CreatedAt,
 	}
 
-	if l.User != nil {
-		profile := NewUserProfileResponse(l.User)
-		res.User = &profile
+	if l.Profile != nil {
+		res.UserID = l.Profile.UserID
+		if actorIRI := strings.TrimSpace(l.Profile.ActorURL()); actorIRI != "" {
+			res.ActorIRI = &actorIRI
+		}
+		if name := strings.TrimSpace(l.Profile.DisplayName); name != "" {
+			res.ActorName = &name
+		}
+		if l.Profile.AvatarRemoteURL != nil && strings.TrimSpace(*l.Profile.AvatarRemoteURL) != "" {
+			avatarURL := strings.TrimSpace(*l.Profile.AvatarRemoteURL)
+			res.AvatarURL = &avatarURL
+		}
+		if l.Profile.User != nil {
+			profile := NewUserProfileResponse(l.Profile.User)
+			res.User = &profile
+		}
 	}
 
 	return res

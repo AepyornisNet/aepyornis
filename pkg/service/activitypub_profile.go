@@ -43,17 +43,11 @@ func (s *activityPubProfileService) GetByActorIRI(ctx context.Context, actorIRI 
 
 	actor, err := aputil.LoadRemoteActorWithClient(ctx, s.requestSvc.HTTPClient(), actorIRI)
 	if err != nil {
-		if existing != nil {
-			return existing, nil
-		}
 		return nil, err
 	}
 
 	profile := model.NewRemoteProfileFromActor(actor, "")
 	if profile == nil {
-		if existing != nil {
-			return existing, nil
-		}
 		return nil, errors.New("remote actor profile invalid")
 	}
 

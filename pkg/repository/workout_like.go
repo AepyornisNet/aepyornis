@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/samber/do/v2"
@@ -11,12 +12,12 @@ import (
 )
 
 type WorkoutLike interface {
-	LikeByUser(workoutID uint64, userID uint64) error
+	LikeByProfile(workoutID uint64, profileID uint64) error
 	LikeByActorIRI(workoutID uint64, actorIRI string) error
 	UnlikeByActorIRI(workoutID uint64, actorIRI string) error
 	ListByWorkoutID(workoutID uint64) ([]model.APStatusLike, error)
 	CountMapByWorkoutIDs(workoutIDs []uint64) (map[uint64]int64, error)
-	LikedMapByUser(workoutIDs []uint64, userID uint64) (map[uint64]bool, error)
+	LikedMapByProfile(workoutIDs []uint64, profileID uint64) (map[uint64]bool, error)
 }
 
 type workoutLikeRepository struct {
@@ -27,9 +28,9 @@ func NewWorkoutLike(injector do.Injector) (WorkoutLike, error) {
 	return &workoutLikeRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
-func (r *workoutLikeRepository) LikeByUser(workoutID uint64, userID uint64) error {
-	if workoutID == 0 || userID == 0 {
-		return errors.New("workout and user IDs are required")
+func (r *workoutLikeRepository) LikeByProfile(workoutID uint64, profileID uint64) error {
+	if workoutID == 0 || profileID == 0 {
+		return errors.New("workout id and profile id are required")
 	}
 
 	statusID, err := r.workoutStatusID(workoutID)
@@ -37,7 +38,7 @@ func (r *workoutLikeRepository) LikeByUser(workoutID uint64, userID uint64) erro
 		return err
 	}
 
-	like := &model.APStatusLike{StatusID: statusID, UserID: &userID}
+	like := &model.APStatusLike{StatusID: statusID, ProfileID: &profileID}
 	return r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(like).Error
 }
 
@@ -46,12 +47,18 @@ func (r *workoutLikeRepository) LikeByActorIRI(workoutID uint64, actorIRI string
 		return errors.New("workout id and actor IRI are required")
 	}
 
+	profileURL := strings.TrimSpace(actorIRI)
+	profile, err := (&model.Profile{URL: &profileURL}).UpsertRemote(r.db)
+	if err != nil {
+		return err
+	}
+
 	statusID, err := r.workoutStatusID(workoutID)
 	if err != nil {
 		return err
 	}
 
-	like := &model.APStatusLike{StatusID: statusID, ActorIRI: &actorIRI}
+	like := &model.APStatusLike{StatusID: statusID, ProfileID: &profile.ID}
 	return r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(like).Error
 }
 
@@ -65,7 +72,16 @@ func (r *workoutLikeRepository) UnlikeByActorIRI(workoutID uint64, actorIRI stri
 		return err
 	}
 
-	return r.db.Where("status_id = ? AND actor_iri = ?", statusID, actorIRI).Delete(&model.APStatusLike{}).Error
+	profile := &model.Profile{}
+	err = r.db.Where("url = ?", strings.TrimSpace(actorIRI)).First(profile).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	return r.db.Where("status_id = ? AND profile_id = ?", statusID, profile.ID).Delete(&model.APStatusLike{}).Error
 }
 
 func (r *workoutLikeRepository) ListByWorkoutID(workoutID uint64) ([]model.APStatusLike, error) {
@@ -74,11 +90,11 @@ func (r *workoutLikeRepository) ListByWorkoutID(workoutID uint64) ([]model.APSta
 	}
 
 	likes := make([]model.APStatusLike, 0)
-	if err := r.db.Preload("User").Preload("User.Profile").
+	if err := r.db.Preload("Profile").Preload("Profile.User").
 		Joins("JOIN ap_statuses ON ap_statuses.id = ap_status_likes.status_id").
 		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
 		Where("ap_outbox_workout.workout_id = ?", workoutID).
-		Order("created_at DESC, id DESC").
+		Order("ap_status_likes.created_at DESC, ap_status_likes.id DESC").
 		Find(&likes).Error; err != nil {
 		return nil, err
 	}
@@ -115,9 +131,9 @@ func (r *workoutLikeRepository) CountMapByWorkoutIDs(workoutIDs []uint64) (map[u
 	return counts, nil
 }
 
-func (r *workoutLikeRepository) LikedMapByUser(workoutIDs []uint64, userID uint64) (map[uint64]bool, error) {
+func (r *workoutLikeRepository) LikedMapByProfile(workoutIDs []uint64, profileID uint64) (map[uint64]bool, error) {
 	liked := map[uint64]bool{}
-	if len(workoutIDs) == 0 || userID == 0 {
+	if len(workoutIDs) == 0 || profileID == 0 {
 		return liked, nil
 	}
 
@@ -131,7 +147,7 @@ func (r *workoutLikeRepository) LikedMapByUser(workoutIDs []uint64, userID uint6
 		Joins("JOIN ap_statuses ON ap_statuses.id = ap_status_likes.status_id").
 		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
 		Where("ap_outbox_workout.workout_id IN ?", workoutIDs).
-		Where("ap_status_likes.user_id = ?", userID).
+		Where("ap_status_likes.profile_id = ?", profileID).
 		Find(&rows).Error; err != nil {
 		return nil, err
 	}
@@ -160,20 +176,19 @@ func (r *workoutLikeRepository) workoutStatusID(workoutID uint64) (uint64, error
 
 	type workoutOwnerRow struct {
 		WorkoutID uint64
-		UserID    uint64
+		ProfileID uint64
 	}
 
 	workout := &workoutOwnerRow{}
 	if err := r.db.Table("workouts").
-		Select("workouts.id AS workout_id, profiles.user_id AS user_id").
-		Joins("JOIN profiles ON profiles.id = workouts.profile_id").
+		Select("workouts.id AS workout_id, workouts.profile_id AS profile_id").
 		Where("workouts.id = ?", workoutID).
 		Take(workout).Error; err != nil {
 		return 0, err
 	}
 
 	outboxWorkout := &model.APStatusWorkout{
-		UserID:      workout.UserID,
+		ProfileID:   &workout.ProfileID,
 		WorkoutID:   workoutID,
 		FitFilename: fmt.Sprintf("workout-%d.fit", workoutID),
 		FitContent:  []byte("placeholder"),
@@ -189,7 +204,7 @@ func (r *workoutLikeRepository) workoutStatusID(workoutID uint64) (uint64, error
 	}
 
 	status := &model.APStatus{
-		UserID:            &workout.UserID,
+		ProfileID:         &workout.ProfileID,
 		APStatusWorkoutID: &outboxWorkout.ID,
 		StatusType:        model.APStatusTypeWorkout,
 		Origin:            "local",

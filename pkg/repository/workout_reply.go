@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -15,7 +16,7 @@ import (
 type WorkoutReply interface {
 	ReplyByActorIRI(workoutID uint64, objectIRI, actorIRI, actorName, content string) error
 	UpdateReplyByObjectIRI(workoutID uint64, objectIRI, actorIRI, actorName, content string) error
-	CreateLocalReply(workoutID, userID uint64, content string) (*model.APStatus, error)
+	CreateLocalReply(workoutID, profileID uint64, content string) (*model.APStatus, error)
 	DeleteReplyByObjectIRI(workoutID uint64, objectIRI string) error
 	ResolveWorkoutIDByObjectIRI(objectIRI string) (uint64, error)
 	CountMapByWorkoutIDs(workoutIDs []uint64) (map[uint64]int64, error)
@@ -51,19 +52,24 @@ func (r *workoutReplyRepository) ReplyByActorIRI(workoutID uint64, objectIRI, ac
 		return err
 	}
 
+	profileURL := strings.TrimSpace(actorIRI)
+	profile, err := (&model.Profile{
+		DisplayName: strings.TrimSpace(actorName),
+		URL:         &profileURL,
+	}).UpsertRemote(r.db)
+	if err != nil {
+		return err
+	}
+
 	reply := &model.APStatus{
 		ObjectID:          objectIRI,
 		ActivityID:        objectIRI,
-		ActorIRI:          &actorIRI,
+		ProfileID:         &profile.ID,
 		Activity:          []byte("{}"),
 		Content:           content,
 		StatusType:        model.APStatusTypeReply,
 		Origin:            "remote",
 		InReplyToObjectID: &parentObjectID,
-	}
-
-	if actorName != "" {
-		reply.ActorName = &actorName
 	}
 
 	return r.db.Clauses(clause.OnConflict{
@@ -92,14 +98,20 @@ func (r *workoutReplyRepository) UpdateReplyByObjectIRI(workoutID uint64, object
 		return err
 	}
 
-	updates := map[string]any{"content": content}
-	if actorName != "" {
-		updates["actor_name"] = actorName
+	profileURL := strings.TrimSpace(actorIRI)
+	profile, err := (&model.Profile{
+		DisplayName: strings.TrimSpace(actorName),
+		URL:         &profileURL,
+	}).UpsertRemote(r.db)
+	if err != nil {
+		return err
 	}
+
+	updates := map[string]any{"content": content}
 
 	result := r.db.Model(&model.APStatus{}).
 		Where("status_type = ?", model.APStatusTypeReply).
-		Where("object_id = ? AND actor_iri = ? AND in_reply_to_object_id = ?", objectIRI, actorIRI, parentObjectID).
+		Where("object_id = ? AND profile_id = ? AND in_reply_to_object_id = ?", objectIRI, profile.ID, parentObjectID).
 		Updates(updates)
 	if result.Error != nil {
 		return result.Error
@@ -111,12 +123,12 @@ func (r *workoutReplyRepository) UpdateReplyByObjectIRI(workoutID uint64, object
 	return nil
 }
 
-func (r *workoutReplyRepository) CreateLocalReply(workoutID, userID uint64, content string) (*model.APStatus, error) {
+func (r *workoutReplyRepository) CreateLocalReply(workoutID, profileID uint64, content string) (*model.APStatus, error) {
 	if workoutID == 0 {
 		return nil, errors.New("workout id is required")
 	}
-	if userID == 0 {
-		return nil, errors.New("user id is required")
+	if profileID == 0 {
+		return nil, errors.New("profile id is required")
 	}
 	if content == "" {
 		return nil, errors.New("content is required")
@@ -128,12 +140,12 @@ func (r *workoutReplyRepository) CreateLocalReply(workoutID, userID uint64, cont
 		return nil, err
 	}
 
-	objectIRI := "local:" + strconv.FormatUint(workoutID, 10) + ":" + strconv.FormatUint(userID, 10) + ":" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	objectIRI := "local:" + strconv.FormatUint(workoutID, 10) + ":" + strconv.FormatUint(profileID, 10) + ":" + strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	reply := &model.APStatus{
 		ObjectID:          objectIRI,
 		ActivityID:        objectIRI,
-		UserID:            &userID,
+		ProfileID:         &profileID,
 		Activity:          []byte("{}"),
 		Content:           content,
 		StatusType:        model.APStatusTypeReply,
@@ -242,8 +254,8 @@ func (r *workoutReplyRepository) ListByWorkoutID(workoutID uint64, limit int, of
 
 	replies := make([]model.APStatus, 0)
 	if err := r.db.Model(&model.APStatus{}).
-		Preload("User").
-		Preload("User.Profile").
+		Preload("Profile").
+		Preload("Profile.User").
 		Table("ap_statuses AS reply").
 		Select("reply.*").
 		Joins("JOIN ap_statuses AS parent ON parent.object_id = reply.in_reply_to_object_id").

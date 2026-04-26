@@ -96,7 +96,7 @@ func PublishReplyToActivityPub(
 		"published_at": publishedAt,
 		"origin":       "local",
 		"status_type":  model.APStatusTypeReply,
-		"user_id":      author.ID,
+		"profile_id":   author.Profile.ID,
 	}).Error; err != nil {
 		return err
 	}

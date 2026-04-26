@@ -35,8 +35,8 @@ func (r *apOutboxRepository) CreateWorkout(outboxWorkout *model.APStatusWorkout)
 		return errors.New("outbox workout is nil")
 	}
 
-	if outboxWorkout.UserID == 0 || outboxWorkout.WorkoutID == 0 {
-		return errors.New("outbox workout user_id and workout_id are required")
+	if outboxWorkout.ProfileID == nil || *outboxWorkout.ProfileID == 0 || outboxWorkout.WorkoutID == 0 {
+		return errors.New("outbox workout profile_id and workout_id are required")
 	}
 
 	if len(outboxWorkout.FitContent) == 0 {
@@ -63,12 +63,19 @@ func (r *apOutboxRepository) CreateEntry(entry *model.APStatus) error {
 		return errors.New("outbox object payload is invalid JSON")
 	}
 
+	if entry.ProfileID == nil || *entry.ProfileID == 0 {
+		return errors.New("outbox profile_id is required")
+	}
+
 	return r.db.Create(entry).Error
 }
 
 func (r *apOutboxRepository) CountEntriesByUser(userID uint64) (int64, error) {
 	var total int64
-	if err := r.db.Model(&model.APStatus{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	if err := r.db.Model(&model.APStatus{}).
+		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
+		Where("owner_profiles.user_id = ?", userID).
+		Count(&total).Error; err != nil {
 		return 0, err
 	}
 
@@ -82,7 +89,8 @@ func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset i
 	}
 
 	err := r.db.
-		Where("user_id = ?", userID).
+		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
+		Where("owner_profiles.user_id = ?", userID).
 		Order("published_at DESC").
 		Order("id DESC").
 		Limit(limit).
@@ -97,7 +105,8 @@ func (r *apOutboxRepository) GetEntryByUUIDAndUser(userID uint64, outboxID uuid.
 	entry := &model.APStatus{}
 	if err := r.db.
 		Preload("APStatusWorkout").
-		Where("user_id = ? AND public_uuid = ?", userID, outboxID).
+		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
+		Where("owner_profiles.user_id = ? AND public_uuid = ?", userID, outboxID).
 		First(entry).
 		Error; err != nil {
 		return nil, err
@@ -109,8 +118,9 @@ func (r *apOutboxRepository) GetEntryByUUIDAndUser(userID uint64, outboxID uuid.
 func (r *apOutboxRepository) GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APStatus, error) {
 	entry := &model.APStatus{}
 	if err := r.db.Model(&model.APStatus{}).
+		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
 		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
-		Where("ap_statuses.user_id = ?", userID).
+		Where("owner_profiles.user_id = ?", userID).
 		Where("ap_outbox_workout.workout_id = ?", workoutID).
 		First(entry).Error; err != nil {
 		return nil, err
@@ -121,7 +131,10 @@ func (r *apOutboxRepository) GetEntryForWorkout(userID uint64, workoutID uint64)
 
 func (r *apOutboxRepository) DeleteEntryForWorkout(userID uint64, workoutID uint64) error {
 	outboxWorkout := &model.APStatusWorkout{}
-	if err := r.db.Where("user_id = ? AND workout_id = ?", userID, workoutID).First(outboxWorkout).Error; err != nil {
+	if err := r.db.Model(&model.APStatusWorkout{}).
+		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_outbox_workout.profile_id").
+		Where("owner_profiles.user_id = ? AND workout_id = ?", userID, workoutID).
+		First(outboxWorkout).Error; err != nil {
 		return err
 	}
 
@@ -144,7 +157,8 @@ func (r *apOutboxRepository) ResolveWorkoutIDByObjectOrActivityID(userID uint64,
 		Where("ap_statuses.object_id = ? OR ap_statuses.activity_id = ?", objectOrActivityID, objectOrActivityID)
 
 	if userID != 0 {
-		q = q.Where("ap_statuses.user_id = ?", userID)
+		q = q.Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
+			Where("owner_profiles.user_id = ?", userID)
 	}
 
 	if err := q.Take(found).Error; err != nil {
@@ -167,8 +181,9 @@ func (r *apOutboxRepository) PublishedMap(userID uint64, workoutIDs []uint64) (m
 	rows := make([]row, 0, len(workoutIDs))
 	if err := r.db.Model(&model.APStatus{}).
 		Select("ap_outbox_workout.workout_id").
+		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
 		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
-		Where("ap_statuses.user_id = ?", userID).
+		Where("owner_profiles.user_id = ?", userID).
 		Where("ap_outbox_workout.workout_id IN ?", workoutIDs).
 		Find(&rows).Error; err != nil {
 		return nil, err

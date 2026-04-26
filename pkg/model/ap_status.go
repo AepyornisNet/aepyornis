@@ -18,9 +18,8 @@ type APStatus struct {
 
 	PublicUUID uuid.UUID `gorm:"type:uuid;uniqueIndex;not null" json:"public_uuid"`
 
-	// Local owner for local statuses. Null for remote-only statuses.
-	UserID *uint64 `gorm:"index:idx_ap_statuses_user_published" json:"user_id,omitempty"`
-	User   *User   `json:"-"`
+	ProfileID *uint64  `gorm:"index:idx_ap_statuses_profile_published" json:"profile_id,omitempty"`
+	Profile   *Profile `gorm:"foreignKey:ProfileID;constraint:OnDelete:CASCADE" json:"-"`
 
 	// Link to local outbox workout attachment row for local workout posts.
 	APStatusWorkoutID *uint64          `gorm:"index" json:"ap_status_workout_id,omitempty"`
@@ -34,9 +33,6 @@ type APStatus struct {
 
 	InReplyToObjectID *string `gorm:"type:text;index" json:"in_reply_to_object_id,omitempty"`
 
-	ActorIRI  *string `gorm:"type:text;index" json:"actor_iri,omitempty"`
-	ActorName *string `gorm:"type:varchar(255)" json:"actor_name,omitempty"`
-
 	Activity datatypes.JSON `gorm:"type:json;not null" json:"activity"`
 	Payload  datatypes.JSON `gorm:"type:json" json:"payload"`
 
@@ -47,9 +43,7 @@ type APStatus struct {
 	CC  datatypes.JSON `gorm:"type:json" json:"cc,omitempty"`
 	BCC datatypes.JSON `gorm:"type:json" json:"bcc,omitempty"`
 
-	InboxURL *string `gorm:"type:text;index" json:"inbox_url,omitempty"`
-
-	PublishedAt *time.Time `gorm:"index:idx_ap_statuses_user_published" json:"published_at,omitempty"`
+	PublishedAt *time.Time `gorm:"index:idx_ap_statuses_profile_published" json:"published_at,omitempty"`
 }
 
 func (APStatus) TableName() string {
