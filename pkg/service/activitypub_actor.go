@@ -42,6 +42,10 @@ func (s *activityPubActorService) ActorURL(profile *model.Profile) (string, erro
 		return "", errors.New("profile is nil")
 	}
 
+	if actorURL := strings.TrimSpace(profile.ActorURL()); actorURL != "" {
+		return actorURL, nil
+	}
+
 	username := strings.TrimSpace(profile.Username)
 	if username == "" {
 		return "", errors.New("profile username is empty")
@@ -90,7 +94,15 @@ func (s *activityPubActorService) SendActivity(ctx context.Context, profile *mod
 }
 
 func (s *activityPubActorService) SendFollowAccept(ctx context.Context, profile *model.Profile, follower model.Follower) error {
-	if follower.ActorInbox == "" {
+	if follower.Profile == nil {
+		return errors.New("follower profile is empty")
+	}
+
+	if follower.Profile.UserID != nil || follower.Profile.Local {
+		return nil
+	}
+
+	if follower.Profile.InboxURL == nil || strings.TrimSpace(*follower.Profile.InboxURL) == "" {
 		return errors.New("follower inbox is empty")
 	}
 
@@ -101,7 +113,7 @@ func (s *activityPubActorService) SendFollowAccept(ctx context.Context, profile 
 
 	follow := vocab.Activity{
 		Type:   vocab.FollowType,
-		Actor:  vocab.IRI(follower.ActorIRI),
+		Actor:  vocab.IRI(follower.Profile.ActorURL()),
 		Object: vocab.IRI(actorURL),
 	}
 
@@ -117,7 +129,7 @@ func (s *activityPubActorService) SendFollowAccept(ctx context.Context, profile 
 		return err
 	}
 
-	return s.SendActivity(ctx, profile, follower.ActorInbox, payload)
+	return s.SendActivity(ctx, profile, *follower.Profile.InboxURL, payload)
 }
 
 func (s *activityPubActorService) SendFollow(ctx context.Context, profile *model.Profile, inbox, targetActorIRI string) error {

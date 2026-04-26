@@ -49,6 +49,7 @@ type WorkoutController interface {
 type workoutController struct {
 	apOutboxRepo         repository.APOutbox
 	apStatusDeliveryRepo repository.APStatusDelivery
+	apProfileService     service.ActivityPubProfileService
 	cfg                  *config.Config
 	client               *gue.Client
 	db                   *gorm.DB
@@ -67,6 +68,7 @@ func NewWorkoutController(injector do.Injector) WorkoutController {
 	return &workoutController{
 		apOutboxRepo:         do.MustInvoke[repository.APOutbox](injector),
 		apStatusDeliveryRepo: do.MustInvoke[repository.APStatusDelivery](injector),
+		apProfileService:     do.MustInvoke[service.ActivityPubProfileService](injector),
 		cfg:                  do.MustInvoke[*config.Config](injector),
 		client:               do.MustInvoke[*gue.Client](injector),
 		db:                   do.MustInvoke[*gorm.DB](injector),
@@ -153,21 +155,14 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 	case model.WorkoutVisibilityPublic:
 		return true, nil
 	case model.WorkoutVisibilityFollowers:
-		requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-			Host:           wc.cfg.Host,
-			WebRoot:        wc.cfg.WebRoot,
-			FallbackHost:   c.Request().Host,
-			FallbackScheme: c.Scheme(),
-		}, requester.Profile.Username)
-
-		if requesterActorIRI == "" {
+		if requester.Profile.ID == 0 {
 			return false, nil
 		}
 
 		var count int64
 		if err := wc.db.
 			Model(&model.Follower{}).
-			Where("user_id = ? AND actor_iri = ? AND approved = ?", ownerUserID, requesterActorIRI, true).
+			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, workout.ProfileID, true).
 			Count(&count).Error; err != nil {
 			return false, err
 		}
@@ -348,17 +343,14 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 		likeResponse := dto.NewWorkoutLikeResponse(&likes[i])
 
 		if likes[i].ActorIRI != nil && *likes[i].ActorIRI != "" {
-			cachedName, cachedAvatarURL, ok := aputil.GetCachedActorProfile(*likes[i].ActorIRI)
-			if !ok {
-				cachedName, cachedAvatarURL, ok = aputil.ResolveAndCacheActorProfile(c.Request().Context(), *likes[i].ActorIRI)
-			}
-
-			if ok {
-				if cachedName != "" {
-					likeResponse.ActorName = &cachedName
+			profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), *likes[i].ActorIRI)
+			if err == nil && profile != nil {
+				if name := strings.TrimSpace(profile.DisplayName); name != "" {
+					likeResponse.ActorName = &name
 				}
-				if cachedAvatarURL != "" {
-					likeResponse.AvatarURL = &cachedAvatarURL
+				if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
+					avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
+					likeResponse.AvatarURL = &avatarURL
 				}
 			}
 		}
@@ -421,16 +413,16 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
 	for i := range replies {
 		replyResponse := dto.NewWorkoutReplyResponse(&replies[i])
 		if replies[i].ActorIRI != nil && *replies[i].ActorIRI != "" {
-			cachedName, cachedAvatarURL, ok := aputil.GetCachedActorProfile(*replies[i].ActorIRI)
-			if !ok {
-				cachedName, cachedAvatarURL, ok = aputil.ResolveAndCacheActorProfile(c.Request().Context(), *replies[i].ActorIRI)
-			}
-			if ok {
-				if replyResponse.ActorName == nil && cachedName != "" {
-					replyResponse.ActorName = &cachedName
+			profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), *replies[i].ActorIRI)
+			if err == nil && profile != nil {
+				if replyResponse.ActorName == nil {
+					if name := strings.TrimSpace(profile.DisplayName); name != "" {
+						replyResponse.ActorName = &name
+					}
 				}
-				if cachedAvatarURL != "" {
-					replyResponse.AvatarURL = &cachedAvatarURL
+				if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
+					avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
+					replyResponse.AvatarURL = &avatarURL
 				}
 			}
 		}
@@ -809,7 +801,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/calendar [get]
 func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
-	targetUser, viewer, viewerActorIRI, err := wc.resolveTargetUserFromHandle(c)
+	targetUser, viewer, _, err := wc.resolveTargetUserFromHandle(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -829,9 +821,8 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 
 	db := model.ScopeVisibleWorkouts(
 		model.PreloadWorkoutData(wc.db),
-		targetUser.ID,
-		viewer.ID,
-		viewerActorIRI,
+		targetUser.Profile.ID,
+		viewer.Profile.ID,
 	)
 
 	const calTS = "2006-01-02T15:04:05"
@@ -1150,13 +1141,6 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		scope = "global"
 	}
 
-	requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-		Host:           wc.cfg.Host,
-		WebRoot:        wc.cfg.WebRoot,
-		FallbackHost:   c.Request().Host,
-		FallbackScheme: c.Scheme(),
-	}, requester.Profile.Username)
-
 	var workouts []*model.Workout
 	query := wc.db.
 		Scopes(model.PreloadWorkoutData).
@@ -1170,18 +1154,15 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 				EXISTS (
 					SELECT 1
 					FROM followers f
-					WHERE f.user_id = ?
-						AND f.actor_iri = ?
-						AND f.direction = ?
+					WHERE f.profile_id = ?
+						AND f.following_profile_id = workouts.profile_id
 						AND f.approved = ?
 				)
 			)`,
 			requester.Profile.ID,
 			model.WorkoutVisibilityPublic,
 			model.WorkoutVisibilityFollowers,
-			requester.ID,
-			requesterActorIRI,
-			model.FollowerDirectionOutgoing,
+			requester.Profile.ID,
 			true,
 		)
 	} else {
@@ -1191,18 +1172,15 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 				EXISTS (
 					SELECT 1
 					FROM followers f
-					WHERE f.user_id = ?
-						AND f.actor_iri = ?
-						AND f.direction = ?
+					WHERE f.profile_id = ?
+						AND f.following_profile_id = workouts.profile_id
 						AND f.approved = ?
 				)
 			)`,
 			requester.Profile.ID,
 			model.WorkoutVisibilityPublic,
 			model.WorkoutVisibilityFollowers,
-			requester.ID,
-			requesterActorIRI,
-			model.FollowerDirectionOutgoing,
+			requester.Profile.ID,
 			true,
 		)
 	}

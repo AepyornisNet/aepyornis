@@ -5,10 +5,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
+	vocab "github.com/go-ap/activitypub"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -26,10 +29,15 @@ type Profile struct {
 
 	Local bool `json:"local"` // Whether the profile belongs to a user from this instance
 
-	Username    string          `gorm:"not null;type:varchar(128);uniqueIndex:idx_profiles_username_domain,priority:1" json:"username"` // The user's username
-	Domain      *string         `gorm:"type:varchar(255);uniqueIndex:idx_profiles_username_domain,priority:2" json:"domain,omitempty"`  // The profile domain for remote accounts
-	DisplayName string          `gorm:"type:varchar(64);not null" json:"display_name"`                                                  // The user's name
-	Birthdate   *datatypes.Date `json:"birthdate,omitempty"`                                                                            // The user's birthdate
+	Username        string          `gorm:"not null;type:varchar(128);uniqueIndex:idx_profiles_username_domain,priority:1" json:"username"` // The user's username
+	Domain          *string         `gorm:"type:varchar(255);uniqueIndex:idx_profiles_username_domain,priority:2" json:"domain,omitempty"`  // The profile domain for remote accounts
+	DisplayName     string          `gorm:"type:varchar(64);not null" json:"display_name"`                                                  // The user's name
+	Birthdate       *datatypes.Date `json:"birthdate,omitempty"`                                                                            // The user's birthdate
+	URL             *string         `gorm:"type:text;uniqueIndex" json:"url,omitempty"`
+	InboxURL        *string         `gorm:"type:text" json:"inbox_url,omitempty"`
+	OutboxURL       *string         `gorm:"type:text" json:"outbox_url,omitempty"`
+	FollowersURL    *string         `gorm:"type:text" json:"followers_url,omitempty"`
+	AvatarRemoteURL *string         `gorm:"type:text" json:"avatar_remote_url,omitempty"`
 
 	Workouts  []Workout   `gorm:"constraint:OnDelete:CASCADE" json:"-"` // The profiles's workouts
 	Equipment []Equipment `gorm:"constraint:OnDelete:CASCADE" json:"-"` // The profiles's equipment
@@ -43,15 +51,36 @@ func (p *Profile) Save(db *gorm.DB) error {
 }
 
 func (p *Profile) BeforeSave(_ *gorm.DB) error {
+	p.normalizeLocality()
 	p.normalizeDomain()
+	p.normalizeRemoteFields()
 	return nil
 }
 
-func (p *Profile) normalizeDomain() {
-	// Local profiles belong to a local user record and must not carry a domain.
+func (p *Profile) normalizeLocality() {
+	p.Local = p.isLocalProfile()
+}
+
+func (p *Profile) isLocalProfile() bool {
 	if p.UserID != nil || p.User != nil {
+		return true
+	}
+
+	return p.Domain == nil && p.URL == nil && p.InboxURL == nil && p.OutboxURL == nil && p.FollowersURL == nil
+}
+
+func (p *Profile) normalizeDomain() {
+	// Local profiles belong to a local user record and must not carry remote addressing.
+	if p.isLocalProfile() {
 		p.Domain = nil
 		return
+	}
+
+	if p.Domain == nil && p.URL != nil {
+		if parsed, err := url.Parse(strings.TrimSpace(*p.URL)); err == nil && parsed.Host != "" {
+			host := parsed.Host
+			p.Domain = &host
+		}
 	}
 
 	if p.Domain == nil {
@@ -65,6 +94,238 @@ func (p *Profile) normalizeDomain() {
 	}
 
 	p.Domain = &d
+}
+
+func (p *Profile) normalizeRemoteFields() {
+	if p.isLocalProfile() {
+		p.URL = nil
+		p.InboxURL = nil
+		p.OutboxURL = nil
+		p.FollowersURL = nil
+		p.AvatarRemoteURL = nil
+		return
+	}
+
+	p.URL = normalizeOptionalString(p.URL)
+	p.InboxURL = normalizeOptionalString(p.InboxURL)
+	p.OutboxURL = normalizeOptionalString(p.OutboxURL)
+	p.FollowersURL = normalizeOptionalString(p.FollowersURL)
+	p.AvatarRemoteURL = normalizeOptionalString(p.AvatarRemoteURL)
+
+	if p.URL == nil && p.Domain != nil && strings.TrimSpace(p.Username) != "" {
+		u := fmt.Sprintf("https://%s/ap/users/%s", strings.TrimSpace(*p.Domain), strings.TrimSpace(p.Username))
+		p.URL = &u
+	}
+
+	if p.URL != nil {
+		base := strings.TrimRight(*p.URL, "/")
+		if p.InboxURL == nil {
+			inbox := base + "/inbox"
+			p.InboxURL = &inbox
+		}
+		if p.OutboxURL == nil {
+			outbox := base + "/outbox"
+			p.OutboxURL = &outbox
+		}
+		if p.FollowersURL == nil {
+			followers := base + "/followers"
+			p.FollowersURL = &followers
+		}
+	}
+}
+
+func normalizeOptionalString(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+
+	return &trimmed
+}
+
+func (p *Profile) ActorURL() string {
+	if p == nil {
+		return ""
+	}
+
+	if p.URL != nil && strings.TrimSpace(*p.URL) != "" {
+		return strings.TrimSpace(*p.URL)
+	}
+
+	if p.Domain != nil && strings.TrimSpace(*p.Domain) != "" && strings.TrimSpace(p.Username) != "" {
+		return fmt.Sprintf("https://%s/ap/users/%s", strings.TrimSpace(*p.Domain), strings.TrimSpace(p.Username))
+	}
+
+	return ""
+}
+
+func (p *Profile) UpsertRemote(db *gorm.DB) (*Profile, error) {
+	if p == nil {
+		return nil, errors.New("profile is nil")
+	}
+	if db == nil {
+		return nil, errors.New("db is nil")
+	}
+	if p.ID != 0 || p.isLocalProfile() {
+		return p, nil
+	}
+
+	if p.DisplayName == "" {
+		p.DisplayName = p.Username
+	}
+
+	var existing Profile
+	var err error
+	switch {
+	case p.URL != nil && strings.TrimSpace(*p.URL) != "":
+		err = db.Where("url = ?", strings.TrimSpace(*p.URL)).First(&existing).Error
+	case p.Domain != nil && strings.TrimSpace(*p.Domain) != "" && strings.TrimSpace(p.Username) != "":
+		err = db.Where("username = ? AND domain = ?", strings.TrimSpace(p.Username), strings.TrimSpace(*p.Domain)).First(&existing).Error
+	default:
+		return nil, errors.New("remote profile requires url or username/domain")
+	}
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err := db.Create(p).Error; err != nil {
+			return nil, err
+		}
+		return p, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	existing.Local = false
+	if strings.TrimSpace(p.Username) != "" {
+		existing.Username = strings.TrimSpace(p.Username)
+	}
+	if strings.TrimSpace(p.DisplayName) != "" {
+		existing.DisplayName = strings.TrimSpace(p.DisplayName)
+	}
+	mergeOptionalString(&existing.Domain, p.Domain)
+	mergeOptionalString(&existing.URL, p.URL)
+	mergeOptionalString(&existing.InboxURL, p.InboxURL)
+	mergeOptionalString(&existing.OutboxURL, p.OutboxURL)
+	mergeOptionalString(&existing.FollowersURL, p.FollowersURL)
+	mergeOptionalString(&existing.AvatarRemoteURL, p.AvatarRemoteURL)
+
+	if err := db.Save(&existing).Error; err != nil {
+		return nil, err
+	}
+
+	return &existing, nil
+}
+
+func mergeOptionalString(dst **string, src *string) {
+	if src == nil {
+		return
+	}
+
+	normalized := normalizeOptionalString(src)
+	if normalized == nil {
+		return
+	}
+
+	*dst = normalized
+}
+
+func NewRemoteProfileFromActor(actor *vocab.Actor, fallbackUsername string) *Profile {
+	if actor == nil {
+		return nil
+	}
+
+	actorURL := strings.TrimSpace(actor.ID.String())
+	username := strings.TrimSpace(fallbackUsername)
+	if actor.PreferredUsername != nil && strings.TrimSpace(actor.PreferredUsername.String()) != "" {
+		username = strings.TrimSpace(actor.PreferredUsername.String())
+	}
+
+	domain := ""
+	if parsed, err := url.Parse(actorURL); err == nil && parsed.Host != "" {
+		domain = parsed.Host
+		if username == "" {
+			segments := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+			if len(segments) > 0 {
+				username = segments[len(segments)-1]
+			}
+		}
+	}
+
+	displayName := username
+	if actor.Name != nil && strings.TrimSpace(actor.Name.String()) != "" {
+		displayName = strings.TrimSpace(actor.Name.String())
+	}
+
+	profile := &Profile{
+		Local:       false,
+		Username:    username,
+		DisplayName: displayName,
+	}
+
+	if domain != "" {
+		profile.Domain = &domain
+	}
+	if actorURL != "" {
+		profile.URL = &actorURL
+	}
+	if inbox := strings.TrimSpace(actorItemString(actor.Inbox)); inbox != "" {
+		profile.InboxURL = &inbox
+	}
+	if outbox := strings.TrimSpace(actorItemString(actor.Outbox)); outbox != "" {
+		profile.OutboxURL = &outbox
+	}
+	if followers := strings.TrimSpace(actorItemString(actor.Followers)); followers != "" {
+		profile.FollowersURL = &followers
+	}
+	if avatar := strings.TrimSpace(actorIconURL(actor)); avatar != "" {
+		profile.AvatarRemoteURL = &avatar
+	}
+
+	return profile
+}
+
+func actorItemString(item vocab.Item) string {
+	if vocab.IsNil(item) {
+		return ""
+	}
+	if vocab.IsIRI(item) {
+		return item.GetLink().String()
+	}
+
+	iri := ""
+	_ = vocab.OnLink(item, func(link *vocab.Link) error {
+		iri = link.Href.String()
+		return nil
+	})
+
+	return iri
+}
+
+func actorIconURL(actor *vocab.Actor) string {
+	if actor == nil || vocab.IsNil(actor.Icon) {
+		return ""
+	}
+	if vocab.IsIRI(actor.Icon) {
+		return actor.Icon.GetLink().String()
+	}
+
+	iconURL := actorItemString(actor.Icon)
+	if iconURL != "" {
+		return iconURL
+	}
+
+	_ = vocab.OnObject(actor.Icon, func(object *vocab.Object) error {
+		if object != nil && !vocab.IsNil(object.URL) {
+			iconURL = actorItemString(object.URL)
+		}
+		return nil
+	})
+
+	return iconURL
 }
 
 func (p *Profile) MarkWorkoutsDirty(db *gorm.DB) error {

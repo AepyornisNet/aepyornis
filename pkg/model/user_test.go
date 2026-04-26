@@ -138,7 +138,7 @@ func TestUser_PasswordIsValid(t *testing.T) {
 func TestUser_IsNotActive(t *testing.T) {
 	u := User{
 		UserData: UserData{
-			Active:   false,
+			Active: false,
 		},
 		UserSecrets: UserSecrets{
 			Email:    "my-email@example.com",

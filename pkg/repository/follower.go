@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -9,21 +11,23 @@ import (
 )
 
 type Follower interface {
-	UpsertFollowerRequest(userID uint64, actorIRI, actorInbox string) (*model.Follower, error)
-	UpsertFollowingRequest(userID uint64, actorIRI, actorInbox string) (*model.Follower, error)
-	ListFollowerRequests(userID uint64) ([]model.Follower, error)
-	ListApprovedFollowers(userID uint64) ([]model.Follower, error)
-	ListApprovedFollowing(userID uint64) ([]model.Follower, error)
-	ApproveFollowerRequest(userID uint64, requestID uint64) (*model.Follower, error)
-	DeleteFollowerByActorIRI(userID uint64, actorIRI string) error
-	DeleteFollowingByActorIRI(userID uint64, actorIRI string) error
-	CountApprovedFollowers(userID uint64) (int64, error)
-	CountApprovedFollowingByActorIRI(actorIRI string) (int64, error)
-	IsActorFollowingUser(userID uint64, actorIRI string) (bool, error)
-	IsFollowingApprovedByActorIRI(userID uint64, actorIRI string) (bool, error)
-	IsFollowingActiveByActorIRI(userID uint64, actorIRI string) (bool, error)
-	MarkFollowingApprovedByActorIRI(userID uint64, actorIRI string) (*model.Follower, error)
-	MarkFollowingRejectedByActorIRI(userID uint64, actorIRI string) (*model.Follower, error)
+	UpsertFollowerRequest(profileID uint64, followerProfile *model.Profile) (*model.Follower, error)
+	UpsertFollowingRequest(profileID uint64, followingProfile *model.Profile) (*model.Follower, error)
+	ListFollowerRequests(profileID uint64) ([]model.Follower, error)
+	ListApprovedFollowers(profileID uint64) ([]model.Follower, error)
+	ListApprovedFollowing(profileID uint64) ([]model.Follower, error)
+	ApproveFollowerRequest(profileID uint64, requestID uint64) (*model.Follower, error)
+	DeleteFollower(profileID, followingProfileID uint64) error
+	DeleteFollowerByURL(profileID uint64, followingProfileURL string) error
+	DeleteFollowing(profileID, followingProfileID uint64) error
+	DeleteFollowingByURL(profileID uint64, followingProfileURL string) error
+	CountApprovedFollowers(profileID uint64) (int64, error)
+	CountApprovedFollowing(profileID uint64) (int64, error)
+	IsFollowingApproved(profileID, followingProfileID uint64) (bool, error)
+	IsFollowingActive(profileID, followingProfileID uint64) (bool, error)
+	IsFollowingActiveByURL(profileID uint64, followingProfileURL string) (bool, error)
+	MarkFollowingApprovedByURL(profileID uint64, followingProfileURL string) (*model.Follower, error)
+	MarkFollowingRejectedByURL(profileID uint64, followingProfileURL string) (*model.Follower, error)
 }
 
 type followerRepository struct {
@@ -34,41 +38,51 @@ func NewFollower(injector do.Injector) (Follower, error) {
 	return &followerRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
-func (r *followerRepository) UpsertFollowerRequest(userID uint64, actorIRI, actorInbox string) (*model.Follower, error) {
-	return r.upsertFollowEntry(userID, actorIRI, actorInbox, model.FollowerDirectionIncoming)
+func (r *followerRepository) UpsertFollowerRequest(profileID uint64, followerProfile *model.Profile) (*model.Follower, error) {
+	resolvedFollowerProfile, err := r.ensureRelatedProfile(followerProfile)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.upsertFollowEntry(resolvedFollowerProfile.ID, profileID, resolvedFollowerProfile, nil)
 }
 
-func (r *followerRepository) UpsertFollowingRequest(userID uint64, actorIRI, actorInbox string) (*model.Follower, error) {
-	return r.upsertFollowEntry(userID, actorIRI, actorInbox, model.FollowerDirectionOutgoing)
+func (r *followerRepository) UpsertFollowingRequest(profileID uint64, followingProfile *model.Profile) (*model.Follower, error) {
+	resolvedFollowingProfile, err := r.ensureRelatedProfile(followingProfile)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.upsertFollowEntry(profileID, resolvedFollowingProfile.ID, nil, resolvedFollowingProfile)
 }
 
-func (r *followerRepository) ListFollowerRequests(userID uint64) ([]model.Follower, error) {
+func (r *followerRepository) ListFollowerRequests(profileID uint64) ([]model.Follower, error) {
 	followers := make([]model.Follower, 0)
-	if err := r.db.Where("user_id = ? AND direction = ? AND approved = ?", userID, model.FollowerDirectionIncoming, false).Order("created_at DESC").Find(&followers).Error; err != nil {
+	if err := r.db.Preload("Profile").Where("following_profile_id = ? AND approved = ?", profileID, false).Order("created_at DESC").Find(&followers).Error; err != nil {
 		return nil, err
 	}
 	return followers, nil
 }
 
-func (r *followerRepository) ListApprovedFollowers(userID uint64) ([]model.Follower, error) {
+func (r *followerRepository) ListApprovedFollowers(profileID uint64) ([]model.Follower, error) {
 	followers := make([]model.Follower, 0)
-	if err := r.db.Where("user_id = ? AND direction = ? AND approved = ?", userID, model.FollowerDirectionIncoming, true).Order("created_at DESC").Find(&followers).Error; err != nil {
+	if err := r.db.Preload("Profile").Where("following_profile_id = ? AND approved = ?", profileID, true).Order("created_at DESC").Find(&followers).Error; err != nil {
 		return nil, err
 	}
 	return followers, nil
 }
 
-func (r *followerRepository) ListApprovedFollowing(userID uint64) ([]model.Follower, error) {
+func (r *followerRepository) ListApprovedFollowing(profileID uint64) ([]model.Follower, error) {
 	following := make([]model.Follower, 0)
-	if err := r.db.Where("user_id = ? AND direction = ? AND approved = ?", userID, model.FollowerDirectionOutgoing, true).Order("created_at DESC").Find(&following).Error; err != nil {
+	if err := r.db.Preload("FollowingProfile").Where("profile_id = ? AND approved = ?", profileID, true).Order("created_at DESC").Find(&following).Error; err != nil {
 		return nil, err
 	}
 	return following, nil
 }
 
-func (r *followerRepository) ApproveFollowerRequest(userID uint64, requestID uint64) (*model.Follower, error) {
+func (r *followerRepository) ApproveFollowerRequest(profileID uint64, requestID uint64) (*model.Follower, error) {
 	f := &model.Follower{}
-	if err := r.db.Where("id = ? AND user_id = ? AND direction = ?", requestID, userID, model.FollowerDirectionIncoming).First(f).Error; err != nil {
+	if err := r.db.Preload("Profile").Preload("FollowingProfile").Where("id = ? AND following_profile_id = ?", requestID, profileID).First(f).Error; err != nil {
 		return nil, err
 	}
 
@@ -84,49 +98,61 @@ func (r *followerRepository) ApproveFollowerRequest(userID uint64, requestID uin
 	return f, nil
 }
 
-func (r *followerRepository) DeleteFollowerByActorIRI(userID uint64, actorIRI string) error {
-	return r.db.Where("user_id = ? AND actor_iri = ? AND direction = ?", userID, actorIRI, model.FollowerDirectionIncoming).Delete(&model.Follower{}).Error
+func (r *followerRepository) DeleteFollower(profileID, followingProfileID uint64) error {
+	return r.db.Where("profile_id = ? AND following_profile_id = ?", followingProfileID, profileID).Delete(&model.Follower{}).Error
 }
 
-func (r *followerRepository) DeleteFollowingByActorIRI(userID uint64, actorIRI string) error {
-	return r.db.Where("user_id = ? AND actor_iri = ? AND direction = ?", userID, actorIRI, model.FollowerDirectionOutgoing).Delete(&model.Follower{}).Error
+func (r *followerRepository) DeleteFollowerByURL(profileID uint64, followingProfileURL string) error {
+	followingProfile, err := r.profileByURL(followingProfileURL)
+	if err != nil {
+		return err
+	}
+	return r.DeleteFollower(profileID, followingProfile.ID)
 }
 
-func (r *followerRepository) CountApprovedFollowers(userID uint64) (int64, error) {
+func (r *followerRepository) DeleteFollowing(profileID, followingProfileID uint64) error {
+	return r.db.Where("profile_id = ? AND following_profile_id = ?", profileID, followingProfileID).Delete(&model.Follower{}).Error
+}
+
+func (r *followerRepository) DeleteFollowingByURL(profileID uint64, followingProfileURL string) error {
+	followingProfile, err := r.profileByURL(followingProfileURL)
+	if err != nil {
+		return err
+	}
+	return r.DeleteFollowing(profileID, followingProfile.ID)
+}
+
+func (r *followerRepository) CountApprovedFollowers(profileID uint64) (int64, error) {
 	var count int64
-	if err := r.db.Model(&model.Follower{}).Where("user_id = ? AND direction = ? AND approved = ?", userID, model.FollowerDirectionIncoming, true).Count(&count).Error; err != nil {
+	if err := r.db.Model(&model.Follower{}).Where("following_profile_id = ? AND approved = ?", profileID, true).Count(&count).Error; err != nil {
 		return 0, err
 	}
 
 	return count, nil
 }
 
-func (r *followerRepository) CountApprovedFollowingByActorIRI(actorIRI string) (int64, error) {
+func (r *followerRepository) CountApprovedFollowing(profileID uint64) (int64, error) {
 	var count int64
-	if err := r.db.Model(&model.Follower{}).Where("actor_iri = ? AND direction = ? AND approved = ?", actorIRI, model.FollowerDirectionIncoming, true).Count(&count).Error; err != nil {
+	if err := r.db.Model(&model.Follower{}).Where("profile_id = ? AND approved = ?", profileID, true).Count(&count).Error; err != nil {
 		return 0, err
 	}
 
 	return count, nil
 }
 
-func (r *followerRepository) IsActorFollowingUser(userID uint64, actorIRI string) (bool, error) {
-	if actorIRI == "" {
-		return false, nil
-	}
-
+func (r *followerRepository) IsFollowingApproved(profileID, followingProfileID uint64) (bool, error) {
 	var count int64
-	if err := r.db.Model(&model.Follower{}).Where("user_id = ? AND actor_iri = ? AND direction = ? AND approved = ?", userID, actorIRI, model.FollowerDirectionIncoming, true).Count(&count).Error; err != nil {
+	if err := r.db.Model(&model.Follower{}).Where("profile_id = ? AND following_profile_id = ? AND approved = ?", profileID, followingProfileID, true).Count(&count).Error; err != nil {
 		return false, err
 	}
 
 	return count > 0, nil
 }
 
-func (r *followerRepository) IsFollowingApprovedByActorIRI(userID uint64, actorIRI string) (bool, error) {
+func (r *followerRepository) IsFollowingActive(profileID, followingProfileID uint64) (bool, error) {
 	var count int64
 	if err := r.db.Model(&model.Follower{}).
-		Where("user_id = ? AND actor_iri = ? AND direction = ? AND approved = ?", userID, actorIRI, model.FollowerDirectionOutgoing, true).
+		Where("profile_id = ? AND following_profile_id = ? AND rejected_at IS NULL", profileID, followingProfileID).
 		Count(&count).Error; err != nil {
 		return false, err
 	}
@@ -134,20 +160,26 @@ func (r *followerRepository) IsFollowingApprovedByActorIRI(userID uint64, actorI
 	return count > 0, nil
 }
 
-func (r *followerRepository) IsFollowingActiveByActorIRI(userID uint64, actorIRI string) (bool, error) {
-	var count int64
-	if err := r.db.Model(&model.Follower{}).
-		Where("user_id = ? AND actor_iri = ? AND direction = ? AND rejected_at IS NULL", userID, actorIRI, model.FollowerDirectionOutgoing).
-		Count(&count).Error; err != nil {
+func (r *followerRepository) IsFollowingActiveByURL(profileID uint64, followingProfileURL string) (bool, error) {
+	followingProfile, err := r.profileByURL(followingProfileURL)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
 		return false, err
 	}
 
-	return count > 0, nil
+	return r.IsFollowingActive(profileID, followingProfile.ID)
 }
 
-func (r *followerRepository) MarkFollowingApprovedByActorIRI(userID uint64, actorIRI string) (*model.Follower, error) {
+func (r *followerRepository) MarkFollowingApprovedByURL(profileID uint64, followingProfileURL string) (*model.Follower, error) {
+	followingProfile, err := r.profileByURL(followingProfileURL)
+	if err != nil {
+		return nil, err
+	}
+
 	f := &model.Follower{}
-	if err := r.db.Where(&model.Follower{UserID: userID, ActorIRI: actorIRI, Direction: model.FollowerDirectionOutgoing}).First(f).Error; err != nil {
+	if err := r.db.Preload("Profile").Preload("FollowingProfile").Where(&model.Follower{ProfileID: profileID, FollowingProfileID: followingProfile.ID}).First(f).Error; err != nil {
 		return nil, err
 	}
 
@@ -163,9 +195,14 @@ func (r *followerRepository) MarkFollowingApprovedByActorIRI(userID uint64, acto
 	return f, nil
 }
 
-func (r *followerRepository) MarkFollowingRejectedByActorIRI(userID uint64, actorIRI string) (*model.Follower, error) {
+func (r *followerRepository) MarkFollowingRejectedByURL(profileID uint64, followingProfileURL string) (*model.Follower, error) {
+	followingProfile, err := r.profileByURL(followingProfileURL)
+	if err != nil {
+		return nil, err
+	}
+
 	f := &model.Follower{}
-	if err := r.db.Where(&model.Follower{UserID: userID, ActorIRI: actorIRI, Direction: model.FollowerDirectionOutgoing}).First(f).Error; err != nil {
+	if err := r.db.Preload("Profile").Preload("FollowingProfile").Where(&model.Follower{ProfileID: profileID, FollowingProfileID: followingProfile.ID}).First(f).Error; err != nil {
 		return nil, err
 	}
 
@@ -181,14 +218,21 @@ func (r *followerRepository) MarkFollowingRejectedByActorIRI(userID uint64, acto
 	return f, nil
 }
 
-func (r *followerRepository) upsertFollowEntry(userID uint64, actorIRI, actorInbox string, direction model.FollowerDirection) (*model.Follower, error) {
+func (r *followerRepository) upsertFollowEntry(profileID, followingProfileID uint64, profile, followingProfile *model.Profile) (*model.Follower, error) {
+	if profileID == 0 {
+		return nil, errors.New("profile id is required")
+	}
+	if followingProfileID == 0 {
+		return nil, errors.New("following profile id is required")
+	}
+
 	f := &model.Follower{}
-	if err := r.db.Where(&model.Follower{UserID: userID, ActorIRI: actorIRI, Direction: direction}).First(f).Error; err != nil {
+	if err := r.db.Preload("Profile").Preload("FollowingProfile").Where(&model.Follower{ProfileID: profileID, FollowingProfileID: followingProfileID}).First(f).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			f.UserID = userID
-			f.ActorIRI = actorIRI
-			f.ActorInbox = actorInbox
-			f.Direction = direction
+			f.ProfileID = profileID
+			f.FollowingProfileID = followingProfileID
+			f.Profile = profile
+			f.FollowingProfile = followingProfile
 			f.Approved = false
 			f.RejectedAt = nil
 			if err := r.db.Create(f).Error; err != nil {
@@ -200,7 +244,12 @@ func (r *followerRepository) upsertFollowEntry(userID uint64, actorIRI, actorInb
 		return nil, err
 	}
 
-	f.ActorInbox = actorInbox
+	if profile != nil {
+		f.Profile = profile
+	}
+	if followingProfile != nil {
+		f.FollowingProfile = followingProfile
+	}
 	if !f.Approved {
 		f.ApprovedAt = nil
 	}
@@ -210,4 +259,36 @@ func (r *followerRepository) upsertFollowEntry(userID uint64, actorIRI, actorInb
 	}
 
 	return f, nil
+}
+
+func (r *followerRepository) ensureRelatedProfile(profile *model.Profile) (*model.Profile, error) {
+	if profile == nil {
+		return nil, errors.New("profile is nil")
+	}
+	if profile.ID != 0 {
+		return profile, nil
+	}
+	if profile.UserID != nil {
+		existing := &model.Profile{}
+		if err := r.db.Where("user_id = ?", *profile.UserID).First(existing).Error; err != nil {
+			return nil, err
+		}
+		return existing, nil
+	}
+
+	return profile.UpsertRemote(r.db)
+}
+
+func (r *followerRepository) profileByURL(profileURL string) (*model.Profile, error) {
+	trimmed := strings.TrimSpace(profileURL)
+	if trimmed == "" {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	p := &model.Profile{}
+	if err := r.db.Where("url = ?", trimmed).First(p).Error; err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }

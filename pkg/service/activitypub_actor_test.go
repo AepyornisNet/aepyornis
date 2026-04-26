@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
@@ -39,4 +40,29 @@ func TestActivityPubActorService_ActorURLForRemoteProfile(t *testing.T) {
 	actorURL, err := svc.ActorURL(&model.Profile{Username: "alice", Domain: &domain})
 	require.NoError(t, err)
 	assert.Equal(t, "https://remote.example/ap/users/alice", actorURL)
+}
+
+func TestActivityPubActorService_SendFollowAcceptSkipsLocalFollowers(t *testing.T) {
+	injector := do.New(Package)
+	do.ProvideValue(injector, &config.Config{Config: model.Config{EnvConfig: model.EnvConfig{
+		Host: "https://local.example",
+	}}})
+	do.ProvideValue(injector, echo.New())
+
+	svc, err := NewActivityPubActorService(injector)
+	require.NoError(t, err)
+
+	localUserID := uint64(1)
+	err = svc.SendFollowAccept(context.Background(), &model.Profile{
+		Username:   "admin",
+		PrivateKey: "unused-for-local-follower",
+	}, model.Follower{
+		Profile: &model.Profile{
+			Username: "alice",
+			UserID:   &localUserID,
+			Local:    true,
+		},
+	})
+
+	assert.NoError(t, err)
 }

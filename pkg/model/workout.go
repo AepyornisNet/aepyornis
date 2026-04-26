@@ -40,22 +40,22 @@ func (v WorkoutVisibility) IsValid() bool {
 	}
 }
 
-func ScopeVisibleWorkouts(query *gorm.DB, ownerID uint64, viewerID uint64, viewerActorIRI string) *gorm.DB {
-	if viewerID != 0 && viewerID == ownerID {
-		return query.Where("workouts.profile_id = ?", ownerID)
+func ScopeVisibleWorkouts(query *gorm.DB, ownerProfileID uint64, viewerProfileID uint64) *gorm.DB {
+	if viewerProfileID != 0 && viewerProfileID == ownerProfileID {
+		return query.Where("workouts.profile_id = ?", ownerProfileID)
 	}
 
-	if viewerActorIRI == "" {
-		return query.Where("workouts.profile_id = ? AND workouts.visibility = ?", ownerID, WorkoutVisibilityPublic)
+	if viewerProfileID == 0 {
+		return query.Where("workouts.profile_id = ? AND workouts.visibility = ?", ownerProfileID, WorkoutVisibilityPublic)
 	}
 
 	return query.Where(
-		"workouts.profile_id = ? AND (workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers WHERE followers.user_id = ? AND followers.actor_iri = ? AND followers.approved = ?)))",
-		ownerID,
+		"workouts.profile_id = ? AND (workouts.visibility = ? OR (workouts.visibility = ? AND EXISTS (SELECT 1 FROM followers WHERE followers.profile_id = ? AND followers.following_profile_id = ? AND followers.approved = ?)))",
+		ownerProfileID,
 		WorkoutVisibilityPublic,
 		WorkoutVisibilityFollowers,
-		ownerID,
-		viewerActorIRI,
+		viewerProfileID,
+		ownerProfileID,
 		true,
 	)
 }

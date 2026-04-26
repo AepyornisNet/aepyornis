@@ -12,10 +12,10 @@ import (
 )
 
 type InboxFollowerRepository interface {
-	UpsertFollowerRequest(userID uint64, actorIRI, actorInbox string) (*model.Follower, error)
-	MarkFollowingApprovedByActorIRI(userID uint64, actorIRI string) (*model.Follower, error)
-	MarkFollowingRejectedByActorIRI(userID uint64, actorIRI string) (*model.Follower, error)
-	DeleteFollowerByActorIRI(userID uint64, actorIRI string) error
+	UpsertFollowerRequest(profileID uint64, followingProfile *model.Profile) (*model.Follower, error)
+	MarkFollowingApprovedByURL(profileID uint64, followingProfileURL string) (*model.Follower, error)
+	MarkFollowingRejectedByURL(profileID uint64, followingProfileURL string) (*model.Follower, error)
+	DeleteFollowerByURL(profileID uint64, followingProfileURL string) error
 }
 
 type InboxOutboxRepository interface {
@@ -67,18 +67,18 @@ func NewInboxActivityHandler(
 	}
 }
 
-func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) (bool, error) {
+func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targetUserID uint64, targetProfileID uint64, activity *vocab.Activity) (bool, error) {
 	if activity == nil {
 		return false, nil
 	}
 
 	switch activity.GetType() {
 	case vocab.FollowType:
-		return true, h.handleFollowActivity(requestingActor, targetUserID)
+		return true, h.handleFollowActivity(requestingActor, targetProfileID)
 	case vocab.AcceptType:
-		return true, h.handleFollowAcceptActivity(targetUserID, activity)
+		return true, h.handleFollowAcceptActivity(targetProfileID, activity)
 	case vocab.RejectType:
-		return true, h.handleFollowRejectActivity(targetUserID, activity)
+		return true, h.handleFollowRejectActivity(targetProfileID, activity)
 	case vocab.CreateType:
 		return h.createActivity(requestingActor, targetUserID, activity)
 	case vocab.UpdateType:
@@ -86,7 +86,7 @@ func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targ
 	case vocab.DeleteType, vocab.RemoveType:
 		return h.deleteActivity(activity)
 	case vocab.UndoType:
-		return h.undoActivity(requestingActor, targetUserID, activity)
+		return h.undoActivity(requestingActor, targetUserID, targetProfileID, activity)
 	case vocab.LikeType:
 		return true, h.handleLikeActivity(requestingActor, targetUserID, activity)
 	default:
@@ -94,27 +94,31 @@ func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targ
 	}
 }
 
-func (h *InboxActivityHandler) handleFollowActivity(requestingActor *vocab.Actor, targetUserID uint64) error {
+func (h *InboxActivityHandler) handleFollowActivity(requestingActor *vocab.Actor, targetProfileID uint64) error {
 	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
+	profile := model.NewRemoteProfileFromActor(requestingActor, "")
+	if profile == nil {
+		return errors.New("requesting actor profile invalid")
+	}
+
 	_, err := h.followerRepo.UpsertFollowerRequest(
-		targetUserID,
-		requestingActor.ID.String(),
-		actorInboxIRI(requestingActor),
+		targetProfileID,
+		profile,
 	)
 
 	return err
 }
 
-func (h *InboxActivityHandler) handleFollowAcceptActivity(targetUserID uint64, activity *vocab.Activity) error {
+func (h *InboxActivityHandler) handleFollowAcceptActivity(targetProfileID uint64, activity *vocab.Activity) error {
 	followTargetIRI := extractFollowLifecycleTarget(activity)
 	if followTargetIRI == "" {
 		return errors.New("invalid target follower given")
 	}
 
-	_, err := h.followerRepo.MarkFollowingApprovedByActorIRI(targetUserID, followTargetIRI)
+	_, err := h.followerRepo.MarkFollowingApprovedByURL(targetProfileID, followTargetIRI)
 	if err != nil {
 		return fmt.Errorf("failed writing follower approve: %w", err)
 	}
@@ -122,13 +126,13 @@ func (h *InboxActivityHandler) handleFollowAcceptActivity(targetUserID uint64, a
 	return nil
 }
 
-func (h *InboxActivityHandler) handleFollowRejectActivity(targetUserID uint64, activity *vocab.Activity) error {
+func (h *InboxActivityHandler) handleFollowRejectActivity(targetProfileID uint64, activity *vocab.Activity) error {
 	followTargetIRI := extractFollowLifecycleTarget(activity)
 	if followTargetIRI == "" {
 		return errors.New("invalid target follower given")
 	}
 
-	_, err := h.followerRepo.MarkFollowingRejectedByActorIRI(targetUserID, followTargetIRI)
+	_, err := h.followerRepo.MarkFollowingRejectedByURL(targetProfileID, followTargetIRI)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("failed writing follower reject: %w", err)
 	}
@@ -158,12 +162,12 @@ func (h *InboxActivityHandler) handleLikeActivity(requestingActor *vocab.Actor, 
 	return h.workoutLikeRepo.LikeByActorIRI(workoutID, requestingActor.ID.String())
 }
 
-func (h *InboxActivityHandler) handleUndoFollowActivity(requestingActor *vocab.Actor, targetUserID uint64) error {
+func (h *InboxActivityHandler) handleUndoFollowActivity(requestingActor *vocab.Actor, targetProfileID uint64) error {
 	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	return h.followerRepo.DeleteFollowerByActorIRI(targetUserID, requestingActor.ID.String())
+	return h.followerRepo.DeleteFollowerByURL(targetProfileID, requestingActor.ID.String())
 }
 
 func (h *InboxActivityHandler) handleUndoLikeActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) error {
@@ -325,7 +329,7 @@ func (h *InboxActivityHandler) deleteActivity(activity *vocab.Activity) (bool, e
 	return false, nil
 }
 
-func (h *InboxActivityHandler) undoActivity(requestingActor *vocab.Actor, targetUserID uint64, activity *vocab.Activity) (bool, error) {
+func (h *InboxActivityHandler) undoActivity(requestingActor *vocab.Actor, targetUserID uint64, targetProfileID uint64, activity *vocab.Activity) (bool, error) {
 	obj, err := vocab.ToActivity(activity.Object)
 	if err != nil {
 		return false, err
@@ -333,7 +337,7 @@ func (h *InboxActivityHandler) undoActivity(requestingActor *vocab.Actor, target
 
 	switch obj.GetType() {
 	case vocab.FollowType:
-		return true, h.handleUndoFollowActivity(requestingActor, targetUserID)
+		return true, h.handleUndoFollowActivity(requestingActor, targetProfileID)
 	case vocab.LikeType:
 		return true, h.handleUndoLikeActivity(requestingActor, targetUserID, obj)
 	}
@@ -408,9 +412,6 @@ func (h *InboxActivityHandler) handleCreateReplyActivity(requestingActor *vocab.
 		actorName = requestingActor.Name.String()
 	}
 
-	avatarURL := ActorIconIRI(requestingActor)
-	CacheActorProfile(requestingActor.ID.String(), actorName, avatarURL)
-
 	if h.statusRepo != nil {
 		if err := h.statusRepo.ReplyByActorIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content); err != nil {
 			return err
@@ -459,9 +460,6 @@ func (h *InboxActivityHandler) handleUpdateReplyActivity(requestingActor *vocab.
 	if requestingActor.Name != nil {
 		actorName = requestingActor.Name.String()
 	}
-
-	avatarURL := ActorIconIRI(requestingActor)
-	CacheActorProfile(requestingActor.ID.String(), actorName, avatarURL)
 
 	err := h.workoutReplyRepo.UpdateReplyByObjectIRI(workoutID, replyObjectIRI, requestingActor.ID.String(), actorName, content)
 	if h.statusRepo != nil {

@@ -101,7 +101,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 	handled := false
 
 	err = vocab.On(item, func(act *vocab.Activity) error {
-		routed, routeErr := ac.inboxActivityHandler.HandleActivity(&actor.Actor, targetUser.ID, act)
+		routed, routeErr := ac.inboxActivityHandler.HandleActivity(&actor.Actor, targetUser.ID, targetUser.Profile.ID, act)
 		handled = routed
 		return routeErr
 	})

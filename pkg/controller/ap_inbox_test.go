@@ -41,7 +41,14 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, localUser.Create(db))
 
 	remoteActorIRI := "https://wt-ap2.test/ap/users/admin"
-	_, err = do.MustInvoke[repository.Follower](injector).UpsertFollowingRequest(localUser.ID, remoteActorIRI, remoteActorIRI+"/inbox")
+	remoteProfile := &model.Profile{
+		Username:    "admin",
+		DisplayName: "Admin",
+		Domain:      func() *string { d := "wt-ap2.test"; return &d }(),
+		URL:         func() *string { u := remoteActorIRI; return &u }(),
+		InboxURL:    func() *string { u := remoteActorIRI + "/inbox"; return &u }(),
+	}
+	_, err = do.MustInvoke[repository.Follower](injector).UpsertFollowingRequest(localUser.Profile.ID, remoteProfile)
 	require.NoError(t, err)
 
 	payload := []byte(`{
@@ -71,7 +78,9 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, rec.Code)
 
-	approved, err := do.MustInvoke[repository.Follower](injector).IsFollowingApprovedByActorIRI(localUser.ID, remoteActorIRI)
+	savedRemoteProfile, err := remoteProfile.UpsertRemote(db)
+	require.NoError(t, err)
+	approved, err := do.MustInvoke[repository.Follower](injector).IsFollowingApproved(localUser.Profile.ID, savedRemoteProfile.ID)
 	require.NoError(t, err)
 	assert.True(t, approved)
 }

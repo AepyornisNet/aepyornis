@@ -86,8 +86,15 @@ func ResolveActorIRIFromWebFinger(ctx context.Context, username, host string) (s
 }
 
 func LoadRemoteActor(ctx context.Context, actorIRI string) (*vocab.Actor, error) {
-	client := actorHTTPClient{client: http.DefaultClient}
-	return client.LoadActor(ctx, actorIRI)
+	return LoadRemoteActorWithClient(ctx, http.DefaultClient, actorIRI)
+}
+
+func LoadRemoteActorWithClient(ctx context.Context, client *http.Client, actorIRI string) (*vocab.Actor, error) {
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	return actorHTTPClient{client: client}.LoadActor(ctx, actorIRI)
 }
 
 func LoadCollectionTotalItems(ctx context.Context, collectionIRI string) (int64, error) {

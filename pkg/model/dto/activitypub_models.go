@@ -12,10 +12,10 @@ type FollowRequestResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func NewFollowRequestResponse(f model.Follower) FollowRequestResponse {
+func NewFollowRequestResponse(f model.Follower, actorIRI string) FollowRequestResponse {
 	return FollowRequestResponse{
 		ID:        f.ID,
-		ActorIRI:  f.ActorIRI,
+		ActorIRI:  actorIRI,
 		CreatedAt: f.CreatedAt,
 	}
 }

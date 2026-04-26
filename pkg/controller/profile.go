@@ -283,14 +283,15 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 func (pc *profileController) ListFollowRequests(c echo.Context) error {
 	user := currentUser(c)
 
-	requests, err := pc.followerRepo.ListFollowerRequests(user.ID)
+	requests, err := pc.followerRepo.ListFollowerRequests(user.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	results := make([]dto.FollowRequestResponse, 0, len(requests))
 	for _, req := range requests {
-		results = append(results, dto.NewFollowRequestResponse(req))
+		actorURL, _ := pc.actorService.ActorURL(req.Profile)
+		results = append(results, dto.NewFollowRequestResponse(req, actorURL))
 	}
 
 	return c.JSON(http.StatusOK, dto.Response[[]dto.FollowRequestResponse]{
@@ -320,7 +321,7 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	follower, err := pc.followerRepo.ApproveFollowerRequest(user.ID, id)
+	follower, err := pc.followerRepo.ApproveFollowerRequest(user.Profile.ID, id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -330,7 +331,7 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, dto.Response[dto.FollowRequestResponse]{
-		Results: dto.NewFollowRequestResponse(*follower),
+		Results: dto.NewFollowRequestResponse(*follower, follower.Profile.ActorURL()),
 	})
 }
 

@@ -135,17 +135,18 @@ func (ac *apUserController) Following(c echo.Context) error {
 		}
 	}
 
-	following, err := ac.followerRepo.ListApprovedFollowing(targetUser.ID)
+	following, err := ac.followerRepo.ListApprovedFollowing(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	items := make(vocab.ItemCollection, 0, len(following))
 	for _, entry := range following {
-		if entry.ActorIRI == "" {
+		actorURL, actorErr := ac.actorService.ActorURL(entry.FollowingProfile)
+		if actorErr != nil || actorURL == "" {
 			continue
 		}
-		items = append(items, vocab.IRI(entry.ActorIRI))
+		items = append(items, vocab.IRI(actorURL))
 	}
 
 	followingURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
@@ -227,17 +228,18 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		}
 	}
 
-	followers, err := ac.followerRepo.ListApprovedFollowers(targetUser.ID)
+	followers, err := ac.followerRepo.ListApprovedFollowers(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	items := make(vocab.ItemCollection, 0, len(followers))
 	for _, follower := range followers {
-		if follower.ActorIRI == "" {
+		actorURL, actorErr := ac.actorService.ActorURL(follower.Profile)
+		if actorErr != nil || actorURL == "" {
 			continue
 		}
-		items = append(items, vocab.IRI(follower.ActorIRI))
+		items = append(items, vocab.IRI(actorURL))
 	}
 
 	followersURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{

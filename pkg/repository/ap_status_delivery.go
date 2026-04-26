@@ -41,13 +41,15 @@ func (r *apOutboxDeliveryRepository) RecordDelivery(outboxEntryID uint64, actorI
 func (r *apOutboxDeliveryRepository) ListPendingDeliveriesForEntry(entryID uint64) ([]model.APPendingStatusDelivery, error) {
 	rows := make([]model.APPendingStatusDelivery, 0)
 	err := r.db.Table("ap_statuses").
-		Select("ap_statuses.id AS entry_id, ap_statuses.user_id AS user_id, ap_statuses.activity AS activity, followers.actor_iri AS actor_iri, followers.actor_inbox AS actor_inbox").
-		Joins("JOIN followers ON followers.user_id = ap_statuses.user_id AND followers.approved = ?", true).
-		Joins("LEFT JOIN ap_outbox_delivery ON ap_outbox_delivery.ap_status_id = ap_statuses.id AND ap_outbox_delivery.actor_iri = followers.actor_iri").
+		Select("ap_statuses.id AS entry_id, ap_statuses.user_id AS user_id, ap_statuses.activity AS activity, follower_profiles.url AS actor_iri, follower_profiles.inbox_url AS actor_inbox").
+		Joins("JOIN profiles owner_profiles ON owner_profiles.user_id = ap_statuses.user_id").
+		Joins("JOIN followers ON followers.following_profile_id = owner_profiles.id AND followers.approved = ?", true).
+		Joins("JOIN profiles follower_profiles ON follower_profiles.id = followers.profile_id").
+		Joins("LEFT JOIN ap_outbox_delivery ON ap_outbox_delivery.ap_status_id = ap_statuses.id AND ap_outbox_delivery.actor_iri = follower_profiles.url").
 		Where("ap_statuses.id = ?", entryID).
 		Where("ap_outbox_delivery.id IS NULL").
-		Where("followers.actor_iri <> ''").
-		Where("followers.actor_inbox <> ''").
+		Where("follower_profiles.url IS NOT NULL").
+		Where("follower_profiles.inbox_url IS NOT NULL").
 		Find(&rows).
 		Error
 

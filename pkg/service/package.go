@@ -7,4 +7,5 @@ import "github.com/samber/do/v2"
 var Package = do.Package(
 	do.Lazy(NewActivityPubRequestService),
 	do.Lazy(NewActivityPubActorService),
+	do.Lazy(NewActivityPubProfileService),
 )
