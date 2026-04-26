@@ -73,7 +73,7 @@ func (a *App) ConfigureWebserver() error {
 		return fmt.Errorf("configure webserver: creating gue client: %w", err)
 	}
 
-	a.injector = newInjector(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc, e)
+	a.injector = newInjector(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc)
 
 	e.Use(session.LoadAndSave(a.sessionManager))
 	e.Use(a.ContextValueMiddleware)
