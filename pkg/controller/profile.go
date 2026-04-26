@@ -11,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"gorm.io/datatypes"
 )
 
@@ -32,7 +33,8 @@ type profileController struct {
 	context *container.Container
 }
 
-func NewProfileController(c *container.Container) ProfileController {
+func NewProfileController(injector do.Injector) ProfileController {
+	c := container.NewFromInjector(injector)
 	return &profileController{context: c}
 }
 

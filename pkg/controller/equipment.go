@@ -7,6 +7,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 )
 
@@ -22,7 +23,8 @@ type equipmentController struct {
 	context *container.Container
 }
 
-func NewEquipmentController(c *container.Container) EquipmentController {
+func NewEquipmentController(injector do.Injector) EquipmentController {
+	c := container.NewFromInjector(injector)
 	return &equipmentController{context: c}
 }
 

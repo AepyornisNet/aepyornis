@@ -14,7 +14,7 @@ func (a *App) ValidateAPIKeyMiddleware(key string, c echo.Context) (bool, error)
 		token = strings.TrimSpace(token[7:])
 	}
 
-	u, err := a.container.UserRepo().GetByAPIKey(token)
+	u, err := a.getContainer().UserRepo().GetByAPIKey(token)
 	if err != nil {
 		return false, dto.ErrInvalidAPIKey
 	}

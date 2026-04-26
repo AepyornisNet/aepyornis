@@ -11,6 +11,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/samber/do/v2"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
@@ -52,9 +53,11 @@ type Worker struct {
 	delay    time.Duration
 }
 
-// New creates a Worker using dependencies from the provided Container.
+// New creates a Worker using dependencies from the provided injector.
 // It migrates the gue_jobs schema and builds the work maps.
-func New(c *container.Container) (*Worker, error) {
+func New(injector do.Injector) (*Worker, error) {
+	c := container.NewFromInjector(injector)
+
 	db := c.GetDB()
 	cfg := c.GetConfig()
 	logger := c.Logger().With("module", "worker")

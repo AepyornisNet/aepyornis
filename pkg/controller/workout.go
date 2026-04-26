@@ -16,6 +16,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
@@ -47,7 +48,8 @@ type workoutController struct {
 
 var _ WorkoutController = (*workoutController)(nil)
 
-func NewWorkoutController(c *container.Container) WorkoutController {
+func NewWorkoutController(injector do.Injector) WorkoutController {
+	c := container.NewFromInjector(injector)
 	return &workoutController{context: c}
 }
 

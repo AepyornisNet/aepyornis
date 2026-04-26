@@ -7,6 +7,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type StatisticsController interface {
@@ -17,7 +18,8 @@ type statisticsController struct {
 	context *container.Container
 }
 
-func NewStatisticsController(c *container.Container) StatisticsController {
+func NewStatisticsController(injector do.Injector) StatisticsController {
+	c := container.NewFromInjector(injector)
 	return &statisticsController{context: c}
 }
 

@@ -13,6 +13,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type ApUserController interface {
@@ -27,7 +28,8 @@ type apUserController struct {
 
 const followersPageSize = 20
 
-func NewApUserController(c *container.Container) ApUserController {
+func NewApUserController(injector do.Injector) ApUserController {
+	c := container.NewFromInjector(injector)
 	return &apUserController{context: c}
 }
 

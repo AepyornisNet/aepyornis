@@ -7,6 +7,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type AdminController interface {
@@ -22,7 +23,8 @@ type adminController struct {
 	resetConfiguration func() error
 }
 
-func NewAdminController(c *container.Container, resetConfiguration func() error) AdminController {
+func NewAdminController(injector do.Injector, resetConfiguration func() error) AdminController {
+	c := container.NewFromInjector(injector)
 	return &adminController{context: c, resetConfiguration: resetConfiguration}
 }
 

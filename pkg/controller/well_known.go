@@ -10,6 +10,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type WellKnownController interface {
@@ -21,7 +22,8 @@ type wellKnownController struct {
 	context *container.Container
 }
 
-func NewWellKnownController(c *container.Container) WellKnownController {
+func NewWellKnownController(injector do.Injector) WellKnownController {
+	c := container.NewFromInjector(injector)
 	return &wellKnownController{context: c}
 }
 

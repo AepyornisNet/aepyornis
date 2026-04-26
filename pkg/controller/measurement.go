@@ -7,6 +7,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type MeasurementController interface {
@@ -19,7 +20,8 @@ type measurementController struct {
 	context *container.Container
 }
 
-func NewMeasurementController(c *container.Container) MeasurementController {
+func NewMeasurementController(injector do.Injector) MeasurementController {
+	c := container.NewFromInjector(injector)
 	return &measurementController{context: c}
 }
 

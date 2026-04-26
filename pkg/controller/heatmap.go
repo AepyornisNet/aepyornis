@@ -9,6 +9,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 	geojson "github.com/paulmach/orb/geojson"
+	"github.com/samber/do/v2"
 )
 
 const (
@@ -44,7 +45,8 @@ type rawCoordinateRow struct {
 	Lng float64 `gorm:"column:lng"`
 }
 
-func NewHeatmapController(c *container.Container) HeatmapController {
+func NewHeatmapController(injector do.Injector) HeatmapController {
+	c := container.NewFromInjector(injector)
 	return &heatmapController{context: c}
 }
 

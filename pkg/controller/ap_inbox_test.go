@@ -23,7 +23,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 
 	repos := repository.New(db)
 	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil, repos)
-	ctrl := NewApInboxController(ctr)
+	ctrl := NewApInboxController(ctr.Injector())
 
 	localUser := &model.User{
 		UserData: model.UserData{
@@ -81,7 +81,7 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 
 	repos := repository.New(db)
 	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil, repos)
-	ctrl := NewApInboxController(ctr)
+	ctrl := NewApInboxController(ctr.Injector())
 
 	localUser := &model.User{
 		UserData: model.UserData{

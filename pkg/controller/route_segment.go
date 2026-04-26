@@ -12,6 +12,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 )
 
@@ -31,7 +32,8 @@ type routeSegmentController struct {
 	context *container.Container
 }
 
-func NewRouteSegmentController(c *container.Container) RouteSegmentController {
+func NewRouteSegmentController(injector do.Injector) RouteSegmentController {
+	c := container.NewFromInjector(injector)
 	return &routeSegmentController{context: c}
 }
 

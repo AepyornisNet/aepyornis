@@ -12,6 +12,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type ApInboxController interface {
@@ -23,7 +24,8 @@ type apInboxController struct {
 	inboxActivityHandler *ap.InboxActivityHandler
 }
 
-func NewApInboxController(c *container.Container) ApInboxController {
+func NewApInboxController(injector do.Injector) ApInboxController {
+	c := container.NewFromInjector(injector)
 	return &apInboxController{
 		context: c,
 		inboxActivityHandler: ap.NewInboxActivityHandler(

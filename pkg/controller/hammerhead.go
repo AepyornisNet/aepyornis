@@ -21,6 +21,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	gorand "github.com/cat-dealer/go-rand/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -65,7 +66,8 @@ type hammerheadConnectionResponse struct {
 	HammerheadUserID string `json:"hammerhead_user_id,omitempty"`
 }
 
-func NewHammerheadController(c *container.Container) HammerheadController {
+func NewHammerheadController(injector do.Injector) HammerheadController {
+	c := container.NewFromInjector(injector)
 	return &hammerheadController{
 		context: c,
 		client: &http.Client{

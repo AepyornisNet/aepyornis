@@ -11,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 var (
@@ -28,7 +29,8 @@ type authController struct {
 	context *container.Container
 }
 
-func NewAuthController(c *container.Container) AuthController {
+func NewAuthController(injector do.Injector) AuthController {
+	c := container.NewFromInjector(injector)
 	return &authController{context: c}
 }
 

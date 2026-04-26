@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -37,12 +38,12 @@ type App struct {
 	translator     *i18n.Locale
 	Version        version.Version
 	Config         *container.Config
-	container      container.Container
+	injector       do.Injector
 	repositories   *repository.Repositories
 }
 
 func (a *App) Serve() error {
-	w, err := worker.New(&a.container)
+	w, err := worker.New(a.injector)
 	if err != nil {
 		return err
 	}
@@ -205,4 +206,8 @@ func (a *App) DB() *gorm.DB {
 
 func (a *App) Logger() *slog.Logger {
 	return a.logger
+}
+
+func (a *App) getContainer() *container.Container {
+	return container.NewFromInjector(a.injector)
 }

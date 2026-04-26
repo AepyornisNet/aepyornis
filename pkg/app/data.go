@@ -58,7 +58,7 @@ func (a *App) setUser(c echo.Context) error {
 		return ErrInvalidJWTToken
 	}
 
-	dbUser, err := a.container.UserRepo().GetByEmail(email)
+	dbUser, err := a.getContainer().UserRepo().GetByEmail(email)
 	if err != nil {
 		return ErrInvalidJWTToken
 	}
@@ -76,9 +76,10 @@ func (a *App) setContextUser(c echo.Context, user *model.User) {
 	c.Set("user_info", user)
 
 	if user.ActivityPubEnabled() {
+		cfg := a.getContainer().GetConfig()
 		actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-			Host:           a.container.GetConfig().Host,
-			WebRoot:        a.container.GetConfig().WebRoot,
+			Host:           cfg.Host,
+			WebRoot:        cfg.WebRoot,
 			FallbackHost:   c.Request().Host,
 			FallbackScheme: c.Scheme(),
 		}, user.Profile.Username)

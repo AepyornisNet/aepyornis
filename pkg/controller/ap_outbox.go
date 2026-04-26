@@ -15,6 +15,7 @@ import (
 	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +33,8 @@ type apOutboxController struct {
 
 const outboxPageSize = 20
 
-func NewApOutboxController(c *container.Container) ApOutboxController {
+func NewApOutboxController(injector do.Injector) ApOutboxController {
+	c := container.NewFromInjector(injector)
 	return &apOutboxController{context: c}
 }
 

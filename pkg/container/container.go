@@ -10,18 +10,19 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/alexedwards/scs/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
 
 type Container struct {
-	db             *gorm.DB
-	config         *Config
-	version        *version.Version
-	sessionManager *scs.SessionManager
-	logger         *slog.Logger
-	gueClient      *gue.Client
-	repositories   *repository.Repositories
+	injector do.Injector
+}
+
+func NewFromInjector(injector do.Injector) *Container {
+	return &Container{
+		injector: injector,
+	}
 }
 
 func NewContainer(
@@ -33,135 +34,153 @@ func NewContainer(
 	gueClient *gue.Client,
 	repositories *repository.Repositories,
 ) *Container {
+	injector := do.New()
+	do.ProvideValue(injector, db)
+	do.ProvideValue(injector, config)
+	do.ProvideValue(injector, v)
+	do.ProvideValue(injector, sessionManager)
+	do.ProvideValue(injector, logger)
+	do.ProvideValue(injector, gueClient)
+	do.ProvideValue(injector, repositories)
+
 	return &Container{
-		db:             db,
-		config:         config,
-		version:        v,
-		sessionManager: sessionManager,
-		logger:         logger,
-		gueClient:      gueClient,
-		repositories:   repositories,
+		injector: injector,
 	}
+}
+
+func (c *Container) Injector() do.Injector {
+	return c.injector
 }
 
 func (c *Container) GetDB() *gorm.DB {
-	return c.db
+	return do.MustInvoke[*gorm.DB](c.injector)
 }
 
 func (c *Container) Logger() *slog.Logger {
-	return c.logger
+	return do.MustInvoke[*slog.Logger](c.injector)
 }
 
 func (c *Container) GetConfig() *Config {
-	return c.config
+	return do.MustInvoke[*Config](c.injector)
 }
 
 func (c *Container) GetVersion() *version.Version {
-	return c.version
+	return do.MustInvoke[*version.Version](c.injector)
 }
 
 func (c *Container) GetSessionManager() *scs.SessionManager {
-	return c.sessionManager
+	return do.MustInvoke[*scs.SessionManager](c.injector)
 }
 
 func (c *Container) GetGueClient() *gue.Client {
-	return c.gueClient
+	return do.MustInvoke[*gue.Client](c.injector)
 }
 
 func (c *Container) GetRepositories() *repository.Repositories {
-	return c.repositories
+	return do.MustInvoke[*repository.Repositories](c.injector)
 }
 
 func (c *Container) APOutboxRepo() repository.APOutbox {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.APOutbox
+	return repositories.APOutbox
 }
 
 func (c *Container) APStatusRepo() repository.APStatus {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.APStatus
+	return repositories.APStatus
 }
 
 func (c *Container) APStatusDeliveryRepo() repository.APStatusDelivery {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.APStatusDelivery
+	return repositories.APStatusDelivery
 }
 
 func (c *Container) FollowerRepo() repository.Follower {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.Follower
+	return repositories.Follower
 }
 
 func (c *Container) EquipmentRepo() repository.Equipment {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.Equipment
+	return repositories.Equipment
 }
 
 func (c *Container) RouteSegmentRepo() repository.RouteSegment {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.RouteSegment
+	return repositories.RouteSegment
 }
 
 func (c *Container) MeasurementRepo() repository.Measurement {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.Measurement
+	return repositories.Measurement
 }
 
 func (c *Container) WorkoutRepo() repository.Workout {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.Workout
+	return repositories.Workout
 }
 
 func (c *Container) WorkoutLikeRepo() repository.WorkoutLike {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.WorkoutLike
+	return repositories.WorkoutLike
 }
 
 func (c *Container) WorkoutReplyRepo() repository.WorkoutReply {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.WorkoutReply
+	return repositories.WorkoutReply
 }
 
 func (c *Container) UserRepo() repository.User {
-	if c.repositories == nil {
+	repositories := c.GetRepositories()
+	if repositories == nil {
 		return nil
 	}
 
-	return c.repositories.User
+	return repositories.User
 }
 
 func (c *Container) Enqueue(ctx context.Context, j *gue.Job) error {
-	return c.gueClient.Enqueue(ctx, j)
+	return c.GetGueClient().Enqueue(ctx, j)
 }
 
 func (c *Container) GetUser(e echo.Context) *model.User {
