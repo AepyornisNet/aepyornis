@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/vgarvardt/gue/v6"
@@ -63,7 +63,7 @@ func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) 
 			return nil
 		}
 
-		actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+		actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 			Host:           cfg.Host,
 			WebRoot:        cfg.WebRoot,
 			FallbackHost:   "",
@@ -73,7 +73,7 @@ func makeDeliverActivityPubHandler(c *container.Container, logger *slog.Logger) 
 		deliverCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 
-		if err := ap.SendSignedActivity(deliverCtx, actorURL, u.Profile.PrivateKey, item.ActorInbox, item.Activity); err != nil {
+		if err := aputil.SendSignedActivity(deliverCtx, actorURL, u.Profile.PrivateKey, item.ActorInbox, item.Activity); err != nil {
 			return fmt.Errorf("deliver_activitypub: send to %s: %w", item.ActorIRI, err)
 		}
 

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
@@ -76,7 +76,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 		}
 	}
 
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+	actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           ac.context.GetConfig().Host,
 		WebRoot:        ac.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,

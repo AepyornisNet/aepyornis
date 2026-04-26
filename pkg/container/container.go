@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
@@ -196,10 +196,10 @@ func (c *Container) GetUser(e echo.Context) *model.User {
 	return u
 }
 
-func (c *Container) GetApUser(e echo.Context) *ap.UserActor {
+func (c *Container) GetApUser(e echo.Context) *aputil.UserActor {
 	d := e.Get("user_ap_actor")
 
-	a, ok := d.(*ap.UserActor)
+	a, ok := d.(*aputil.UserActor)
 	if !ok {
 		return nil
 	}

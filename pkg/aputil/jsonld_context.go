@@ -1,4 +1,4 @@
-package activitypub
+package aputil
 
 import (
 	vocab "github.com/go-ap/activitypub"

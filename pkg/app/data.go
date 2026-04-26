@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/invopop/ctxi18n"
@@ -77,14 +77,14 @@ func (a *App) setContextUser(c echo.Context, user *model.User) {
 
 	if user.ActivityPubEnabled() {
 		cfg := a.getContainer().GetConfig()
-		actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+		actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 			Host:           cfg.Host,
 			WebRoot:        cfg.WebRoot,
 			FallbackHost:   c.Request().Host,
 			FallbackScheme: c.Scheme(),
 		}, user.Profile.Username)
 
-		c.Set("user_ap_actor", ap.NewUserActor(actorURL, user.Profile.PrivateKey))
+		c.Set("user_ap_actor", aputil.NewUserActor(actorURL, user.Profile.PrivateKey))
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
@@ -21,14 +21,14 @@ type ApInboxController interface {
 
 type apInboxController struct {
 	context              *container.Container
-	inboxActivityHandler *ap.InboxActivityHandler
+	inboxActivityHandler *aputil.InboxActivityHandler
 }
 
 func NewApInboxController(injector do.Injector) ApInboxController {
 	c := container.NewFromInjector(injector)
 	return &apInboxController{
 		context: c,
-		inboxActivityHandler: ap.NewInboxActivityHandler(
+		inboxActivityHandler: aputil.NewInboxActivityHandler(
 			c.FollowerRepo(),
 			c.APOutboxRepo(),
 			c.WorkoutLikeRepo(),
@@ -52,8 +52,8 @@ func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User,
 	return user, nil
 }
 
-func requestingActor(c echo.Context) (*ap.RequestActor, error) {
-	actor, ok := c.Get(ap.RequestingActorContextKey).(*ap.RequestActor)
+func requestingActor(c echo.Context) (*aputil.RequestActor, error) {
+	actor, ok := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
 	if ok && actor != nil {
 		return actor, nil
 	}

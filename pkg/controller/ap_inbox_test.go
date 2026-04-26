@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -57,14 +57,14 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/ap/users/admin/inbox", bytes.NewReader(payload))
-	req.Header.Set(echo.HeaderContentType, ap.ContentType)
+	req.Header.Set(echo.HeaderContentType, aputil.ContentType)
 
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/ap/users/:username/inbox")
 	c.SetParamNames("username")
 	c.SetParamValues("admin")
-	c.Set(ap.RequestingActorContextKey, &ap.RequestActor{Actor: vocab.Actor{ID: vocab.ID(remoteActorIRI)}})
+	c.Set(aputil.RequestingActorContextKey, &aputil.RequestActor{Actor: vocab.Actor{ID: vocab.ID(remoteActorIRI)}})
 
 	err = ctrl.Inbox(c)
 	require.NoError(t, err)
@@ -113,14 +113,14 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/ap/users/admin/inbox", bytes.NewReader(payload))
-	req.Header.Set(echo.HeaderContentType, ap.ContentType)
+	req.Header.Set(echo.HeaderContentType, aputil.ContentType)
 
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/ap/users/:username/inbox")
 	c.SetParamNames("username")
 	c.SetParamValues("admin")
-	c.Set(ap.RequestingActorContextKey, &ap.RequestActor{Actor: vocab.Actor{ID: vocab.ID(remoteActorIRI)}})
+	c.Set(aputil.RequestingActorContextKey, &aputil.RequestActor{Actor: vocab.Actor{ID: vocab.ID(remoteActorIRI)}})
 
 	err = ctrl.Inbox(c)
 	require.NoError(t, err)

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
@@ -51,7 +51,7 @@ func SyncWorkoutActivityPub(ctx context.Context, c *container.Container, user *m
 }
 
 func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, user *model.User, workout *model.Workout) error {
-	fitContent, err := ap.GenerateWorkoutFIT(workout)
+	fitContent, err := aputil.GenerateWorkoutFIT(workout)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 	fitURL := entryURL + "/fit"
 	routeImageURL := entryURL + "/route-image"
 	publishedAt := time.Now().UTC()
-	noteContent := ap.WorkoutNoteContent(workout)
+	noteContent := aputil.WorkoutNoteContent(workout)
 
 	attachments := vocab.ItemCollection{}
 	routeImageAttachment, routeImageErr := model.GetRouteImageAttachment(c.GetDB(), workout.ID)
@@ -82,7 +82,7 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 		return routeImageErr
 	}
 
-	note := ap.NewWorkoutNote()
+	note := aputil.NewWorkoutNote()
 	note.ID = vocab.ID(objectURL)
 	note.AttributedTo = vocab.IRI(actorURL)
 	note.Published = publishedAt
@@ -107,12 +107,12 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 		Object:    note,
 	}
 
-	activityJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(activity)
+	activityJSON, err := jsonld.WithContext(aputil.WorkoutJSONLDContext()).Marshal(activity)
 	if err != nil {
 		return err
 	}
 
-	noteJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(note)
+	noteJSON, err := jsonld.WithContext(aputil.WorkoutJSONLDContext()).Marshal(note)
 	if err != nil {
 		return err
 	}
@@ -120,9 +120,9 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 	outboxWorkout := &model.APStatusWorkout{
 		UserID:         user.ID,
 		WorkoutID:      workout.ID,
-		FitFilename:    ap.WorkoutFITFilename(workout),
+		FitFilename:    aputil.WorkoutFITFilename(workout),
 		FitContent:     fitContent,
-		FitContentType: ap.FitMIMEType,
+		FitContentType: aputil.FitMIMEType,
 	}
 
 	if err := c.APOutboxRepo().CreateWorkout(outboxWorkout); err != nil {
@@ -165,7 +165,7 @@ func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, 
 		return err
 	}
 
-	note := ap.NewWorkoutNote()
+	note := aputil.NewWorkoutNote()
 	if len(entry.Payload) > 0 {
 		if err := jsonld.Unmarshal(entry.Payload, note); err != nil {
 			return err
@@ -180,7 +180,7 @@ func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, 
 		activity.CC = vocab.ItemCollection{vocab.IRI(actorURL + "/followers")}
 	}
 
-	activityJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(activity)
+	activityJSON, err := jsonld.WithContext(aputil.WorkoutJSONLDContext()).Marshal(activity)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, 
 }
 
 func localActorURL(c *container.Container, user *model.User) (string, error) {
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+	actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           c.GetConfig().Host,
 		WebRoot:        c.GetConfig().WebRoot,
 		FallbackHost:   c.GetConfig().Host,

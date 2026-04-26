@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
@@ -49,7 +49,7 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 	createActivityID := fmt.Sprintf("%s/outbox/%s", actorURL, createUUID.String())
 	createObjectID := createActivityID + "#object"
 
-	note := ap.NewWorkoutNote()
+	note := aputil.NewWorkoutNote()
 	note.ID = vocab.ID(createObjectID)
 	note.AttributedTo = vocab.IRI(actorURL)
 	note.Published = publishedAt
@@ -66,12 +66,12 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 		Object:    note,
 	}
 
-	createActivityJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(createActivity)
+	createActivityJSON, err := jsonld.WithContext(aputil.WorkoutJSONLDContext()).Marshal(createActivity)
 	if err != nil {
 		return err
 	}
 
-	noteJSON, err := jsonld.WithContext(ap.WorkoutJSONLDContext()).Marshal(note)
+	noteJSON, err := jsonld.WithContext(aputil.WorkoutJSONLDContext()).Marshal(note)
 	if err != nil {
 		return err
 	}

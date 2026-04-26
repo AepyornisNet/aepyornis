@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
@@ -137,7 +137,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 		items = append(items, vocab.IRI(entry.ActorIRI))
 	}
 
-	followingURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+	followingURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           ac.context.GetConfig().Host,
 		WebRoot:        ac.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,
@@ -229,7 +229,7 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		items = append(items, vocab.IRI(follower.ActorIRI))
 	}
 
-	followersURL := ap.LocalActorURL(ap.LocalActorURLConfig{
+	followersURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           ac.context.GetConfig().Host,
 		WebRoot:        ac.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,

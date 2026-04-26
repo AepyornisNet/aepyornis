@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
@@ -126,7 +126,7 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 	case model.WorkoutVisibilityPublic:
 		return true, nil
 	case model.WorkoutVisibilityFollowers:
-		requesterActorIRI := ap.LocalActorURL(ap.LocalActorURLConfig{
+		requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 			Host:           wc.context.GetConfig().Host,
 			WebRoot:        wc.context.GetConfig().WebRoot,
 			FallbackHost:   c.Request().Host,
@@ -321,9 +321,9 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 		likeResponse := dto.NewWorkoutLikeResponse(&likes[i])
 
 		if likes[i].ActorIRI != nil && *likes[i].ActorIRI != "" {
-			cachedName, cachedAvatarURL, ok := ap.GetCachedActorProfile(*likes[i].ActorIRI)
+			cachedName, cachedAvatarURL, ok := aputil.GetCachedActorProfile(*likes[i].ActorIRI)
 			if !ok {
-				cachedName, cachedAvatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *likes[i].ActorIRI)
+				cachedName, cachedAvatarURL, ok = aputil.ResolveAndCacheActorProfile(c.Request().Context(), *likes[i].ActorIRI)
 			}
 
 			if ok {
@@ -394,9 +394,9 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
 	for i := range replies {
 		replyResponse := dto.NewWorkoutReplyResponse(&replies[i])
 		if replies[i].ActorIRI != nil && *replies[i].ActorIRI != "" {
-			cachedName, cachedAvatarURL, ok := ap.GetCachedActorProfile(*replies[i].ActorIRI)
+			cachedName, cachedAvatarURL, ok := aputil.GetCachedActorProfile(*replies[i].ActorIRI)
 			if !ok {
-				cachedName, cachedAvatarURL, ok = ap.ResolveAndCacheActorProfile(c.Request().Context(), *replies[i].ActorIRI)
+				cachedName, cachedAvatarURL, ok = aputil.ResolveAndCacheActorProfile(c.Request().Context(), *replies[i].ActorIRI)
 			}
 			if ok {
 				if replyResponse.ActorName == nil && cachedName != "" {
@@ -521,7 +521,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("activitypub must be enabled to like remote workouts"))
 	}
 
-	actorIRI, inbox, err := ap.ResolveObjectActorAndInbox(c.Request().Context(), params.ObjectID)
+	actorIRI, inbox, err := aputil.ResolveObjectActorAndInbox(c.Request().Context(), params.ObjectID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -926,7 +926,7 @@ func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) str
 		return ""
 	}
 
-	return ap.LocalActorURL(ap.LocalActorURLConfig{
+	return aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           wc.context.GetConfig().Host,
 		WebRoot:        wc.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,
@@ -1124,7 +1124,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		scope = "global"
 	}
 
-	requesterActorIRI := ap.LocalActorURL(ap.LocalActorURLConfig{
+	requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           wc.context.GetConfig().Host,
 		WebRoot:        wc.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,

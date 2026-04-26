@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
@@ -665,12 +665,12 @@ func (uc *userController) parseHandleWithHost(c echo.Context, handle string) (st
 }
 
 func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host string) error {
-	actorIRI, err := ap.ResolveActorIRIFromWebFinger(c.Request().Context(), username, host)
+	actorIRI, err := aputil.ResolveActorIRIFromWebFinger(c.Request().Context(), username, host)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	actor, err := ap.LoadRemoteActor(c.Request().Context(), actorIRI)
+	actor, err := aputil.LoadRemoteActor(c.Request().Context(), actorIRI)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -680,9 +680,9 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 		actorURL = actor.ID.String()
 	}
 
-	followersCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
-	followingCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
-	postsCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
+	followersCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
+	followingCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
+	postsCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
 
 	name := username
 	if actor != nil && actor.Name.String() != "" {
@@ -738,12 +738,12 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	actorIRI, err := ap.ResolveActorIRIFromWebFinger(c.Request().Context(), username, host)
+	actorIRI, err := aputil.ResolveActorIRIFromWebFinger(c.Request().Context(), username, host)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	actor, err := ap.LoadRemoteActor(c.Request().Context(), actorIRI)
+	actor, err := aputil.LoadRemoteActor(c.Request().Context(), actorIRI)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -767,9 +767,9 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
-	followersCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
-	followingCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
-	postsCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
+	followersCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
+	followingCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
+	postsCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
 
 	name := username
 	if actor != nil && actor.Name.String() != "" {
@@ -819,12 +819,12 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	actorIRI, err := ap.ResolveActorIRIFromWebFinger(c.Request().Context(), username, host)
+	actorIRI, err := aputil.ResolveActorIRIFromWebFinger(c.Request().Context(), username, host)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	actor, err := ap.LoadRemoteActor(c.Request().Context(), actorIRI)
+	actor, err := aputil.LoadRemoteActor(c.Request().Context(), actorIRI)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -843,9 +843,9 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	followersCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
-	followingCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
-	postsCount, _ := ap.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
+	followersCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
+	followingCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
+	postsCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
 
 	name := username
 	if actor != nil && actor.Name.String() != "" {
@@ -936,7 +936,7 @@ func (uc *userController) localActorIRI(c echo.Context, user *model.User) string
 		return ""
 	}
 
-	return ap.LocalActorURL(ap.LocalActorURLConfig{
+	return aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           uc.context.GetConfig().Host,
 		WebRoot:        uc.context.GetConfig().WebRoot,
 		FallbackHost:   c.Request().Host,
