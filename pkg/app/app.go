@@ -174,6 +174,7 @@ func (a *App) createAdminUser() error {
 	}
 	u.Profile.Username = "admin"
 	u.Profile.DisplayName = "Administrator"
+	u.Profile.Local = true
 
 	if err := u.SetPassword("admin"); err != nil {
 		return err
