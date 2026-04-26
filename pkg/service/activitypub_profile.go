@@ -16,14 +16,12 @@ type ActivityPubProfileService interface {
 }
 
 type activityPubProfileService struct {
-	db         *gorm.DB
-	requestSvc ActivityPubRequestService
+	db *gorm.DB
 }
 
 func NewActivityPubProfileService(injector do.Injector) (ActivityPubProfileService, error) {
 	return &activityPubProfileService{
-		db:         do.MustInvoke[*gorm.DB](injector),
-		requestSvc: do.MustInvoke[ActivityPubRequestService](injector),
+		db: do.MustInvoke[*gorm.DB](injector),
 	}, nil
 }
 
@@ -41,7 +39,7 @@ func (s *activityPubProfileService) GetByActorIRI(ctx context.Context, actorIRI 
 		return existing, nil
 	}
 
-	actor, err := aputil.LoadRemoteActorWithClient(ctx, s.requestSvc.HTTPClient(), actorIRI)
+	actor, err := aputil.LoadRemoteActor(ctx, actorIRI)
 	if err != nil {
 		return nil, err
 	}
