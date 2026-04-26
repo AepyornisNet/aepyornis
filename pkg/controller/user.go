@@ -240,7 +240,7 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, totalCount, err := uc.getVisibleDistanceRanking(targetUser, viewer, viewer.Profile.ID, wt, label, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	records, totalCount, err := uc.getVisibleDistanceRanking(targetUser, viewer.Profile.ID, wt, label, startDate, endDate, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -303,7 +303,7 @@ func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, totalCount, err := uc.getVisibleClimbRanking(targetUser, viewer, viewer.Profile.ID, wt, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	records, totalCount, err := uc.getVisibleClimbRanking(targetUser, viewer.Profile.ID, wt, startDate, endDate, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -941,7 +941,7 @@ func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, view
 	rs := []*model.WorkoutPersonalRecord{}
 
 	for _, w := range model.DistanceWorkoutTypes() {
-		r, err := uc.getVisibleRecordForType(targetUser, viewer, viewerProfileID, w, startDate, endDate)
+		r, err := uc.getVisibleRecordForType(targetUser, viewerProfileID, w, startDate, endDate)
 		if err != nil {
 			return nil, err
 		}
@@ -954,7 +954,7 @@ func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, view
 	return rs, nil
 }
 
-func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time) (*model.WorkoutPersonalRecord, error) {
+func (uc *userController) getVisibleRecordForType(targetUser *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time) (*model.WorkoutPersonalRecord, error) {
 	if t == "" {
 		t = model.WorkoutTypeRunning
 		if targetUser != nil {
@@ -1028,7 +1028,7 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 }
 
 func (uc *userController) getVisibleDistanceRanking(
-	targetUser, viewer *model.User,
+	targetUser *model.User,
 	viewerProfileID uint64,
 	t model.WorkoutType,
 	label string,
@@ -1096,7 +1096,7 @@ func (uc *userController) getVisibleDistanceRanking(
 	return result, totalCount, nil
 }
 
-func (uc *userController) getVisibleClimbRanking(targetUser, viewer *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time, limit, offset int) ([]model.ClimbRecord, int64, error) {
+func (uc *userController) getVisibleClimbRanking(targetUser *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time, limit, offset int) ([]model.ClimbRecord, int64, error) {
 	if !t.IsDistance() {
 		return nil, 0, fmt.Errorf("climb ranking is only supported for distance workout types: %s", t)
 	}

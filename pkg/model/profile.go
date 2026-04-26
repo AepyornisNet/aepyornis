@@ -163,31 +163,15 @@ func (p *Profile) ActorURL() string {
 }
 
 func (p *Profile) UpsertRemote(db *gorm.DB) (*Profile, error) {
-	if p == nil {
-		return nil, errors.New("profile is nil")
-	}
-	if db == nil {
-		return nil, errors.New("db is nil")
-	}
-	if p.ID != 0 || p.isLocalProfile() {
+	if p != nil && (p.ID != 0 || p.isLocalProfile()) {
 		return p, nil
 	}
-
-	if p.DisplayName == "" {
-		p.DisplayName = p.Username
+	if err := validateRemoteUpsert(p, db); err != nil {
+		return nil, err
 	}
 
-	var existing Profile
-	var err error
-	switch {
-	case p.URL != nil && strings.TrimSpace(*p.URL) != "":
-		err = db.Where("url = ?", strings.TrimSpace(*p.URL)).First(&existing).Error
-	case p.Domain != nil && strings.TrimSpace(*p.Domain) != "" && strings.TrimSpace(p.Username) != "":
-		err = db.Where("username = ? AND domain = ?", strings.TrimSpace(p.Username), strings.TrimSpace(*p.Domain)).First(&existing).Error
-	default:
-		return nil, errors.New("remote profile requires url or username/domain")
-	}
-
+	ensureRemoteDisplayName(p)
+	existing, err := findExistingRemoteProfile(db, p)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		if err := db.Create(p).Error; err != nil {
 			return nil, err
@@ -198,25 +182,65 @@ func (p *Profile) UpsertRemote(db *gorm.DB) (*Profile, error) {
 		return nil, err
 	}
 
-	existing.Local = false
-	if strings.TrimSpace(p.Username) != "" {
-		existing.Username = strings.TrimSpace(p.Username)
-	}
-	if strings.TrimSpace(p.DisplayName) != "" {
-		existing.DisplayName = strings.TrimSpace(p.DisplayName)
-	}
-	mergeOptionalString(&existing.Domain, p.Domain)
-	mergeOptionalString(&existing.URL, p.URL)
-	mergeOptionalString(&existing.InboxURL, p.InboxURL)
-	mergeOptionalString(&existing.OutboxURL, p.OutboxURL)
-	mergeOptionalString(&existing.FollowersURL, p.FollowersURL)
-	mergeOptionalString(&existing.AvatarRemoteURL, p.AvatarRemoteURL)
+	mergeRemoteProfile(&existing, p)
 
 	if err := db.Save(&existing).Error; err != nil {
 		return nil, err
 	}
 
 	return &existing, nil
+}
+
+func validateRemoteUpsert(p *Profile, db *gorm.DB) error {
+	if p == nil {
+		return errors.New("profile is nil")
+	}
+	if db == nil {
+		return errors.New("db is nil")
+	}
+	if p.URL != nil && strings.TrimSpace(*p.URL) != "" {
+		return nil
+	}
+	if p.Domain != nil && strings.TrimSpace(*p.Domain) != "" && strings.TrimSpace(p.Username) != "" {
+		return nil
+	}
+
+	return errors.New("remote profile requires url or username/domain")
+}
+
+func ensureRemoteDisplayName(p *Profile) {
+	if p != nil && p.DisplayName == "" {
+		p.DisplayName = p.Username
+	}
+}
+
+func findExistingRemoteProfile(db *gorm.DB, p *Profile) (Profile, error) {
+	var existing Profile
+	if p.URL != nil && strings.TrimSpace(*p.URL) != "" {
+		return existing, db.Where("url = ?", strings.TrimSpace(*p.URL)).First(&existing).Error
+	}
+
+	return existing, db.Where(
+		"username = ? AND domain = ?",
+		strings.TrimSpace(p.Username),
+		strings.TrimSpace(*p.Domain),
+	).First(&existing).Error
+}
+
+func mergeRemoteProfile(existing, incoming *Profile) {
+	existing.Local = false
+	if strings.TrimSpace(incoming.Username) != "" {
+		existing.Username = strings.TrimSpace(incoming.Username)
+	}
+	if strings.TrimSpace(incoming.DisplayName) != "" {
+		existing.DisplayName = strings.TrimSpace(incoming.DisplayName)
+	}
+	mergeOptionalString(&existing.Domain, incoming.Domain)
+	mergeOptionalString(&existing.URL, incoming.URL)
+	mergeOptionalString(&existing.InboxURL, incoming.InboxURL)
+	mergeOptionalString(&existing.OutboxURL, incoming.OutboxURL)
+	mergeOptionalString(&existing.FollowersURL, incoming.FollowersURL)
+	mergeOptionalString(&existing.AvatarRemoteURL, incoming.AvatarRemoteURL)
 }
 
 func mergeOptionalString(dst **string, src *string) {

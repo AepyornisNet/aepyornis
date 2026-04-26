@@ -14,16 +14,31 @@ func RemoteProfileFromActor(actor *vocab.Actor) (*model.Profile, error) {
 		return nil, errors.New("remote actor is nil")
 	}
 
+	actorURL, username, domain, err := actorIdentity(actor)
+	if err != nil {
+		return nil, err
+	}
+	profile := &model.Profile{
+		Local:       false,
+		Username:    username,
+		DisplayName: actorDisplayName(actor, username),
+		URL:         &actorURL,
+	}
+	if domain != "" {
+		profile.Domain = &domain
+	}
+	assignActorEndpoints(profile, actor)
+
+	return profile, nil
+}
+
+func actorIdentity(actor *vocab.Actor) (string, string, string, error) {
 	actorURL := strings.TrimSpace(actor.ID.String())
 	if actorURL == "" {
-		return nil, errors.New("remote actor id is empty")
+		return "", "", "", errors.New("remote actor id is empty")
 	}
 
-	username := ""
-	if actor.PreferredUsername != nil && strings.TrimSpace(actor.PreferredUsername.String()) != "" {
-		username = strings.TrimSpace(actor.PreferredUsername.String())
-	}
-
+	username := actorPreferredUsername(actor)
 	domain := ""
 	if parsed, err := url.Parse(actorURL); err == nil && parsed.Host != "" {
 		domain = parsed.Host
@@ -34,39 +49,47 @@ func RemoteProfileFromActor(actor *vocab.Actor) (*model.Profile, error) {
 			}
 		}
 	}
-
 	if username == "" {
-		return nil, errors.New("remote actor username is empty")
+		return "", "", "", errors.New("remote actor username is empty")
 	}
 
-	displayName := username
-	if actor.Name != nil && strings.TrimSpace(actor.Name.String()) != "" {
-		displayName = strings.TrimSpace(actor.Name.String())
+	return actorURL, username, domain, nil
+}
+
+func actorPreferredUsername(actor *vocab.Actor) string {
+	if actor == nil || actor.PreferredUsername == nil {
+		return ""
 	}
 
-	profile := &model.Profile{
-		Local:       false,
-		Username:    username,
-		DisplayName: displayName,
-		URL:         &actorURL,
-	}
-	if domain != "" {
-		profile.Domain = &domain
-	}
-	if inbox := strings.TrimSpace(actorItemString(actor.Inbox)); inbox != "" {
-		profile.InboxURL = &inbox
-	}
-	if outbox := strings.TrimSpace(actorItemString(actor.Outbox)); outbox != "" {
-		profile.OutboxURL = &outbox
-	}
-	if followers := strings.TrimSpace(actorItemString(actor.Followers)); followers != "" {
-		profile.FollowersURL = &followers
-	}
-	if avatar := strings.TrimSpace(actorIconURL(actor)); avatar != "" {
-		profile.AvatarRemoteURL = &avatar
+	return strings.TrimSpace(actor.PreferredUsername.String())
+}
+
+func actorDisplayName(actor *vocab.Actor, username string) string {
+	if actor != nil && actor.Name != nil && strings.TrimSpace(actor.Name.String()) != "" {
+		return strings.TrimSpace(actor.Name.String())
 	}
 
-	return profile, nil
+	return username
+}
+
+func assignActorEndpoints(profile *model.Profile, actor *vocab.Actor) {
+	if profile == nil || actor == nil {
+		return
+	}
+
+	assignOptionalActorString(&profile.InboxURL, actorItemString(actor.Inbox))
+	assignOptionalActorString(&profile.OutboxURL, actorItemString(actor.Outbox))
+	assignOptionalActorString(&profile.FollowersURL, actorItemString(actor.Followers))
+	assignOptionalActorString(&profile.AvatarRemoteURL, actorIconURL(actor))
+}
+
+func assignOptionalActorString(dst **string, value string) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return
+	}
+
+	*dst = &trimmed
 }
 
 func actorItemString(item vocab.Item) string {

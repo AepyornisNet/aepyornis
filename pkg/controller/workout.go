@@ -140,7 +140,7 @@ func workoutOwnerUserID(workout *model.Workout) uint64 {
 	return *workout.Profile.UserID
 }
 
-func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.User, workout *model.Workout) (bool, error) {
+func (wc *workoutController) canReadWorkout(requester *model.User, workout *model.Workout) (bool, error) {
 	if requester == nil || workout == nil {
 		return false, nil
 	}
@@ -183,7 +183,7 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 		return nil, err
 	}
 
-	allowed, err := wc.canReadWorkout(c, currentUser(c), workout)
+	allowed, err := wc.canReadWorkout(currentUser(c), workout)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +572,7 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 		return nil, http.StatusNotFound, err
 	}
 
-	allowed, err := wc.canReadWorkout(c, viewer, workout)
+	allowed, err := wc.canReadWorkout(viewer, workout)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
