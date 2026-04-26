@@ -37,7 +37,7 @@ func (s *activityPubProfileService) GetByActorIRI(ctx context.Context, actorIRI 
 	if err != nil {
 		return nil, err
 	}
-	if hasCachedActorProfileData(existing) {
+	if existing != nil {
 		return existing, nil
 	}
 
@@ -75,16 +75,4 @@ func (s *activityPubProfileService) findByActorIRI(actorIRI string) (*model.Prof
 	}
 
 	return profile, nil
-}
-
-func hasCachedActorProfileData(profile *model.Profile) bool {
-	if profile == nil {
-		return false
-	}
-
-	if strings.TrimSpace(profile.DisplayName) != "" {
-		return true
-	}
-
-	return profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != ""
 }
