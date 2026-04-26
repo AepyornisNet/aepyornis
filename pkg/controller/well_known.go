@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -55,17 +56,12 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 	var host string
 	switch typ {
 	case "acct":
-		if strings.Contains(handle, "@") {
-			nh, hh := func(s string) (string, string) {
-				if ar := strings.Split(s, "@"); len(ar) == 2 {
-					return ar[0], ar[1]
-				}
-				return "", ""
-			}(handle)
-
-			handle = nh
-			host = hh
+		username, parsedHost, err := aputil.ParseActorHandle(handle)
+		if err != nil || parsedHost == "" {
+			return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid resource: %s", res))
 		}
+		handle = username
+		host = parsedHost
 	case "https", "http":
 		host = handle
 	default:

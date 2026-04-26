@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -804,9 +803,18 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/calendar [get]
 func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
-	targetUser, viewer, _, err := wc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		host := wc.cfg.Host
+		if host == "" {
+			host = c.Request().Host
+		}
+		targetUser, err = wc.userRepo.GetByHandle(handle, host)
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
 	}
 
 	var params dto.CalendarQueryParams
@@ -872,73 +880,6 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
-}
-
-func (wc *workoutController) resolveTargetUserFromHandle(c echo.Context) (*model.User, *model.User, string, error) {
-	viewer := currentUser(c)
-	handle := strings.TrimSpace(c.QueryParam("handle"))
-	if handle == "" {
-		return viewer, viewer, wc.localActorIRI(c, viewer), nil
-	}
-
-	normalizedUsername, err := wc.parseLocalHandle(c, handle)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	targetUser, err := wc.userRepo.GetByUsername(normalizedUsername)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	if viewer.ID != targetUser.ID && !targetUser.ActivityPubEnabled() {
-		return nil, nil, "", gorm.ErrRecordNotFound
-	}
-
-	return targetUser, viewer, wc.localActorIRI(c, viewer), nil
-}
-
-func (wc *workoutController) parseLocalHandle(c echo.Context, handle string) (string, error) {
-	h := strings.TrimSpace(handle)
-	h = strings.TrimPrefix(h, "@")
-
-	if parsedURL, err := url.Parse(h); err == nil && parsedURL.Host != "" {
-		segments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
-		if len(segments) == 3 && segments[0] == "ap" && segments[1] == "users" && segments[2] != "" {
-			if wc.isLocalHost(c, parsedURL.Host) {
-				return segments[2], nil
-			}
-			return "", gorm.ErrRecordNotFound
-		}
-	}
-
-	if strings.Contains(h, "@") {
-		parts := strings.SplitN(h, "@", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		if !wc.isLocalHost(c, parts[1]) {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		return parts[0], nil
-	}
-
-	if h == "" {
-		return "", gorm.ErrRecordNotFound
-	}
-
-	return h, nil
-}
-
-func (wc *workoutController) isLocalHost(c echo.Context, host string) bool {
-	configuredHost := wc.cfg.Host
-	if configuredHost == "" {
-		configuredHost = c.Request().Host
-	}
-
-	return strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(configuredHost))
 }
 
 func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) string {

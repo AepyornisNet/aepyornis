@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -87,16 +86,15 @@ func (uc *userController) GetWhoami(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /totals [get]
 func (uc *userController) GetTotals(c echo.Context) error {
-	targetUser, viewer, _, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		if errors.Is(err, dto.ErrNotAuthorized) {
-			return renderApiError(c, http.StatusForbidden, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
 		}
-
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	if targetUser == nil || viewer == nil {
+	} else if viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
@@ -163,9 +161,16 @@ func (uc *userController) GetTotals(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /records [get]
 func (uc *userController) GetRecords(c echo.Context) error {
-	targetUser, viewer, _, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	startDate, endDate, err := parseDateRange(c)
@@ -203,9 +208,16 @@ func (uc *userController) GetRecords(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /records/ranking [get]
 func (uc *userController) GetRecordsRanking(c echo.Context) error {
-	targetUser, viewer, _, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	workoutType := c.QueryParam("workout_type")
@@ -261,9 +273,16 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /records/climbs/ranking [get]
 func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
-	targetUser, viewer, _, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	workoutType := c.QueryParam("workout_type")
@@ -371,9 +390,16 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 		}
 	}
 
-	targetUser, viewer, _, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	if viewer.ID != targetUser.ID && !targetUser.ActivityPubEnabled() {
@@ -457,9 +483,16 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 		}
 	}
 
-	targetUser, viewer, _, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	if viewer.ID == targetUser.ID {
@@ -531,9 +564,16 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 		}
 	}
 
-	targetUser, viewer, _, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	if viewer.ID == targetUser.ID {
@@ -574,97 +614,13 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (uc *userController) resolveTargetUserFromHandle(c echo.Context) (*model.User, *model.User, string, error) {
-	viewer := currentUser(c)
-	if viewer == nil {
-		viewer = model.AnonymousUser()
-	}
-
-	handle := strings.TrimSpace(c.QueryParam("handle"))
-	if handle == "" {
-		if viewer.IsAnonymous() {
-			return nil, nil, "", dto.ErrNotAuthorized
-		}
-
-		return viewer, viewer, uc.localActorIRI(c, viewer), nil
-	}
-
-	normalizedUsername, err := uc.parseLocalHandle(c, handle)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	targetUser, err := uc.userRepo.GetByUsername(normalizedUsername)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	if targetUser == nil {
-		return nil, nil, "", gorm.ErrRecordNotFound
-	}
-
-	return targetUser, viewer, uc.localActorIRI(c, viewer), nil
-}
-
-func (uc *userController) parseLocalHandle(c echo.Context, handle string) (string, error) {
-	h := strings.TrimSpace(handle)
-	h = strings.TrimPrefix(h, "@")
-
-	if parsedURL, err := url.Parse(h); err == nil && parsedURL.Host != "" {
-		segments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
-		if len(segments) == 3 && segments[0] == "ap" && segments[1] == "users" && segments[2] != "" {
-			if uc.isLocalHost(c, parsedURL.Host) {
-				return segments[2], nil
-			}
-			return "", gorm.ErrRecordNotFound
-		}
-	}
-
-	if strings.Contains(h, "@") {
-		parts := strings.SplitN(h, "@", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		if !uc.isLocalHost(c, parts[1]) {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		return parts[0], nil
-	}
-
-	if h == "" {
-		return "", gorm.ErrRecordNotFound
-	}
-
-	return h, nil
-}
-
 func (uc *userController) parseHandleWithHost(c echo.Context, handle string) (string, string, bool, error) {
-	h := strings.TrimSpace(strings.TrimPrefix(handle, "@"))
-	if h == "" {
+	username, host, err := aputil.ParseActorHandle(handle)
+	if err != nil {
 		return "", "", false, gorm.ErrRecordNotFound
 	}
 
-	if parsedURL, err := url.Parse(h); err == nil && parsedURL.Host != "" {
-		segments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
-		if len(segments) == 3 && segments[0] == "ap" && segments[1] == "users" && segments[2] != "" {
-			isRemote := !uc.isLocalHost(c, parsedURL.Host)
-			return segments[2], parsedURL.Host, isRemote, nil
-		}
-	}
-
-	if strings.Contains(h, "@") {
-		parts := strings.SplitN(h, "@", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return "", "", false, gorm.ErrRecordNotFound
-		}
-
-		isRemote := !uc.isLocalHost(c, parts[1])
-		return parts[0], parts[1], isRemote, nil
-	}
-
-	return h, "", false, nil
+	return username, host, host != "" && !uc.isLocalHost(c, host), nil
 }
 
 func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host string) error {
@@ -903,12 +859,7 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 }
 
 func (uc *userController) isLocalHost(c echo.Context, host string) bool {
-	configuredHost := uc.cfg.Host
-	if configuredHost == "" {
-		configuredHost = c.Request().Host
-	}
-
-	return strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(configuredHost))
+	return strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(uc.localHost(c)))
 }
 
 func itemIRIString(it vocab.Item) string {
@@ -967,12 +918,15 @@ func (uc *userController) localActorIRI(c echo.Context, user *model.User) string
 }
 
 func (uc *userController) renderHandle(c echo.Context, username string) string {
-	host := uc.cfg.Host
-	if host == "" {
-		host = c.Request().Host
+	return fmt.Sprintf("@%s@%s", username, uc.localHost(c))
+}
+
+func (uc *userController) localHost(c echo.Context) string {
+	if uc.cfg.Host != "" {
+		return uc.cfg.Host
 	}
 
-	return fmt.Sprintf("@%s@%s", username, host)
+	return c.Request().Host
 }
 
 func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, viewerProfileID uint64, startDate, endDate *time.Time) ([]*model.WorkoutPersonalRecord, error) {

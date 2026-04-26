@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"strings"
+
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/samber/do/v2"
 	"gorm.io/gorm"
@@ -11,6 +14,7 @@ type User interface {
 	GetByID(userID uint64) (*model.User, error)
 	GetByEmail(email string) (*model.User, error)
 	GetByUsername(username string) (*model.User, error)
+	GetByHandle(handle, localHost string) (*model.User, error)
 	GetByAPIKey(key string) (*model.User, error)
 }
 
@@ -61,6 +65,15 @@ func (r *userRepository) GetByUsername(username string) (*model.User, error) {
 	return &user, nil
 }
 
+func (r *userRepository) GetByHandle(handle, localHost string) (*model.User, error) {
+	username, err := normalizeLocalHandle(handle, localHost)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.GetByUsername(username)
+}
+
 func (r *userRepository) GetByEmail(email string) (*model.User, error) {
 	var user model.User
 
@@ -89,4 +102,17 @@ func (r *userRepository) GetByAPIKey(key string) (*model.User, error) {
 
 func (r *userRepository) currentUserQuery() *gorm.DB {
 	return r.db.Preload("Profile")
+}
+
+func normalizeLocalHandle(handle, localHost string) (string, error) {
+	username, host, err := aputil.ParseActorHandle(handle)
+	if err != nil {
+		return "", gorm.ErrRecordNotFound
+	}
+
+	if host != "" && !strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(localHost)) {
+		return "", gorm.ErrRecordNotFound
+	}
+
+	return username, nil
 }

@@ -61,6 +61,37 @@ func TestUserRepository_GetByUsername(t *testing.T) {
 	assert.Equal(t, created.Profile.DisplayName, loaded.Profile.DisplayName)
 }
 
+func TestUserRepository_GetByHandle(t *testing.T) {
+	db := createRepositoryMemoryDB(t)
+	created := createRepositoryUser(t, db, "repo-handle-user", "Repo Handle User", "repo-handle-key")
+
+	repo, err := NewUser(createRepositoryInjector(db))
+	require.NoError(t, err)
+
+	t.Run("plain username", func(t *testing.T) {
+		loaded, err := repo.GetByHandle(created.Profile.Username, "example.com")
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, loaded.ID)
+	})
+
+	t.Run("acct handle", func(t *testing.T) {
+		loaded, err := repo.GetByHandle("@"+created.Profile.Username+"@example.com", "example.com")
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, loaded.ID)
+	})
+
+	t.Run("actor url", func(t *testing.T) {
+		loaded, err := repo.GetByHandle("https://example.com/ap/users/"+created.Profile.Username, "example.com")
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, loaded.ID)
+	})
+
+	t.Run("remote host rejected", func(t *testing.T) {
+		_, err := repo.GetByHandle("@"+created.Profile.Username+"@remote.example", "example.com")
+		require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+	})
+}
+
 func TestUserRepository_GetByID(t *testing.T) {
 	db := createRepositoryMemoryDB(t)
 	created := createRepositoryUser(t, db, "repo-id-user", "Repo ID User", "repo-id-key")
