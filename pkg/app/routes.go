@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/alexedwards/scs/gormstore"
@@ -74,7 +73,7 @@ func (a *App) ConfigureWebserver() error {
 		return fmt.Errorf("configure webserver: creating gue client: %w", err)
 	}
 
-	a.injector = container.NewContainer(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc).Injector()
+	a.injector = newInjector(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc)
 
 	e.Use(session.LoadAndSave(a.sessionManager))
 	e.Use(a.ContextValueMiddleware)

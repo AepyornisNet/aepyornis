@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	_ "github.com/AepyornisNet/aepyornis/pkg/model/migrations"
@@ -36,7 +36,7 @@ type App struct {
 	sessionManager *scs.SessionManager
 	translator     *i18n.Locale
 	Version        version.Version
-	Config         *container.Config
+	Config         *config.Config
 	injector       do.Injector
 }
 
@@ -54,7 +54,7 @@ func (a *App) Serve() error {
 }
 
 func (a *App) Configure() error {
-	cfg, err := container.NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (a *App) ConfigureLogger() {
 func NewApp(v version.Version) *App {
 	return &App{
 		Version:   v,
-		Config:    &container.Config{},
+		Config:    &config.Config{},
 		logger:    newLogger(false),
 		rawLogger: newLogger(false),
 	}
@@ -202,8 +202,4 @@ func (a *App) DB() *gorm.DB {
 
 func (a *App) Logger() *slog.Logger {
 	return a.logger
-}
-
-func (a *App) getContainer() *container.Container {
-	return container.NewFromInjector(a.injector)
 }

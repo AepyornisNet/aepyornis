@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -48,7 +48,7 @@ type HammerheadController interface {
 }
 
 type hammerheadController struct {
-	cfg            *container.Config
+	cfg            *config.Config
 	db             *gorm.DB
 	httpClient     *http.Client
 	logger         *slog.Logger
@@ -77,7 +77,7 @@ type hammerheadConnectionResponse struct {
 
 func NewHammerheadController(injector do.Injector) HammerheadController {
 	return &hammerheadController{
-		cfg:            do.MustInvoke[*container.Config](injector),
+		cfg:            do.MustInvoke[*config.Config](injector),
 		db:             do.MustInvoke[*gorm.DB](injector),
 		logger:         do.MustInvoke[*slog.Logger](injector),
 		sessionManager: do.MustInvoke[*scs.SessionManager](injector),

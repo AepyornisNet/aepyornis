@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -34,7 +34,7 @@ type UserController interface {
 }
 
 type userController struct {
-	cfg          *container.Config
+	cfg          *config.Config
 	db           *gorm.DB
 	followerRepo repository.Follower
 	userRepo     repository.User
@@ -42,7 +42,7 @@ type userController struct {
 
 func NewUserController(injector do.Injector) UserController {
 	return &userController{
-		cfg:          do.MustInvoke[*container.Config](injector),
+		cfg:          do.MustInvoke[*config.Config](injector),
 		db:           do.MustInvoke[*gorm.DB](injector),
 		followerRepo: do.MustInvoke[repository.Follower](injector),
 		userRepo:     do.MustInvoke[repository.User](injector),

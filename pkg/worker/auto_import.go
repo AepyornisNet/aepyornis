@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/converters"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -26,7 +26,7 @@ const fileAddDelay = -1 * time.Minute
 
 var ErrNothingImported = errors.New("nothing imported")
 
-func makeAutoImportHandler(cfg *container.Config, db *gorm.DB, client *gue.Client, logger *slog.Logger, userRepo repository.User) gue.WorkFunc {
+func makeAutoImportHandler(cfg *config.Config, db *gorm.DB, client *gue.Client, logger *slog.Logger, userRepo repository.User) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
 		if !cfg.AutoImportEnabled {
 			logger.Debug("Skipping auto-import job because auto import is disabled")

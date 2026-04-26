@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
@@ -22,7 +22,7 @@ type AdminController interface {
 }
 
 type adminController struct {
-	cfg                *container.Config
+	cfg                *config.Config
 	db                 *gorm.DB
 	resetConfiguration func() error
 	userRepo           repository.User
@@ -31,7 +31,7 @@ type adminController struct {
 
 func NewAdminController(injector do.Injector, resetConfiguration func() error) AdminController {
 	return &adminController{
-		cfg:                do.MustInvoke[*container.Config](injector),
+		cfg:                do.MustInvoke[*config.Config](injector),
 		db:                 do.MustInvoke[*gorm.DB](injector),
 		resetConfiguration: resetConfiguration,
 		userRepo:           do.MustInvoke[repository.User](injector),
@@ -203,7 +203,7 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /admin/config [put]
 func (ac *adminController) UpdateConfig(c echo.Context) error {
-	var cnf container.Config
+	var cnf config.Config
 
 	if err := c.Bind(&cnf); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)

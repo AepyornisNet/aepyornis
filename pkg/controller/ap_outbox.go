@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
@@ -30,7 +30,7 @@ type ApOutboxController interface {
 
 type apOutboxController struct {
 	apOutboxRepo     repository.APOutbox
-	cfg              *container.Config
+	cfg              *config.Config
 	db               *gorm.DB
 	userRepo         repository.User
 	workoutReplyRepo repository.WorkoutReply
@@ -41,7 +41,7 @@ const outboxPageSize = 20
 func NewApOutboxController(injector do.Injector) ApOutboxController {
 	return &apOutboxController{
 		apOutboxRepo:     do.MustInvoke[repository.APOutbox](injector),
-		cfg:              do.MustInvoke[*container.Config](injector),
+		cfg:              do.MustInvoke[*config.Config](injector),
 		db:               do.MustInvoke[*gorm.DB](injector),
 		userRepo:         do.MustInvoke[repository.User](injector),
 		workoutReplyRepo: do.MustInvoke[repository.WorkoutReply](injector),

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
@@ -21,7 +21,7 @@ func SyncWorkoutActivityPub(
 	ctx context.Context,
 	client *gue.Client,
 	db *gorm.DB,
-	cfg *container.Config,
+	cfg *config.Config,
 	apOutboxRepo repository.APOutbox,
 	deliveryRepo repository.APStatusDelivery,
 	user *model.User,
@@ -62,7 +62,16 @@ func SyncWorkoutActivityPub(
 	return publishWorkoutToActivityPub(ctx, client, db, cfg, apOutboxRepo, deliveryRepo, user, workout)
 }
 
-func publishWorkoutToActivityPub(ctx context.Context, client *gue.Client, db *gorm.DB, cfg *container.Config, apOutboxRepo repository.APOutbox, deliveryRepo repository.APStatusDelivery, user *model.User, workout *model.Workout) error {
+func publishWorkoutToActivityPub(
+	ctx context.Context,
+	client *gue.Client,
+	db *gorm.DB,
+	cfg *config.Config,
+	apOutboxRepo repository.APOutbox,
+	deliveryRepo repository.APStatusDelivery,
+	user *model.User,
+	workout *model.Workout,
+) error {
 	fitContent, err := aputil.GenerateWorkoutFIT(workout)
 	if err != nil {
 		return err
@@ -162,7 +171,7 @@ func publishWorkoutToActivityPub(ctx context.Context, client *gue.Client, db *go
 	return EnqueueAPDeliveriesForEntry(ctx, client, deliveryRepo, entry.ID)
 }
 
-func updateWorkoutActivityPubAudience(db *gorm.DB, cfg *container.Config, user *model.User, entry *model.APStatus, workout *model.Workout) error {
+func updateWorkoutActivityPubAudience(db *gorm.DB, cfg *config.Config, user *model.User, entry *model.APStatus, workout *model.Workout) error {
 	if entry == nil {
 		return errors.New("outbox entry is nil")
 	}
@@ -202,7 +211,7 @@ func updateWorkoutActivityPubAudience(db *gorm.DB, cfg *container.Config, user *
 		Update("activity", activityJSON).Error
 }
 
-func localActorURL(cfg *container.Config, user *model.User) (string, error) {
+func localActorURL(cfg *config.Config, user *model.User) (string, error) {
 	actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           cfg.Host,
 		WebRoot:        cfg.WebRoot,

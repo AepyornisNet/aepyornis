@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -29,7 +29,7 @@ type AuthController interface {
 }
 
 type authController struct {
-	cfg            *container.Config
+	cfg            *config.Config
 	db             *gorm.DB
 	sessionManager *scs.SessionManager
 	userRepo       repository.User
@@ -37,7 +37,7 @@ type authController struct {
 
 func NewAuthController(injector do.Injector) AuthController {
 	return &authController{
-		cfg:            do.MustInvoke[*container.Config](injector),
+		cfg:            do.MustInvoke[*config.Config](injector),
 		db:             do.MustInvoke[*gorm.DB](injector),
 		sessionManager: do.MustInvoke[*scs.SessionManager](injector),
 		userRepo:       do.MustInvoke[repository.User](injector),

@@ -9,7 +9,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/samber/do/v2"
@@ -50,7 +50,7 @@ type Worker struct {
 	geoPool  *gue.WorkerPool
 	logger   *slog.Logger
 	db       *gorm.DB
-	cfg      *container.Config
+	cfg      *config.Config
 	delay    time.Duration
 }
 
@@ -58,7 +58,7 @@ type Worker struct {
 // It migrates the gue_jobs schema and builds the work maps.
 func New(injector do.Injector) (*Worker, error) {
 	db := do.MustInvoke[*gorm.DB](injector)
-	cfg := do.MustInvoke[*container.Config](injector)
+	cfg := do.MustInvoke[*config.Config](injector)
 	logger := do.MustInvoke[*slog.Logger](injector).With("module", "worker")
 
 	if err := db.Exec(gueJobsSchema).Error; err != nil {

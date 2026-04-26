@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/vgarvardt/gue/v6"
@@ -33,7 +33,7 @@ func EnqueueAPDeliveriesForEntry(ctx context.Context, client *gue.Client, delive
 	return nil
 }
 
-func makeDeliverActivityPubHandler(cfg *container.Config, logger *slog.Logger, deliveryRepo repository.APStatusDelivery, userRepo repository.User) gue.WorkFunc {
+func makeDeliverActivityPubHandler(cfg *config.Config, logger *slog.Logger, deliveryRepo repository.APStatusDelivery, userRepo repository.User) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
 		var item model.APPendingStatusDelivery
 		if err := json.Unmarshal(j.Args, &item); err != nil {

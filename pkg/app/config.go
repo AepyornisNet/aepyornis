@@ -1,10 +1,10 @@
 package app
 
-import "github.com/AepyornisNet/aepyornis/pkg/container"
+import "github.com/AepyornisNet/aepyornis/pkg/config"
 
 func (a *App) ResetConfiguration() error {
 	if a.Config == nil {
-		cfg, err := container.NewConfig()
+		cfg, err := config.NewConfig()
 		if err != nil {
 			return err
 		}

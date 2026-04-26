@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/labstack/echo/v4"
@@ -20,13 +20,13 @@ type WellKnownController interface {
 }
 
 type wellKnownController struct {
-	cfg      *container.Config
+	cfg      *config.Config
 	userRepo repository.User
 }
 
 func NewWellKnownController(injector do.Injector) WellKnownController {
 	return &wellKnownController{
-		cfg:      do.MustInvoke[*container.Config](injector),
+		cfg:      do.MustInvoke[*config.Config](injector),
 		userRepo: do.MustInvoke[repository.User](injector),
 	}
 }

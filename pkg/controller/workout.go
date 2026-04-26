@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -48,7 +48,7 @@ type WorkoutController interface {
 type workoutController struct {
 	apOutboxRepo         repository.APOutbox
 	apStatusDeliveryRepo repository.APStatusDelivery
-	cfg                  *container.Config
+	cfg                  *config.Config
 	client               *gue.Client
 	db                   *gorm.DB
 	equipmentRepo        repository.Equipment
@@ -65,7 +65,7 @@ func NewWorkoutController(injector do.Injector) WorkoutController {
 	return &workoutController{
 		apOutboxRepo:         do.MustInvoke[repository.APOutbox](injector),
 		apStatusDeliveryRepo: do.MustInvoke[repository.APStatusDelivery](injector),
-		cfg:                  do.MustInvoke[*container.Config](injector),
+		cfg:                  do.MustInvoke[*config.Config](injector),
 		client:               do.MustInvoke[*gue.Client](injector),
 		db:                   do.MustInvoke[*gorm.DB](injector),
 		equipmentRepo:        do.MustInvoke[repository.Equipment](injector),

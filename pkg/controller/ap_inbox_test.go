@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/fsouza/slognil"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,8 +21,10 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil)
-	ctrl := NewApInboxController(ctr.Injector())
+	injector := do.New(repository.Package)
+	do.ProvideValue(injector, db)
+	do.ProvideValue(injector, slognil.NewLogger())
+	ctrl := NewApInboxController(injector)
 
 	localUser := &model.User{
 		UserData: model.UserData{
@@ -38,7 +41,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, localUser.Create(db))
 
 	remoteActorIRI := "https://wt-ap2.test/ap/users/admin"
-	_, err = ctr.FollowerRepo().UpsertFollowingRequest(localUser.ID, remoteActorIRI, remoteActorIRI+"/inbox")
+	_, err = do.MustInvoke[repository.Follower](injector).UpsertFollowingRequest(localUser.ID, remoteActorIRI, remoteActorIRI+"/inbox")
 	require.NoError(t, err)
 
 	payload := []byte(`{
@@ -68,7 +71,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, rec.Code)
 
-	approved, err := ctr.FollowerRepo().IsFollowingApprovedByActorIRI(localUser.ID, remoteActorIRI)
+	approved, err := do.MustInvoke[repository.Follower](injector).IsFollowingApprovedByActorIRI(localUser.ID, remoteActorIRI)
 	require.NoError(t, err)
 	assert.True(t, approved)
 }
@@ -77,8 +80,10 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	ctr := container.NewContainer(db, nil, nil, nil, slognil.NewLogger(), nil)
-	ctrl := NewApInboxController(ctr.Injector())
+	injector := do.New(repository.Package)
+	do.ProvideValue(injector, db)
+	do.ProvideValue(injector, slognil.NewLogger())
+	ctrl := NewApInboxController(injector)
 
 	localUser := &model.User{
 		UserData: model.UserData{

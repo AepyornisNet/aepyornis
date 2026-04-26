@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
@@ -17,7 +17,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func PublishReplyToActivityPub(ctx context.Context, client *gue.Client, db *gorm.DB, cfg *container.Config, apOutboxRepo repository.APOutbox, deliveryRepo repository.APStatusDelivery, author *model.User, workout *model.Workout, reply *model.APStatus) error {
+func PublishReplyToActivityPub(
+	ctx context.Context,
+	client *gue.Client,
+	db *gorm.DB,
+	cfg *config.Config,
+	apOutboxRepo repository.APOutbox,
+	deliveryRepo repository.APStatusDelivery,
+	author *model.User,
+	workout *model.Workout,
+	reply *model.APStatus,
+) error {
 	if author == nil || workout == nil || reply == nil {
 		return nil
 	}

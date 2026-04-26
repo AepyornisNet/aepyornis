@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
@@ -24,7 +24,7 @@ type ApUserController interface {
 }
 
 type apUserController struct {
-	cfg          *container.Config
+	cfg          *config.Config
 	followerRepo repository.Follower
 	userRepo     repository.User
 }
@@ -33,7 +33,7 @@ const followersPageSize = 20
 
 func NewApUserController(injector do.Injector) ApUserController {
 	return &apUserController{
-		cfg:          do.MustInvoke[*container.Config](injector),
+		cfg:          do.MustInvoke[*config.Config](injector),
 		followerRepo: do.MustInvoke[repository.Follower](injector),
 		userRepo:     do.MustInvoke[repository.User](injector),
 	}

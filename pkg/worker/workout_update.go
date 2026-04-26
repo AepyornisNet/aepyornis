@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/vgarvardt/gue/v6"
@@ -23,7 +23,7 @@ func EnqueueWorkoutUpdate(ctx context.Context, client *gue.Client, workoutID uin
 
 func makeUpdateWorkoutHandler(
 	db *gorm.DB,
-	cfg *container.Config,
+	cfg *config.Config,
 	client *gue.Client,
 	logger *slog.Logger,
 	apOutboxRepo repository.APOutbox,
