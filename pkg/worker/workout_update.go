@@ -8,6 +8,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
@@ -16,19 +17,21 @@ const JobUpdateWorkout = "update_workout"
 
 // EnqueueWorkoutUpdate enqueues a job to reprocess the given workout.
 // Call this wherever a workout is created or marked dirty.
-func EnqueueWorkoutUpdate(ctx context.Context, c *container.Container, workoutID uint64) error {
-	raw, err := json.Marshal(idArgs{ID: workoutID})
-	if err != nil {
-		return err
-	}
-
-	return c.Enqueue(ctx, &gue.Job{Queue: MainQueue, Type: JobUpdateWorkout, Args: raw})
+func EnqueueWorkoutUpdate(ctx context.Context, client *gue.Client, workoutID uint64) error {
+	return enqueueJob(ctx, client, MainQueue, JobUpdateWorkout, idArgs{ID: workoutID})
 }
 
-func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.WorkFunc {
+func makeUpdateWorkoutHandler(
+	db *gorm.DB,
+	cfg *container.Config,
+	client *gue.Client,
+	logger *slog.Logger,
+	apOutboxRepo repository.APOutbox,
+	deliveryRepo repository.APStatusDelivery,
+	userRepo repository.User,
+	workoutRepo repository.Workout,
+) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
-		db := c.GetDB()
-
 		var args idArgs
 		if err := json.Unmarshal(j.Args, &args); err != nil {
 			return fmt.Errorf("update_workout: unmarshal args: %w", err)
@@ -36,7 +39,7 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 
 		l := logger.With("workout_id", args.ID)
 
-		w, err := c.WorkoutRepo().GetDetailsByID(args.ID)
+		w, err := workoutRepo.GetDetailsByID(args.ID)
 		if err != nil {
 			return fmt.Errorf("update_workout: get workout %d: %w", args.ID, err)
 		}
@@ -49,7 +52,7 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 			}
 
 			if w.Data != nil && !w.Data.Center.IsZero() && w.Data.AddressString == "" {
-				if err := EnqueueAddressUpdate(ctx, c, w.Data.ID); err != nil {
+				if err := EnqueueAddressUpdate(ctx, client, w.Data.ID); err != nil {
 					l.Error("Failed to enqueue address update after workout processing", "error", err)
 				}
 			}
@@ -61,12 +64,12 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 			return nil
 		}
 
-		user, err := c.UserRepo().GetByID(*w.Profile.UserID)
+		user, err := userRepo.GetByID(*w.Profile.UserID)
 		if err != nil {
 			return fmt.Errorf("update_workout: get user %d: %w", *w.Profile.UserID, err)
 		}
 
-		if err := SyncWorkoutActivityPub(ctx, c, user, w, nil); err != nil {
+		if err := SyncWorkoutActivityPub(ctx, client, db, cfg, apOutboxRepo, deliveryRepo, user, w, nil); err != nil {
 			l.Warn("Failed to sync workout ActivityPub state", "error", err)
 		}
 

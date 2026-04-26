@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
 )
@@ -17,12 +17,13 @@ type MeasurementController interface {
 }
 
 type measurementController struct {
-	context *container.Container
+	measurementRepo repository.Measurement
 }
 
 func NewMeasurementController(injector do.Injector) MeasurementController {
-	c := container.NewFromInjector(injector)
-	return &measurementController{context: c}
+	return &measurementController{
+		measurementRepo: do.MustInvoke[*repository.Repositories](injector).Measurement,
+	}
 }
 
 // GetMeasurements returns a paginated list of measurements for the current user
@@ -39,7 +40,7 @@ func NewMeasurementController(injector do.Injector) MeasurementController {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /measurements [get]
 func (mc *measurementController) GetMeasurements(c echo.Context) error {
-	user := mc.context.GetUser(c)
+	user := currentUser(c)
 
 	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
@@ -47,12 +48,12 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	totalCount, err := mc.context.MeasurementRepo().CountByUserID(user.ID)
+	totalCount, err := mc.measurementRepo.CountByUserID(user.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	measurements, err := mc.context.MeasurementRepo().ListByUserID(user.ID, pagination.PerPage, pagination.GetOffset())
+	measurements, err := mc.measurementRepo.ListByUserID(user.ID, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -83,21 +84,21 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /measurements [post]
 func (mc *measurementController) CreateMeasurement(c echo.Context) error {
-	user := mc.context.GetUser(c)
+	user := currentUser(c)
 
 	d := &dto.Measurement{Units: &user.PreferredUnits}
 	if err := c.Bind(d); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	m, err := mc.context.MeasurementRepo().GetByUserIDForDateOrNew(user.ID, d.Time())
+	m, err := mc.measurementRepo.GetByUserIDForDateOrNew(user.ID, d.Time())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	d.Update(m)
 
-	if err := mc.context.MeasurementRepo().Save(m); err != nil {
+	if err := mc.measurementRepo.Save(m); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -121,7 +122,7 @@ func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /measurements/{date} [delete]
 func (mc *measurementController) DeleteMeasurement(c echo.Context) error {
-	u := mc.context.GetUser(c)
+	u := currentUser(c)
 
 	dateStr := c.Param("date")
 	t, err := time.Parse("2006-01-02", dateStr)
@@ -129,12 +130,12 @@ func (mc *measurementController) DeleteMeasurement(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	m, err := mc.context.MeasurementRepo().GetByUserIDForDateOrNew(u.ID, t)
+	m, err := mc.measurementRepo.GetByUserIDForDateOrNew(u.ID, t)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := mc.context.MeasurementRepo().Delete(m); err != nil {
+	if err := mc.measurementRepo.Delete(m); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

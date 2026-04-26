@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -9,10 +10,14 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
+	"github.com/vgarvardt/gue/v6"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type ProfileController interface {
@@ -30,12 +35,23 @@ type ProfileController interface {
 var ErrCurrentPasswordIncorrect = errors.New("current password is incorrect")
 
 type profileController struct {
-	context *container.Container
+	cfg          *container.Config
+	db           *gorm.DB
+	followerRepo repository.Follower
+	logger       *slog.Logger
+	client       *gue.Client
+	version      *version.Version
 }
 
 func NewProfileController(injector do.Injector) ProfileController {
-	c := container.NewFromInjector(injector)
-	return &profileController{context: c}
+	return &profileController{
+		cfg:          do.MustInvoke[*container.Config](injector),
+		db:           do.MustInvoke[*gorm.DB](injector),
+		followerRepo: do.MustInvoke[*repository.Repositories](injector).Follower,
+		logger:       do.MustInvoke[*slog.Logger](injector),
+		client:       do.MustInvoke[*gue.Client](injector),
+		version:      do.MustInvoke[*version.Version](injector),
+	}
 }
 
 // GetProfile returns current user's full profile with settings
@@ -48,13 +64,13 @@ func NewProfileController(injector do.Injector) ProfileController {
 // @Success      200  {object}  dto.Response[dto.UserProfileResponse]
 // @Router       /profile [get]
 func (pc *profileController) GetProfile(c echo.Context) error {
-	user := pc.context.GetUser(c)
+	user := currentUser(c)
 
 	resp := dto.Response[dto.UserProfileResponse]{
 		Results: dto.NewUserProfileResponse(user),
 	}
 
-	if !pc.context.GetConfig().AutoImportEnabled {
+	if !pc.cfg.AutoImportEnabled {
 		resp.Results.Profile.AutoImportDirectory = ""
 	}
 
@@ -78,7 +94,7 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /profile [put]
 func (pc *profileController) UpdateProfile(c echo.Context) error {
-	user := pc.context.GetUser(c)
+	user := currentUser(c)
 
 	var updateData dto.ProfileUpdateData
 	if err := c.Bind(&updateData); err != nil {
@@ -105,7 +121,7 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid default workout visibility"))
 	}
 	user.DefaultWorkoutVisibility = updateData.DefaultWorkoutVisibility
-	if !pc.context.GetConfig().AutoImportEnabled {
+	if !pc.cfg.AutoImportEnabled {
 		if updateData.AutoImportDirectory != "" {
 			return renderApiError(c, http.StatusBadRequest, errors.New("auto import is disabled"))
 		}
@@ -119,11 +135,11 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 	userID := user.ID
 	user.Profile.UserID = &userID
 
-	if err := user.Profile.Save(pc.context.GetDB()); err != nil {
+	if err := user.Profile.Save(pc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := user.Save(pc.context.GetDB()); err != nil {
+	if err := user.Save(pc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -131,7 +147,7 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 		Results: dto.NewUserProfileResponse(user),
 	}
 
-	if !pc.context.GetConfig().AutoImportEnabled {
+	if !pc.cfg.AutoImportEnabled {
 		resp.Results.Profile.AutoImportDirectory = ""
 	}
 
@@ -156,7 +172,7 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/change-password [post]
 func (pc *profileController) ChangePassword(c echo.Context) error {
-	user := pc.context.GetUser(c)
+	user := currentUser(c)
 
 	var changeData dto.ProfileChangePasswordData
 	if err := c.Bind(&changeData); err != nil {
@@ -175,7 +191,7 @@ func (pc *profileController) ChangePassword(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if err := user.Save(pc.context.GetDB()); err != nil {
+	if err := user.Save(pc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -197,11 +213,11 @@ func (pc *profileController) ChangePassword(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/reset-api-key [post]
 func (pc *profileController) ResetAPIKey(c echo.Context) error {
-	user := pc.context.GetUser(c)
+	user := currentUser(c)
 
 	user.GenerateAPIKey(true)
 
-	if err := user.Save(pc.context.GetDB()); err != nil {
+	if err := user.Save(pc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -226,7 +242,7 @@ func (pc *profileController) ResetAPIKey(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/enable-activity-pub [post]
 func (pc *profileController) EnableActivityPub(c echo.Context) error {
-	user := pc.context.GetUser(c)
+	user := currentUser(c)
 
 	user.ActivityPub = !user.ActivityPub
 
@@ -237,7 +253,7 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 		}
 	}
 
-	if err := user.Save(pc.context.GetDB()); err != nil {
+	if err := user.Save(pc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -262,9 +278,9 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/follow-requests [get]
 func (pc *profileController) ListFollowRequests(c echo.Context) error {
-	user := pc.context.GetUser(c)
+	user := currentUser(c)
 
-	requests, err := pc.context.FollowerRepo().ListFollowerRequests(user.ID)
+	requests, err := pc.followerRepo.ListFollowerRequests(user.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -293,7 +309,7 @@ func (pc *profileController) ListFollowRequests(c echo.Context) error {
 // @Failure      502  {object}  dto.Response[any]
 // @Router       /profile/follow-requests/{id}/accept [post]
 func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
-	user := pc.context.GetUser(c)
+	user := currentUser(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.ParseUint(rawID, 10, 64)
@@ -301,12 +317,12 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	follower, err := pc.context.FollowerRepo().ApproveFollowerRequest(user.ID, id)
+	follower, err := pc.followerRepo.ApproveFollowerRequest(user.ID, id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := pc.context.GetApUser(c).SendFollowAccept(c.Request().Context(), *follower); err != nil {
+	if err := currentAPUser(c).SendFollowAccept(c.Request().Context(), *follower); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
@@ -326,8 +342,8 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /profile/refresh-workouts [post]
 func (pc *profileController) RefreshWorkouts(c echo.Context) error {
-	user := pc.context.GetUser(c)
-	db := pc.context.GetDB()
+	user := currentUser(c)
+	db := pc.db
 
 	var workoutIDs []uint64
 	if err := db.Model(&model.Workout{}).
@@ -343,9 +359,9 @@ func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 	enqueued := 0
 	failed := 0
 	for _, workoutID := range workoutIDs {
-		if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), pc.context, workoutID); err != nil {
+		if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), pc.client, workoutID); err != nil {
 			failed++
-			pc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workoutID, "error", err)
+			pc.logger.Error("Failed to enqueue workout update", "workout_id", workoutID, "error", err)
 			continue
 		}
 
@@ -387,15 +403,15 @@ func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 // @Failure      500  {string}  string
 // @Router       /profile/update-version [post]
 func (pc *profileController) UpdateVersion(c echo.Context) error {
-	u := pc.context.GetUser(c)
+	u := currentUser(c)
 
-	v := pc.context.GetVersion()
+	v := pc.version
 	if v == nil {
 		return c.String(http.StatusInternalServerError, "version not configured")
 	}
 
 	u.LastVersion = v.Sha
-	if err := u.Save(pc.context.GetDB()); err != nil {
+	if err := u.Save(pc.db); err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 

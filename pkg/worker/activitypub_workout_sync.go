@@ -9,13 +9,25 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
+	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
 
-func SyncWorkoutActivityPub(ctx context.Context, c *container.Container, user *model.User, workout *model.Workout, previousVisibility *model.WorkoutVisibility) error {
+func SyncWorkoutActivityPub(
+	ctx context.Context,
+	client *gue.Client,
+	db *gorm.DB,
+	cfg *container.Config,
+	apOutboxRepo repository.APOutbox,
+	deliveryRepo repository.APStatusDelivery,
+	user *model.User,
+	workout *model.Workout,
+	previousVisibility *model.WorkoutVisibility,
+) error {
 	if user == nil || workout == nil {
 		return nil
 	}
@@ -24,7 +36,7 @@ func SyncWorkoutActivityPub(ctx context.Context, c *container.Container, user *m
 		return nil
 	}
 
-	entry, err := c.APOutboxRepo().GetEntryForWorkout(user.ID, workout.ID)
+	entry, err := apOutboxRepo.GetEntryForWorkout(user.ID, workout.ID)
 	hasOutboxEntry := err == nil
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
@@ -35,7 +47,7 @@ func SyncWorkoutActivityPub(ctx context.Context, c *container.Container, user *m
 
 	if !shouldPublish {
 		if hasOutboxEntry {
-			if err := c.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := apOutboxRepo.DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
 		}
@@ -44,19 +56,19 @@ func SyncWorkoutActivityPub(ctx context.Context, c *container.Container, user *m
 	}
 
 	if hasOutboxEntry {
-		return updateWorkoutActivityPubAudience(c, user, entry, workout)
+		return updateWorkoutActivityPubAudience(db, cfg, user, entry, workout)
 	}
 
-	return publishWorkoutToActivityPub(ctx, c, user, workout)
+	return publishWorkoutToActivityPub(ctx, client, db, cfg, apOutboxRepo, deliveryRepo, user, workout)
 }
 
-func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, user *model.User, workout *model.Workout) error {
+func publishWorkoutToActivityPub(ctx context.Context, client *gue.Client, db *gorm.DB, cfg *container.Config, apOutboxRepo repository.APOutbox, deliveryRepo repository.APStatusDelivery, user *model.User, workout *model.Workout) error {
 	fitContent, err := aputil.GenerateWorkoutFIT(workout)
 	if err != nil {
 		return err
 	}
 
-	actorURL, err := localActorURL(c, user)
+	actorURL, err := localActorURL(cfg, user)
 	if err != nil {
 		return err
 	}
@@ -70,7 +82,7 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 	noteContent := aputil.WorkoutNoteContent(workout)
 
 	attachments := vocab.ItemCollection{}
-	routeImageAttachment, routeImageErr := model.GetRouteImageAttachment(c.GetDB(), workout.ID)
+	routeImageAttachment, routeImageErr := model.GetRouteImageAttachment(db, workout.ID)
 	if routeImageErr == nil {
 		attachments = append(attachments, &vocab.Object{
 			Type:      vocab.ImageType,
@@ -125,7 +137,7 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 		FitContentType: aputil.FitMIMEType,
 	}
 
-	if err := c.APOutboxRepo().CreateWorkout(outboxWorkout); err != nil {
+	if err := apOutboxRepo.CreateWorkout(outboxWorkout); err != nil {
 		return err
 	}
 
@@ -143,19 +155,19 @@ func publishWorkoutToActivityPub(ctx context.Context, c *container.Container, us
 		PublishedAt:       &publishedAt,
 	}
 
-	if err := c.APOutboxRepo().CreateEntry(entry); err != nil {
+	if err := apOutboxRepo.CreateEntry(entry); err != nil {
 		return err
 	}
 
-	return EnqueueAPDeliveriesForEntry(ctx, c, entry.ID)
+	return EnqueueAPDeliveriesForEntry(ctx, client, deliveryRepo, entry.ID)
 }
 
-func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, entry *model.APStatus, workout *model.Workout) error {
+func updateWorkoutActivityPubAudience(db *gorm.DB, cfg *container.Config, user *model.User, entry *model.APStatus, workout *model.Workout) error {
 	if entry == nil {
 		return errors.New("outbox entry is nil")
 	}
 
-	actorURL, err := localActorURL(c, user)
+	actorURL, err := localActorURL(cfg, user)
 	if err != nil {
 		return err
 	}
@@ -185,16 +197,16 @@ func updateWorkoutActivityPubAudience(c *container.Container, user *model.User, 
 		return err
 	}
 
-	return c.GetDB().Model(&model.APStatus{}).
+	return db.Model(&model.APStatus{}).
 		Where("id = ?", entry.ID).
 		Update("activity", activityJSON).Error
 }
 
-func localActorURL(c *container.Container, user *model.User) (string, error) {
+func localActorURL(cfg *container.Config, user *model.User) (string, error) {
 	actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-		Host:           c.GetConfig().Host,
-		WebRoot:        c.GetConfig().WebRoot,
-		FallbackHost:   c.GetConfig().Host,
+		Host:           cfg.Host,
+		WebRoot:        cfg.WebRoot,
+		FallbackHost:   cfg.Host,
 		FallbackScheme: "https",
 	}, user.Profile.Username)
 

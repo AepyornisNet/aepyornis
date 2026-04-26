@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
@@ -18,19 +18,12 @@ const workerWorkoutsBatchSize = 10
 
 // EnqueueRouteSegmentUpdate enqueues a job to re-match the given route segment.
 // Call this wherever a route segment is created or marked dirty.
-func EnqueueRouteSegmentUpdate(ctx context.Context, c *container.Container, segmentID uint64) error {
-	raw, err := json.Marshal(idArgs{ID: segmentID})
-	if err != nil {
-		return err
-	}
-
-	return c.Enqueue(ctx, &gue.Job{Queue: MainQueue, Type: JobUpdateRouteSegment, Args: raw})
+func EnqueueRouteSegmentUpdate(ctx context.Context, client *gue.Client, segmentID uint64) error {
+	return enqueueJob(ctx, client, MainQueue, JobUpdateRouteSegment, idArgs{ID: segmentID})
 }
 
-func makeUpdateRouteSegmentHandler(c *container.Container, logger *slog.Logger) gue.WorkFunc {
+func makeUpdateRouteSegmentHandler(db *gorm.DB, logger *slog.Logger, routeSegmentRepo repository.RouteSegment) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
-		db := c.GetDB()
-
 		var args idArgs
 		if err := json.Unmarshal(j.Args, &args); err != nil {
 			return fmt.Errorf("update_route_segment: unmarshal args: %w", err)
@@ -38,7 +31,7 @@ func makeUpdateRouteSegmentHandler(c *container.Container, logger *slog.Logger) 
 
 		l := logger.With("route_segment_id", args.ID)
 
-		rs, err := c.RouteSegmentRepo().GetByID(args.ID)
+		rs, err := routeSegmentRepo.GetByID(args.ID)
 		if err != nil {
 			return fmt.Errorf("update_route_segment: get route segment %d: %w", args.ID, err)
 		}

@@ -3,17 +3,20 @@ package controller
 import (
 	"bytes"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"path"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
+	"github.com/vgarvardt/gue/v6"
+	"gorm.io/gorm"
 )
 
 type RouteSegmentController interface {
@@ -29,12 +32,23 @@ type RouteSegmentController interface {
 }
 
 type routeSegmentController struct {
-	context *container.Container
+	client           *gue.Client
+	db               *gorm.DB
+	logger           *slog.Logger
+	routeSegmentRepo repository.RouteSegment
+	workoutRepo      repository.Workout
 }
 
 func NewRouteSegmentController(injector do.Injector) RouteSegmentController {
-	c := container.NewFromInjector(injector)
-	return &routeSegmentController{context: c}
+	repositories := do.MustInvoke[*repository.Repositories](injector)
+
+	return &routeSegmentController{
+		client:           do.MustInvoke[*gue.Client](injector),
+		db:               do.MustInvoke[*gorm.DB](injector),
+		logger:           do.MustInvoke[*slog.Logger](injector),
+		routeSegmentRepo: repositories.RouteSegment,
+		workoutRepo:      repositories.Workout,
+	}
 }
 
 func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteSegment, error) {
@@ -43,7 +57,7 @@ func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteS
 		return nil, err
 	}
 
-	rs, err := rc.context.RouteSegmentRepo().GetByID(id)
+	rs, err := rc.routeSegmentRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -71,12 +85,12 @@ func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	totalCount, err := rc.context.RouteSegmentRepo().Count()
+	totalCount, err := rc.routeSegmentRepo.Count()
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	routeSegments, err := rc.context.RouteSegmentRepo().List(pagination.PerPage, pagination.GetOffset())
+	routeSegments, err := rc.routeSegmentRepo.List(pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -151,7 +165,7 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 
 		notes := c.FormValue("notes")
 
-		w, addErr := rc.context.RouteSegmentRepo().CreateFromContent(notes, file.Filename, content)
+		w, addErr := rc.routeSegmentRepo.CreateFromContent(notes, file.Filename, content)
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
@@ -160,8 +174,8 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 		resp := dto.NewRouteSegmentResponse(w)
 		segments = append(segments, &resp)
 
-		if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, w.ID); err != nil {
-			rc.context.Logger().Error("Failed to enqueue route segment update", "route_segment_id", w.ID, "error", err)
+		if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.client, w.ID); err != nil {
+			rc.logger.Error("Failed to enqueue route segment update", "route_segment_id", w.ID, "error", err)
 		}
 	}
 
@@ -192,7 +206,7 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	workout, err := rc.context.WorkoutRepo().GetDetailsByID(workoutID)
+	workout, err := rc.workoutRepo.GetDetailsByID(workoutID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -207,13 +221,13 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	rs, err := rc.context.RouteSegmentRepo().CreateFromContent("", params.Filename(), content)
+	rs, err := rc.routeSegmentRepo.CreateFromContent("", params.Filename(), content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, rs.ID); err != nil {
-		rc.context.Logger().Error("Failed to enqueue route segment update", "route_segment_id", rs.ID, "error", err)
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.client, rs.ID); err != nil {
+		rc.logger.Error("Failed to enqueue route segment update", "route_segment_id", rs.ID, "error", err)
 	}
 
 	resp := dto.Response[dto.RouteSegmentDetailResponse]{
@@ -241,7 +255,7 @@ func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := rc.context.RouteSegmentRepo().Delete(rs); err != nil {
+	if err := rc.routeSegmentRepo.Delete(rs); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -274,7 +288,7 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := rc.context.RouteSegmentRepo().Save(rs); err != nil {
+	if err := rc.routeSegmentRepo.Save(rs); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -323,11 +337,11 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 	rs.Circular = params.Circular
 	rs.Dirty = true
 
-	if err := rs.Save(rc.context.GetDB()); err != nil {
+	if err := rs.Save(rc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, rs.ID); err != nil {
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.client, rs.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -380,11 +394,11 @@ func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error 
 	}
 
 	rs.Dirty = true
-	if err := rs.Save(rc.context.GetDB()); err != nil {
+	if err := rs.Save(rc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.context, rs.ID); err != nil {
+	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.client, rs.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

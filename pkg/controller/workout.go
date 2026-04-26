@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -14,10 +15,12 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
+	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
 
@@ -43,14 +46,37 @@ type WorkoutController interface {
 }
 
 type workoutController struct {
-	context *container.Container
+	apOutboxRepo         repository.APOutbox
+	apStatusDeliveryRepo repository.APStatusDelivery
+	cfg                  *container.Config
+	client               *gue.Client
+	db                   *gorm.DB
+	equipmentRepo        repository.Equipment
+	logger               *slog.Logger
+	userRepo             repository.User
+	workoutLikeRepo      repository.WorkoutLike
+	workoutReplyRepo     repository.WorkoutReply
+	workoutRepo          repository.Workout
 }
 
 var _ WorkoutController = (*workoutController)(nil)
 
 func NewWorkoutController(injector do.Injector) WorkoutController {
-	c := container.NewFromInjector(injector)
-	return &workoutController{context: c}
+	repositories := do.MustInvoke[*repository.Repositories](injector)
+
+	return &workoutController{
+		apOutboxRepo:         repositories.APOutbox,
+		apStatusDeliveryRepo: repositories.APStatusDelivery,
+		cfg:                  do.MustInvoke[*container.Config](injector),
+		client:               do.MustInvoke[*gue.Client](injector),
+		db:                   do.MustInvoke[*gorm.DB](injector),
+		equipmentRepo:        repositories.Equipment,
+		logger:               do.MustInvoke[*slog.Logger](injector),
+		userRepo:             repositories.User,
+		workoutLikeRepo:      repositories.WorkoutLike,
+		workoutReplyRepo:     repositories.WorkoutReply,
+		workoutRepo:          repositories.Workout,
+	}
 }
 
 func workoutIDs(ws []*model.Workout) []uint64 {
@@ -91,8 +117,8 @@ func (wc *workoutController) getOwnedWorkout(c echo.Context) (*model.Workout, er
 		return nil, err
 	}
 
-	user := wc.context.GetUser(c)
-	w, err := wc.context.WorkoutRepo().GetByUserID(user.Profile.ID, id)
+	user := currentUser(c)
+	w, err := wc.workoutRepo.GetByUserID(user.Profile.ID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +153,8 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 		return true, nil
 	case model.WorkoutVisibilityFollowers:
 		requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-			Host:           wc.context.GetConfig().Host,
-			WebRoot:        wc.context.GetConfig().WebRoot,
+			Host:           wc.cfg.Host,
+			WebRoot:        wc.cfg.WebRoot,
 			FallbackHost:   c.Request().Host,
 			FallbackScheme: c.Scheme(),
 		}, requester.Profile.Username)
@@ -138,7 +164,7 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 		}
 
 		var count int64
-		if err := wc.context.GetDB().
+		if err := wc.db.
 			Model(&model.Follower{}).
 			Where("user_id = ? AND actor_iri = ? AND approved = ?", ownerUserID, requesterActorIRI, true).
 			Count(&count).Error; err != nil {
@@ -157,12 +183,12 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 		return nil, err
 	}
 
-	workout, err := wc.context.WorkoutRepo().GetByIDForRead(id, withDetails)
+	workout, err := wc.workoutRepo.GetByIDForRead(id, withDetails)
 	if err != nil {
 		return nil, err
 	}
 
-	allowed, err := wc.canReadWorkout(c, wc.context.GetUser(c), workout)
+	allowed, err := wc.canReadWorkout(c, currentUser(c), workout)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +214,7 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts [get]
 func (wc *workoutController) GetWorkouts(c echo.Context) error {
-	user := wc.context.GetUser(c)
+	user := currentUser(c)
 
 	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
@@ -201,31 +227,31 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	totalCount, err := wc.context.WorkoutRepo().CountByUserAndFilters(user.ID, filters)
+	totalCount, err := wc.workoutRepo.CountByUserAndFilters(user.ID, filters)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	workouts, err := wc.context.WorkoutRepo().ListByUserAndFilters(user.ID, filters, pagination.PerPage, pagination.GetOffset())
+	workouts, err := wc.workoutRepo.ListByUserAndFilters(user.ID, filters, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	results := dto.NewWorkoutsResponse(workouts)
-	published, err := wc.context.APOutboxRepo().PublishedMap(user.ID, workoutIDs(workouts))
+	published, err := wc.apOutboxRepo.PublishedMap(user.ID, workoutIDs(workouts))
 	if err == nil {
 		applyPublishedFlags(results, published)
 	}
 
-	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
-		liked, likedErr := wc.context.WorkoutLikeRepo().LikedMapByUser(workoutIDs(workouts), user.ID)
+		liked, likedErr := wc.workoutLikeRepo.LikedMapByUser(workoutIDs(workouts), user.ID)
 		if likedErr == nil {
 			applyLikeMetadata(results, counts, liked)
 		}
 	}
 
-	replyCounts, err := wc.context.WorkoutReplyRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	replyCounts, err := wc.workoutReplyRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
 		applyReplyMetadata(results, replyCounts)
 	}
@@ -260,28 +286,28 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 	}
 
 	ownerUserID := workoutOwnerUserID(workout)
-	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.context.GetDB(), ownerUserID, workout.Type, workout.ID)
+	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.db, ownerUserID, workout.Type, workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	result := dto.NewWorkoutDetailResponse(workout, records)
-	published, err := wc.context.APOutboxRepo().PublishedMap(ownerUserID, []uint64{workout.ID})
+	published, err := wc.apOutboxRepo.PublishedMap(ownerUserID, []uint64{workout.ID})
 	if err == nil {
 		result.ActivityPubPublished = published[workout.ID]
 	}
 
-	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{workout.ID})
+	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs([]uint64{workout.ID})
 	if err == nil {
 		result.LikesCount = counts[workout.ID]
 	}
 
-	liked, err := wc.context.WorkoutLikeRepo().LikedMapByUser([]uint64{workout.ID}, wc.context.GetUser(c).ID)
+	liked, err := wc.workoutLikeRepo.LikedMapByUser([]uint64{workout.ID}, currentUser(c).ID)
 	if err == nil {
 		result.LikedByMe = liked[workout.ID]
 	}
 
-	replyCount, err := wc.context.WorkoutReplyRepo().CountByWorkoutID(workout.ID)
+	replyCount, err := wc.workoutReplyRepo.CountByWorkoutID(workout.ID)
 	if err == nil {
 		result.RepliesCount = replyCount
 	}
@@ -311,7 +337,7 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	likes, err := wc.context.WorkoutLikeRepo().ListByWorkoutID(workout.ID)
+	likes, err := wc.workoutLikeRepo.ListByWorkoutID(workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -380,12 +406,12 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	totalCount, err := wc.context.WorkoutReplyRepo().CountByWorkoutID(workout.ID)
+	totalCount, err := wc.workoutReplyRepo.CountByWorkoutID(workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	replies, err := wc.context.WorkoutReplyRepo().ListByWorkoutID(workout.ID, pagination.PerPage, pagination.GetOffset())
+	replies, err := wc.workoutReplyRepo.ListByWorkoutID(workout.ID, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -435,7 +461,7 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/like [post]
 func (wc *workoutController) LikeWorkout(c echo.Context) error {
-	viewer := wc.context.GetUser(c)
+	viewer := currentUser(c)
 	if viewer == nil || viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
@@ -449,11 +475,11 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
-	if err := wc.context.WorkoutLikeRepo().LikeByUser(workout.ID, viewer.ID); err != nil {
+	if err := wc.workoutLikeRepo.LikeByUser(workout.ID, viewer.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{workout.ID})
+	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs([]uint64{workout.ID})
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -482,7 +508,7 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/like [post]
 func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
-	viewer := wc.context.GetUser(c)
+	viewer := currentUser(c)
 	if viewer == nil || viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
@@ -499,7 +525,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("object_id is required"))
 	}
 
-	localWorkoutID, localErr := wc.context.APOutboxRepo().ResolveWorkoutIDByObjectOrActivityID(0, params.ObjectID)
+	localWorkoutID, localErr := wc.apOutboxRepo.ResolveWorkoutIDByObjectOrActivityID(0, params.ObjectID)
 	if localErr == nil {
 		results, status, err := wc.likeLocalWorkout(c, viewer, localWorkoutID)
 		if err != nil {
@@ -531,7 +557,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
-	localActor := wc.context.GetApUser(c)
+	localActor := currentAPUser(c)
 	if err := localActor.SendLike(c.Request().Context(), inbox, params.ObjectID); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
@@ -547,7 +573,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 }
 
 func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
-	workout, err := wc.context.WorkoutRepo().GetByIDForRead(localWorkoutID, false)
+	workout, err := wc.workoutRepo.GetByIDForRead(localWorkoutID, false)
 	if err != nil {
 		return nil, http.StatusNotFound, err
 	}
@@ -565,11 +591,11 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 		return nil, http.StatusBadRequest, errors.New("cannot like your own workout")
 	}
 
-	if err := wc.context.WorkoutLikeRepo().LikeByUser(localWorkoutID, viewer.ID); err != nil {
+	if err := wc.workoutLikeRepo.LikeByUser(localWorkoutID, viewer.ID); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs([]uint64{localWorkoutID})
+	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs([]uint64{localWorkoutID})
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -596,7 +622,7 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/replies [post]
 func (wc *workoutController) CreateReply(c echo.Context) error {
-	viewer := wc.context.GetUser(c)
+	viewer := currentUser(c)
 
 	workout, err := wc.getReadableWorkout(c, false)
 	if err != nil {
@@ -617,18 +643,18 @@ func (wc *workoutController) CreateReply(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("content is required"))
 	}
 
-	reply, err := wc.context.WorkoutReplyRepo().CreateLocalReply(workout.ID, viewer.ID, params.Content)
+	reply, err := wc.workoutReplyRepo.CreateLocalReply(workout.ID, viewer.ID, params.Content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	// Reload reply with user data
-	if err := wc.context.GetDB().Preload("User").Preload("User.Profile").First(reply, reply.ID).Error; err != nil {
+	if err := wc.db.Preload("User").Preload("User.Profile").First(reply, reply.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.PublishReplyToActivityPub(c.Request().Context(), wc.context, viewer, workout, reply); err != nil {
-		wc.context.Logger().Warn("Failed to publish workout reply to ActivityPub", "reply_id", reply.ID, "error", err)
+	if err := worker.PublishReplyToActivityPub(c.Request().Context(), wc.client, wc.db, wc.cfg, wc.apOutboxRepo, wc.apStatusDeliveryRepo, viewer, workout, reply); err != nil {
+		wc.logger.Warn("Failed to publish workout reply to ActivityPub", "reply_id", reply.ID, "error", err)
 	}
 
 	replyResponse := dto.NewWorkoutReplyResponse(reply)
@@ -655,7 +681,7 @@ func (wc *workoutController) CreateReply(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/breakdown [get]
 func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
-	requester := wc.context.GetUser(c)
+	requester := currentUser(c)
 
 	params := struct {
 		Count float64 `query:"count"`
@@ -723,7 +749,7 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/stats-range [get]
 func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
-	requester := wc.context.GetUser(c)
+	requester := currentUser(c)
 
 	params := struct {
 		StartIndex *int `query:"start_index"`
@@ -802,7 +828,7 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	}
 
 	db := model.ScopeVisibleWorkouts(
-		model.PreloadWorkoutData(wc.context.GetDB()),
+		model.PreloadWorkoutData(wc.db),
 		targetUser.ID,
 		viewer.ID,
 		viewerActorIRI,
@@ -855,7 +881,7 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 }
 
 func (wc *workoutController) resolveTargetUserFromHandle(c echo.Context) (*model.User, *model.User, string, error) {
-	viewer := wc.context.GetUser(c)
+	viewer := currentUser(c)
 	handle := strings.TrimSpace(c.QueryParam("handle"))
 	if handle == "" {
 		return viewer, viewer, wc.localActorIRI(c, viewer), nil
@@ -866,7 +892,7 @@ func (wc *workoutController) resolveTargetUserFromHandle(c echo.Context) (*model
 		return nil, nil, "", err
 	}
 
-	targetUser, err := wc.context.UserRepo().GetByUsername(normalizedUsername)
+	targetUser, err := wc.userRepo.GetByUsername(normalizedUsername)
 	if err != nil {
 		return nil, nil, "", err
 	}
@@ -913,7 +939,7 @@ func (wc *workoutController) parseLocalHandle(c echo.Context, handle string) (st
 }
 
 func (wc *workoutController) isLocalHost(c echo.Context, host string) bool {
-	configuredHost := wc.context.GetConfig().Host
+	configuredHost := wc.cfg.Host
 	if configuredHost == "" {
 		configuredHost = c.Request().Host
 	}
@@ -927,8 +953,8 @@ func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) str
 	}
 
 	return aputil.LocalActorURL(aputil.LocalActorURLConfig{
-		Host:           wc.context.GetConfig().Host,
-		WebRoot:        wc.context.GetConfig().WebRoot,
+		Host:           wc.cfg.Host,
+		WebRoot:        wc.cfg.WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: c.Scheme(),
 	}, user.Profile.Username)
@@ -948,7 +974,7 @@ func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) str
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts [post]
 func (wc *workoutController) CreateWorkout(c echo.Context) error {
-	user := wc.context.GetUser(c)
+	user := currentUser(c)
 
 	if c.Request().Header.Get(echo.HeaderContentType) != "" &&
 		strings.HasPrefix(c.Request().Header.Get(echo.HeaderContentType), echo.MIMEMultipartForm) {
@@ -986,7 +1012,7 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 		}
 
 		user.Profile.User = user
-		ws, addErr := user.Profile.AddWorkout(wc.context.GetDB(), workoutType, notes, file.Filename, content)
+		ws, addErr := user.Profile.AddWorkout(wc.db, workoutType, notes, file.Filename, content)
 		if len(addErr) > 0 {
 			for _, e := range addErr {
 				errList = append(errList, e)
@@ -997,8 +1023,8 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 		for _, w := range ws {
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
 
-			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, w.ID); err != nil {
-				wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
+			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.client, w.ID); err != nil {
+				wc.logger.Error("Failed to enqueue workout update", "workout_id", w.ID, "error", err)
 			}
 		}
 	}
@@ -1055,12 +1081,12 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 	workout.ProfileID = user.Profile.ID
 	workout.Creator = "web-interface"
 
-	equipment, err := wc.context.EquipmentRepo().GetByUserIDs(user.Profile.ID, d.EquipmentIDs)
+	equipment, err := wc.equipmentRepo.GetByUserIDs(user.Profile.ID, d.EquipmentIDs)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if err := workout.Save(wc.context.GetDB()); err != nil {
+	if err := workout.Save(wc.db); err != nil {
 		if errors.Is(err, model.ErrWorkoutAlreadyExists) {
 			return renderApiError(c, http.StatusConflict, err)
 		}
@@ -1068,16 +1094,16 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := wc.context.GetDB().Model(&workout).Association("Equipment").Replace(equipment); err != nil {
+	if err := wc.db.Model(&workout).Association("Equipment").Replace(equipment); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := model.PreloadWorkoutDetails(wc.context.GetDB()).Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(wc.db).Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
-		wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.client, workout.ID); err != nil {
+		wc.logger.Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
 	}
 
 	result := dto.NewWorkoutResponse(workout)
@@ -1099,7 +1125,7 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/recent [get]
 func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
-	requester := wc.context.GetUser(c)
+	requester := currentUser(c)
 
 	limit := 20
 	if limitStr := c.QueryParam("limit"); limitStr != "" {
@@ -1125,14 +1151,14 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	}
 
 	requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-		Host:           wc.context.GetConfig().Host,
-		WebRoot:        wc.context.GetConfig().WebRoot,
+		Host:           wc.cfg.Host,
+		WebRoot:        wc.cfg.WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: c.Scheme(),
 	}, requester.Profile.Username)
 
 	var workouts []*model.Workout
-	query := wc.context.GetDB().
+	query := wc.db.
 		Scopes(model.PreloadWorkoutData).
 		Preload("Profile").
 		Preload("Profile.User")
@@ -1192,15 +1218,15 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 
 	results := dto.NewWorkoutsResponse(workouts)
 
-	counts, err := wc.context.WorkoutLikeRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
-		liked, likedErr := wc.context.WorkoutLikeRepo().LikedMapByUser(workoutIDs(workouts), requester.ID)
+		liked, likedErr := wc.workoutLikeRepo.LikedMapByUser(workoutIDs(workouts), requester.ID)
 		if likedErr == nil {
 			applyLikeMetadata(results, counts, liked)
 		}
 	}
 
-	replyCounts, err := wc.context.WorkoutReplyRepo().CountMapByWorkoutIDs(workoutIDs(workouts))
+	replyCounts, err := wc.workoutReplyRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
 		applyReplyMetadata(results, replyCounts)
 	}
@@ -1225,18 +1251,18 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/{id} [delete]
 func (wc *workoutController) DeleteWorkout(c echo.Context) error {
-	user := wc.context.GetUser(c)
+	user := currentUser(c)
 
 	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := wc.context.APOutboxRepo().DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := wc.apOutboxRepo.DeleteEntryForWorkout(user.ID, workout.ID); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := workout.Delete(wc.context.GetDB()); err != nil {
+	if err := workout.Delete(wc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -1261,7 +1287,7 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id} [put]
 func (wc *workoutController) UpdateWorkout(c echo.Context) error {
-	user := wc.context.GetUser(c)
+	user := currentUser(c)
 
 	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
@@ -1278,25 +1304,25 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 	}
 
 	if d.EquipmentIDs != nil {
-		equipment, err := wc.context.EquipmentRepo().GetByUserIDs(user.ID, d.EquipmentIDs)
+		equipment, err := wc.equipmentRepo.GetByUserIDs(user.ID, d.EquipmentIDs)
 		if err != nil {
 			return renderApiError(c, http.StatusBadRequest, err)
 		}
-		if err := wc.context.GetDB().Model(&workout).Association("Equipment").Replace(equipment); err != nil {
+		if err := wc.db.Model(&workout).Association("Equipment").Replace(equipment); err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 	}
 
-	if err := workout.Save(wc.context.GetDB()); err != nil {
+	if err := workout.Save(wc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := model.PreloadWorkoutDetails(wc.context.GetDB()).Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(wc.db).Preload("Equipment").First(&workout, workout.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
-		wc.context.Logger().Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.client, workout.ID); err != nil {
+		wc.logger.Error("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
 	}
 
 	result := dto.NewWorkoutResponse(workout)
@@ -1320,7 +1346,7 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 // @Failure      403  {object}  dto.Response[any]
 // @Router       /workouts/{id}/toggle-lock [post]
 func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
-	user := wc.context.GetUser(c)
+	user := currentUser(c)
 
 	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
@@ -1333,7 +1359,7 @@ func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 
 	workout.Locked = !workout.Locked
 
-	if err := workout.Save(wc.context.GetDB()); err != nil {
+	if err := workout.Save(wc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -1364,11 +1390,11 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 
 	workout.Dirty = true
 
-	if err := workout.Save(wc.context.GetDB()); err != nil {
+	if err := workout.Save(wc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.context, workout.ID); err != nil {
+	if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.client, workout.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -1434,7 +1460,7 @@ func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
 	}
 
 	var attachment model.WorkoutAttachment
-	if err := wc.context.GetDB().
+	if err := wc.db.
 		Where("id = ? AND workout_id = ?", attachmentID, workout.ID).
 		First(&attachment).Error; err != nil {
 		return renderApiError(c, http.StatusNotFound, err)

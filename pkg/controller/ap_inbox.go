@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/labstack/echo/v4"
@@ -20,20 +21,23 @@ type ApInboxController interface {
 }
 
 type apInboxController struct {
-	context              *container.Container
+	logger               *slog.Logger
+	userRepo             repository.User
 	inboxActivityHandler *aputil.InboxActivityHandler
 }
 
 func NewApInboxController(injector do.Injector) ApInboxController {
-	c := container.NewFromInjector(injector)
+	repositories := do.MustInvoke[*repository.Repositories](injector)
+
 	return &apInboxController{
-		context: c,
+		logger:   do.MustInvoke[*slog.Logger](injector),
+		userRepo: repositories.User,
 		inboxActivityHandler: aputil.NewInboxActivityHandler(
-			c.FollowerRepo(),
-			c.APOutboxRepo(),
-			c.WorkoutLikeRepo(),
-			c.WorkoutReplyRepo(),
-			c.APStatusRepo(),
+			repositories.Follower,
+			repositories.APOutbox,
+			repositories.WorkoutLike,
+			repositories.WorkoutReply,
+			repositories.APStatus,
 		),
 	}
 }
@@ -44,7 +48,7 @@ func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User,
 		return nil, errors.New("username not found")
 	}
 
-	user, err := ac.context.UserRepo().GetByUsername(username)
+	user, err := ac.userRepo.GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return nil, errors.New("resource not found")
 	}
@@ -82,7 +86,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to read request body: %w", err))
 	}
 
-	ac.context.Logger().With("payload", string(payload)).Debug("Received ap inbox request")
+	ac.logger.With("payload", string(payload)).Debug("Received ap inbox request")
 
 	var activity vocab.Activity
 	err = jsonld.Unmarshal(payload, &activity)

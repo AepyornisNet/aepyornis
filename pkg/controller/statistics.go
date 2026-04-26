@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
@@ -14,13 +13,10 @@ type StatisticsController interface {
 	GetStatistics(c echo.Context) error
 }
 
-type statisticsController struct {
-	context *container.Container
-}
+type statisticsController struct{}
 
-func NewStatisticsController(injector do.Injector) StatisticsController {
-	c := container.NewFromInjector(injector)
-	return &statisticsController{context: c}
+func NewStatisticsController(_ do.Injector) StatisticsController {
+	return &statisticsController{}
 }
 
 // GetStatistics returns user's workout statistics
@@ -37,7 +33,7 @@ func NewStatisticsController(injector do.Injector) StatisticsController {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /statistics [get]
 func (sc *statisticsController) GetStatistics(c echo.Context) error {
-	user := sc.context.GetUser(c)
+	user := currentUser(c)
 
 	var statConfig model.StatConfig
 	if err := c.Bind(&statConfig); err != nil {

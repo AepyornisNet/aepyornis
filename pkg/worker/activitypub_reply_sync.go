@@ -9,14 +9,16 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
+	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
 
-func PublishReplyToActivityPub(ctx context.Context, c *container.Container, author *model.User, workout *model.Workout, reply *model.APStatus) error {
-	if c == nil || author == nil || workout == nil || reply == nil {
+func PublishReplyToActivityPub(ctx context.Context, client *gue.Client, db *gorm.DB, cfg *container.Config, apOutboxRepo repository.APOutbox, deliveryRepo repository.APStatusDelivery, author *model.User, workout *model.Workout, reply *model.APStatus) error {
+	if author == nil || workout == nil || reply == nil {
 		return nil
 	}
 
@@ -28,7 +30,7 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 		return nil
 	}
 
-	parentEntry, err := c.APOutboxRepo().GetEntryForWorkout(*workout.Profile.UserID, workout.ID)
+	parentEntry, err := apOutboxRepo.GetEntryForWorkout(*workout.Profile.UserID, workout.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
@@ -37,7 +39,7 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 		return err
 	}
 
-	actorURL, err := localActorURL(c, author)
+	actorURL, err := localActorURL(cfg, author)
 	if err != nil {
 		return err
 	}
@@ -76,7 +78,7 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 		return err
 	}
 
-	if err := c.GetDB().Model(&model.APStatus{}).Where("id = ?", reply.ID).Updates(map[string]any{
+	if err := db.Model(&model.APStatus{}).Where("id = ?", reply.ID).Updates(map[string]any{
 		"activity_id":  createActivityID,
 		"object_id":    createObjectID,
 		"activity":     createActivityJSON,
@@ -94,7 +96,7 @@ func PublishReplyToActivityPub(ctx context.Context, c *container.Container, auth
 	reply.Payload = noteJSON
 	reply.PublishedAt = &publishedAt
 
-	if err := EnqueueAPDeliveriesForEntry(ctx, c, reply.ID); err != nil {
+	if err := EnqueueAPDeliveriesForEntry(ctx, client, deliveryRepo, reply.ID); err != nil {
 		return err
 	}
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
 )
@@ -19,12 +20,15 @@ type WellKnownController interface {
 }
 
 type wellKnownController struct {
-	context *container.Container
+	cfg      *container.Config
+	userRepo repository.User
 }
 
 func NewWellKnownController(injector do.Injector) WellKnownController {
-	c := container.NewFromInjector(injector)
-	return &wellKnownController{context: c}
+	return &wellKnownController{
+		cfg:      do.MustInvoke[*container.Config](injector),
+		userRepo: do.MustInvoke[*repository.Repositories](injector).User,
+	}
 }
 
 // WebFinger implementation based on https://github.com/go-ap/webfinger/blob/master/handlers.go
@@ -68,11 +72,11 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("unsupported resource type: %s", typ))
 	}
 
-	if host != wc.context.GetConfig().Host {
+	if host != wc.cfg.Host {
 		return renderApiError(c, http.StatusNotFound, fmt.Errorf("resource not found %s", res))
 	}
 
-	user, err := wc.context.UserRepo().GetByUsername(handle)
+	user, err := wc.userRepo.GetByUsername(handle)
 	if err != nil || !user.ActivityPubEnabled() {
 		return renderApiError(c, http.StatusNotFound, fmt.Errorf("resource not found %s", res))
 	}
@@ -83,7 +87,7 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 			{
 				Rel:  "self",
 				Type: "application/activity+json",
-				Href: fmt.Sprintf("https://%s/ap/users/%s", wc.context.GetConfig().Host, user.Profile.Username),
+				Href: fmt.Sprintf("https://%s/ap/users/%s", wc.cfg.Host, user.Profile.Username),
 			},
 		},
 	}
@@ -115,7 +119,7 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 // @Success      200  {string}  string
 // @Router       /.well-known/host-meta [get]
 func (wc *wellKnownController) HostMeta(c echo.Context) error {
-	host := wc.context.GetConfig().Host
+	host := wc.cfg.Host
 	template := fmt.Sprintf("https://%s/.well-known/webfinger?resource={uri}", host)
 
 	body := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>

@@ -9,9 +9,12 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/alexedwards/scs/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
+	"gorm.io/gorm"
 )
 
 var (
@@ -26,12 +29,19 @@ type AuthController interface {
 }
 
 type authController struct {
-	context *container.Container
+	cfg            *container.Config
+	db             *gorm.DB
+	sessionManager *scs.SessionManager
+	userRepo       repository.User
 }
 
 func NewAuthController(injector do.Injector) AuthController {
-	c := container.NewFromInjector(injector)
-	return &authController{context: c}
+	return &authController{
+		cfg:            do.MustInvoke[*container.Config](injector),
+		db:             do.MustInvoke[*gorm.DB](injector),
+		sessionManager: do.MustInvoke[*scs.SessionManager](injector),
+		userRepo:       do.MustInvoke[*repository.Repositories](injector).User,
+	}
 }
 
 // SignIn authenticates user credentials and sets auth cookies
@@ -54,12 +64,12 @@ func (ac *authController) SignIn(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
 	}
 
-	storedUser, err := ac.context.UserRepo().GetByEmail(req.Email)
+	storedUser, err := ac.userRepo.GetByEmail(req.Email)
 	if err != nil || !storedUser.ValidLogin(req.Password) {
 		return renderApiError(c, http.StatusUnauthorized, ErrLoginFailed)
 	}
 
-	ac.context.GetSessionManager().Put(c.Request().Context(), "email", storedUser.Email)
+	ac.sessionManager.Put(c.Request().Context(), "email", storedUser.Email)
 
 	if err := ac.createToken(storedUser, c); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -82,7 +92,7 @@ func (ac *authController) SignIn(c echo.Context) error {
 func (ac *authController) SignOut(c echo.Context) error {
 	ac.clearTokenCookie(c)
 
-	if err := ac.context.GetSessionManager().Destroy(c.Request().Context()); err != nil {
+	if err := ac.sessionManager.Destroy(c.Request().Context()); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -104,7 +114,7 @@ func (ac *authController) SignOut(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /auth/register [post]
 func (ac *authController) Register(c echo.Context) error {
-	if ac.context.GetConfig().RegistrationDisabled {
+	if ac.cfg.RegistrationDisabled {
 		return renderApiError(c, http.StatusForbidden, errors.New("registration is disabled"))
 	}
 
@@ -153,7 +163,7 @@ func (ac *authController) Register(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if ac.context.GetConfig().ActivityPubActive {
+	if ac.cfg.ActivityPubActive {
 		u.ActivityPub = true
 		u.DefaultWorkoutVisibility = model.WorkoutVisibilityFollowers
 		u.Profile.User = u
@@ -163,7 +173,7 @@ func (ac *authController) Register(c echo.Context) error {
 		}
 	}
 
-	if err := u.Create(ac.context.GetDB()); err != nil {
+	if err := u.Create(ac.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -189,7 +199,7 @@ func (ac *authController) createToken(u *model.User, c echo.Context) error {
 	claims["name"] = u.Email
 	claims["exp"] = exp.Unix()
 
-	t, err := token.SignedString(ac.context.GetConfig().JWTSecret())
+	t, err := token.SignedString(ac.cfg.JWTSecret())
 	if err != nil {
 		return err
 	}

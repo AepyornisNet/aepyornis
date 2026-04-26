@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/labstack/echo/v4"
 	geojson "github.com/paulmach/orb/geojson"
 	"github.com/samber/do/v2"
+	"gorm.io/gorm"
 )
 
 const (
@@ -24,7 +25,8 @@ type HeatmapController interface {
 }
 
 type heatmapController struct {
-	context *container.Container
+	db          *gorm.DB
+	workoutRepo repository.Workout
 }
 
 type heatmapBounds struct {
@@ -46,8 +48,10 @@ type rawCoordinateRow struct {
 }
 
 func NewHeatmapController(injector do.Injector) HeatmapController {
-	c := container.NewFromInjector(injector)
-	return &heatmapController{context: c}
+	return &heatmapController{
+		db:          do.MustInvoke[*gorm.DB](injector),
+		workoutRepo: do.MustInvoke[*repository.Repositories](injector).Workout,
+	}
 }
 
 // GetWorkoutCoordinates returns all coordinates of all workouts of the current user
@@ -83,9 +87,9 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	u := hc.context.GetUser(c)
+	u := currentUser(c)
 
-	query := hc.context.GetDB().Table("workout_records AS wr").
+	query := hc.db.Table("workout_records AS wr").
 		Joins("JOIN workouts ON workouts.id = wr.workout_id").
 		Where("workouts.profile_id = ?", u.Profile.ID)
 
@@ -187,9 +191,9 @@ func parseHeatmapBounds(c echo.Context) (*heatmapBounds, error) {
 // @Router       /workouts/centers [get]
 func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()
-	u := hc.context.GetUser(c)
+	u := currentUser(c)
 
-	wos, err := hc.context.WorkoutRepo().ListByUserID(u.ID)
+	wos, err := hc.workoutRepo.ListByUserID(u.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
