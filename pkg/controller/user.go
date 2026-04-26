@@ -14,6 +14,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
@@ -37,6 +38,7 @@ type userController struct {
 	cfg          *config.Config
 	db           *gorm.DB
 	followerRepo repository.Follower
+	actorService service.ActivityPubActorService
 	userRepo     repository.User
 }
 
@@ -45,6 +47,7 @@ func NewUserController(injector do.Injector) UserController {
 		cfg:          do.MustInvoke[*config.Config](injector),
 		db:           do.MustInvoke[*gorm.DB](injector),
 		followerRepo: do.MustInvoke[repository.Follower](injector),
+		actorService: do.MustInvoke[service.ActivityPubActorService](injector),
 		userRepo:     do.MustInvoke[repository.User](injector),
 	}
 }
@@ -770,8 +773,7 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	localActor := currentAPUser(c)
-	if err := localActor.SendFollow(c.Request().Context(), inbox, actorIRI); err != nil {
+	if err := uc.actorService.SendFollow(c.Request().Context(), &viewer.Profile, inbox, actorIRI); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
@@ -842,8 +844,7 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 		return renderApiError(c, http.StatusBadRequest, errors.New("remote actor inbox not found"))
 	}
 
-	localActor := currentAPUser(c)
-	if err := localActor.SendUndoFollow(c.Request().Context(), inbox, actorIRI); err != nil {
+	if err := uc.actorService.SendUndoFollow(c.Request().Context(), &viewer.Profile, inbox, actorIRI); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 

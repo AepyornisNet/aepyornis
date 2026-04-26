@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/golang-jwt/jwt/v5"
@@ -76,17 +75,6 @@ func (a *App) setUser(c echo.Context) error {
 func (a *App) setContextUser(c echo.Context, user *model.User) {
 	c.Set("user_language", user.Language)
 	c.Set("user_info", user)
-
-	if user.ActivityPubEnabled() {
-		actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-			Host:           a.Config.Host,
-			WebRoot:        a.Config.WebRoot,
-			FallbackHost:   c.Request().Host,
-			FallbackScheme: c.Scheme(),
-		}, user.Profile.Username)
-
-		c.Set("user_ap_actor", aputil.NewUserActor(actorURL, user.Profile.PrivateKey))
-	}
 }
 
 func (a *App) getCurrentUser(c echo.Context) *model.User {

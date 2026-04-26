@@ -12,6 +12,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/samber/do/v2"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
@@ -83,7 +84,7 @@ func New(injector do.Injector) (*Worker, error) {
 		),
 		JobUpdateRouteSegment: makeUpdateRouteSegmentHandler(db, logger, do.MustInvoke[repository.RouteSegment](injector)),
 		JobAutoImport:         makeAutoImportHandler(cfg, db, gc, logger, do.MustInvoke[repository.User](injector)),
-		JobDeliverActivityPub: makeDeliverActivityPubHandler(cfg, logger, do.MustInvoke[repository.APStatusDelivery](injector), do.MustInvoke[repository.User](injector)),
+		JobDeliverActivityPub: makeDeliverActivityPubHandler(cfg, logger, do.MustInvoke[repository.APStatusDelivery](injector), do.MustInvoke[repository.User](injector), do.MustInvoke[service.ActivityPubActorService](injector)),
 	}
 
 	geoWM := gue.WorkMap{

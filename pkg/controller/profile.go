@@ -11,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
@@ -40,6 +41,7 @@ type profileController struct {
 	followerRepo repository.Follower
 	logger       *slog.Logger
 	client       *gue.Client
+	actorService service.ActivityPubActorService
 	version      *version.Version
 }
 
@@ -50,6 +52,7 @@ func NewProfileController(injector do.Injector) ProfileController {
 		followerRepo: do.MustInvoke[repository.Follower](injector),
 		logger:       do.MustInvoke[*slog.Logger](injector),
 		client:       do.MustInvoke[*gue.Client](injector),
+		actorService: do.MustInvoke[service.ActivityPubActorService](injector),
 		version:      do.MustInvoke[*version.Version](injector),
 	}
 }
@@ -322,7 +325,7 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := currentAPUser(c).SendFollowAccept(c.Request().Context(), *follower); err != nil {
+	if err := pc.actorService.SendFollowAccept(c.Request().Context(), &user.Profile, *follower); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 

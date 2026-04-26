@@ -5,8 +5,10 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/alexedwards/scs/v2"
+	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
@@ -19,14 +21,16 @@ func newInjector(
 	sessionManager *scs.SessionManager,
 	logger *slog.Logger,
 	gueClient *gue.Client,
+	e *echo.Echo,
 ) do.Injector {
-	injector := do.New(repository.Package)
+	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
 	do.ProvideValue(injector, cfg)
 	do.ProvideValue(injector, v)
 	do.ProvideValue(injector, sessionManager)
 	do.ProvideValue(injector, logger)
 	do.ProvideValue(injector, gueClient)
+	do.ProvideValue(injector, e)
 
 	return injector
 }

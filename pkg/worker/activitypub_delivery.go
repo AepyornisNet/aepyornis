@@ -7,10 +7,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/vgarvardt/gue/v6"
 )
 
@@ -33,7 +33,7 @@ func EnqueueAPDeliveriesForEntry(ctx context.Context, client *gue.Client, delive
 	return nil
 }
 
-func makeDeliverActivityPubHandler(cfg *config.Config, logger *slog.Logger, deliveryRepo repository.APStatusDelivery, userRepo repository.User) gue.WorkFunc {
+func makeDeliverActivityPubHandler(cfg *config.Config, logger *slog.Logger, deliveryRepo repository.APStatusDelivery, userRepo repository.User, actorService service.ActivityPubActorService) gue.WorkFunc {
 	return func(ctx context.Context, j *gue.Job) error {
 		var item model.APPendingStatusDelivery
 		if err := json.Unmarshal(j.Args, &item); err != nil {
@@ -57,17 +57,10 @@ func makeDeliverActivityPubHandler(cfg *config.Config, logger *slog.Logger, deli
 			return nil
 		}
 
-		actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-			Host:           cfg.Host,
-			WebRoot:        cfg.WebRoot,
-			FallbackHost:   "",
-			FallbackScheme: "https",
-		}, u.Profile.Username)
-
 		deliverCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 
-		if err := aputil.SendSignedActivity(deliverCtx, actorURL, u.Profile.PrivateKey, item.ActorInbox, item.Activity); err != nil {
+		if err := actorService.SendActivity(deliverCtx, &u.Profile, item.ActorInbox, item.Activity); err != nil {
 			return fmt.Errorf("deliver_activitypub: send to %s: %w", item.ActorIRI, err)
 		}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
@@ -53,6 +54,7 @@ type workoutController struct {
 	db                   *gorm.DB
 	equipmentRepo        repository.Equipment
 	logger               *slog.Logger
+	actorService         service.ActivityPubActorService
 	userRepo             repository.User
 	workoutLikeRepo      repository.WorkoutLike
 	workoutReplyRepo     repository.WorkoutReply
@@ -70,6 +72,7 @@ func NewWorkoutController(injector do.Injector) WorkoutController {
 		db:                   do.MustInvoke[*gorm.DB](injector),
 		equipmentRepo:        do.MustInvoke[repository.Equipment](injector),
 		logger:               do.MustInvoke[*slog.Logger](injector),
+		actorService:         do.MustInvoke[service.ActivityPubActorService](injector),
 		userRepo:             do.MustInvoke[repository.User](injector),
 		workoutLikeRepo:      do.MustInvoke[repository.WorkoutLike](injector),
 		workoutReplyRepo:     do.MustInvoke[repository.WorkoutReply](injector),
@@ -555,8 +558,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
-	localActor := currentAPUser(c)
-	if err := localActor.SendLike(c.Request().Context(), inbox, params.ObjectID); err != nil {
+	if err := wc.actorService.SendLike(c.Request().Context(), &viewer.Profile, inbox, params.ObjectID); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
