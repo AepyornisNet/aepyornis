@@ -9,6 +9,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/fsouza/slognil"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/labstack/echo/v4"
@@ -21,7 +22,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	injector := do.New(repository.Package)
+	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
 	do.ProvideValue(injector, slognil.NewLogger())
 	ctrl := NewApInboxController(injector)
@@ -89,7 +90,7 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	injector := do.New(repository.Package)
+	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
 	do.ProvideValue(injector, slognil.NewLogger())
 	ctrl := NewApInboxController(injector)

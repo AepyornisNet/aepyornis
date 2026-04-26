@@ -10,6 +10,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/labstack/echo/v4"
@@ -36,6 +37,7 @@ func NewApInboxController(injector do.Injector) ApInboxController {
 			do.MustInvoke[repository.WorkoutLike](injector),
 			do.MustInvoke[repository.WorkoutReply](injector),
 			do.MustInvoke[repository.APStatus](injector),
+			do.MustInvoke[service.ActivityPubProfileService](injector),
 		),
 	}
 }
@@ -101,7 +103,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 	handled := false
 
 	err = vocab.On(item, func(act *vocab.Activity) error {
-		routed, routeErr := ac.inboxActivityHandler.HandleActivity(&actor.Actor, targetUser.ID, targetUser.Profile.ID, act)
+		routed, routeErr := ac.inboxActivityHandler.HandleActivity(c.Request().Context(), &actor.Actor, targetUser.ID, targetUser.Profile.ID, act)
 		handled = routed
 		return routeErr
 	})

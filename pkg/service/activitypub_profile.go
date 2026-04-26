@@ -46,9 +46,9 @@ func (s *activityPubProfileService) GetByActorIRI(ctx context.Context, actorIRI 
 		return nil, err
 	}
 
-	profile := model.NewRemoteProfileFromActor(actor, "")
-	if profile == nil {
-		return nil, errors.New("remote actor profile invalid")
+	profile, err := aputil.RemoteProfileFromActor(actor)
+	if err != nil {
+		return nil, err
 	}
 
 	saved, err := profile.UpsertRemote(s.db)

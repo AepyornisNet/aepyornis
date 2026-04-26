@@ -38,6 +38,7 @@ type userController struct {
 	cfg          *config.Config
 	db           *gorm.DB
 	followerRepo repository.Follower
+	apProfileSvc service.ActivityPubProfileService
 	actorService service.ActivityPubActorService
 	userRepo     repository.User
 }
@@ -47,6 +48,7 @@ func NewUserController(injector do.Injector) UserController {
 		cfg:          do.MustInvoke[*config.Config](injector),
 		db:           do.MustInvoke[*gorm.DB](injector),
 		followerRepo: do.MustInvoke[repository.Follower](injector),
+		apProfileSvc: do.MustInvoke[service.ActivityPubProfileService](injector),
 		actorService: do.MustInvoke[service.ActivityPubActorService](injector),
 		userRepo:     do.MustInvoke[repository.User](injector),
 	}
@@ -681,6 +683,11 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 		actorURL = actor.ID.String()
 	}
 
+	remoteProfile, err := uc.apProfileSvc.GetByActorIRI(c.Request().Context(), actorURL)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
 	followersCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
 	followingCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
 	postsCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
@@ -696,13 +703,16 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 	}
 
 	iconURL := actorIconURL(actor)
+	if iconURL == "" && remoteProfile.AvatarRemoteURL != nil {
+		iconURL = *remoteProfile.AvatarRemoteURL
+	}
 
 	viewer := currentUser(c)
 	isFollowing := false
 	if viewer != nil && !viewer.IsAnonymous() {
-		remoteProfile, profileErr := model.NewRemoteProfileFromActor(actor, username).UpsertRemote(uc.db)
-		if profileErr == nil {
-			isFollowing, _ = uc.followerRepo.IsFollowingActive(viewer.Profile.ID, remoteProfile.ID)
+		isFollowing, err = uc.followerRepo.IsFollowingActive(viewer.Profile.ID, remoteProfile.ID)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 	}
 
@@ -762,9 +772,9 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot follow yourself"))
 	}
 
-	remoteProfile, err := model.NewRemoteProfileFromActor(actor, username).UpsertRemote(uc.db)
+	remoteProfile, err := uc.apProfileSvc.GetByActorIRI(c.Request().Context(), actorIRI)
 	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	if _, err := uc.followerRepo.UpsertFollowingRequest(viewer.Profile.ID, remoteProfile); err != nil {
@@ -846,9 +856,9 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
-	remoteProfile, err := model.NewRemoteProfileFromActor(actor, username).UpsertRemote(uc.db)
+	remoteProfile, err := uc.apProfileSvc.GetByActorIRI(c.Request().Context(), actorIRI)
 	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
 	if err := uc.followerRepo.DeleteFollowing(viewer.Profile.ID, remoteProfile.ID); err != nil {

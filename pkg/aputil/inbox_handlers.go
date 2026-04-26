@@ -1,6 +1,7 @@
 package aputil
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,12 +44,17 @@ type InboxStatusRepository interface {
 	UpsertRemoteWorkoutStatus(actorIRI, actorName, activityID, objectID, content string, activityJSON, payloadJSON []byte) error
 }
 
+type InboxProfileService interface {
+	GetByActorIRI(ctx context.Context, actorIRI string) (*model.Profile, error)
+}
+
 type InboxActivityHandler struct {
 	followerRepo     InboxFollowerRepository
 	outboxRepo       InboxOutboxRepository
 	workoutLikeRepo  InboxWorkoutLikeRepository
 	workoutReplyRepo InboxWorkoutReplyRepository
 	statusRepo       InboxStatusRepository
+	profileService   InboxProfileService
 }
 
 func NewInboxActivityHandler(
@@ -57,6 +63,7 @@ func NewInboxActivityHandler(
 	workoutLikeRepo InboxWorkoutLikeRepository,
 	workoutReplyRepo InboxWorkoutReplyRepository,
 	statusRepo InboxStatusRepository,
+	profileService InboxProfileService,
 ) *InboxActivityHandler {
 	return &InboxActivityHandler{
 		followerRepo:     followerRepo,
@@ -64,17 +71,18 @@ func NewInboxActivityHandler(
 		workoutLikeRepo:  workoutLikeRepo,
 		workoutReplyRepo: workoutReplyRepo,
 		statusRepo:       statusRepo,
+		profileService:   profileService,
 	}
 }
 
-func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targetUserID uint64, targetProfileID uint64, activity *vocab.Activity) (bool, error) {
+func (h *InboxActivityHandler) HandleActivity(ctx context.Context, requestingActor *vocab.Actor, targetUserID uint64, targetProfileID uint64, activity *vocab.Activity) (bool, error) {
 	if activity == nil {
 		return false, nil
 	}
 
 	switch activity.GetType() {
 	case vocab.FollowType:
-		return true, h.handleFollowActivity(requestingActor, targetProfileID)
+		return true, h.handleFollowActivity(ctx, requestingActor, targetProfileID)
 	case vocab.AcceptType:
 		return true, h.handleFollowAcceptActivity(targetProfileID, activity)
 	case vocab.RejectType:
@@ -94,17 +102,22 @@ func (h *InboxActivityHandler) HandleActivity(requestingActor *vocab.Actor, targ
 	}
 }
 
-func (h *InboxActivityHandler) handleFollowActivity(requestingActor *vocab.Actor, targetProfileID uint64) error {
+func (h *InboxActivityHandler) handleFollowActivity(ctx context.Context, requestingActor *vocab.Actor, targetProfileID uint64) error {
 	if requestingActor == nil {
 		return errors.New("requesting actor invalid")
 	}
 
-	profile := model.NewRemoteProfileFromActor(requestingActor, "")
-	if profile == nil {
+	actorIRI := strings.TrimSpace(requestingActor.ID.String())
+	if actorIRI == "" {
 		return errors.New("requesting actor profile invalid")
 	}
 
-	_, err := h.followerRepo.UpsertFollowerRequest(
+	profile, err := h.profileService.GetByActorIRI(ctx, actorIRI)
+	if err != nil {
+		return err
+	}
+
+	_, err = h.followerRepo.UpsertFollowerRequest(
 		targetProfileID,
 		profile,
 	)

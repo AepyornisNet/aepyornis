@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	vocab "github.com/go-ap/activitypub"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -231,101 +230,6 @@ func mergeOptionalString(dst **string, src *string) {
 	}
 
 	*dst = normalized
-}
-
-func NewRemoteProfileFromActor(actor *vocab.Actor, fallbackUsername string) *Profile {
-	if actor == nil {
-		return nil
-	}
-
-	actorURL := strings.TrimSpace(actor.ID.String())
-	username := strings.TrimSpace(fallbackUsername)
-	if actor.PreferredUsername != nil && strings.TrimSpace(actor.PreferredUsername.String()) != "" {
-		username = strings.TrimSpace(actor.PreferredUsername.String())
-	}
-
-	domain := ""
-	if parsed, err := url.Parse(actorURL); err == nil && parsed.Host != "" {
-		domain = parsed.Host
-		if username == "" {
-			segments := strings.Split(strings.Trim(parsed.Path, "/"), "/")
-			if len(segments) > 0 {
-				username = segments[len(segments)-1]
-			}
-		}
-	}
-
-	displayName := username
-	if actor.Name != nil && strings.TrimSpace(actor.Name.String()) != "" {
-		displayName = strings.TrimSpace(actor.Name.String())
-	}
-
-	profile := &Profile{
-		Local:       false,
-		Username:    username,
-		DisplayName: displayName,
-	}
-
-	if domain != "" {
-		profile.Domain = &domain
-	}
-	if actorURL != "" {
-		profile.URL = &actorURL
-	}
-	if inbox := strings.TrimSpace(actorItemString(actor.Inbox)); inbox != "" {
-		profile.InboxURL = &inbox
-	}
-	if outbox := strings.TrimSpace(actorItemString(actor.Outbox)); outbox != "" {
-		profile.OutboxURL = &outbox
-	}
-	if followers := strings.TrimSpace(actorItemString(actor.Followers)); followers != "" {
-		profile.FollowersURL = &followers
-	}
-	if avatar := strings.TrimSpace(actorIconURL(actor)); avatar != "" {
-		profile.AvatarRemoteURL = &avatar
-	}
-
-	return profile
-}
-
-func actorItemString(item vocab.Item) string {
-	if vocab.IsNil(item) {
-		return ""
-	}
-	if vocab.IsIRI(item) {
-		return item.GetLink().String()
-	}
-
-	iri := ""
-	_ = vocab.OnLink(item, func(link *vocab.Link) error {
-		iri = link.Href.String()
-		return nil
-	})
-
-	return iri
-}
-
-func actorIconURL(actor *vocab.Actor) string {
-	if actor == nil || vocab.IsNil(actor.Icon) {
-		return ""
-	}
-	if vocab.IsIRI(actor.Icon) {
-		return actor.Icon.GetLink().String()
-	}
-
-	iconURL := actorItemString(actor.Icon)
-	if iconURL != "" {
-		return iconURL
-	}
-
-	_ = vocab.OnObject(actor.Icon, func(object *vocab.Object) error {
-		if object != nil && !vocab.IsNil(object.URL) {
-			iconURL = actorItemString(object.URL)
-		}
-		return nil
-	})
-
-	return iconURL
 }
 
 func (p *Profile) MarkWorkoutsDirty(db *gorm.DB) error {
