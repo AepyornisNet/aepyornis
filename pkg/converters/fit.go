@@ -36,8 +36,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 
 	activityTime := fitActivityStartTime(act)
 
-	gpxFile := buildGPXFromActivity(act)
-	data, records := mapDataFromActivity(act, gpxFile)
+	data, records := mapDataFromActivity(act)
 	events := parseWorkoutEvents(act)
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
@@ -532,23 +531,9 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 // mapDataFromActivity converts a FIT activity into MapData, falling back to
 // non-positional record data when coordinates are missing so charts and
 // breakdowns remain available even without a map.
-func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
-	data, records := model.MapDataAndRecordsFromGPX(gpxFile)
-
-	if data != nil && len(records) > 0 {
-		return data, records
-	}
-
-	return buildMapDataWithoutPositions(act)
-}
-
-// buildMapDataWithoutPositions constructs minimal map data using FIT records
-// that may lack latitude/longitude. Coordinates are left at zero to avoid
-// rendering a map, while time/distance/metrics remain available for charts
-// and breakdowns.
 //
-//nolint:gocyclo // branching covers optional FIT metrics without positions
-func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
+//nolint:gocyclo
+func mapDataFromActivity(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
 	if act == nil || len(act.Records) == 0 {
 		return nil, nil
 	}
@@ -557,7 +542,6 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 
 	var (
 		totalDuration time.Duration
-		prevTime      time.Time
 		prevDistance  float64
 	)
 
@@ -567,10 +551,9 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 			continue
 		}
 
-		// Distances are scaled by 100 (meters)
 		dist := 0.0
 		if r.Distance != math.MaxUint32 {
-			dist = float64(r.Distance) / 100
+			dist = r.DistanceScaled()
 		}
 
 		deltaDist := 0.0
@@ -582,13 +565,9 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 		}
 
 		dt := time.Duration(0)
-		if !prevTime.IsZero() {
-			dt = ts.Sub(prevTime)
-			if dt < 0 {
-				dt = 0
-			}
+		if i+1 < len(act.Records) {
+			dt = max(act.Records[i+1].Timestamp.Sub(ts), 0)
 		}
-		prevTime = ts
 
 		totalDuration += dt
 
@@ -635,16 +614,25 @@ func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta,
 			elevationValue = 0
 		}
 
+		lat := semicircles.ToDegrees(r.PositionLat)
+		lng := semicircles.ToDegrees(r.PositionLong)
+		if math.IsNaN(lat) || math.IsNaN(lng) {
+			lat = 0
+			lng = 0
+		}
+
 		points = append(points, model.WorkoutRecord{
-			Time:          ts,
-			Lat:           0,
-			Lng:           0,
-			Elevation:     elevationValue,
-			Distance:      deltaDist,
-			TotalDistance: dist,
-			Duration:      dt,
-			TotalDuration: totalDuration,
-			ExtraMetrics:  extra,
+			Time:            ts,
+			Lat:             lat,
+			Lng:             lng,
+			Elevation:       elevationValue,
+			Distance:        deltaDist,
+			Distance2D:      deltaDist,
+			TotalDistance:   dist,
+			TotalDistance2D: dist,
+			Duration:        dt,
+			TotalDuration:   totalDuration,
+			ExtraMetrics:    extra,
 		})
 	}
 

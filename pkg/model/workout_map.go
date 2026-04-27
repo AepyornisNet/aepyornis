@@ -545,7 +545,6 @@ func MapDataAndRecordsFromGPX(gpxContent *gpx.GPX) (*WorkoutGeoMeta, []WorkoutRe
 	totalDist := 0.0
 	totalDist2D := 0.0
 	totalTime := 0.0
-	prevPoint := points[0]
 
 	for i, pt := range points {
 		if !pointHasDistance(pt) {
@@ -556,12 +555,10 @@ func MapDataAndRecordsFromGPX(gpxContent *gpx.GPX) (*WorkoutGeoMeta, []WorkoutRe
 		dist2D := 0.0
 		t := 0.0
 
-		if i > 0 {
-			dist = distance3DBetween(prevPoint, pt)
-			dist2D = distance2DBetween(prevPoint, pt)
-			t = pt.TimeDiff(&prevPoint)
-
-			prevPoint = pt
+		if i+1 < len(points) {
+			dist = distance3DBetween(pt, points[i+1])
+			dist2D = distance2DBetween(pt, points[i+1])
+			t = pt.TimeDiff(&points[i+1])
 
 			totalDist += dist
 			totalDist2D += dist2D

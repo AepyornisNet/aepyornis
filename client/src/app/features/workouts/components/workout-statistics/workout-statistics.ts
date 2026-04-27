@@ -164,15 +164,7 @@ export class WorkoutStatisticsComponent {
 
     const cards: WorkoutStatCard[] = [];
 
-    const distanceCard = this.buildDistanceCard(
-      stats,
-      workout,
-      units,
-      selection,
-      workout.total_duration,
-      workout.pause_duration,
-      workout.laps?.length ?? 0,
-    );
+    const distanceCard = this.buildDistanceCard(stats, units, selection, workout.laps?.length ?? 0);
     if (distanceCard) {
       cards.push(distanceCard);
     }
@@ -238,11 +230,8 @@ export class WorkoutStatisticsComponent {
 
   private buildDistanceCard(
     stats: WorkoutRangeStats,
-    workout: WorkoutDetail,
     units: WorkoutRangeStatsUnits,
     selection: IntervalSelection | null,
-    workoutTotalDuration: number | undefined,
-    workoutPauseDuration: number | undefined,
     lapCount: number,
   ): WorkoutStatCard | null {
     const selectionActive = Boolean(selection);
@@ -259,28 +248,8 @@ export class WorkoutStatisticsComponent {
       rows.push({ labelKey: _('Duration'), value: this.formatDurationValue(stats.duration) });
     }
 
-    const selectedPauseDuration = selectionActive
-      ? this.pauseDurationForSelectionFromEvents(workout, selection)
-      : undefined;
-
-    const pauseDuration = selectionActive
-      ? typeof selectedPauseDuration === 'number'
-        ? selectedPauseDuration
-        : stats.pause_duration
-      : Number.isFinite(workoutPauseDuration)
-        ? workoutPauseDuration
-        : stats.pause_duration;
-
-    const noPauseDuration = selectionActive
-      ? typeof pauseDuration === 'number' && Number.isFinite(pauseDuration)
-        ? Math.max(stats.duration - pauseDuration, 0)
-        : stats.moving_duration
-      : typeof workoutTotalDuration === 'number' &&
-          Number.isFinite(workoutTotalDuration) &&
-          typeof pauseDuration === 'number' &&
-          Number.isFinite(pauseDuration)
-        ? Math.max(workoutTotalDuration - pauseDuration, 0)
-        : stats.moving_duration;
+    const pauseDuration = stats.pause_duration;
+    const noPauseDuration = stats.moving_duration;
 
     if (
       typeof noPauseDuration === 'number' &&
@@ -337,63 +306,6 @@ export class WorkoutStatisticsComponent {
     }
 
     return { startMs, endMs };
-  }
-
-  private pauseDurationForSelectionFromEvents(
-    workout: WorkoutDetail,
-    selection: IntervalSelection | null,
-  ): number | undefined {
-    const bounds = this.selectionBoundsMs(workout, selection);
-    if (!bounds) {
-      return undefined;
-    }
-
-    const timerEvents = (workout.events ?? [])
-      .filter((e) => e.event === 'timer' && !!e.event_type)
-      .map((e) => ({
-        type: e.event_type,
-        timestampMs: new Date(e.timestamp).getTime(),
-      }))
-      .filter((e) => Number.isFinite(e.timestampMs))
-      .sort((a, b) => a.timestampMs - b.timestampMs);
-
-    if (timerEvents.length === 0) {
-      return undefined;
-    }
-
-    const pauseStartTypes = new Set(['stop', 'stop_all', 'stop_disable', 'stop_disable_all']);
-    const pauseEndTypes = new Set(['start']);
-
-    let pausedAtMs: number | null = null;
-    let pausedMsTotal = 0;
-
-    const addOverlap = (pauseStartMs: number, pauseEndMs: number): void => {
-      const overlapStart = Math.max(bounds.startMs, pauseStartMs);
-      const overlapEnd = Math.min(bounds.endMs, pauseEndMs);
-      if (overlapEnd > overlapStart) {
-        pausedMsTotal += overlapEnd - overlapStart;
-      }
-    };
-
-    for (const event of timerEvents) {
-      if (pauseStartTypes.has(event.type)) {
-        if (pausedAtMs === null) {
-          pausedAtMs = event.timestampMs;
-        }
-        continue;
-      }
-
-      if (pauseEndTypes.has(event.type) && pausedAtMs !== null) {
-        addOverlap(pausedAtMs, event.timestampMs);
-        pausedAtMs = null;
-      }
-    }
-
-    if (pausedAtMs !== null) {
-      addOverlap(pausedAtMs, bounds.endMs);
-    }
-
-    return pausedMsTotal / 1000;
   }
 
   private buildElevationCard(
