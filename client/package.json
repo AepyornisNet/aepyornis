@@ -55,7 +55,7 @@
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-plugin-zoom": "^2.2.0",
     "date-fns": "^4.1.0",
-    "maplibre-gl": "^5.21.1",
+    "maplibre-gl": "^5.24.0",
     "maplibre-theme": "^1.0.0",
     "ngx-translate-lint": "^1.26.5",
     "pofile": "^1.1.4",
