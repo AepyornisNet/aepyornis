@@ -26,7 +26,7 @@ type WorkoutRecord struct {
 	Duration        time.Duration `json:"duration"`        // The duration from the previous point
 	TotalDuration   time.Duration `json:"totalDuration"`   // The total duration of the workout up to this point
 	SlopeGrade      float64       `json:"slopeGrade"`      // The grade of the slope at this point
-	Pause           sql.NullBool  `json:"is_pause"`        // Indicates wheter this entry is within a pause
+	Pause           sql.NullBool  `json:"is_pause"`        // Indicates whether this entry is within a pause
 }
 
 func (WorkoutRecord) TableName() string {
