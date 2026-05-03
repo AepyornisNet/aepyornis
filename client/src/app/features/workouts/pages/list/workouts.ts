@@ -21,6 +21,7 @@ import { BaseList, BaseListConfig } from '../../../../core/components/base-list/
 import { BaseTable } from '../../../../core/components/base-table/base-table';
 import { AsyncPipe } from '@angular/common';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
+import { HumanReadableSpeedPipe } from '../../../../core/pipes/human-readable-speed.pipe';
 
 type WorkoutListFilterState = {
   type: string;
@@ -36,7 +37,16 @@ type FilterOption = {
 
 @Component({
   selector: 'app-workouts',
-  imports: [RouterLink, AppIcon, WorkoutListActions, TranslatePipe, BaseList, BaseTable, AsyncPipe],
+  imports: [
+    RouterLink,
+    AppIcon,
+    WorkoutListActions,
+    TranslatePipe,
+    BaseList,
+    BaseTable,
+    AsyncPipe,
+    HumanReadableSpeedPipe,
+  ],
   templateUrl: './workouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -82,7 +92,7 @@ export class Workouts extends PaginatedListView<Workout> {
     { value: 'total_repetitions', label: this.translate.stream('Repetitions') },
     { value: 'total_up', label: this.translate.stream('Elev Up') },
     { value: 'total_down', label: this.translate.stream('Elev Down') },
-    { value: 'average_speed_no_pause', label: this.translate.stream('Average speed no pause') },
+    { value: 'average_speed', label: this.translate.stream('Average speed') },
     { value: 'max_speed', label: this.translate.stream('Max speed') },
   ];
 
@@ -103,7 +113,7 @@ export class Workouts extends PaginatedListView<Workout> {
     'date',
     'total_distance',
     'total_duration',
-    'average_speed',
+    'average_speed_no_pause',
   ]);
   public readonly sortedColumnMeta = computed<FilterOption | null>(() => {
     const orderBy = this.filterState().orderBy;
@@ -139,8 +149,8 @@ export class Workouts extends PaginatedListView<Workout> {
         const formatted = this.formatNumber(workout.total_down, { maximumFractionDigits: 0 });
         return formatted !== null ? `${formatted} m` : '-';
       }
-      case 'average_speed_no_pause': {
-        const speed = this.formatSpeed(workout.average_speed_no_pause);
+      case 'average_speed': {
+        const speed = this.formatSpeed(workout.average_speed);
         return speed !== null ? `${speed} km/h` : '-';
       }
       case 'max_speed': {

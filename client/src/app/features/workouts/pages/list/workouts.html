@@ -97,7 +97,7 @@
         @if (sortedColumnMeta()) {
           <th class="text-end">{{ sortedColumnMeta()?.label | async }}</th>
         }
-        <th class="d-none d-md-table-cell">{{ 'Average speed' | translate }}</th>
+        <th class="d-none d-md-table-cell">{{ 'Average speed (no pause)' | translate }}</th>
         <th class="text-end d-none d-lg-table-cell">{{ 'Actions' | translate }}</th>
       </ng-template>
 
@@ -212,8 +212,8 @@
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
           }
           <div class="cell-content">
-            @if (workout.average_speed) {
-              {{ (workout.average_speed * 3.6).toFixed(2) }} km/h
+            @if (workout.average_speed_no_pause) {
+              {{ workout.average_speed_no_pause | humanReadableSpeed: workout.type }}
             } @else {
               <span class="text-muted">-</span>
             }

@@ -21,6 +21,7 @@ function parseYaml(content) {
         distance: false,
         repetition: false,
         weight: false,
+        pace: false,
       };
     } else if (currentType) {
       if (trimmed.startsWith('location:')) {
@@ -31,10 +32,12 @@ function parseYaml(content) {
         currentType.repetition = trimmed.split(':')[1].trim() === 'true';
       } else if (trimmed.startsWith('weight:')) {
         currentType.weight = trimmed.split(':')[1].trim() === 'true';
+      } else if (trimmed.startsWith('pace:')) {
+        currentType.pace = trimmed.split(':')[1].trim() === 'true';
       }
     }
   }
-  
+
   if (currentType) {
     workoutTypes.push(currentType);
   }
@@ -61,10 +64,11 @@ export interface WorkoutTypeConfig {
   repetition: boolean;
   weight: boolean;
   duration: boolean;
+  pace: boolean;
 }
 
 export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
-${workoutTypes.map(wt => `  { value: '${wt.name}', location: ${wt.location}, distance: ${wt.distance}, repetition: ${wt.repetition}, weight: ${wt.weight}, duration: true }`).join(',\n')}
+${workoutTypes.map(wt => `  { value: '${wt.name}', location: ${wt.location}, distance: ${wt.distance}, repetition: ${wt.repetition}, weight: ${wt.weight}, duration: true, pace: ${wt.pace} }`).join(',\n')}
 ];
 
 export function getWorkoutTypeConfig(type: string): WorkoutTypeConfig | undefined {

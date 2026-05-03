@@ -7,6 +7,7 @@ workout_types:
     distance: true
     repetition: false
     weight: false
+    pace: true
     distance_targets:
       - label: "5 km"
         distance: 5000

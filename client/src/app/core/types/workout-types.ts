@@ -11,32 +11,36 @@ export type WorkoutTypeConfig = {
   repetition: boolean;
   weight: boolean;
   duration: boolean;
+  pace: boolean;
 };
 
 export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
   {
     value: 'running',
     location: true,
-    distance: true,
+    distance: false,
     repetition: false,
     weight: false,
     duration: true,
+    pace: true,
   },
   {
     value: 'cycling',
     location: true,
-    distance: true,
+    distance: false,
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'e-cycling',
     location: true,
-    distance: true,
+    distance: false,
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'horse-riding',
@@ -45,6 +49,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'inline-skating',
@@ -53,6 +58,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'walking',
@@ -61,6 +67,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'skiing',
@@ -69,6 +76,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'snowboarding',
@@ -77,6 +85,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'swimming',
@@ -85,6 +94,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'kayaking',
@@ -93,6 +103,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'rowing',
@@ -101,6 +112,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'golfing',
@@ -109,6 +121,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'hiking',
@@ -117,6 +130,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: false,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'push-ups',
@@ -125,6 +139,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: true,
     weight: false,
     duration: true,
+    pace: false,
   },
   {
     value: 'weight-lifting',
@@ -133,6 +148,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: true,
     weight: true,
     duration: true,
+    pace: false,
   },
   {
     value: 'other',
@@ -141,6 +157,7 @@ export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
     repetition: true,
     weight: true,
     duration: true,
+    pace: false,
   },
 ];
 

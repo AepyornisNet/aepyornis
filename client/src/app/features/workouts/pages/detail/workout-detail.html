@@ -60,11 +60,14 @@
             </div>
           }
 
-          @if (dataService.workout()!.average_speed) {
+          @if (dataService.workout()!.average_speed_no_pause) {
             <div class="stat-card">
-              <div class="stat-label">{{ 'Average speed' | translate }}</div>
+              <div class="stat-label">{{ 'Average speed (no pause)' | translate }}</div>
               <div class="stat-value">
-                {{ dataService.formatSpeed(dataService.workout()!.average_speed!) }} km/h
+                {{
+                  dataService.workout()!.average_speed_no_pause!
+                    | humanReadableSpeed: dataService.workout()!.type
+                }}
               </div>
             </div>
           }

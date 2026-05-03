@@ -34,6 +34,7 @@ import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
 import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
+import { HumanReadableSpeedPipe } from '../../../../core/pipes/human-readable-speed.pipe';
 
 @Component({
   selector: 'app-workout-detail',
@@ -57,6 +58,7 @@ import { WorkoutCommentsComponent } from '../../components/workout-comments/work
     WorkoutPerformanceCurveComponent,
     WorkoutCommentsComponent,
     TranslatePipe,
+    HumanReadableSpeedPipe,
   ],
   templateUrl: './workout-detail.html',
   styleUrl: './workout-detail.scss',
