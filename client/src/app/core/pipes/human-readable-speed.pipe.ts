@@ -1,4 +1,3 @@
-// kebab-case.pipe.ts
 import { Pipe, PipeTransform } from '@angular/core';
 import { getWorkoutTypeConfig } from '../types/workout-types';
 @Pipe({
