@@ -65,18 +65,18 @@ type ClimbRecordResponse struct {
 
 // NewTotalsResponse converts a database Bucket to API response
 func NewTotalsResponse(bukets []model.Bucket) TotalsResponse {
-	resp := TotalsResponse{}
-	for _, b := range bukets {
-		resp = append(resp, TotalResponse{
+	response := make(TotalsResponse, len(bukets))
+	for i, b := range bukets {
+		response[i] = TotalResponse{
 			WorkoutType: string(b.WorkoutType),
 			Workouts:    int64(b.Workouts),
 			Distance:    b.Distance,
 			Duration:    int64(b.Duration.Seconds()),
 			Up:          b.Up,
 			Down:        0, // Down is not tracked in totals
-		})
+		}
 	}
-	return resp
+	return response
 }
 
 // NewWorkoutRecordResponse converts a database WorkoutRecord to API response

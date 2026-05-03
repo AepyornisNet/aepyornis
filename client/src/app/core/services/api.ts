@@ -415,13 +415,13 @@ export class Api {
   }
 
   // Dashboard endpoints
-  public getTotals(handle?: string): Observable<APIResponse<Totals>> {
+  public getTotals(handle?: string): Observable<APIResponse<Totals[]>> {
     let httpParams = new HttpParams();
     if (handle) {
       httpParams = httpParams.set('handle', handle);
     }
 
-    return this.http.get<APIResponse<Totals>>(`${this.baseUrl}/totals`, {
+    return this.http.get<APIResponse<Totals[]>>(`${this.baseUrl}/totals`, {
       params: httpParams,
     });
   }

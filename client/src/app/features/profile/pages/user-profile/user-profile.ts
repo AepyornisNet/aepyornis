@@ -34,7 +34,7 @@ export class UserProfile implements OnInit {
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
 
-  public readonly totals = signal<Totals | null>(null);
+  public readonly totals = signal<Totals[]>([]);
   public readonly records = signal<WorkoutRecord[]>([]);
   public readonly profileSummary = signal<ActivityPubProfileSummary | null>(null);
   public readonly currentHandle = signal<string | null>(null);
@@ -67,7 +67,7 @@ export class UserProfile implements OnInit {
       this.profileSummary.set(profileResponse.results);
 
       if (profileResponse.results.is_external) {
-        this.totals.set(null);
+        this.totals.set([]);
         this.records.set([]);
         return;
       }
