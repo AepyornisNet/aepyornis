@@ -711,8 +711,8 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 		return c.JSON(http.StatusOK, resp)
 	}
 
-	if workout.Data == nil {
-		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
+	if len(workout.Records) == 0 {
+		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no records"))
 	}
 
 	breakdown, err := workout.StatisticsPer(params.Count, requester.PreferredUnits.Distance())
@@ -759,8 +759,8 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if workout.Data == nil || len(workout.Records) == 0 {
-		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
+	if len(workout.Records) == 0 {
+		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no records"))
 	}
 
 	points := workout.Records
