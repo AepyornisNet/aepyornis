@@ -167,7 +167,7 @@ func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem
 		nextItem.TotalDistance2D += p.Distance2D
 
 		// m/s -> km/h, cut-off is speed less than 1 km/h
-		if p.AverageSpeed()*3.6 >= 1.0 {
+		if p.AverageSpeed()*3.6 >= 1.0 && (!p.Pause.Valid || !p.Pause.Bool) {
 			nextItem.Duration += p.Duration
 			nextItem.TotalDuration += p.Duration
 		} else {

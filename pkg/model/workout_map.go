@@ -319,12 +319,12 @@ func (r *rangeAggregator) processDurations(points []WorkoutRecord, startIdx, end
 		r.stats.Duration += p.Duration
 
 		speed := p.AverageSpeed()
-		if metricSpeed, ok := p.ExtraMetrics["speed"]; ok && !math.IsNaN(metricSpeed) && metricSpeed > 0 {
+		if metricSpeed, ok := p.ExtraMetrics["speed"]; ok && !math.IsNaN(metricSpeed) {
 			speed = metricSpeed
 		}
 		r.stats.MaxSpeed = max(r.stats.MaxSpeed, speed)
 
-		if speed*3.6 >= 1.0 {
+		if speed*3.6 >= 1.0 && (!p.Pause.Valid || !p.Pause.Bool) {
 			r.stats.MovingDuration += p.Duration
 
 			if !r.foundSpeed || speed < r.minSpeed {

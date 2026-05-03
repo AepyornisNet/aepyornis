@@ -3,7 +3,6 @@ package converters
 import (
 	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"math"
@@ -16,8 +15,6 @@ import (
 	"github.com/muktihari/fit/profile/filedef"
 	"github.com/muktihari/fit/profile/mesgdef"
 	"github.com/muktihari/fit/profile/typedef"
-	"github.com/spf13/cast"
-	"github.com/tkrajina/gpxgo/gpx"
 	"gorm.io/datatypes"
 )
 
@@ -454,80 +451,6 @@ func deriveFitSessionDurations(
 	return elapsed, moving, pause
 }
 
-func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
-	name := formatFitWorkoutName(act.Sessions[0].Sport.String(), fitActivityStartTime(act))
-	gpxFile := &gpx.GPX{
-		Name:    name,
-		Time:    &act.FileId.TimeCreated,
-		Creator: act.FileId.Manufacturer.String(),
-	}
-
-	if len(act.Sessions) > 0 {
-		s := act.Sessions[0]
-		gpxFile.AppendTrack(&gpx.GPXTrack{
-			Name: s.SportProfileName,
-			Type: s.Sport.String(),
-		})
-	}
-
-	for _, r := range act.Records {
-		p := &gpx.GPXPoint{
-			Timestamp: r.Timestamp,
-			Point: gpx.Point{
-				Latitude:  semicircles.ToDegrees(r.PositionLat),
-				Longitude: semicircles.ToDegrees(r.PositionLong),
-			},
-		}
-
-		if math.IsNaN(p.Latitude) || math.IsNaN(p.Longitude) {
-			continue
-		}
-
-		if r.EnhancedAltitude != math.MaxUint32 {
-			p.Elevation = *gpx.NewNullableFloat64(r.EnhancedAltitudeScaled())
-		}
-
-		gpxExtensionData := map[string]string{}
-		if r.Cadence != math.MaxUint8 {
-			gpxExtensionData["cadence"] = cast.ToString(r.Cadence)
-		}
-
-		if r.HeartRate != math.MaxUint8 {
-			gpxExtensionData["heart-rate"] = cast.ToString(r.HeartRate)
-		}
-
-		if r.EnhancedRespirationRate != math.MaxUint16 {
-			gpxExtensionData["respiration-rate"] = cast.ToString(r.EnhancedRespirationRateScaled())
-		} else if r.RespirationRate != math.MaxUint8 {
-			gpxExtensionData["respiration-rate"] = cast.ToString(r.RespirationRate)
-		}
-
-		if r.EnhancedSpeed != math.MaxUint32 {
-			gpxExtensionData["speed"] = cast.ToString(r.EnhancedSpeedScaled())
-		} else if r.Speed != math.MaxUint16 {
-			gpxExtensionData["speed"] = cast.ToString(r.SpeedScaled())
-		}
-
-		if r.Temperature != math.MaxInt8 {
-			gpxExtensionData["temperature"] = cast.ToString(r.Temperature)
-		}
-
-		if r.Power != math.MaxUint16 {
-			gpxExtensionData["power"] = cast.ToString(r.Power)
-		}
-
-		for key, value := range gpxExtensionData {
-			p.Extensions.Nodes = append(p.Extensions.Nodes, gpx.ExtensionNode{
-				XMLName: xml.Name{Local: key}, Data: value,
-			})
-		}
-
-		gpxFile.AppendPoint(p)
-	}
-
-	return gpxFile
-}
-
 // mapDataFromActivity converts a FIT activity into MapData, falling back to
 // non-positional record data when coordinates are missing so charts and
 // breakdowns remain available even without a map.
@@ -571,12 +494,6 @@ func mapDataFromActivity(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.
 
 		totalDuration += dt
 
-		speed := 0.0
-		if r.EnhancedSpeed != math.MaxUint32 {
-			speed = r.EnhancedSpeedScaled()
-		} else if r.Speed != math.MaxUint16 {
-			speed = r.SpeedScaled()
-		}
 		elevation := math.NaN()
 		if r.EnhancedAltitude != math.MaxUint32 {
 			elevation = r.EnhancedAltitudeScaled()
@@ -588,25 +505,33 @@ func mapDataFromActivity(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.
 		if !math.IsNaN(elevation) {
 			extra.Set("elevation", elevation)
 		}
+
 		if r.Cadence != math.MaxUint8 {
 			extra.Set("cadence", float64(r.Cadence))
 		}
+
 		if r.HeartRate != math.MaxUint8 {
 			extra.Set("heart-rate", float64(r.HeartRate))
 		}
+
 		if r.EnhancedRespirationRate != math.MaxUint16 {
 			extra.Set("respiration-rate", float64(r.EnhancedRespirationRateScaled()))
 		} else if r.RespirationRate != math.MaxUint8 {
 			extra.Set("respiration-rate", float64(r.RespirationRate))
 		}
+
 		if r.Power != math.MaxUint16 {
 			extra.Set("power", float64(r.Power))
 		}
+
 		if r.Temperature != math.MaxInt8 {
 			extra.Set("temperature", float64(r.Temperature))
 		}
-		if speed > 0 {
-			extra.Set("speed", speed)
+
+		if r.EnhancedSpeed != math.MaxUint32 {
+			extra.Set("speed", r.EnhancedSpeedScaled())
+		} else if r.Speed != math.MaxUint16 {
+			extra.Set("speed", r.SpeedScaled())
 		}
 
 		elevationValue := elevation
@@ -644,13 +569,6 @@ func mapDataFromActivity(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.
 	data.UpdateExtraMetrics(points)
 
 	return data, points
-}
-
-func safeDivide(distance float64, d time.Duration) float64 {
-	if d <= 0 {
-		return 0
-	}
-	return distance / d.Seconds()
 }
 
 func cloneMapData(src *model.WorkoutGeoMeta) *model.WorkoutGeoMeta {

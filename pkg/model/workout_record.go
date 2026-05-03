@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"math"
 	"time"
 
@@ -25,6 +26,7 @@ type WorkoutRecord struct {
 	Duration        time.Duration `json:"duration"`        // The duration from the previous point
 	TotalDuration   time.Duration `json:"totalDuration"`   // The total duration of the workout up to this point
 	SlopeGrade      float64       `json:"slopeGrade"`      // The grade of the slope at this point
+	Pause           sql.NullBool  `json:"is_pause"`        // Indicates wheter this entry is within a pause
 }
 
 func (WorkoutRecord) TableName() string {
@@ -36,6 +38,10 @@ func (m *WorkoutRecord) ToOrbPoint() *orb.Point {
 }
 
 func (m *WorkoutRecord) AverageSpeed() float64 {
+	if v, ok := m.ExtraMetrics["speed"]; ok && !math.IsNaN(v) {
+		return v
+	}
+
 	if m.Duration.Seconds() == 0 {
 		return 0
 	}
