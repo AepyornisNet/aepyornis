@@ -287,6 +287,7 @@ export type Equipment = {
 };
 
 export type Totals = {
+  workout_type: string;
   workouts: number;
   distance: number;
   duration: number; // in seconds

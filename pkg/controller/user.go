@@ -115,7 +115,8 @@ func (uc *userController) GetTotals(c echo.Context) error {
 				"'all' as bucket",
 			).
 			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
-			Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
+			Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
+			Group("workouts.type"),
 		targetUser.Profile.ID,
 		viewer.Profile.ID,
 	)
@@ -126,7 +127,9 @@ func (uc *userController) GetTotals(c echo.Context) error {
 		totalsShow = model.WorkoutTypeRunning
 	}
 
-	totalsQuery = totalsQuery.Where("workouts.type = ?", totalsShow)
+	if totalsShow != "all" {
+		totalsQuery = totalsQuery.Where("workouts.type = ?", totalsShow)
+	}
 
 	if startDate != nil {
 		totalsQuery = totalsQuery.Where("workouts.date >= ?", *startDate)
@@ -135,11 +138,21 @@ func (uc *userController) GetTotals(c echo.Context) error {
 	if endDate != nil {
 		totalsQuery = totalsQuery.Where("workouts.date <= ?", *endDate)
 	}
+	rows, err := totalsQuery.Rows()
+	defer rows.Close()
 
-	totals := &model.Bucket{}
-	err = totalsQuery.Scan(totals).Error
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	totals := []model.Bucket{}
+	for rows.Next() {
+		var total model.Bucket
+		err := uc.db.ScanRows(rows, &total)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+		totals = append(totals, total)
 	}
 
 	resp := dto.Response[dto.TotalsResponse]{

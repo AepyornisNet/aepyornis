@@ -7,13 +7,16 @@ import (
 )
 
 // TotalsResponse represents workout totals in API v2 responses
-type TotalsResponse struct {
-	Workouts int64   `json:"workouts"`
-	Distance float64 `json:"distance"`
-	Duration int64   `json:"duration"` // Duration in seconds
-	Up       float64 `json:"up"`
-	Down     float64 `json:"down"`
+type TotalResponse struct {
+	WorkoutType string  `json:"workout_type"`
+	Workouts    int64   `json:"workouts"`
+	Distance    float64 `json:"distance"`
+	Duration    int64   `json:"duration"` // Duration in seconds
+	Up          float64 `json:"up"`
+	Down        float64 `json:"down"`
 }
+
+type TotalsResponse = []TotalResponse
 
 // RecordResponse represents a single record value
 type RecordResponse struct {
@@ -61,14 +64,19 @@ type ClimbRecordResponse struct {
 }
 
 // NewTotalsResponse converts a database Bucket to API response
-func NewTotalsResponse(b *model.Bucket) TotalsResponse {
-	return TotalsResponse{
-		Workouts: int64(b.Workouts),
-		Distance: b.Distance,
-		Duration: int64(b.Duration.Seconds()),
-		Up:       b.Up,
-		Down:     0, // Down is not tracked in totals
+func NewTotalsResponse(bukets []model.Bucket) TotalsResponse {
+	resp := TotalsResponse{}
+	for _, b := range bukets {
+		resp = append(resp, TotalResponse{
+			WorkoutType: string(b.WorkoutType),
+			Workouts:    int64(b.Workouts),
+			Distance:    b.Distance,
+			Duration:    int64(b.Duration.Seconds()),
+			Up:          b.Up,
+			Down:        0, // Down is not tracked in totals
+		})
 	}
+	return resp
 }
 
 // NewWorkoutRecordResponse converts a database WorkoutRecord to API response
