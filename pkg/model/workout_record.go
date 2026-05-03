@@ -38,10 +38,6 @@ func (m *WorkoutRecord) ToOrbPoint() *orb.Point {
 }
 
 func (m *WorkoutRecord) AverageSpeed() float64 {
-	if v, ok := m.ExtraMetrics["speed"]; ok && !math.IsNaN(v) {
-		return v
-	}
-
 	if m.Duration.Seconds() == 0 {
 		return 0
 	}

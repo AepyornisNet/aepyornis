@@ -1,25 +1,27 @@
-package model
+package model_test
 
 import (
 	"testing"
 
+	_ "github.com/AepyornisNet/aepyornis/pkg/converters"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
 
-func testAnonymousProfile() *Profile {
-	return &Profile{Username: "anonymous", DisplayName: "Anonymous"}
+func testAnonymousProfile() *model.Profile {
+	return &model.Profile{Username: "anonymous", DisplayName: "Anonymous"}
 }
 
 func TestRouteSegment_Parse(t *testing.T) {
 	{
-		rs, err := NewRouteSegment("", "meer.gpx", []byte(meer))
+		rs, err := model.NewRouteSegment("", "meer.gpx", []byte(meer))
 		assert.NoError(t, err)
 		assert.NotNil(t, rs)
 		assert.Greater(t, rs.TotalDistance, 1800.0)
 	}
 
 	{
-		rs, err := NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
+		rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
 		assert.NoError(t, err)
 		assert.NotNil(t, rs)
 		assert.Greater(t, rs.TotalDistance, 900.0)
@@ -27,10 +29,10 @@ func TestRouteSegment_Parse(t *testing.T) {
 }
 
 func TestRouteSegment_FindMatches(t *testing.T) {
-	rs, err := NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
+	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
 	assert.NoError(t, err)
 
-	w1, err := NewWorkout(testAnonymousProfile(), WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
+	w1, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
 	assert.NoError(t, err)
 	assert.Len(t, w1, 1)
 	rp, wp := rs.Points[0], w1[0].Records[0]
@@ -58,7 +60,7 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	assert.True(t, w1_1.Type.IsLocation())
 	assert.True(t, w1_1.HasTracks())
 
-	w2, err := NewWorkout(testAnonymousProfile(), WorkoutTypeAutoDetect, "", "nomatch.gpx", []byte(GpxSample1))
+	w2, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "nomatch.gpx", []byte(model.GpxSample1))
 	assert.NoError(t, err)
 	assert.Len(t, w2, 1)
 
@@ -66,7 +68,7 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	assert.True(t, w2_1.Type.IsLocation())
 	assert.True(t, w2_1.HasTracks())
 
-	workouts := []*Workout{w1_1, w2_1}
+	workouts := []*model.Workout{w1_1, w2_1}
 	matches := rs.FindMatches(workouts)
 
 	if !assert.Len(t, matches, 1) {
@@ -77,10 +79,10 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 }
 
 func TestRouteSegment_StartingPoints_NoMatch(t *testing.T) {
-	rs, err := NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
+	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
 	assert.NoError(t, err)
 
-	w, err := NewWorkout(testAnonymousProfile(), WorkoutTypeAutoDetect, "", "nomatch.gpx", []byte(GpxSample1))
+	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "nomatch.gpx", []byte(model.GpxSample1))
 	assert.NoError(t, err)
 	assert.Len(t, w, 1)
 
@@ -90,10 +92,10 @@ func TestRouteSegment_StartingPoints_NoMatch(t *testing.T) {
 }
 
 func TestRouteSegment_StartingPoints_Match(t *testing.T) {
-	rs, err := NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
+	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
 	assert.NoError(t, err)
 
-	w, err := NewWorkout(testAnonymousProfile(), WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
+	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
 	assert.NoError(t, err)
 	assert.Len(t, w, 1)
 
@@ -102,15 +104,15 @@ func TestRouteSegment_StartingPoints_Match(t *testing.T) {
 	assert.NotEmpty(t, sp)
 
 	for _, p := range sp {
-		assert.Less(t, rs.Points[0].DistanceTo(&w1.Records[p]), MaxDeltaMeter)
+		assert.Less(t, rs.Points[0].DistanceTo(&w1.Records[p]), model.MaxDeltaMeter)
 	}
 }
 
 func TestRouteSegment_StartingPoints_MatchSegment(t *testing.T) {
-	rs, err := NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
+	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
 	assert.NoError(t, err)
 
-	w, err := NewWorkout(testAnonymousProfile(), WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
+	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
 	assert.NoError(t, err)
 	assert.Len(t, w, 1)
 
@@ -132,10 +134,10 @@ func TestRouteSegment_StartingPoints_MatchSegment(t *testing.T) {
 }
 
 func TestRouteSegment_Match(t *testing.T) {
-	rs, err := NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
+	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
 	assert.NoError(t, err)
 
-	w, err := NewWorkout(testAnonymousProfile(), WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
+	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
 	assert.NoError(t, err)
 	assert.Len(t, w, 1)
 

@@ -22,7 +22,7 @@ func TestGenerateWorkoutFIT_PreservesPerRecordSpeedMetrics(t *testing.T) {
 				Lng:           8.0,
 				Elevation:     100,
 				TotalDuration: 0,
-				ExtraMetrics:  model.ExtraMetrics{},
+				ExtraMetrics:  model.ExtraMetrics{"speed": 0.0},
 			},
 			{
 				Time:          time.Date(2026, 4, 26, 18, 0, 5, 0, time.UTC),
