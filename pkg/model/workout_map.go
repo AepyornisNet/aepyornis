@@ -650,9 +650,3 @@ func WorkoutPauseDurationFromAverages(totalDistance float64, totalDuration time.
 
 	return totalDuration - movingDuration
 }
-
-func MapDataFromGPX(gpxContent *gpx.GPX) *WorkoutGeoMeta {
-	data, _ := MapDataAndRecordsFromGPX(gpxContent)
-
-	return data
-}

@@ -92,8 +92,8 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 
 		w.Laps = append([]model.WorkoutLap(nil), laps...)
 		setContentAndName(w, filename, "fit", content)
-		w.UpdateAverages()
-		w.UpdateExtraMetrics()
+
+		w.ProcessRawRecords()
 
 		workouts = append(workouts, w)
 	}
@@ -622,15 +622,15 @@ func mapDataFromActivity(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.
 		}
 
 		points = append(points, model.WorkoutRecord{
-			Time:            ts,
-			Lat:             lat,
-			Lng:             lng,
-			Elevation:       elevationValue,
-			Distance:        deltaDist,
-			TotalDistance:   dist,
-			Duration:        dt,
-			TotalDuration:   totalDuration,
-			ExtraMetrics:    extra,
+			Time:          ts,
+			Lat:           lat,
+			Lng:           lng,
+			Elevation:     elevationValue,
+			Distance:      deltaDist,
+			TotalDistance: dist,
+			Duration:      dt,
+			TotalDuration: totalDuration,
+			ExtraMetrics:  extra,
 		})
 	}
 

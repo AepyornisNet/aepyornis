@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tkrajina/gpxgo/gpx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -1077,76 +1076,10 @@ func replaceWorkoutRouteSegmentMatches(tx *gorm.DB, workoutID uint64, matches []
 }
 
 func init() {
-	WorkoutParser = defaultWorkoutParser
-}
-
-func defaultWorkoutParser(filename string, content []byte) ([]*Workout, error) {
-	gpxContent, err := gpx.ParseBytes(content)
-	if err != nil {
-		return nil, err
+	// Gets overwritten in converters module
+	WorkoutParser = func(filename string, content []byte) ([]*Workout, error) {
+		return nil, nil
 	}
-
-	data, records := MapDataAndRecordsFromGPX(gpxContent)
-	totalDistance, totalDistance2D, totalDuration := WorkoutTotalsFromRecords(records)
-	statsValues := WorkoutStatsFromRecords(records)
-	pauseDuration := WorkoutPauseDurationFromAverages(totalDistance, totalDuration, statsValues.AverageSpeedNoPause)
-	workoutType, _ := WorkoutTypeFromData(GPXType(gpxContent))
-	dateEnd := WorkoutEndFromRecords(records)
-	stats := &WorkoutStats{
-		MinElevation:           statsValues.MinElevation,
-		MaxElevation:           statsValues.MaxElevation,
-		TotalUp:                statsValues.TotalUp,
-		TotalDown:              statsValues.TotalDown,
-		AverageSlope:           statsValues.AverageSlope,
-		MinSlope:               statsValues.MinSlope,
-		MaxSlope:               statsValues.MaxSlope,
-		AverageSpeed:           statsValues.AverageSpeed,
-		AverageSpeedNoPause:    statsValues.AverageSpeedNoPause,
-		MinSpeed:               statsValues.MinSpeed,
-		MaxSpeed:               statsValues.MaxSpeed,
-		AverageCadence:         statsValues.AverageCadence,
-		MinCadence:             statsValues.MinCadence,
-		MaxCadence:             statsValues.MaxCadence,
-		AverageHeartRate:       statsValues.AverageHeartRate,
-		MinHeartRate:           statsValues.MinHeartRate,
-		MaxHeartRate:           statsValues.MaxHeartRate,
-		AverageRespirationRate: statsValues.AverageRespirationRate,
-		MinRespirationRate:     statsValues.MinRespirationRate,
-		MaxRespirationRate:     statsValues.MaxRespirationRate,
-		AveragePower:           statsValues.AveragePower,
-		MinPower:               statsValues.MinPower,
-		MaxPower:               statsValues.MaxPower,
-		AverageTemperature:     statsValues.AverageTemperature,
-		MinTemperature:         statsValues.MinTemperature,
-		MaxTemperature:         statsValues.MaxTemperature,
-	}
-	w := &Workout{
-		Data:            data,
-		Stats:           stats,
-		Records:         append([]WorkoutRecord(nil), records...),
-		Name:            GPXName(gpxContent),
-		Creator:         gpxContent.Creator,
-		Type:            workoutType,
-		DateEnd:         dateEnd,
-		TotalDistance:   totalDistance,
-		TotalDistance2D: totalDistance2D,
-		TotalDuration:   totalDuration,
-		PauseDuration:   pauseDuration,
-	}
-
-	if date := GPXDate(gpxContent); date != nil {
-		w.Date = *date
-	}
-
-	if filename == "" {
-		filename = w.Name
-	}
-
-	w.SetContent(filename, content)
-	w.UpdateAverages()
-	w.UpdateExtraMetrics()
-
-	return []*Workout{w}, nil
 }
 
 func saveWorkoutStats(tx *gorm.DB, w *Workout) error {
