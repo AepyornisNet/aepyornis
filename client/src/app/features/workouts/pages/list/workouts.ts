@@ -21,7 +21,11 @@ import { BaseList, BaseListConfig } from '../../../../core/components/base-list/
 import { BaseTable } from '../../../../core/components/base-table/base-table';
 import { AsyncPipe } from '@angular/common';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
-import { HumanReadableSpeedPipe } from '../../../../core/pipes/human-readable-speed.pipe';
+import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 
 type WorkoutListFilterState = {
   type: string;
@@ -45,7 +49,11 @@ type FilterOption = {
     BaseList,
     BaseTable,
     AsyncPipe,
-    HumanReadableSpeedPipe,
+    FormatSpeedPipe,
+    FormatDurationPipe,
+    FormatDistancePipe,
+    FormatDatePipe,
+    FormatElevationPipe,
   ],
   templateUrl: './workouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -142,20 +150,16 @@ export class Workouts extends PaginatedListView<Workout> {
         return formatted !== null ? formatted : '-';
       }
       case 'total_up': {
-        const formatted = this.formatNumber(workout.total_up, { maximumFractionDigits: 0 });
-        return formatted !== null ? `${formatted} m` : '-';
+        return new FormatElevationPipe().transform(workout.total_up);
       }
       case 'total_down': {
-        const formatted = this.formatNumber(workout.total_down, { maximumFractionDigits: 0 });
-        return formatted !== null ? `${formatted} m` : '-';
+        return new FormatElevationPipe().transform(workout.total_down);
       }
       case 'average_speed': {
-        const speed = this.formatSpeed(workout.average_speed);
-        return speed !== null ? `${speed} km/h` : '-';
+        return new FormatSpeedPipe().transform(workout.average_speed, workout.type);
       }
       case 'max_speed': {
-        const speed = this.formatSpeed(workout.max_speed);
-        return speed !== null ? `${speed} km/h` : '-';
+        return new FormatSpeedPipe().transform(workout.max_speed, workout.type);
       }
       default:
         return '-';
@@ -200,23 +204,6 @@ export class Workouts extends PaginatedListView<Workout> {
 
   public onAddWorkout(): void {
     window.location.href = '/workouts/add';
-  }
-
-  public formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
-  }
-
-  public formatDistance(distance: number): string {
-    return (distance / 1000).toFixed(2);
-  }
-
-  public formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
   }
 
   public onWorkoutUpdated(workout: Workout): void {
@@ -305,12 +292,5 @@ export class Workouts extends PaginatedListView<Workout> {
       return null;
     }
     return value.toLocaleString(undefined, options);
-  }
-
-  private formatSpeed(value: number | null | undefined): string | null {
-    if (value === undefined || value === null) {
-      return null;
-    }
-    return (value * 3.6).toFixed(2);
   }
 }

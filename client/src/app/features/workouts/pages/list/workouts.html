@@ -154,7 +154,7 @@
             <a class="cell-link-backdrop" [routerLink]="getRowLink(workout)"></a>
           }
           <div class="cell-content">
-            {{ formatDate(workout.date) }}
+            {{ workout.date | formatDate }}
           </div>
         </td>
         <td
@@ -167,7 +167,7 @@
           }
           <div class="cell-content">
             @if (workout.total_distance) {
-              <strong>{{ formatDistance(workout.total_distance) }}</strong> km
+              <strong>{{ workout.total_distance | formatDistance }}</strong>
             } @else {
               <span class="text-muted">-</span>
             }
@@ -183,7 +183,7 @@
           }
           <div class="cell-content">
             @if (workout.total_duration) {
-              {{ formatDuration(workout.total_duration) }}
+              {{ workout.total_duration | formatDuration }}
             } @else {
               <span class="text-muted">-</span>
             }
@@ -213,7 +213,7 @@
           }
           <div class="cell-content">
             @if (workout.average_speed_no_pause) {
-              {{ workout.average_speed_no_pause | humanReadableSpeed: workout.type }}
+              {{ workout.average_speed_no_pause | formatSpeed: workout.type }}
             } @else {
               <span class="text-muted">-</span>
             }

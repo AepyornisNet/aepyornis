@@ -3,9 +3,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Totals } from '../../../../core/types/workout';
-import { FormatDistance } from '../../../../core/pipes/format-distance.pipe';
-import { FormatDuration } from '../../../../core/pipes/format-duration.pipe';
-import { FormatElevation } from '../../../../core/pipes/format-elevation.pipe';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 import {
   NgbNav,
   NgbNavContent,
@@ -19,9 +19,9 @@ import {
   imports: [
     AppIcon,
     TranslatePipe,
-    FormatDistance,
-    FormatDuration,
-    FormatElevation,
+    FormatDistancePipe,
+    FormatDurationPipe,
+    FormatElevationPipe,
     NgbNav,
     NgbNavOutlet,
     NgbNavContent,

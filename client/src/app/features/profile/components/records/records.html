@@ -14,11 +14,13 @@
                   <tr>
                     <td>{{ 'Average speed' | translate }}</td>
                     <td class="text-end">
-                      <strong>{{ formatSpeed(record.average_speed.value) }} km/h</strong>
+                      <strong>{{
+                        record.average_speed.value | formatSpeed: record.workout_type
+                      }}</strong>
                     </td>
                     <td class="text-end text-muted">
                       <a [routerLink]="['/workouts', record.average_speed.workout_id]">
-                        {{ formatDate(record.average_speed.date) }}
+                        {{ record.average_speed.date | formatDate }}
                       </a>
                     </td>
                   </tr>
@@ -27,11 +29,13 @@
                   <tr>
                     <td>{{ 'Average (no pause)' | translate }}</td>
                     <td class="text-end">
-                      <strong>{{ formatSpeed(record.average_speed_no_pause.value) }} km/h</strong>
+                      <strong>{{
+                        record.average_speed_no_pause.value | formatSpeed: record.workout_type
+                      }}</strong>
                     </td>
                     <td class="text-end text-muted">
                       <a [routerLink]="['/workouts', record.average_speed_no_pause.workout_id]">
-                        {{ formatDate(record.average_speed_no_pause.date) }}
+                        {{ record.average_speed_no_pause.date | formatDate }}
                       </a>
                     </td>
                   </tr>
@@ -40,11 +44,13 @@
                   <tr>
                     <td>{{ 'Max speed' | translate }}</td>
                     <td class="text-end">
-                      <strong>{{ formatSpeed(record.max_speed.value) }} km/h</strong>
+                      <strong>{{
+                        record.max_speed.value | formatSpeed: record.workout_type
+                      }}</strong>
                     </td>
                     <td class="text-end text-muted">
                       <a [routerLink]="['/workouts', record.max_speed.workout_id]">
-                        {{ formatDate(record.max_speed.date) }}
+                        {{ record.max_speed.date | formatDate }}
                       </a>
                     </td>
                   </tr>
@@ -53,11 +59,11 @@
                   <tr>
                     <td>{{ 'Distance' | translate }}</td>
                     <td class="text-end">
-                      <strong>{{ formatDistance(record.distance.value) }} km</strong>
+                      <strong>{{ record.distance.value | formatDistance }}</strong>
                     </td>
                     <td class="text-end text-muted">
                       <a [routerLink]="['/workouts', record.distance.workout_id]">
-                        {{ formatDate(record.distance.date) }}
+                        {{ record.distance.date | formatDate }}
                       </a>
                     </td>
                   </tr>
@@ -66,11 +72,11 @@
                   <tr>
                     <td>{{ 'Elevation' | translate }}</td>
                     <td class="text-end">
-                      <strong>{{ formatElevation(record.total_up.value) }} m</strong>
+                      <strong>{{ record.total_up.value | formatElevation }}</strong>
                     </td>
                     <td class="text-end text-muted">
                       <a [routerLink]="['/workouts', record.total_up.workout_id]">
-                        {{ formatDate(record.total_up.date) }}
+                        {{ record.total_up.date | formatDate }}
                       </a>
                     </td>
                   </tr>
@@ -79,11 +85,11 @@
                   <tr>
                     <td>{{ 'Duration' | translate }}</td>
                     <td class="text-end">
-                      <strong>{{ formatDuration(record.duration.value) }}</strong>
+                      <strong>{{ record.duration.value | formatDuration }}</strong>
                     </td>
                     <td class="text-end text-muted">
                       <a [routerLink]="['/workouts', record.duration.workout_id]">
-                        {{ formatDate(record.duration.date) }}
+                        {{ record.duration.date | formatDate }}
                       </a>
                     </td>
                   </tr>
