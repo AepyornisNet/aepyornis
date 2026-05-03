@@ -99,7 +99,7 @@ func GetGeoMeta(workout *Workout) *WorkoutGeoMeta {
 		Lng: lng / float64(validPoints),
 	}
 
-	mc.updateTimezone()
+	mc.UpdateTimezone()
 	return &WorkoutGeoMeta{
 		Center: mc,
 	}

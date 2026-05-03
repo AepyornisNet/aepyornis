@@ -96,14 +96,14 @@ func parseSingle(f parserFunc, fileType string, filename string, content []byte)
 }
 
 func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte) *model.Workout {
-	data, records := model.MapDataAndRecordsFromGPX(g)
+	data, records := MapDataAndRecordsFromGPX(g)
 	if data == nil {
 		data = &model.WorkoutGeoMeta{}
 	}
 	totalDistance, totalDistance2D, totalDuration := model.WorkoutTotalsFromRecords(records)
 	statsValues := model.WorkoutStatsFromRecords(records)
 	pauseDuration := model.WorkoutPauseDurationFromAverages(totalDistance, totalDuration, statsValues.AverageSpeedNoPause)
-	gpxType := model.GPXType(g)
+	gpxType := GPXType(g)
 	workoutType, found := model.WorkoutTypeFromData(gpxType)
 	customType := ""
 	if !found {
@@ -116,7 +116,7 @@ func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte
 		Stats:           stats,
 		Records:         append([]model.WorkoutRecord(nil), records...),
 		Events:          synthesizeTimerEventsFromRecords(records),
-		Name:            model.GPXName(g),
+		Name:            GPXName(g),
 		Creator:         g.Creator,
 		Type:            workoutType,
 		CustomType:      customType,
@@ -127,7 +127,7 @@ func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte
 		PauseDuration:   pauseDuration,
 	}
 
-	if date := model.GPXDate(g); date != nil {
+	if date := GPXDate(g); date != nil {
 		w.Date = *date
 	}
 
