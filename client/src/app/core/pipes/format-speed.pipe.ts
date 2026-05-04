@@ -13,7 +13,7 @@ export class FormatSpeedPipe implements PipeTransform {
       const pace = 1000 / value / 60;
       const minutes = Math.floor(pace);
       const secs = Math.round((pace - minutes) * 60);
-      return minutes + `:` + secs + ` /km`;
+      return minutes + `:` + secs.toString().padStart(2, `0`) + ` /km`;
     }
     const speed = (value * 3.6).toFixed(2);
     return speed + ` km/h`;
