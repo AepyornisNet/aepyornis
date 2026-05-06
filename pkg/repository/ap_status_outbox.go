@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/google/uuid"
 	"github.com/samber/do/v2"
@@ -13,9 +14,9 @@ import (
 type APOutbox interface {
 	CreateWorkout(outboxWorkout *model.APStatusWorkout) error
 	CreateEntry(entry *model.APStatus) error
-	CountEntriesByUser(userID uint64) (int64, error)
-	GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APStatus, error)
-	GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APStatus, error)
+	CountEntriesByUser(actor *aputil.RequestActor, userID uint64) (int64, error)
+	GetEntriesByUser(actor *aputil.RequestActor, userID uint64, limit int, offset int) ([]model.APStatus, error)
+	GetEntryByUUIDAndUser(actor *aputil.RequestActor, userID uint64, outboxID uuid.UUID) (*model.APStatus, error)
 	GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APStatus, error)
 	ResolveWorkoutIDByObjectOrActivityID(userID uint64, objectOrActivityID string) (uint64, error)
 	DeleteEntryForWorkout(userID uint64, workoutID uint64) error
@@ -70,7 +71,7 @@ func (r *apOutboxRepository) CreateEntry(entry *model.APStatus) error {
 	return r.db.Create(entry).Error
 }
 
-func (r *apOutboxRepository) CountEntriesByUser(userID uint64) (int64, error) {
+func (r *apOutboxRepository) CountEntriesByUser(actor *aputil.RequestActor, userID uint64) (int64, error) {
 	var total int64
 	if err := r.db.Model(&model.APStatus{}).
 		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
@@ -82,7 +83,7 @@ func (r *apOutboxRepository) CountEntriesByUser(userID uint64) (int64, error) {
 	return total, nil
 }
 
-func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APStatus, error) {
+func (r *apOutboxRepository) GetEntriesByUser(actor *aputil.RequestActor, userID uint64, limit int, offset int) ([]model.APStatus, error) {
 	entries := make([]model.APStatus, 0)
 	if limit <= 0 {
 		limit = 20
@@ -101,7 +102,7 @@ func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset i
 	return entries, err
 }
 
-func (r *apOutboxRepository) GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APStatus, error) {
+func (r *apOutboxRepository) GetEntryByUUIDAndUser(actor *aputil.RequestActor, userID uint64, outboxID uuid.UUID) (*model.APStatus, error) {
 	entry := &model.APStatus{}
 	if err := r.db.
 		Preload("APStatusWorkout").

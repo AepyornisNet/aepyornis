@@ -78,6 +78,8 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	actor, _ := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
+
 	page := 0
 	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
 		page, err = strconv.Atoi(rawPage)
@@ -94,7 +96,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 	}, targetUser.Profile.Username)
 	outboxURL := actorURL + "/outbox"
 
-	total, err := ac.apOutboxRepo.CountEntriesByUser(targetUser.ID)
+	total, err := ac.apOutboxRepo.CountEntriesByUser(actor, targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -119,7 +121,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 	}
 
 	offset := (page - 1) * outboxPageSize
-	entries, err := ac.apOutboxRepo.GetEntriesByUser(targetUser.ID, outboxPageSize, offset)
+	entries, err := ac.apOutboxRepo.GetEntriesByUser(actor, targetUser.ID, outboxPageSize, offset)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -187,7 +189,8 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	actor, _ := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(actor, targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -246,7 +249,8 @@ func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	actor, _ := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(actor, targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -284,7 +288,8 @@ func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	actor, _ := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(actor, targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -392,7 +397,8 @@ func (ac *apOutboxController) OutboxReplies(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	actor, _ := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(actor, targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
