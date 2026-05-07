@@ -53,7 +53,6 @@ type FilterOption = {
     FormatDurationPipe,
     FormatDistancePipe,
     FormatDatePipe,
-    FormatElevationPipe,
   ],
   templateUrl: './workouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

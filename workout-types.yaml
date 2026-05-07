@@ -9,12 +9,30 @@ workout_types:
     weight: false
     pace: true
     distance_targets:
+      - label: "400 m"
+        distance: 400
+      - label: "1/2 mi"
+        distance: 804.672
+      - label: "1 km"
+        distance: 1000
+      - label: "1 mi"
+        distance: 1609.344
+      - label: "2 mi"
+        distance: 3218.688
       - label: "5 km"
         distance: 5000
       - label: "10 km"
         distance: 10000
+      - label: "15 km"
+        distance: 15000
+      - label: "10 mi"
+        distance: 16093.44
+      - label: "20 km"
+        distance: 20000
       - label: "Half Marathon"
         distance: 21097.5
+      - label: "30 km"
+        distance: 30000
       - label: "Marathon"
         distance: 42195
     
@@ -32,16 +50,26 @@ workout_types:
         distance: 16093.44
       - label: "20 km"
         distance: 20000
+      - label: "30 km"
+        distance: 30000
+      - label: "40 km"
+        distance: 40000
       - label: "50 km"
         distance: 50000
+      - label: "80 km"
+        distance: 80000
       - label: "50 mi"
         distance: 80467.2
       - label: "75 km"
         distance: 75000
+      - label: "90 km"
+        distance: 90000
       - label: "100 km"
         distance: 100000
       - label: "100 mi"
         distance: 160934.4
+      - label: "180 km"
+        distance: 180000
     
   - name: e-cycling
     location: true

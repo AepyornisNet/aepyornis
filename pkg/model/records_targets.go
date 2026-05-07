@@ -9,9 +9,18 @@ type DistanceRecordTarget struct {
 
 var defaultDistanceRecordTargets = map[WorkoutType][]DistanceRecordTarget{
 	WorkoutTypeRunning: {
+		{Label: "400 m", TargetDistance: 400.0000},
+		{Label: "1/2 mi", TargetDistance: 804.6720},
+		{Label: "1 km", TargetDistance: 1000.0000},
+		{Label: "1 mi", TargetDistance: 1609.3440},
+		{Label: "2 mi", TargetDistance: 3218.6880},
 		{Label: "5 km", TargetDistance: 5000.0000},
 		{Label: "10 km", TargetDistance: 10000.0000},
+		{Label: "15 km", TargetDistance: 15000.0000},
+		{Label: "10 mi", TargetDistance: 16093.4400},
+		{Label: "20 km", TargetDistance: 20000.0000},
 		{Label: "Half Marathon", TargetDistance: 21097.5000},
+		{Label: "30 km", TargetDistance: 30000.0000},
 		{Label: "Marathon", TargetDistance: 42195.0000},
 	},
 	WorkoutTypeCycling: {
@@ -19,11 +28,16 @@ var defaultDistanceRecordTargets = map[WorkoutType][]DistanceRecordTarget{
 		{Label: "10 km", TargetDistance: 10000.0000},
 		{Label: "10 mi", TargetDistance: 16093.4400},
 		{Label: "20 km", TargetDistance: 20000.0000},
+		{Label: "30 km", TargetDistance: 30000.0000},
+		{Label: "40 km", TargetDistance: 40000.0000},
 		{Label: "50 km", TargetDistance: 50000.0000},
+		{Label: "80 km", TargetDistance: 80000.0000},
 		{Label: "50 mi", TargetDistance: 80467.2000},
 		{Label: "75 km", TargetDistance: 75000.0000},
+		{Label: "90 km", TargetDistance: 90000.0000},
 		{Label: "100 km", TargetDistance: 100000.0000},
 		{Label: "100 mi", TargetDistance: 160934.4000},
+		{Label: "180 km", TargetDistance: 180000.0000},
 	},
 	WorkoutTypeECycling: {
 		{Label: "5 mi", TargetDistance: 8046.7200},
