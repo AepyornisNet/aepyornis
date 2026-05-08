@@ -1,0 +1,91 @@
+version: "2"
+
+run:
+  modules-download-mode: readonly
+
+linters:
+  default: all
+  disable:
+    - depguard
+    - dupl
+    - exhaustruct
+    - ireturn
+    - nolintlint
+    - paralleltest
+    - testpackage
+    - tparallel
+    - wrapcheck
+    - zerologlint
+    - goconst
+    - noinlineerr
+    # deprecated
+    - wsl
+  settings:
+    cyclop:
+      max-complexity: 11
+    exhaustive:
+      default-signifies-exhaustive: true
+      ignore-enum-members: POT.+
+    funlen:
+      lines: 80
+    mnd:
+      ignored-functions:
+        - ^make
+        - ^math\.
+        - ^time\.*
+    tagliatelle:
+      case:
+        rules:
+          json: snake
+          yaml: snake
+    varnamelen:
+      min-name-length: 2
+      ignore-names:
+        - err
+      ignore-type-assert-ok: true
+      ignore-map-index-ok: true
+      ignore-chan-recv-ok: true
+      ignore-decls:
+        - t testing.T
+        - i int
+        - T any
+        - m map[string]int
+        - w http.ResponseWriter
+        - r *http.Request
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - canonicalheader
+          - cyclop
+          - err113
+          - errcheck
+          - forcetypeassert
+          - funlen
+          - gocognit
+          - iface
+          - lll
+          - maintidx
+          - mnd
+          - goconst
+          - varnamelen
+        path: (.+)_test\.go
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/dadrus/httpsig)
+

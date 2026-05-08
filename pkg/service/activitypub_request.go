@@ -10,20 +10,26 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/samber/do/v2"
+	"gorm.io/gorm"
 )
 
 type ActivityPubRequestService interface {
 	HTTPClient() *http.Client
 	SendSignedActivity(ctx context.Context, keyID, privateKeyPEM, inbox string, payload []byte) error
+	VerifyRequest(req *http.Request) (*aputil.RequestActor, error)
 }
 
 type activityPubRequestService struct {
 	client *http.Client
+	db     *gorm.DB
 }
 
-func NewActivityPubRequestService(do.Injector) (ActivityPubRequestService, error) {
+func NewActivityPubRequestService(injector do.Injector) (ActivityPubRequestService, error) {
+	db, _ := do.Invoke[*gorm.DB](injector)
+
 	return &activityPubRequestService{
 		client: &http.Client{Transport: http.DefaultTransport},
+		db:     db,
 	}, nil
 }
 
@@ -59,4 +65,8 @@ func (s *activityPubRequestService) SendSignedActivity(ctx context.Context, keyI
 	}
 
 	return nil
+}
+
+func (s *activityPubRequestService) VerifyRequest(req *http.Request) (*aputil.RequestActor, error) {
+	return aputil.VerifyRequest(req, &activityPubRequestKeyResolver{db: s.db})
 }

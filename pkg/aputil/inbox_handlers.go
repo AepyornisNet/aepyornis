@@ -268,44 +268,6 @@ func extractFollowLifecycleTarget(it *vocab.Activity) string {
 	return targetIRI
 }
 
-func isUndoFollowActivity(it *vocab.Activity) bool {
-	if it == nil || !vocab.UndoType.Match(it.GetType()) {
-		return false
-	}
-
-	isFollow := false
-	if err := vocab.OnActivity(it.Object, func(object *vocab.Activity) error {
-		if vocab.FollowType.Match(object.GetType()) {
-			isFollow = true
-		}
-
-		return nil
-	}); err != nil {
-		return false
-	}
-
-	return isFollow
-}
-
-func isUndoLikeActivity(it *vocab.Activity) bool {
-	if it == nil || !vocab.UndoType.Match(it.GetType()) {
-		return false
-	}
-
-	isLike := false
-	if err := vocab.OnActivity(it.Object, func(object *vocab.Activity) error {
-		if vocab.LikeType.Match(object.GetType()) {
-			isLike = true
-		}
-
-		return nil
-	}); err != nil {
-		return false
-	}
-
-	return isLike
-}
-
 func activityObjectIRI(it *vocab.Activity) string {
 	if it == nil || vocab.IsNil(it.Object) {
 		return ""

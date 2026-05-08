@@ -51,6 +51,10 @@ func (s *activityPubActorService) ActorURL(profile *model.Profile) (string, erro
 		return "", errors.New("profile username is empty")
 	}
 
+	if profile.URL != nil && strings.TrimSpace(*profile.URL) != "" {
+		return *profile.URL, nil
+	}
+
 	if profile.Domain != nil && strings.TrimSpace(*profile.Domain) != "" {
 		return fmt.Sprintf("https://%s/ap/users/%s", strings.TrimSpace(*profile.Domain), username), nil
 	}

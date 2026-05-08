@@ -12,13 +12,16 @@ require (
 	github.com/biter777/countries v1.7.5
 	github.com/cat-dealer/go-rand/v2 v2.0.0
 	github.com/codingsince1985/geo-golang v1.8.5
+	github.com/dadrus/httpsig v0.0.0-20260508102901-1bbd17383c65
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
+	github.com/dunglas/httpsfv v1.1.0
 	github.com/flopp/go-staticmaps v0.0.0-20250629121348-973b17999e19
 	github.com/fsouza/slognil v0.4.3
 	github.com/galeone/tcx v1.0.1-0.20230114151622-8168e1e47884
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-ap/activitypub v0.0.0-20260208110334-902f6cf8c2cc
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
+	github.com/go-fed/httpsig v1.1.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang/geo v0.0.0-20260129164528-943061e2742c
 	github.com/google/go-querystring v1.2.0
