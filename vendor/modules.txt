@@ -42,8 +42,8 @@ github.com/cespare/xxhash/v2
 ## explicit; go 1.18
 github.com/clipperhouse/uax29/v2/graphemes
 github.com/clipperhouse/uax29/v2/internal/iterators
-# github.com/codingsince1985/geo-golang v1.8.5
-## explicit; go 1.24.1
+# github.com/codingsince1985/geo-golang v1.9.0
+## explicit; go 1.26.2
 github.com/codingsince1985/geo-golang
 # github.com/dadrus/httpsig v0.0.0-20260508102901-1bbd17383c65
 ## explicit; go 1.24.13
@@ -207,12 +207,12 @@ github.com/jinzhu/now
 # github.com/labstack/echo-jwt/v4 v4.4.0
 ## explicit; go 1.24.0
 github.com/labstack/echo-jwt/v4
-# github.com/labstack/echo/v4 v4.15.1
-## explicit; go 1.24.0
+# github.com/labstack/echo/v4 v4.15.2
+## explicit; go 1.25.0
 github.com/labstack/echo/v4
 github.com/labstack/echo/v4/middleware
-# github.com/labstack/gommon v0.4.2
-## explicit; go 1.18
+# github.com/labstack/gommon v0.5.0
+## explicit; go 1.23.0
 github.com/labstack/gommon/bytes
 github.com/labstack/gommon/color
 github.com/labstack/gommon/log
@@ -222,7 +222,7 @@ github.com/lmittmann/tint
 # github.com/mattn/go-colorable v0.1.14
 ## explicit; go 1.18
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.21
+# github.com/mattn/go-isatty v0.0.22
 ## explicit; go 1.21
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.19
@@ -235,10 +235,7 @@ github.com/mazznoer/csscolorparser
 ## explicit; go 1.19
 github.com/microcosm-cc/bluemonday
 github.com/microcosm-cc/bluemonday/css
-# github.com/mitchellh/mapstructure v1.5.0
-## explicit; go 1.14
-github.com/mitchellh/mapstructure
-# github.com/muktihari/fit v0.27.3
+# github.com/muktihari/fit v0.28.0
 ## explicit; go 1.25.0
 github.com/muktihari/fit/decoder
 github.com/muktihari/fit/encoder
@@ -271,8 +268,6 @@ github.com/orandin/slog-gorm
 github.com/paulmach/orb
 github.com/paulmach/orb/geojson
 github.com/paulmach/orb/internal/length
-github.com/paulmach/orb/internal/mercator
-github.com/paulmach/orb/maptile
 github.com/paulmach/orb/planar
 github.com/paulmach/orb/simplify
 # github.com/pelletier/go-toml/v2 v2.2.4
@@ -292,16 +287,20 @@ github.com/pmezard/go-difflib/difflib
 # github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec
 ## explicit; go 1.12
 github.com/remyoudompheng/bigfft
-# github.com/ringsaturn/tzf v1.0.4
-## explicit; go 1.25
+# github.com/ringsaturn/tzf v1.2.1
+## explicit; go 1.25.0
 github.com/ringsaturn/tzf
 github.com/ringsaturn/tzf/convert
 github.com/ringsaturn/tzf/gen/go/tzf/v1
+github.com/ringsaturn/tzf/internal/geom
+github.com/ringsaturn/tzf/internal/gridindex
 github.com/ringsaturn/tzf/internal/maps
+github.com/ringsaturn/tzf/internal/polyline
+github.com/ringsaturn/tzf/internal/topology
 github.com/ringsaturn/tzf/reduce
-# github.com/ringsaturn/tzf-rel-lite v0.0.2026-a
-## explicit; go 1.24
-github.com/ringsaturn/tzf-rel-lite
+# github.com/ringsaturn/tzf-dist v0.0.2026-b-fix1
+## explicit; go 1.25.0
+github.com/ringsaturn/tzf-dist
 # github.com/sagikazarmark/locafero v0.12.0
 ## explicit; go 1.23.0
 github.com/sagikazarmark/locafero
@@ -320,7 +319,7 @@ github.com/samber/lo/internal/constraints
 github.com/samber/lo/internal/xrand
 github.com/samber/lo/internal/xtime
 github.com/samber/lo/mutable
-# github.com/samber/slog-echo v1.21.0
+# github.com/samber/slog-echo v1.23.0
 ## explicit; go 1.21
 github.com/samber/slog-echo
 # github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
@@ -366,18 +365,12 @@ github.com/swaggo/swag
 # github.com/tidwall/geoindex v1.7.0
 ## explicit; go 1.15
 github.com/tidwall/geoindex/child
-# github.com/tidwall/geojson v1.4.6
-## explicit; go 1.15
-github.com/tidwall/geojson/geometry
 # github.com/tidwall/rtree v1.10.0
 ## explicit; go 1.18
 github.com/tidwall/rtree
 # github.com/tkrajina/gpxgo v1.4.0 => github.com/jovandeginste/gpxgo v1.4.1-0.20250629150855-db85929d31f6
 ## explicit; go 1.16
 github.com/tkrajina/gpxgo/gpx
-# github.com/twpayne/go-polyline v1.1.1
-## explicit; go 1.16
-github.com/twpayne/go-polyline
 # github.com/valyala/bytebufferpool v1.0.0
 ## explicit
 github.com/valyala/bytebufferpool
@@ -395,8 +388,8 @@ github.com/vgarvardt/backoff/internal/grpcrand
 # github.com/vgarvardt/gue/v6 v6.0.0
 ## explicit; go 1.24.0
 github.com/vgarvardt/gue/v6
-# github.com/westphae/geomag v1.0.2
-## explicit; go 1.13
+# github.com/westphae/geomag v1.2025.5
+## explicit; go 1.22
 github.com/westphae/geomag/pkg/egm96
 # go.mongodb.org/mongo-driver/v2 v2.5.0
 ## explicit; go 1.19
@@ -426,7 +419,7 @@ go.opentelemetry.io/otel/trace/noop
 # go.yaml.in/yaml/v3 v3.0.4
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/crypto v0.50.0
+# golang.org/x/crypto v0.51.0
 ## explicit; go 1.25.0
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
@@ -453,12 +446,12 @@ golang.org/x/image/font
 golang.org/x/image/font/basicfont
 golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
-# golang.org/x/mod v0.34.0
+# golang.org/x/mod v0.35.0
 ## explicit; go 1.25.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.52.0
+# golang.org/x/net v0.53.0
 ## explicit; go 1.25.0
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -481,16 +474,16 @@ golang.org/x/oauth2/internal
 ## explicit; go 1.25.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.43.0
+# golang.org/x/sys v0.44.0
 ## explicit; go 1.25.0
 golang.org/x/sys/cpu
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.42.0
+# golang.org/x/term v0.43.0
 ## explicit; go 1.25.0
 golang.org/x/term
-# golang.org/x/text v0.36.0
+# golang.org/x/text v0.37.0
 ## explicit; go 1.25.0
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -516,10 +509,10 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
-# golang.org/x/time v0.14.0
-## explicit; go 1.24.0
+# golang.org/x/time v0.15.0
+## explicit; go 1.25.0
 golang.org/x/time/rate
-# golang.org/x/tools v0.43.0
+# golang.org/x/tools v0.44.0
 ## explicit; go 1.25.0
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/buildutil
@@ -533,7 +526,6 @@ golang.org/x/tools/internal/event/label
 golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
-golang.org/x/tools/internal/modindex
 golang.org/x/tools/internal/stdlib
 # google.golang.org/protobuf v1.36.11
 ## explicit; go 1.23
