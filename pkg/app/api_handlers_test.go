@@ -54,7 +54,7 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 
 		req.Header.Set("Authorization", "Bearer my-api-key")
 
-		res, err := client.Do(req) //nolint:gosec
+		res, err := client.Do(req)
 		require.NoError(t, err)
 
 		if res != nil {
@@ -78,7 +78,7 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 
 		req.Header.Set("Authorization", "Bearer wrong-api-key")
 
-		res, err := client.Do(req) //nolint:gosec
+		res, err := client.Do(req)
 		require.NoError(t, err)
 
 		if res != nil {
@@ -98,7 +98,7 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 		req, err := http.NewRequest(http.MethodGet, url+"?api-key=my-api-key", nil)
 		require.NoError(t, err)
 
-		res, err := client.Do(req) //nolint:gosec
+		res, err := client.Do(req)
 		require.NoError(t, err)
 
 		if res != nil {
@@ -120,7 +120,7 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 		req, err := http.NewRequest(http.MethodGet, url+"?api-key=wrong-api-key", nil)
 		require.NoError(t, err)
 
-		res, err := client.Do(req) //nolint:gosec
+		res, err := client.Do(req)
 		require.NoError(t, err)
 
 		if res != nil {
@@ -147,9 +147,15 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		require.NoError(t, err)
-		req.AddCookie(&http.Cookie{Name: "token", Value: tokenString})
+		req.AddCookie(&http.Cookie{
+			Name:     "token",
+			Value:    tokenString,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
 
-		res, err := client.Do(req) //nolint:gosec
+		res, err := client.Do(req)
 		require.NoError(t, err)
 
 		if res != nil {

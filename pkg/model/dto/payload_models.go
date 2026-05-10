@@ -265,13 +265,13 @@ func setIfNotNil[T any](dst *T, src *T) {
 
 type SigninRequest struct {
 	Email    string `json:"email" form:"email"`
-	Password string `json:"password" form:"password"` //nolint:gosec
+	Password string `json:"password" form:"password"`
 }
 
 type RegisterRequest struct {
 	Email    string `json:"email" form:"email"`
 	Username string `json:"username,omitempty" form:"username"`
-	Password string `json:"password" form:"password"` //nolint:gosec
+	Password string `json:"password" form:"password"`
 	Name     string `json:"name" form:"name"`
 	Language string `json:"language,omitempty" form:"language"`
 }
@@ -282,7 +282,7 @@ type AdminUserUpdateData struct {
 	Username string `json:"username,omitempty"`
 	Admin    bool   `json:"admin"`
 	Active   bool   `json:"active"`
-	Password string `json:"password,omitempty"` //nolint:gosec
+	Password string `json:"password,omitempty"`
 }
 
 type ProfileUpdateData struct {

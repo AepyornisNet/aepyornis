@@ -12,7 +12,7 @@ import (
 )
 
 type WorkoutConfig struct {
-	URL, APIKey string //nolint:gosec
+	URL, APIKey string
 
 	syncWeight, syncHeight    bool
 	syncSteps, syncActivities bool

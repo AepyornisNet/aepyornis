@@ -21,7 +21,7 @@ func (c actorHTTPClient) CtxGet(ctx context.Context, uri string) (*http.Response
 	}
 	req.Header.Set("Accept", ContentType)
 
-	return c.client.Do(req) //nolint:gosec
+	return c.client.Do(req)
 }
 
 func (c actorHTTPClient) LoadActor(ctx context.Context, actorIRI string) (*vocab.Actor, error) {

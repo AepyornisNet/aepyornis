@@ -205,24 +205,6 @@ func (h *InboxActivityHandler) handleUndoLikeActivity(requestingActor *vocab.Act
 	return h.workoutLikeRepo.UnlikeByActorIRI(workoutID, requestingActor.ID.String())
 }
 
-func actorInboxIRI(actor *vocab.Actor) string {
-	if actor == nil || vocab.IsNil(actor.Inbox) {
-		return ""
-	}
-
-	if vocab.IsIRI(actor.Inbox) {
-		return actor.Inbox.GetLink().String()
-	}
-
-	iri := ""
-	_ = vocab.OnLink(actor.Inbox, func(link *vocab.Link) error {
-		iri = link.Href.String()
-		return nil
-	})
-
-	return iri
-}
-
 func actorIRIFromItem(item vocab.Item) string {
 	if vocab.IsNil(item) {
 		return ""

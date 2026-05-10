@@ -379,7 +379,7 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[any]
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /workouts/{id}/replies [get]
-func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
+func (wc *workoutController) GetWorkoutReplies(c echo.Context) error { //nolint:gocyclo
 	workout, err := wc.getReadableWorkout(c, false)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -566,7 +566,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
+func (wc *workoutController) likeLocalWorkout(_ echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
 	workout, err := wc.workoutRepo.GetByIDForRead(localWorkoutID, false)
 	if err != nil {
 		return nil, http.StatusNotFound, err
@@ -919,7 +919,7 @@ func (wc *workoutController) CreateWorkout(c echo.Context) error {
 	return wc.createWorkoutManual(c, user)
 }
 
-func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.User) error {
+func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.User) error { //nolint:gocyclo
 	form, err := c.MultipartForm()
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)

@@ -321,7 +321,7 @@ func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 }
 
 func buildRepliesCollectionPayload(replies []model.APStatus, repliesID string) ([]byte, error) {
-	items := vocab.ItemCollection{}
+	items := make(vocab.ItemCollection, 0, len(replies))
 	for _, r := range replies {
 		items = append(items, vocab.IRI(r.ObjectID))
 	}
@@ -348,7 +348,7 @@ func buildRepliesPagePayload(replies []model.APStatus, repliesID string, page in
 	}
 
 	pageReplies := replies[offset:endOffset]
-	items := vocab.ItemCollection{}
+	items := make(vocab.ItemCollection, 0, len(pageReplies))
 	for _, r := range pageReplies {
 		items = append(items, vocab.IRI(r.ObjectID))
 	}

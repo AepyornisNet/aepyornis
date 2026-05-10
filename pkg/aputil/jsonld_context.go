@@ -56,10 +56,11 @@ var workoutExtensionTerms = []string{
 }
 
 func WorkoutJSONLDContext() jsonld.Context {
-	ctx := jsonld.Context{
-		{Term: jsonld.NilTerm, IRI: jsonld.IRI(vocab.ActivityBaseURI)},
-		{Term: jsonld.Term(aepyPrefix), IRI: jsonld.IRI(AEPYNamespaceURL)},
-	}
+	ctx := make(jsonld.Context, 0, 2+len(workoutExtensionTerms))
+	ctx = append(ctx,
+		jsonld.ContextElement{Term: jsonld.NilTerm, IRI: jsonld.IRI(vocab.ActivityBaseURI)},
+		jsonld.ContextElement{Term: jsonld.Term(aepyPrefix), IRI: jsonld.IRI(AEPYNamespaceURL)},
+	)
 
 	for _, term := range workoutExtensionTerms {
 		ctx = append(ctx, jsonld.ContextElement{Term: jsonld.Term(term), IRI: jsonld.IRI(aepyPrefix + ":" + term)})
