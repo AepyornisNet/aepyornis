@@ -231,7 +231,10 @@
                   <li ngbNavItem>
                     <button ngbNavLink>{{ 'Records' | translate }}</button>
                     <ng-template ngbNavContent>
-                      <app-workout-records [records]="dataService.workout()!.interval_bests!" />
+                      <app-workout-records
+                        [records]="dataService.workout()!.interval_bests!"
+                        [workoutType]="dataService.workout()!.type!"
+                      />
                     </ng-template>
                   </li>
                 }
