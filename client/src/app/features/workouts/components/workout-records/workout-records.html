@@ -18,7 +18,7 @@
           <td>
             <div class="fw-semibold">{{ record.label }}</div>
             <div class="text-muted small">
-              {{ record.distance || record.target_distance | formatDistance }}
+              {{ record.target_distance | formatDistance }}
             </div>
           </td>
           <td class="text-end font-monospace">{{ record.duration_seconds | formatDuration }}</td>
