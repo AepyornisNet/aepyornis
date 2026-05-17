@@ -1068,7 +1068,6 @@ func init() {
 	// Gets overwritten in converters module
 	if WorkoutParser == nil {
 		WorkoutParser = func(filename string, content []byte) ([]*Workout, error) {
-			fmt.Println("I should not be here")
 			return nil, nil
 		}
 	}
