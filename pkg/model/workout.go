@@ -750,7 +750,14 @@ func (w *Workout) setData(updated *Workout) {
 	}
 
 	if w.Data != nil {
+		data.ID = w.Data.ID
+		data.CreatedAt = w.Data.CreatedAt
+		data.WorkoutID = w.ID
 		data.Address = w.Data.Address
+		w.Data = data
+	} else if data != nil {
+		w.Data = data
+		w.Data.WorkoutID = w.ID
 	}
 
 	w.Records = append([]WorkoutRecord(nil), records...)
