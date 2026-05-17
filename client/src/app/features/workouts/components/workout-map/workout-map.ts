@@ -68,7 +68,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   private maxElevation = 0;
 
   public readonly filteredMapData = computed<MapDataDetails | undefined>(() => {
-    const mapData = this.mapData();
+    const mapData = structuredClone(this.mapData());
     if (!mapData) {
       return;
     }
