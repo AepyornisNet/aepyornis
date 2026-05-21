@@ -3,7 +3,7 @@ import { getWorkoutTypeConfig } from '../types/workout-types';
 import { User } from '../services/user';
 import {
   metersPerMinuteToMinutePerMile,
-  metersPerSecondTokilometersPerHour,
+  metersPerSecondToKilometersPerHour,
   metersPerSecondToMilesPerHour,
 } from '../config/units';
 @Pipe({
@@ -37,7 +37,7 @@ export class FormatSpeedPipe implements PipeTransform {
     }
 
     if (!units || units.speed === 'km/h') {
-      return `${(metersPerSecond * metersPerSecondTokilometersPerHour).toFixed(2)} km/h`;
+      return `${(metersPerSecond * metersPerSecondToKilometersPerHour).toFixed(2)} km/h`;
     }
 
     return `${(metersPerSecond * metersPerSecondToMilesPerHour).toFixed(2)} mph`;
