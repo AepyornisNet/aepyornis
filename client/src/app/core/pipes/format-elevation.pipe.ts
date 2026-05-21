@@ -1,5 +1,6 @@
 import { inject, Pipe, PipeTransform } from '@angular/core';
 import { User } from '../services/user';
+import { metersToFeet } from '../config/units';
 @Pipe({
   name: 'formatElevation',
 })
@@ -16,6 +17,6 @@ export class FormatElevationPipe implements PipeTransform {
       return `${meters.toFixed(0)} m`;
     }
 
-    return `${(meters * 3.28084).toFixed(0)} ft`;
+    return `${(meters * metersToFeet).toFixed(0)} ft`;
   }
 }

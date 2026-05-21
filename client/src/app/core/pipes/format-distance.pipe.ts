@@ -1,5 +1,6 @@
 import { inject, Pipe, PipeTransform } from '@angular/core';
 import { User } from '../services/user';
+import { metersToMiles } from '../config/units';
 @Pipe({
   name: 'formatDistance',
 })
@@ -17,6 +18,6 @@ export class FormatDistancePipe implements PipeTransform {
       return `${(meters / 1000).toFixed(2)} km`;
     }
 
-    return `${(meters * 0.000621371).toFixed(2)} mi`;
+    return `${(meters * metersToMiles).toFixed(2)} mi`;
   }
 }

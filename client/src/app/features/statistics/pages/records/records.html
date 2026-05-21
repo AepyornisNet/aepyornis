@@ -107,7 +107,7 @@
                     <th>{{ 'Distance' | translate }}</th>
                     <th>{{ 'Duration' | translate }}</th>
                     <th>{{ 'Average speed' | translate }}</th>
-                    <th>{{ 'Covered' | translate }}</th>
+                    <th>{{ 'Distance' | translate }}</th>
                     <th class="text-end">{{ 'Workout' | translate }}</th>
                   </tr>
                 </thead>
@@ -123,7 +123,7 @@
                       </td>
                       <td>{{ dr.duration_seconds | formatDuration }}</td>
                       <td>{{ dr.average_speed | formatSpeed: record.workout_type }}</td>
-                      <td>{{ dr.distance | formatDistance }}</td>
+                      <td>{{ dr.target_distance | formatDistance }}</td>
                       <td class="text-end">
                         <a [routerLink]="['/workouts', dr.workout_id]">{{
                           dr.date | formatDate

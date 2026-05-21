@@ -1,6 +1,11 @@
 import { inject, Pipe, PipeTransform } from '@angular/core';
 import { getWorkoutTypeConfig } from '../types/workout-types';
 import { User } from '../services/user';
+import {
+  metersPerMinuteToMinutePerMile,
+  metersPerSecondTokilometersPerHour,
+  metersPerSecondToMilesPerHour,
+} from '../config/units';
 @Pipe({
   name: 'formatSpeed',
 })
@@ -23,7 +28,7 @@ export class FormatSpeedPipe implements PipeTransform {
         pace = 1000 / metersPerMinute;
         pace_unit = `km`;
       } else {
-        pace = 1609.344 / metersPerMinute;
+        pace = metersPerMinuteToMinutePerMile / metersPerMinute;
         pace_unit = `mi`;
       }
       const minutes = Math.floor(pace);
@@ -32,9 +37,9 @@ export class FormatSpeedPipe implements PipeTransform {
     }
 
     if (!units || units.speed === 'km/h') {
-      return `${(metersPerSecond * 3.6).toFixed(2)} km/h`;
+      return `${(metersPerSecond * metersPerSecondTokilometersPerHour).toFixed(2)} km/h`;
     }
 
-    return `${(metersPerSecond * 2.23694).toFixed(2)} mph`;
+    return `${(metersPerSecond * metersPerSecondToMilesPerHour).toFixed(2)} mph`;
   }
 }
