@@ -157,37 +157,6 @@ export class WorkoutDetailDataService {
     this.error.set(null);
   }
 
-  // Formatting utilities
-  public formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleString();
-  }
-
-  public formatDistance(distance: number): string {
-    return (distance / 1000).toFixed(2);
-  }
-
-  public formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
-    }
-    return `${secs}s`;
-  }
-
-  public formatElevation(elevation: number): string {
-    return elevation.toFixed(1);
-  }
-
-  public formatSpeed(speed: number): string {
-    return (speed * 3.6).toFixed(2); // Convert m/s to km/h
-  }
-
   private hasNonZeroSeries(values: (number | null | undefined)[] | undefined): boolean {
     if (!Array.isArray(values)) {
       return false;

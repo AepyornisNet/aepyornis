@@ -35,6 +35,10 @@ import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
 import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
+import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 
 @Component({
   selector: 'app-workout-detail',
@@ -59,6 +63,9 @@ import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
     WorkoutCommentsComponent,
     TranslatePipe,
     FormatSpeedPipe,
+    FormatDatePipe,
+    FormatDurationPipe,
+    FormatDistancePipe,
   ],
   templateUrl: './workout-detail.html',
   styleUrl: './workout-detail.scss',

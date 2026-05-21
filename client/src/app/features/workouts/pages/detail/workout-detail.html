@@ -46,7 +46,7 @@
             <div class="stat-card">
               <div class="stat-label">{{ 'Distance' | translate }}</div>
               <div class="stat-value">
-                {{ dataService.formatDistance(dataService.workout()!.total_distance!) }} km
+                {{ dataService.workout()!.total_distance! | formatDistance }} km
               </div>
             </div>
           }
@@ -55,7 +55,7 @@
             <div class="stat-card">
               <div class="stat-label">{{ 'Duration' | translate }}</div>
               <div class="stat-value">
-                {{ dataService.formatDuration(dataService.workout()!.total_duration!) }}
+                {{ dataService.workout()!.total_duration! | formatDuration }}
               </div>
             </div>
           }
@@ -269,7 +269,7 @@
               }
 
               <dt class="col-sm-3">{{ 'Date' | translate }}</dt>
-              <dd class="col-sm-9">{{ dataService.formatDate(dataService.workout()!.date) }}</dd>
+              <dd class="col-sm-9">{{ dataService.workout()!.date | formatDate }}</dd>
 
               @if (dataService.workout()!.address_string) {
                 <dt class="col-sm-3">{{ 'Location' | translate }}</dt>
