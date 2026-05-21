@@ -36,7 +36,6 @@ import { WorkoutPerformanceCurveComponent } from '../../components/workout-perfo
 import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
-import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 
