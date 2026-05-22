@@ -1,5 +1,10 @@
 <div class="d-flex flex-row min-vh-100">
-  <app-sidebar [isOpen]="sidebarOpen()" (sidebarToggle)="toggleSidebar()" />
+  <app-sidebar
+    [isOpen]="sidebarOpen()"
+    [mobileSidebarVisible]="mobileSidebarVisible()"
+    (click)="toggleMobileSidebar()"
+    (sidebarToggle)="toggleSidebar()"
+  />
 
   <div class="app-content">
     <app-header

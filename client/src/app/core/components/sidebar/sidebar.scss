@@ -13,10 +13,6 @@ aside {
   padding: 3px 0;
 }
 
-.nav-link.is-open {
-  display: flex;
-}
-
 @media (max-width: 575.98px) {
   aside {
     position: fixed;
@@ -29,5 +25,39 @@ aside {
     overflow-x: hidden;
     overflow-y: auto;
     max-height: calc(100vh - 100px);
+
+    &.is-hidden {
+      display: none;
+    }
+  }
+
+  .nav-item-icon {
+    margin-right: 1rem !important;
+  }
+}
+
+@media (min-width: 575.98px) {
+  aside {
+    width: 4.5rem;
+
+    &.is-open {
+      width: 250px;
+    }
+  }
+
+  .sidabar-brand-name.is-hidden {
+    display: none;
+  }
+
+  .nav.is-hidden {
+    text-align: center !important;
+  }
+
+  .nav-link.is-open {
+    display: flex;
+  }
+
+  .nav-item-label.is-hidden {
+    display: none;
   }
 }

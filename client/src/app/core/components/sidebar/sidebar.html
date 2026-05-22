@@ -1,18 +1,20 @@
 <aside
   class="d-sm-flex flex-column flex-shrink-0 bg-body-tertiary sticky-top"
-  [class.d-none]="!isOpen()"
-  [style.width]="isOpen() ? '250px' : '4.5rem'"
+  [class.is-hidden]="!mobileSidebarVisible()"
+  [class.is-open]="isOpen()"
 >
   <div class="sidebar-brand d-flex flex-row align-items-center justify-content-center text-dark">
     <img alt="Logo" height="44" src="logo.svg" />
-    <span class="ps-3" [class.visually-hidden]="!isOpen()">{{ 'Aepyornis' | translate }}</span>
+    <span class="ps-3 sidabar-brand-name" [class.is-hidden]="!isOpen()">{{
+      'Aepyornis' | translate
+    }}</span>
   </div>
 
   <div class="overflow-y-auto">
     <ul
       class="nav nav-pills flex-column mb-auto"
+      [class.is-hidden]="!isOpen()"
       [class.nav-flush]="!isOpen()"
-      [class.text-center]="!isOpen()"
     >
       @for (item of menuItems(); track item.route) {
         <li class="nav-item">
@@ -47,7 +49,9 @@
               [class.me-3]="isOpen()"
               [name]="item.iconKey"
             />
-            <span [class.visually-hidden]="!isOpen()">{{ item.label | translate }}</span>
+            <span class="nav-item-label" [class.is-hidden]="!isOpen()">{{
+              item.label | translate
+            }}</span>
           </a>
         </li>
       }

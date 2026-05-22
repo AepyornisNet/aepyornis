@@ -26,6 +26,7 @@ export class Sidebar {
   private userService = inject(User);
 
   public readonly isOpen = input<boolean>(false);
+  public readonly mobileSidebarVisible = input<boolean>(false);
   public readonly sidebarToggle = output<void>();
 
   public allMenuItems: MenuItem[] = [
