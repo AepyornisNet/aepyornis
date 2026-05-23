@@ -42,7 +42,7 @@ aside {
       width: 250px;
     }
 
-    &.is-hidden {
+    &:not(.is-open) {
       .sidebar-brand-name {
         display: none;
       }
