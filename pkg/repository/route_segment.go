@@ -28,7 +28,7 @@ func NewRouteSegment(injector do.Injector) (RouteSegment, error) {
 
 func (r *routeSegmentRepository) GetByID(id uint64) (*model.RouteSegment, error) {
 	var routeSegment model.RouteSegment
-	if err := r.db.Preload("RouteSegmentMatches.Workout.User").First(&routeSegment, id).Error; err != nil {
+	if err := r.db.Preload("RouteSegmentMatches.Workout.Profile").First(&routeSegment, id).Error; err != nil {
 		return nil, err
 	}
 
