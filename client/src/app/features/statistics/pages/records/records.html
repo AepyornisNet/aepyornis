@@ -44,9 +44,9 @@
                   <div class="label">{{ 'Longest' | translate }}</div>
                   <div class="value">
                     @if (record.distance) {
-                      {{ formatDistance(record.distance.value) }}
+                      {{ record.distance.value | formatDistance }}
                       <a class="ms-2" [routerLink]="['/workouts', record.distance.workout_id]"
-                        >{{ formatDate(record.distance.date) }}
+                        >{{ record.distance.date | formatDate }}
                       </a>
                     } @else {
                       —
@@ -60,9 +60,9 @@
                   <div class="label">{{ 'Elevation gain' | translate }}</div>
                   <div class="value">
                     @if (record.total_up) {
-                      {{ formatElevation(record.total_up.value) }}
+                      {{ record.total_up.value | formatElevation }}
                       <a class="ms-2" [routerLink]="['/workouts', record.total_up.workout_id]"
-                        >{{ formatDate(record.total_up.date) }}
+                        >{{ record.total_up.date | formatDate }}
                       </a>
                     } @else {
                       —
@@ -76,16 +76,16 @@
                   <div>
                     <div class="label">{{ 'Biggest climb' | translate }}</div>
                     <div class="value">
-                      {{ formatElevation(record.biggest_climb.elevation_gain) }}
+                      {{ record.biggest_climb.elevation_gain | formatElevation }}
                       <span class="text-muted ms-2">
-                        {{ formatDistance(record.biggest_climb.distance) }}
+                        {{ record.biggest_climb.distance | formatDistance }}
                         ·
                         {{ (record.biggest_climb.average_slope * 100).toFixed(1) }}%
                       </span>
                       <a
                         class="ms-2"
                         [routerLink]="['/workouts', record.biggest_climb.workout_id]"
-                        >{{ formatDate(record.biggest_climb.date) }}</a
+                        >{{ record.biggest_climb.date | formatDate }}</a
                       >
                     </div>
                     <div class="stat-link">
@@ -107,7 +107,7 @@
                     <th>{{ 'Distance' | translate }}</th>
                     <th>{{ 'Duration' | translate }}</th>
                     <th>{{ 'Average speed' | translate }}</th>
-                    <th>{{ 'Covered' | translate }}</th>
+                    <th>{{ 'Distance' | translate }}</th>
                     <th class="text-end">{{ 'Workout' | translate }}</th>
                   </tr>
                 </thead>
@@ -121,11 +121,13 @@
                           >{{ dr.label }}</a
                         >
                       </td>
-                      <td>{{ formatDuration(dr.duration_seconds) }}</td>
-                      <td>{{ formatSpeed(dr.average_speed) }}</td>
-                      <td>{{ formatDistance(dr.distance) }}</td>
+                      <td>{{ dr.duration_seconds | formatDuration }}</td>
+                      <td>{{ dr.average_speed | formatSpeed: record.workout_type }}</td>
+                      <td>{{ dr.target_distance | formatDistance }}</td>
                       <td class="text-end">
-                        <a [routerLink]="['/workouts', dr.workout_id]">{{ formatDate(dr.date) }}</a>
+                        <a [routerLink]="['/workouts', dr.workout_id]">{{
+                          dr.date | formatDate
+                        }}</a>
                       </td>
                     </tr>
                   }

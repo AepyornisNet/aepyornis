@@ -1,5 +1,7 @@
+@use 'common.scss' as *;
+
 .profile-nav-card {
-  @media (min-width: 992px) {
+  @include media-breakpoint-up(lg) {
     position: sticky;
     top: 1rem;
   }

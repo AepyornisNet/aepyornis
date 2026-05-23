@@ -37,6 +37,9 @@
               },
               "src/assets"
             ],
+            "stylePreprocessorOptions": {
+              "includePaths": ["src/styles"]
+            },
             "styles": [
               "src/styles.scss",
               "node_modules/maplibre-theme/icons.default.css",

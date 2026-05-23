@@ -11,7 +11,7 @@ WORKDIR /app/client
 EXPOSE 4200
 ENTRYPOINT ["npm", "run", "start"]
 
-FROM golang:1.25.1-alpine AS dev-backend
+FROM golang:1.26.2-alpine AS dev-backend
 ARG BUILD_TIME
 ARG GIT_COMMIT
 ARG GIT_REF

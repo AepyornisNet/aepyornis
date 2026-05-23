@@ -67,9 +67,58 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   private minElevation = 0;
   private maxElevation = 0;
 
+  public readonly filteredMapData = computed<MapDataDetails | undefined>(() => {
+    const mapData = structuredClone(this.mapData());
+    if (!mapData) {
+      return;
+    }
+
+    mapData.position = mapData.position.filter((p, idx) => {
+      if (p[0] !== 0 || p[1] !== 0) {
+        return true;
+      }
+
+      if (mapData.time) {
+        mapData.time.splice(idx, 1);
+      }
+
+      if (mapData.distance) {
+        mapData.distance.splice(idx, 1);
+      }
+
+      if (mapData.duration) {
+        mapData.duration.splice(idx, 1);
+      }
+
+      if (mapData.elevation) {
+        mapData.elevation.splice(idx, 1);
+      }
+
+      if (mapData.slope) {
+        mapData.slope.splice(idx, 1);
+      }
+
+      if (mapData.speed) {
+        mapData.speed.splice(idx, 1);
+      }
+
+      if (mapData.extra_metrics?.['power']) {
+        mapData.extra_metrics['power'].splice(idx, 1);
+      }
+
+      if (mapData.extra_metrics?.['heart-rate']) {
+        mapData.extra_metrics['heart-rate'].splice(idx, 1);
+      }
+
+      return false;
+    });
+
+    return mapData;
+  });
+
   public readonly activeMetric = signal<MetricLayer>('elevation');
   public readonly availableMetrics = computed<MetricLayer[]>(() => {
-    const data = this.mapData();
+    const data = this.filteredMapData();
     if (!data) {
       return ['none'];
     }
@@ -96,7 +145,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
       return [fromInput.lng, fromInput.lat];
     }
 
-    const data = this.mapData();
+    const data = this.filteredMapData();
     if (!data?.position?.length) {
       return [0, 0];
     }
@@ -108,7 +157,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   public constructor() {
     super();
     effect(() => {
-      this.mapData();
+      this.filteredMapData();
       const available = this.availableMetrics();
       if (!available.includes(this.activeMetric())) {
         this.activeMetric.set('none');
@@ -150,7 +199,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   }
 
   private renderTrackLayers(): void {
-    const mapData = this.mapData();
+    const mapData = this.filteredMapData();
     if (!this.map || !mapData || mapData.position.length < 2) {
       return;
     }
@@ -360,7 +409,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   }
 
   private highlightInterval(selection: { startIndex: number; endIndex: number } | null): void {
-    if (!this.map || !this.mapData()) {
+    if (!this.map || !this.filteredMapData()) {
       return;
     }
 
@@ -376,7 +425,10 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
       return;
     }
 
-    const positions = this.mapData()!.position.slice(selection.startIndex, selection.endIndex + 1);
+    const positions = this.filteredMapData()!.position.slice(
+      selection.startIndex,
+      selection.endIndex + 1,
+    );
     const coordinates = positions.map((position) => [position[1], position[0]] as [number, number]);
 
     this.map.addSource('highlight-source', {
@@ -406,7 +458,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   }
 
   private highlightPoint(selection: number | null): void {
-    if (!this.map || !this.mapData()) {
+    if (!this.map || !this.filteredMapData()) {
       return;
     }
 
@@ -421,7 +473,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
       return;
     }
 
-    const p = this.mapData()!.position[selection];
+    const p = this.filteredMapData()!.position[selection];
     this.map.addSource('hover-highlight-source', {
       type: 'geojson',
       data: {
@@ -552,7 +604,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   }
 
   private resetZoom(): void {
-    const mapData = this.mapData();
+    const mapData = this.filteredMapData();
     if (!this.map || !mapData?.position?.length) {
       return;
     }
@@ -570,7 +622,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   }
 
   private getTooltipData(index: number): WorkoutMapPointPopupData | null {
-    const mapData = this.mapData();
+    const mapData = this.filteredMapData();
     if (!mapData) {
       return null;
     }
@@ -685,7 +737,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
       return fallback;
     }
 
-    const zoneRanges = this.mapData()?.zone_ranges?.[type];
+    const zoneRanges = this.filteredMapData()?.zone_ranges?.[type];
     if (!zoneRanges || zoneRanges.length === 0) {
       return fallback;
     }

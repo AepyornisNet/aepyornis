@@ -3,10 +3,13 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { TranslatePipe } from '@ngx-translate/core';
 import { WorkoutIntervalRecord } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
+import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 
 @Component({
   selector: 'app-workout-records',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, FormatDistancePipe, FormatDurationPipe, FormatSpeedPipe],
   templateUrl: './workout-records.html',
   styleUrl: './workout-records.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,35 +17,7 @@ import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-c
 export class WorkoutRecordsComponent {
   private readonly coordinatorService = inject(WorkoutDetailCoordinatorService);
   public readonly records = input.required<WorkoutIntervalRecord[]>();
-
-  public formatDistance(meters: number): string {
-    return (meters / 1000).toFixed(2);
-  }
-
-  public formatDuration(seconds?: number): string {
-    if (!seconds && seconds !== 0) {
-      return '0:00';
-    }
-
-    const totalSeconds = Math.round(seconds);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  public formatSpeed(speed?: number): string {
-    if (speed === undefined || speed === null || Number.isNaN(speed)) {
-      return '-';
-    }
-
-    return `${(speed * 3.6).toFixed(2)} km/h`;
-  }
+  public readonly workoutType = input.required<string>();
 
   public selectRecord(record: WorkoutIntervalRecord): void {
     if (!this.hasIntervalIndexes(record)) {

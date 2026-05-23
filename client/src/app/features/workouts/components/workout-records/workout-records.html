@@ -18,11 +18,13 @@
           <td>
             <div class="fw-semibold">{{ record.label }}</div>
             <div class="text-muted small">
-              {{ formatDistance(record.distance || record.target_distance) }} km
+              {{ record.target_distance | formatDistance }}
             </div>
           </td>
-          <td class="text-end font-monospace">{{ formatDuration(record.duration_seconds) }}</td>
-          <td class="text-end font-monospace">{{ formatSpeed(record.average_speed) }}</td>
+          <td class="text-end font-monospace">{{ record.duration_seconds | formatDuration }}</td>
+          <td class="text-end font-monospace">
+            {{ record.average_speed | formatSpeed: workoutType() }}
+          </td>
           <td class="text-end fw-semibold">#{{ record.rank }}</td>
         </tr>
       }

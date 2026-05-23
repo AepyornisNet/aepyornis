@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"slices"
 	"time"
 
 	"github.com/tkrajina/gpxgo/gpx"
@@ -10,9 +9,6 @@ import (
 
 func (w *Workout) ProcessRawRecords() {
 	w.Data = GetGeoMeta(w)
-	w.Records = slices.DeleteFunc(w.Records, func(r WorkoutRecord) bool {
-		return r.Lat == 0 && r.Lng == 0
-	})
 
 	w.fixMissingDataRecords()
 	w.markPauseRecordsFromEvents()
