@@ -3,10 +3,12 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { TranslatePipe } from '@ngx-translate/core';
 import { ClimbSegment } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 
 @Component({
   selector: 'app-workout-climbs',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, FormatDistancePipe, FormatElevationPipe],
   templateUrl: './workout-climbs.html',
   styleUrl: './workout-climbs.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,14 +16,6 @@ import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-c
 export class WorkoutClimbsComponent {
   private readonly coordinatorService = inject(WorkoutDetailCoordinatorService);
   public readonly climbs = input.required<ClimbSegment[]>();
-
-  public formatDistance(meters: number): string {
-    return (meters / 1000).toFixed(2);
-  }
-
-  public formatElevation(meters: number): string {
-    return meters.toFixed(0);
-  }
 
   public selectClimb(climb: ClimbSegment): void {
     if (!this.hasIntervalIndexes(climb)) {
