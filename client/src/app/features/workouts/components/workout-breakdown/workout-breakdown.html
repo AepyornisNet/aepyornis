@@ -43,6 +43,9 @@
               <th class="text-end">{{ 'Distance' | translate }}</th>
               <th class="text-end">{{ 'Time' | translate }}</th>
               <th class="text-end">{{ speedLabel(workout.type) }}</th>
+              @if (hasExtraMetric('power')) {
+                <th class="text-end d-none d-xl-table-cell">{{ 'Power' | translate }}</th>
+              }
               <th class="text-end d-none d-lg-table-cell">{{ 'Elev Up' | translate }}</th>
               <th class="text-end d-none d-lg-table-cell">{{ 'Elev Down' | translate }}</th>
               @if (hasExtraMetric('heart-rate')) {
@@ -81,6 +84,15 @@
                 <td class="text-end font-monospace">
                   {{ item.average_speed | formatSpeed: workout.type }}
                 </td>
+                @if (hasExtraMetric('power')) {
+                  <td class="text-end font-monospace d-none d-xl-table-cell">
+                    @if (item.average_power) {
+                      {{ item.average_power.toFixed(0) }} W
+                    } @else {
+                      -
+                    }
+                  </td>
+                }
                 <td class="text-end font-monospace d-none d-lg-table-cell">
                   {{ item.total_up | formatElevation }}
                 </td>
