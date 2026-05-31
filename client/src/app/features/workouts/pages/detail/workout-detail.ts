@@ -30,6 +30,7 @@ import {
   NgbNavOutlet,
 } from '@ng-bootstrap/ng-bootstrap';
 import { WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
+import { getAverageSpeedLabel } from '../../../../core/i18n/statistics-labels';
 import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
@@ -94,6 +95,7 @@ export class WorkoutDetailPage implements OnInit {
   });
   public readonly sportLabel = getSportLabel;
   public readonly sportSubtypeLabel = getSportSubtypeLabel;
+  public readonly averageSpeedLabel = getAverageSpeedLabel;
 
   public constructor() {
     // React to interval selection changes
