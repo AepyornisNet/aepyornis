@@ -1,4 +1,4 @@
-import { inject, Pipe, PipeTransform } from '@angular/core';
+import { inject, Injectable, Pipe, PipeTransform } from '@angular/core';
 import { getWorkoutTypeConfig } from '../types/workout-types';
 import { User } from '../services/user';
 import {
@@ -6,13 +6,17 @@ import {
   metersPerSecondToKilometersPerHour,
   metersPerSecondToMilesPerHour,
 } from '../config/units';
+
+@Injectable({
+  providedIn: 'root',
+})
 @Pipe({
   name: 'formatSpeed',
 })
 export class FormatSpeedPipe implements PipeTransform {
   private user = inject(User);
 
-  public transform(metersPerSecond: number | null | undefined, type?: string): string {
+  public transform(metersPerSecond: number | null | undefined, type?: string | null | undefined): string {
     if (metersPerSecond === undefined || metersPerSecond === null) {
       return `-`;
     }

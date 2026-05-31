@@ -60,6 +60,9 @@ type FilterOption = {
 export class Workouts extends PaginatedListView<Workout> {
   private api = inject(Api);
   private translate = inject(TranslateService);
+  private formatElevationPipe = inject(FormatElevationPipe);
+  private formatSpeedPipe = inject(FormatSpeedPipe);
+
 
   public readonly baseList = viewChild.required(BaseList);
 
@@ -149,16 +152,16 @@ export class Workouts extends PaginatedListView<Workout> {
         return formatted !== null ? formatted : '-';
       }
       case 'total_up': {
-        return new FormatElevationPipe().transform(workout.total_up);
+        return this.formatElevationPipe.transform(workout.total_up);
       }
       case 'total_down': {
-        return new FormatElevationPipe().transform(workout.total_down);
+        return this.formatElevationPipe.transform(workout.total_down);
       }
       case 'average_speed': {
-        return new FormatSpeedPipe().transform(workout.average_speed, workout.type);
+        return this.formatSpeedPipe.transform(workout.average_speed, workout.type);
       }
       case 'max_speed': {
-        return new FormatSpeedPipe().transform(workout.max_speed, workout.type);
+        return this.formatSpeedPipe.transform(workout.max_speed, workout.type);
       }
       default:
         return '-';
