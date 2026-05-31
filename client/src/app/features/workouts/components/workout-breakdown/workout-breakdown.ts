@@ -21,7 +21,13 @@ import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 
 @Component({
   selector: 'app-workout-breakdown',
-  imports: [TranslatePipe, FormatDistancePipe, FormatDurationPipe, FormatElevationPipe, FormatSpeedPipe],
+  imports: [
+    TranslatePipe,
+    FormatDistancePipe,
+    FormatDurationPipe,
+    FormatElevationPipe,
+    FormatSpeedPipe,
+  ],
   templateUrl: './workout-breakdown.html',
   styleUrl: './workout-breakdown.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
