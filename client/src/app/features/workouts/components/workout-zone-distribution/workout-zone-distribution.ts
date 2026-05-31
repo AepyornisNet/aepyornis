@@ -11,6 +11,7 @@ import {
   IntervalSelection,
   WorkoutDetailCoordinatorService,
 } from '../../services/workout-detail-coordinator.service';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 
 const ZONE_ORDER: Record<'heart-rate' | 'power', number[]> = {
   'heart-rate': [1, 2, 3, 4, 5],
@@ -30,7 +31,7 @@ type ZoneSummary = {
 
 @Component({
   selector: 'app-workout-zone-distribution',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, FormatDurationPipe],
   templateUrl: './workout-zone-distribution.html',
   styleUrl: './workout-zone-distribution.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -112,25 +113,6 @@ export class WorkoutZoneDistributionComponent {
   });
 
   public readonly hasData = computed(() => this.distribution().some((entry) => entry.percent > 0));
-
-  public formatDuration(seconds: number): string {
-    if (!Number.isFinite(seconds) || seconds <= 0) {
-      return '0s';
-    }
-
-    const rounded = Math.round(seconds);
-    const hours = Math.floor(rounded / 3600);
-    const minutes = Math.floor((rounded % 3600) / 60);
-    const secs = rounded % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
-    }
-    return `${secs}s`;
-  }
 
   public formatPercent(value: number): string {
     if (!Number.isFinite(value) || value <= 0) {
