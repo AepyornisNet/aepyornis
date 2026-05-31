@@ -1,8 +1,7 @@
-<div class="d-flex flex-row min-vh-100">
+<div class="d-flex flex-row min-vh-100" (click)="toggleMobileSidebar($event)">
   <app-sidebar
     [isOpen]="sidebarOpen()"
     [mobileSidebarVisible]="mobileSidebarVisible()"
-    (click)="toggleMobileSidebar()"
     (sidebarToggle)="toggleSidebar()"
   />
 
