@@ -1,4 +1,9 @@
-<div class="d-flex flex-row min-vh-100" (click)="toggleMobileSidebar($event)">
+<div
+  class="d-flex flex-row min-vh-100"
+  [attr.tabindex]="mobileSidebarVisible() ? '0' : null"
+  (click)="mobileSidebarVisible() && toggleMobileSidebar($event)"
+  (keydown.enter)="mobileSidebarVisible() && toggleMobileSidebar($event)"
+>
   <app-sidebar
     [isOpen]="sidebarOpen()"
     [mobileSidebarVisible]="mobileSidebarVisible()"
