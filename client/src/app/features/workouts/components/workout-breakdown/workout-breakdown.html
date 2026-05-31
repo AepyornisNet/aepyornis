@@ -43,7 +43,6 @@
               <th class="text-end">{{ 'Distance' | translate }}</th>
               <th class="text-end">{{ 'Time' | translate }}</th>
               <th class="text-end">{{ 'Speed' | translate }}</th>
-              <th class="text-end">{{ 'Pace' | translate }}</th>
               <th class="text-end d-none d-lg-table-cell">{{ 'Elev Up' | translate }}</th>
               <th class="text-end d-none d-lg-table-cell">{{ 'Elev Down' | translate }}</th>
               @if (hasExtraMetric('heart-rate')) {
@@ -74,22 +73,19 @@
                   {{ idx + 1 }}
                 </td>
                 <td class="text-end font-monospace">
-                  {{ formatDistance(item.distance) }}
+                  {{ item.distance | formatDistance }}
                 </td>
                 <td class="text-end font-monospace">
-                  {{ formatDurationSeconds(item.duration) }}
+                  {{ item.duration | formatDuration }}
                 </td>
                 <td class="text-end font-monospace">
-                  {{ formatSpeed(item.average_speed) }}
-                </td>
-                <td class="text-end font-monospace">
-                  {{ formatPace(item.average_pace, item.average_speed) }}
+                  {{ item.average_speed | formatSpeed: workout?.type }}
                 </td>
                 <td class="text-end font-monospace d-none d-lg-table-cell">
-                  {{ formatElevation(item.total_up) }}
+                  {{ item.total_up | formatElevation }}
                 </td>
                 <td class="text-end font-monospace d-none d-lg-table-cell">
-                  {{ formatElevation(item.total_down) }}
+                  {{ item.total_down | formatElevation }}
                 </td>
                 @if (hasExtraMetric('heart-rate')) {
                   <td class="text-end font-monospace d-none d-xl-table-cell">

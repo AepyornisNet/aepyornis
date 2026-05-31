@@ -705,7 +705,7 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 	if preferLaps {
 		resp.Results = dto.WorkoutBreakdownResponse{
 			Mode:  "laps",
-			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Laps, workout.Records, &requester.PreferredUnits),
+			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Laps, workout.Records),
 		}
 
 		return c.JSON(http.StatusOK, resp)
@@ -722,7 +722,7 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 
 	resp.Results = dto.WorkoutBreakdownResponse{
 		Mode:  "unit",
-		Items: dto.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, breakdown.Unit, params.Count, &requester.PreferredUnits),
+		Items: dto.NewWorkoutBreakdownItemsFromUnit(breakdown.Items, params.Count),
 	}
 
 	return c.JSON(http.StatusOK, resp)

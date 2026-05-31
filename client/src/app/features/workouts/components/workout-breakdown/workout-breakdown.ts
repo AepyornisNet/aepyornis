@@ -14,10 +14,14 @@ import { WorkoutBreakdown } from '../../../../core/types/workout';
 import { User } from '../../../../core/services/user';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
+import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 
 @Component({
   selector: 'app-workout-breakdown',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, FormatDistancePipe, FormatDurationPipe, FormatElevationPipe, FormatSpeedPipe],
   templateUrl: './workout-breakdown.html',
   styleUrl: './workout-breakdown.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,6 +30,7 @@ export class WorkoutBreakdownComponent {
   private api = inject(Api);
   private dataService = inject(WorkoutDetailDataService);
   private userService = inject(User);
+  private formatDistancePipe = inject(FormatDistancePipe);
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
 
   public readonly workoutId = input<number | undefined>();
@@ -57,16 +62,16 @@ export class WorkoutBreakdownComponent {
 
   public readonly availableIntervals = computed<number[]>(() => {
     const total = this.totalDistance();
-    const totalConverted = this.convertDistanceToUnit(total ?? 0);
+    const totalConverted = this.formatDistancePipe.convert(total ?? 0);
     const options = [1, 2, 5, 10, 25];
-    const intervals = options.filter((value) => value < totalConverted);
+    const intervals = options.filter((value) => value < Number(totalConverted));
     return intervals.length > 0 ? intervals : [1];
   });
 
+  public readonly workout = this.dataService.workout();
   public constructor() {
     effect(() => {
-      const workout = this.dataService.workout();
-      if (!workout || !workout.laps || workout.laps.length === 0) {
+      if (!this.workout || !this.workout.laps || this.workout.laps.length === 0) {
         this.workoutHasLaps.set(false);
         return;
       }
@@ -185,85 +190,5 @@ export class WorkoutBreakdownComponent {
 
   public hasExtraMetric(metric: string): boolean {
     return this.extraMetrics().includes(metric);
-  }
-
-  public formatDistance(meters?: number): string {
-    if (meters === undefined || meters === null || Number.isNaN(meters)) {
-      return '-';
-    }
-
-    return `${meters.toFixed(2)} ${this.distanceUnit()}`;
-  }
-
-  public formatDurationSeconds(seconds?: number): string {
-    if (!seconds || Number.isNaN(seconds)) {
-      return '0:00';
-    }
-
-    const totalSeconds = Math.round(seconds);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  public formatSpeed(speed?: number): string {
-    if (speed === undefined || speed === null || Number.isNaN(speed)) {
-      return '-';
-    }
-
-    return `${speed.toFixed(2)} ${this.speedUnit()}`;
-  }
-
-  public formatPace(secondsPerUnit?: number, fallbackSpeed?: number): string {
-    let paceSeconds = secondsPerUnit;
-    if (
-      (paceSeconds === undefined || paceSeconds === null || Number.isNaN(paceSeconds)) &&
-      fallbackSpeed
-    ) {
-      paceSeconds = 3600 / fallbackSpeed;
-    }
-
-    if (
-      paceSeconds === undefined ||
-      paceSeconds === null ||
-      paceSeconds <= 0 ||
-      Number.isNaN(paceSeconds)
-    ) {
-      return '-';
-    }
-
-    const minutes = Math.floor(paceSeconds / 60);
-    const seconds = Math.round(paceSeconds % 60);
-
-    return `${minutes}:${seconds.toString().padStart(2, '0')} ${this.paceUnit()}`;
-  }
-
-  public paceUnit(): string {
-    return `min/${this.distanceUnit()}`;
-  }
-
-  public formatElevation(value?: number): string {
-    if (value === undefined || value === null || Number.isNaN(value)) {
-      return '-';
-    }
-
-    return `${value.toFixed(1)} ${this.elevationUnit()}`;
-  }
-
-  private convertDistanceToUnit(distanceMeters: number): number {
-    switch (this.distanceUnit()) {
-      case 'mi':
-        return distanceMeters / 1609.344;
-      case 'm':
-        return distanceMeters;
-      default:
-        return distanceMeters / 1000;
-    }
   }
 }
