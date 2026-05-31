@@ -9,3 +9,10 @@ export const getAverageSpeedLabel = (value?: string | null): string => {
     ? _('Average pace (no pause)')
     : _('Average speed (no pause)');
 };
+
+export const getSpeedLabel = (value?: string | null): string => {
+  if (!value) {
+    return '';
+  }
+  return getWorkoutTypeConfig(value)?.pace ? _('Pace') : _('Speed');
+};

@@ -18,6 +18,7 @@ import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe'
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
+import { getSpeedLabel } from '../../../../core/i18n/statistics-labels';
 
 @Component({
   selector: 'app-workout-breakdown',
@@ -39,6 +40,8 @@ export class WorkoutBreakdownComponent {
   private formatDistancePipe = inject(FormatDistancePipe);
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
 
+  public readonly speedLabel = getSpeedLabel;
+  public readonly workout = this.dataService.workout()!;
   public readonly workoutId = input<number | undefined>();
   public readonly totalDistance = input<number | undefined>();
   public readonly extraMetrics = input<string[]>([]);
@@ -74,7 +77,6 @@ export class WorkoutBreakdownComponent {
     return intervals.length > 0 ? intervals : [1];
   });
 
-  public readonly workout = this.dataService.workout();
   public constructor() {
     effect(() => {
       if (!this.workout || !this.workout.laps || this.workout.laps.length === 0) {
