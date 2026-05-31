@@ -24,11 +24,10 @@ export class FormatDistancePipe implements PipeTransform {
     }
 
     return meters * metersToMiles;
-
   }
 
   public transform(meters: number | null | undefined): string {
-    const value = this.convert(meters)
+    const value = this.convert(meters);
     if (value === null) {
       return '—';
     }
@@ -37,6 +36,6 @@ export class FormatDistancePipe implements PipeTransform {
       return `${value.toFixed(2)} km`;
     }
 
-    return `${(value).toFixed(2)} mi`;
+    return `${value.toFixed(2)} mi`;
   }
 }

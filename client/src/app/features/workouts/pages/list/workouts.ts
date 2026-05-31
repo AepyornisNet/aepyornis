@@ -63,7 +63,6 @@ export class Workouts extends PaginatedListView<Workout> {
   private formatElevationPipe = inject(FormatElevationPipe);
   private formatSpeedPipe = inject(FormatSpeedPipe);
 
-
   public readonly baseList = viewChild.required(BaseList);
 
   // Alias for better template readability

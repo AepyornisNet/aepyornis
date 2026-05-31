@@ -16,7 +16,10 @@ import {
 export class FormatSpeedPipe implements PipeTransform {
   private user = inject(User);
 
-  public transform(metersPerSecond: number | null | undefined, type?: string | null | undefined): string {
+  public transform(
+    metersPerSecond: number | null | undefined,
+    type?: string | null | undefined,
+  ): string {
     if (metersPerSecond === undefined || metersPerSecond === null) {
       return `-`;
     }
