@@ -594,7 +594,7 @@ func NewWorkoutLapResponses(laps []model.WorkoutLap) []WorkoutLapResponse {
 	return resp
 }
 
-func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.WorkoutRecord, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.WorkoutRecord) []WorkoutBreakdownItemResponse {
 	if len(laps) == 0 {
 		return nil
 	}
@@ -617,7 +617,7 @@ func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.Wo
 			movingDuration = totalDuration
 		}
 
-		convertedDistance := convertDistanceToPreferred(lap.TotalDistance, units)
+		convertedDistance := lap.TotalDistance
 		pace := 0.0
 		if convertedDistance > 0 {
 			pace = movingDuration / convertedDistance
@@ -629,13 +629,13 @@ func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.Wo
 			Distance:            convertedDistance,
 			Duration:            movingDuration,
 			AveragePace:         pace,
-			MinElevation:        convertElevationToPreferred(stats.MinElevation, units),
-			MaxElevation:        convertElevationToPreferred(stats.MaxElevation, units),
-			TotalUp:             convertElevationToPreferred(stats.TotalUp, units),
-			TotalDown:           convertElevationToPreferred(stats.TotalDown, units),
-			AverageSpeed:        convertSpeedToPreferred(stats.AverageSpeedNoPause, units),
-			AverageSpeedNoPause: convertSpeedToPreferred(stats.AverageSpeed, units),
-			MaxSpeed:            convertSpeedToPreferred(stats.MaxSpeed, units),
+			MinElevation:        stats.MinElevation,
+			MaxElevation:        stats.MaxElevation,
+			TotalUp:             stats.TotalUp,
+			TotalDown:           stats.TotalDown,
+			AverageSpeed:        stats.AverageSpeedNoPause,
+			AverageSpeedNoPause: stats.AverageSpeed,
+			MaxSpeed:            stats.MaxSpeed,
 			AverageCadence:      stats.AverageCadence,
 			MaxCadence:          stats.MaxCadence,
 			AverageHeartRate:    stats.AverageHeartRate,
@@ -648,7 +648,7 @@ func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.Wo
 	return items
 }
 
-func NewWorkoutBreakdownItemsFromUnit(items []model.BreakdownItem, unit string, count float64, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+func NewWorkoutBreakdownItemsFromUnit(items []model.BreakdownItem, count float64) []WorkoutBreakdownItemResponse {
 	if len(items) == 0 {
 		return nil
 	}
@@ -656,7 +656,7 @@ func NewWorkoutBreakdownItemsFromUnit(items []model.BreakdownItem, unit string, 
 	resp := make([]WorkoutBreakdownItemResponse, len(items))
 	for i, item := range items {
 		movingSeconds := item.Duration.Seconds()
-		convertedDistance := convertDistanceToPreferred(item.Distance, units)
+		convertedDistance := item.Distance
 		pace := 0.0
 		if convertedDistance > 0 {
 			pace = movingSeconds / convertedDistance
@@ -668,13 +668,13 @@ func NewWorkoutBreakdownItemsFromUnit(items []model.BreakdownItem, unit string, 
 			Distance:            convertedDistance,
 			Duration:            movingSeconds,
 			AveragePace:         pace,
-			MinElevation:        convertElevationToPreferred(item.MinElevation, units),
-			MaxElevation:        convertElevationToPreferred(item.MaxElevation, units),
-			TotalUp:             convertElevationToPreferred(item.TotalUp, units),
-			TotalDown:           convertElevationToPreferred(item.TotalDown, units),
-			AverageSpeed:        convertSpeedToPreferred(item.Speed, units),
-			AverageSpeedNoPause: convertSpeedToPreferred(item.AverageSpeedNoPause, units),
-			MaxSpeed:            convertSpeedToPreferred(item.MaxSpeed, units),
+			MinElevation:        item.MinElevation,
+			MaxElevation:        item.MaxElevation,
+			TotalUp:             item.TotalUp,
+			TotalDown:           item.TotalDown,
+			AverageSpeed:        item.Speed,
+			AverageSpeedNoPause: item.AverageSpeedNoPause,
+			MaxSpeed:            item.MaxSpeed,
 			AverageCadence:      item.AverageCadence,
 			MaxCadence:          item.MaxCadence,
 			AverageHeartRate:    item.AverageHeartRate,
