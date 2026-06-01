@@ -42,7 +42,7 @@
               <th>{{ 'Index' | translate }}</th>
               <th class="text-end">{{ 'Distance' | translate }}</th>
               <th class="text-end">{{ 'Time' | translate }}</th>
-              <th class="text-end">{{ speedLabel(workout.type) }}</th>
+              <th class="text-end">{{ speedLabel(workout.type) | translate }}</th>
               @if (hasExtraMetric('power')) {
                 <th class="text-end d-none d-xl-table-cell">{{ 'Power' | translate }}</th>
               }
