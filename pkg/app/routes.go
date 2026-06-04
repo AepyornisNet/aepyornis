@@ -284,6 +284,10 @@ func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 		},
 	}
 
+	if a.Config.VapidPublicKey != "" {
+		resp.Results.WebpushPublicKey = &a.Config.VapidPublicKey
+	}
+
 	return c.JSON(http.StatusOK, resp)
 }
 

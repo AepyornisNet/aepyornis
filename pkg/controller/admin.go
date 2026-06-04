@@ -232,5 +232,9 @@ func (ac *adminController) UpdateConfig(c echo.Context) error {
 		},
 	}
 
+	if ac.cfg.VapidPublicKey != "" {
+		resp.Results.WebpushPublicKey = &ac.cfg.VapidPublicKey
+	}
+
 	return c.JSON(http.StatusOK, resp)
 }

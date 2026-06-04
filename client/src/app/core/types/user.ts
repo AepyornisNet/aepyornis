@@ -26,6 +26,7 @@ export type AppInfo = {
   socials_disabled: boolean;
   auto_import_enabled: boolean;
   activity_pub_active: boolean;
+  webpush_public_key?: string;
 };
 
 export type UserPreferredUnits = {

@@ -50,6 +50,7 @@ type AppInfoResponse struct {
 	AutoImportEnabled     bool     `json:"auto_import_enabled"`
 	ActivityPubActive     bool     `json:"activity_pub_active"`
 	NotificationProviders []string `json:"notification_providers"`
+	WebpushPublicKey      *string  `json:"webpush_public_key,omitempty"`
 }
 
 type ActivityPubProfileSummaryResponse struct {

@@ -120,7 +120,7 @@ func (s *notificationService) getWebpushService(receiver *model.User) []notify.N
 	services := []notify.Notifier{}
 
 	var userConfig model.UserNotificationSettings
-	if err := s.db.Where("user_id = ? AND method = 'webpush'", receiver.ID).First(&userConfig); err != nil {
+	if err := s.db.Where("user_id = ? AND method = 'webpush'", receiver.ID).First(&userConfig).Error; err != nil {
 		return services
 	}
 
