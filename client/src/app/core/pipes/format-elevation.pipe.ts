@@ -1,6 +1,10 @@
-import { inject, Pipe, PipeTransform } from '@angular/core';
+import { inject, Injectable, Pipe, PipeTransform } from '@angular/core';
 import { User } from '../services/user';
 import { metersToFeet } from '../config/units';
+
+@Injectable({
+  providedIn: 'root',
+})
 @Pipe({
   name: 'formatElevation',
 })

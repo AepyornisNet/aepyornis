@@ -1,23 +1,41 @@
-import { inject, Pipe, PipeTransform } from '@angular/core';
+import { inject, Injectable, Pipe, PipeTransform } from '@angular/core';
 import { User } from '../services/user';
 import { metersToMiles } from '../config/units';
+
+@Injectable({
+  providedIn: 'root',
+})
 @Pipe({
   name: 'formatDistance',
 })
 export class FormatDistancePipe implements PipeTransform {
   private user = inject(User);
+  private get distanceUnit(): string {
+    return this.user.getUserInfo()()?.profile?.profile.preferred_units.distance ?? `km`;
+  }
+
+  public convert(meters: number | null | undefined): number | null {
+    if (meters === undefined || meters === null || Number.isNaN(meters)) {
+      return null;
+    }
+
+    if (this.distanceUnit === 'km') {
+      return meters / 1000;
+    }
+
+    return meters * metersToMiles;
+  }
 
   public transform(meters: number | null | undefined): string {
-    const units = this.user.getUserInfo()()?.profile?.profile.preferred_units;
-
-    if (meters === undefined || meters === null) {
+    const value = this.convert(meters);
+    if (value === null) {
       return '—';
     }
 
-    if (!units || units.distance === 'km') {
-      return `${(meters / 1000).toFixed(2)} km`;
+    if (this.distanceUnit === 'km') {
+      return `${value.toFixed(2)} km`;
     }
 
-    return `${(meters * metersToMiles).toFixed(2)} mi`;
+    return `${value.toFixed(2)} mi`;
   }
 }

@@ -24,9 +24,9 @@
               <span class="text-warning">↓ Descent {{ climb.index }}</span>
             }
           </td>
-          <td>{{ formatDistance(climb.start_distance) }} km</td>
-          <td>{{ formatDistance(climb.length) }} km</td>
-          <td>{{ formatElevation(climb.elevation) }} m</td>
+          <td>{{ climb.start_distance | formatDistance }}</td>
+          <td>{{ climb.length | formatDistance }}</td>
+          <td>{{ climb.elevation | formatElevation }}</td>
           <td>{{ (climb.avg_slope * 100).toFixed(1) }}%</td>
           <td>{{ climb.category }}</td>
         </tr>
