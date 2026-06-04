@@ -75,7 +75,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "jasmine-core": "~6.2.0",
     "jsdom": "^29.0.1",
-    "playwright": "^1.59.1",
+    "playwright": "^1.60.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.59.2",
