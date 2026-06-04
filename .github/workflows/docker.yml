@@ -22,7 +22,7 @@ jobs:
       labels: ${{ steps.meta.outputs.labels }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
       - name: Normalize image name
         id: image_name
         run: echo "image_name=${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
@@ -51,7 +51,7 @@ jobs:
       digest: ${{ steps.export.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
       - name: Set up Docker Buildx
@@ -98,7 +98,7 @@ jobs:
       digest: ${{ steps.export.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
       - name: Set up Docker Buildx
