@@ -78,7 +78,7 @@
     "playwright": "^1.60.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2",
-    "typescript-eslint": "8.59.2",
+    "typescript-eslint": "8.60.1",
     "yaml": "^2.9.0"
   },
   "browser": {
