@@ -1,23 +1,117 @@
-<form [formGroup]="store.profileForm" (ngSubmit)="store.saveProfile()">
+<form [formGroup]="notificationForm" (ngSubmit)="saveNotificationSettings()">
   <div class="card shadow-sm mb-4">
     <div class="card-header">
       <h3 class="h5 mb-0">{{ 'Notifications' | translate }}</h3>
     </div>
     <div class="card-body">
-      <button type="button" class="btn" (click)="requestWebpush()">Request</button>
+      @if (loadingNotificationSettings()) {
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">{{ 'Loading' | translate }}</span>
+          </div>
+        </div>
+      } @else if (availableNotificationProviders().length > 0) {
+        <div class="table-responsive notification-settings">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="notification-type" scope="col">
+                  {{ 'Notification type' | translate }}
+                </th>
+                @for (provider of availableNotificationProviders(); track provider.key) {
+                  <th class="text-center notification-channel" scope="col">
+                    {{ provider.label | translate }}
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (type of notificationTypes; track type.key) {
+                <tr [formGroupName]="type.key">
+                  <th class="notification-type" scope="row">
+                    <span class="d-block fw-semibold">{{ type.label | translate }}</span>
+                    <span class="small text-muted fw-normal">
+                      {{ type.description | translate }}
+                    </span>
+                  </th>
+                  @for (provider of availableNotificationProviders(); track provider.key) {
+                    <td class="text-center notification-channel">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        [attr.aria-label]="
+                          (type.label | translate) + ' - ' + (provider.label | translate)
+                        "
+                        [formControlName]="provider.key"
+                        [id]="'notification_' + provider.key + '_' + type.key"
+                      />
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="text-muted small">
+          {{ 'No notification channels are configured on this server.' | translate }}
+        </div>
+      }
     </div>
   </div>
+
+  @if (appConfig.getAppInfo()()?.webpush_public_key) {
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">
+        <h3 class="h5 mb-0">{{ 'Push notifications' | translate }}</h3>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+          <div>
+            <div class="fw-semibold">{{ 'This device' | translate }}</div>
+            <div class="small text-muted">
+              {{ 'Allow browser push notifications for the enabled push types.' | translate }}
+            </div>
+          </div>
+
+          <button
+            class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+            type="button"
+            [disabled]="!canRequestWebPush() || requestingWebPush()"
+            (click)="requestWebpush()"
+          >
+            @if (requestingWebPush()) {
+              <span
+                aria-hidden="true"
+                class="spinner-border spinner-border-sm"
+                role="status"
+              ></span>
+              {{ 'Enabling...' | translate }}
+            } @else {
+              <app-icon name="bell" size="16" />
+              {{ 'Enable on this device' | translate }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
   <button
     class="btn btn-primary"
     type="submit"
-    [disabled]="store.saving() || store.profileForm.invalid"
+    [disabled]="
+      savingNotificationSettings() ||
+      loadingNotificationSettings() ||
+      notificationForm.invalid ||
+      availableNotificationProviders().length === 0
+    "
   >
-    @if (store.saving()) {
+    @if (savingNotificationSettings()) {
       <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
       {{ 'Saving...' | translate }}
     } @else {
-      {{ 'Update profile' | translate }}
+      {{ 'Save notification settings' | translate }}
     }
   </button>
 </form>
