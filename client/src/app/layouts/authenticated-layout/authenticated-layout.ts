@@ -49,7 +49,12 @@ export class AuthenticatedLayout {
     this.mobileSidebarVisible.update((value) => !value);
   }
 
-  public toggleMobileSidebar(): void {
-    this.mobileSidebarVisible.set(false);
+  public toggleMobileSidebar(event: Event): void {
+    const target = event.target;
+    const ignoredSelectors = ['.sidebar-toggle', '.header-user-menu', '.sidebar-brand'];
+
+    if (target instanceof Element && !ignoredSelectors.some((sel) => target.closest(sel))) {
+      this.mobileSidebarVisible.set(false);
+    }
   }
 }
