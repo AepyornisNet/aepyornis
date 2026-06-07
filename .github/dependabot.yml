@@ -7,20 +7,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    groups:
-      all:
-        patterns:
-          - "*"
 
   # Maintain dependencies for Golang
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "monthly"
-    groups:
-      all:
-        patterns:
-          - "*"
+      interval: "weekly"
 
   # Maintain image versions for docker
   - package-ecosystem: "docker"
@@ -32,7 +24,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/client/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     groups:
       angular:
         patterns:
@@ -48,3 +40,11 @@ updates:
       ngx-translate:
         patterns:
           - "@ngx-translate/*"
+      linter:
+        patterns:
+          - "ngx-translate-lint"
+          - "eslint*"
+          - "typescript-eslint"
+          - "prettier"
+          - "playwright"
+          - "jsdom"
