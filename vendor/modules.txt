@@ -235,7 +235,7 @@ github.com/mazznoer/csscolorparser
 ## explicit; go 1.19
 github.com/microcosm-cc/bluemonday
 github.com/microcosm-cc/bluemonday/css
-# github.com/muktihari/fit v0.28.0
+# github.com/muktihari/fit v0.28.1
 ## explicit; go 1.25.0
 github.com/muktihari/fit/decoder
 github.com/muktihari/fit/encoder

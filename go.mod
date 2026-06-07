@@ -33,7 +33,7 @@ require (
 	github.com/lmittmann/tint v1.1.3
 	github.com/mattn/go-isatty v0.0.22
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/muktihari/fit v0.28.0
+	github.com/muktihari/fit v0.28.1
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/paulmach/orb v0.13.0
 	github.com/ringsaturn/tzf v1.2.1
