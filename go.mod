@@ -48,7 +48,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/tkrajina/gpxgo v1.4.0
 	github.com/vgarvardt/gue/v6 v6.0.0
-	github.com/westphae/geomag v1.2025.5
+	github.com/westphae/geomag v1.2025.6
 	golang.org/x/crypto v0.52.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/datatypes v1.2.7

@@ -450,8 +450,8 @@ github.com/vgarvardt/backoff v1.0.0 h1:VKub60RkA/po0gz0fHsr1vWb6pbyvOQpOs/4Ciw4a
 github.com/vgarvardt/backoff v1.0.0/go.mod h1:Om8PDVpm4MpRNDg/IKpJWsvS2MabY7LtwSahd09zg8E=
 github.com/vgarvardt/gue/v6 v6.0.0 h1:9ODyUTcNdagFO9NJj5iv7yLZJcx27a53j6EeBcsptDE=
 github.com/vgarvardt/gue/v6 v6.0.0/go.mod h1:9FA8DVF4SLzi9aRpRMJhtessLDwRSehraDMrgE2JG0M=
-github.com/westphae/geomag v1.2025.5 h1:HQC4aVJPSoBsMooRtnYewtRzmE+52+BkUba+fXy9JtE=
-github.com/westphae/geomag v1.2025.5/go.mod h1:ar0NqeKLQBkPH0JTrVGyLwA3Tbwd+ST/mTDYSrhrLy4=
+github.com/westphae/geomag v1.2025.6 h1:VtP8TFVCtlgleEjoQJ/2S/u0C4PZmIaURC+FYetwLGA=
+github.com/westphae/geomag v1.2025.6/go.mod h1:ar0NqeKLQBkPH0JTrVGyLwA3Tbwd+ST/mTDYSrhrLy4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
