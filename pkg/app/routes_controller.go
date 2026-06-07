@@ -46,6 +46,7 @@ func (a *App) registerNotificationController(apiGroup *echo.Group) {
 	hc := controller.NewNotificationController(a.injector)
 
 	apiGroup.GET("/notifications", hc.GetNotifications).Name = "notification-unread"
+	apiGroup.GET("/notifications/settings", hc.GetConfig).Name = "notification-config"
 	apiGroup.POST("/notifications/:type", hc.UpdateConfig).Name = "notification-config-update"
 }
 

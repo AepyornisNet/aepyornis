@@ -17,6 +17,7 @@ import (
 
 type NotificationController interface {
 	GetNotifications(c echo.Context) error
+	GetConfig(c echo.Context) error
 	UpdateConfig(c echo.Context) error
 }
 
@@ -61,6 +62,50 @@ func (nc *notificationController) GetNotifications(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+// GetConfig returns current user's notification config
+// @Summary      Get notification config
+// @Tags         notification
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  dto.Response[[]model.UserNotificationSettings]
+// @Failure      500  {object}  dto.Response[any]
+// @Router       /notifications/settings [get]
+func (nc *notificationController) GetConfig(c echo.Context) error {
+	user := currentUser(c)
+
+	settings, err := nc.notificationRepo.GetAllUserSettings(c.Request().Context(), user)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	settingsByMethod := make(map[string]model.UserNotificationSettings, len(settings))
+	for _, item := range settings {
+		settingsByMethod[item.Method] = item
+	}
+
+	results := make([]model.UserNotificationSettings, 0, len(nc.cfg.AvailableNotificationProviders()))
+	for _, provider := range nc.cfg.AvailableNotificationProviders() {
+		if item, ok := settingsByMethod[provider]; ok {
+			results = append(results, item)
+			continue
+		}
+
+		results = append(results, model.UserNotificationSettings{
+			UserID:        user.ID,
+			Method:        provider,
+			FollowRequest: true,
+			WorkoutLike:   true,
+			WorkoutReply:  true,
+		})
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[[]model.UserNotificationSettings]{
+		Results: results,
+	})
+}
+
 // UpdateConfig updates current user's notification config
 // @Summary      Update notification config
 // @Tags         notification
@@ -97,16 +142,22 @@ func (nc *notificationController) UpdateConfig(c echo.Context) error {
 			Method: nType,
 		}
 
-		gorm.G[model.UserNotificationSettings](nc.db).Create(c.Request().Context(), currentSettings)
+		if err := gorm.G[model.UserNotificationSettings](nc.db).Create(c.Request().Context(), currentSettings); err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
 	}
 
-	settings := json.RawMessage(updateData.MethodSettings)
-	currentSettings.MethodSettings = &settings
+	if updateData.MethodSettings != "" {
+		settings := json.RawMessage(updateData.MethodSettings)
+		currentSettings.MethodSettings = &settings
+	}
 	currentSettings.WorkoutReply = updateData.WorkoutReply
 	currentSettings.WorkoutLike = updateData.WorkoutLike
 	currentSettings.FollowRequest = updateData.FollowRequest
 
-	gorm.G[model.UserNotificationSettings](nc.db).Updates(c.Request().Context(), *currentSettings)
+	if _, err := gorm.G[model.UserNotificationSettings](nc.db).Updates(c.Request().Context(), *currentSettings); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
 
 	return c.JSON(http.StatusOK, currentSettings)
 }
