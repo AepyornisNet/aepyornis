@@ -26,6 +26,7 @@ export type AppInfo = {
   socials_disabled: boolean;
   auto_import_enabled: boolean;
   activity_pub_active: boolean;
+  notification_providers: NotificationProvider[];
   webpush_public_key?: string;
 };
 
@@ -36,6 +37,10 @@ export type UserPreferredUnits = {
   weight: string;
   height: string;
 };
+
+export type NotificationProvider = 'database' | 'mail' | 'webpush';
+
+export type NotificationType = 'follow_request' | 'workout_like' | 'workout_reply';
 
 export type ProfileSettings = {
   preferred_units: UserPreferredUnits;

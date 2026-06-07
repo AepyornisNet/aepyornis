@@ -39,7 +39,11 @@ import {
   StatisticsParams,
 } from '../../core/types/statistics';
 import { RegisterRequest, SignInRequest } from '../../core/types/auth';
-import { Notification } from '../types/notification';
+import {
+  Notification,
+  UserNotificationSettings,
+  UserNotificationSettingsUpdate,
+} from '../types/notification';
 
 @Injectable({
   providedIn: 'root',
@@ -82,6 +86,22 @@ export class Api {
     return this.http.get<PaginatedAPIResponse<Notification>>(`${this.baseUrl}/notifications`, {
       params: httpParams,
     });
+  }
+
+  public getNotificationSettings(): Observable<APIResponse<UserNotificationSettings[]>> {
+    return this.http.get<APIResponse<UserNotificationSettings[]>>(
+      `${this.baseUrl}/notifications/settings`,
+    );
+  }
+
+  public updateNotificationSettings(
+    method: string,
+    payload: UserNotificationSettingsUpdate,
+  ): Observable<APIResponse<UserNotificationSettings>> {
+    return this.http.post<APIResponse<UserNotificationSettings>>(
+      `${this.baseUrl}/notifications/${method}`,
+      payload,
+    );
   }
 
   public getAppInfo(): Observable<APIResponse<AppInfo>> {

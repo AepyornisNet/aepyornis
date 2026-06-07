@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Api } from './api';
-import { AppInfo } from '../../core/types/user';
+import { AppInfo, NotificationProvider } from '../../core/types/user';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 
 @Injectable({
@@ -51,6 +51,10 @@ export class AppConfig {
 
   public isActivityPubAvailable(): boolean {
     return this.appInfo()?.activity_pub_active ?? false;
+  }
+
+  public getNotificationProviders(): NotificationProvider[] {
+    return this.appInfo()?.notification_providers ?? [];
   }
 
   public getVersion(): string {
