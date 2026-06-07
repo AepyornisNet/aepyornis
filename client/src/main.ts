@@ -1,4 +1,4 @@
-import { isDevMode, provideZoneChangeDetection } from '@angular/core';
+import { isDevMode } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -9,7 +9,6 @@ import('./app/app').then((comp) =>
   bootstrapApplication(comp.App, {
     ...appConfig,
     providers: [
-      provideZoneChangeDetection(),
       ...appConfig.providers,
       provideServiceWorker('ngsw-worker.js', {
         enabled: !isDevMode(),
