@@ -45,3 +45,6 @@ updates:
           - "ngx-translate-lint"
           - "eslint*"
           - "typescript-eslint"
+          - "prettier"
+          - "playwright"
+          - "jsdom"
