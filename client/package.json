@@ -76,7 +76,7 @@
     "jasmine-core": "~6.2.0",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.3",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.59.2",
     "yaml": "^2.9.0"
