@@ -19,16 +19,16 @@ import (
 // Response struct and methods
 //_______________________________________________________________________
 
-// Response struct holds response values of executed requests.
+// Response holds response values for an executed request.
 type Response struct {
 	Request     *Request
 	Body        io.ReadCloser
 	RawResponse *http.Response
 	IsRead      bool
 
-	// Err field used to cascade the response middleware error
-	// in the chain
-	Err error
+	// CascadeError field used to cascade the response processing and
+	// middleware execution errors
+	CascadeError error
 
 	bodyBytes  []byte
 	size       int64
@@ -63,21 +63,55 @@ func (r *Response) Proto() string {
 	return r.RawResponse.Proto
 }
 
-// Result method returns the response value as an object if it has one
+// Result method returns the unmarshalled result response object if it exists,
+// otherwise nil.
+//
+//	client := resty.New()
+//	defer client.Close()
+//
+//	res, err := client.R().
+//	   SetBody(User{
+//	     Username: "testuser",
+//	     Password: "testpass",
+//	   }).
+//	   SetResult(&LoginResponse{}).      // or SetResult(LoginResponse{}).
+//	   SetResultError(&LoginErrorResponse{}).  // or SetResultError(LoginErrorResponse{}).
+//	   Post("https://myapp.com/login")
+//
+//	fmt.Println(err, res)
+//	fmt.Println(res.Result().(*LoginResponse))
+//	fmt.Println(res.ResultError().(*LoginErrorResponse))
 //
 // See [Request.SetResult]
 func (r *Response) Result() any {
 	return r.Request.Result
 }
 
-// Error method returns the error object if it has one
+// ResultError method returns the unmarshalled result error object if it exists,
+// otherwise nil.
 //
-// See [Request.SetError], [Client.SetError]
-func (r *Response) Error() any {
-	return r.Request.Error
+//	client := resty.New()
+//	defer client.Close()
+//
+//	res, err := client.R().
+//	   SetBody(User{
+//	     Username: "testuser",
+//	     Password: "testpass",
+//	   }).
+//	   SetResult(&LoginResponse{}).            // or SetResult(LoginResponse{}).
+//	   SetResultError(&LoginErrorResponse{}).  // or SetResultError(LoginErrorResponse{}).
+//	   Post("https://myapp.com/login")
+//
+//	fmt.Println(err, res)
+//	fmt.Println(res.Result().(*LoginResponse))
+//	fmt.Println(res.ResultError().(*LoginErrorResponse))
+//
+// See [Request.SetResultError], [Client.SetResultError]
+func (r *Response) ResultError() any {
+	return r.Request.ResultError
 }
 
-// Header method returns the response headers
+// Header method returns the response headers.
 func (r *Response) Header() http.Header {
 	if r.RawResponse == nil {
 		return http.Header{}
@@ -85,7 +119,7 @@ func (r *Response) Header() http.Header {
 	return r.RawResponse.Header
 }
 
-// Cookies method to returns all the response cookies
+// Cookies method returns all response cookies.
 func (r *Response) Cookies() []*http.Cookie {
 	if r.RawResponse == nil {
 		return make([]*http.Cookie, 0)
@@ -98,8 +132,8 @@ func (r *Response) Cookies() []*http.Cookie {
 //
 // NOTE:
 //   - Returns an empty string on auto-unmarshal scenarios, unless
-//     [Client.SetResponseBodyUnlimitedReads] or [Request.SetResponseBodyUnlimitedReads] set.
-//   - Returns an empty string when [Client.SetDoNotParseResponse] or [Request.SetDoNotParseResponse] set.
+//     [Client.SetResponseBodyUnlimitedReads] or [Request.SetResponseBodyUnlimitedReads] is enabled.
+//   - Returns an empty string when [Client.SetResponseDoNotParse] or [Request.SetResponseDoNotParse] is enabled.
 func (r *Response) String() string {
 	r.readIfRequired()
 	return strings.TrimSpace(string(r.bodyBytes))
@@ -110,23 +144,22 @@ func (r *Response) String() string {
 //
 // NOTE:
 //   - Returns an empty byte slice on auto-unmarshal scenarios, unless
-//     [Client.SetResponseBodyUnlimitedReads] or [Request.SetResponseBodyUnlimitedReads] set.
-//   - Returns an empty byte slice when [Client.SetDoNotParseResponse] or [Request.SetDoNotParseResponse] set.
+//     [Client.SetResponseBodyUnlimitedReads] or [Request.SetResponseBodyUnlimitedReads] is enabled.
+//   - Returns an empty byte slice when [Client.SetResponseDoNotParse] or [Request.SetResponseDoNotParse] is enabled.
 func (r *Response) Bytes() []byte {
 	r.readIfRequired()
 	return r.bodyBytes
 }
 
-// Duration method returns the duration of HTTP response time from the request we sent
-// and received a request.
+// Duration method returns the end-to-end duration from request start to response completion.
 //
 // See [Response.ReceivedAt] to know when the client received a response and see
-// `Response.Request.Time` to know when the client sent a request.
+// [Request.StartTime] to know when the client sent the request.
 func (r *Response) Duration() time.Duration {
 	if r.Request.trace != nil {
 		return r.Request.TraceInfo().TotalTime
 	}
-	return r.receivedAt.Sub(r.Request.Time)
+	return r.receivedAt.Sub(r.Request.StartTime)
 }
 
 // ReceivedAt method returns the time we received a response from the server for the request.
@@ -134,26 +167,31 @@ func (r *Response) ReceivedAt() time.Time {
 	return r.receivedAt
 }
 
-// Size method returns the HTTP response size in bytes. Yeah, you can rely on HTTP `Content-Length`
-// header, however it won't be available for chucked transfer/compressed response.
-// Since Resty captures response size details when processing the response body
-// when possible. So that users get the actual size of response bytes.
+// Size method returns the HTTP response size in bytes.
+//
+// The HTTP Content-Length header can be unavailable or inaccurate for chunked
+// transfer and compressed responses. Resty captures response size while reading
+// the response body so callers can retrieve the actual processed byte count.
 func (r *Response) Size() int64 {
 	r.readIfRequired()
 	return r.size
 }
 
-// IsSuccess method returns true if HTTP status `code >= 200 and <= 299` otherwise false.
-func (r *Response) IsSuccess() bool {
+// IsStatusSuccess method returns true if HTTP status `code >= 200 and <= 299` otherwise false.
+//
+// Example: 200, 201, 204, etc.
+func (r *Response) IsStatusSuccess() bool {
 	return r.StatusCode() > 199 && r.StatusCode() < 300
 }
 
-// IsError method returns true if HTTP status `code >= 400` otherwise false.
-func (r *Response) IsError() bool {
+// IsStatusFailure method returns true if HTTP status `code >= 400` otherwise false.
+//
+// Example: 400, 500, etc.
+func (r *Response) IsStatusFailure() bool {
 	return r.StatusCode() > 399
 }
 
-// RedirectHistory method returns a redirect history slice with the URL and status code
+// RedirectHistory method returns redirect history entries with URL and status code.
 func (r *Response) RedirectHistory() []*RedirectInfo {
 	if r.RawResponse == nil {
 		return nil
@@ -181,11 +219,11 @@ func (r *Response) setReceivedAt() {
 }
 
 func (r *Response) fmtBodyString(sl int) string {
-	if r.Request.DoNotParseResponse {
+	if r.Request.IsResponseDoNotParse {
 		return "***** DO NOT PARSE RESPONSE - Enabled *****"
 	}
 
-	if r.Request.IsSaveResponse {
+	if r.Request.IsResponseSaveToFile {
 		return "***** RESPONSE WRITTEN INTO FILE *****"
 	}
 
@@ -218,7 +256,7 @@ func (r *Response) fmtBodyString(sl int) string {
 }
 
 func (r *Response) readIfRequired() {
-	if len(r.bodyBytes) == 0 && !r.Request.DoNotParseResponse {
+	if len(r.bodyBytes) == 0 && !r.Request.IsResponseDoNotParse {
 		_ = r.readAll()
 	}
 }
@@ -277,7 +315,7 @@ func (r *Response) wrapContentDecompresser() error {
 		return nil
 	}
 
-	if decFunc, f := r.Request.client.ContentDecompressers()[ce]; f {
+	if decFunc, f := r.Request.client.ContentDecompressers()[strings.ToLower(ce)]; f {
 		dec, err := decFunc(r.Body)
 		if err != nil {
 			if err == io.EOF {
@@ -296,4 +334,14 @@ func (r *Response) wrapContentDecompresser() error {
 	}
 
 	return nil
+}
+
+func (r *Response) wrapError(err error, preserve bool) error {
+	r.CascadeError = wrapErrors(err, r.CascadeError)
+	if preserve {
+		return nil
+	}
+	e := r.CascadeError
+	r.CascadeError = nil
+	return e
 }

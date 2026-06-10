@@ -8,19 +8,19 @@ package resty
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-// Spec: https://html.spec.whatwg.org/multipage/server-sent-events.html
+// SSE specification: https://html.spec.whatwg.org/multipage/server-sent-events.html
 
 var (
 	defaultSseMaxBufSize = 1 << 15 // 32kb
@@ -38,85 +38,86 @@ var (
 )
 
 type (
-	// EventOpenFunc is a callback function type used to receive notification
-	// when Resty establishes a connection with the server for the
-	// Server-Sent Events(SSE)
-	EventOpenFunc func(url string, respHdr http.Header)
+	// SSEOpenFunc is a callback type invoked when Resty establishes a
+	// Server-Sent Events (SSE) connection.
+	SSEOpenFunc func(url string, respHdr http.Header)
 
-	// EventMessageFunc is a callback function type used to receive event details
-	// from the Server-Sent Events(SSE) stream
-	EventMessageFunc func(any)
+	// SSEMessageFunc is a callback type used to receive event values from the
+	// Server-Sent Events (SSE) stream.
+	SSEMessageFunc func(any)
 
-	// EventErrorFunc is a callback function type used to receive notification
-	// when an error occurs with [EventSource] processing
-	EventErrorFunc func(error)
+	// SSEErrorFunc is a callback type invoked when an error occurs while
+	// processing an [SSESource] stream.
+	SSEErrorFunc func(error)
 
-	// EventRequestFailureFunc is a callback function type used to receive event
-	// details from the Server-Sent Events(SSE) request failure
-	EventRequestFailureFunc func(err error, res *http.Response)
+	// SSERequestFailureFunc is a callback function type invoked when the HTTP
+	// request to the SSE endpoint fails to establish or maintain a connection.
+	SSERequestFailureFunc func(err error, res *http.Response)
 
-	// Event struct represents the event details from the Server-Sent Events(SSE) stream
-	Event struct {
+	// SSE represents one event from a Server-Sent Events (SSE) stream.
+	SSE struct {
 		ID   string
 		Name string
 		Data string
 	}
 
-	// EventSource struct implements the Server-Sent Events(SSE) [specification] to receive
-	// stream from the server
+	// SSESource implements the Server-Sent Events (SSE) [specification] client
+	// and consumes a stream from a server endpoint.
 	//
 	// [specification]: https://html.spec.whatwg.org/multipage/server-sent-events.html
-	EventSource struct {
+	SSESource struct {
 		lock             *sync.RWMutex
 		url              string
 		method           string
 		header           http.Header
-		body             io.Reader
+		bodyBytes        []byte
 		lastEventID      string
 		retryCount       int
 		retryWaitTime    time.Duration
 		retryMaxWaitTime time.Duration
+		retryConditions  []RetryConditionFunc
 		serverSentRetry  time.Duration
 		maxBufSize       int
-		onOpen           EventOpenFunc
-		onError          EventErrorFunc
-		onRequestFailure EventRequestFailureFunc
+		onOpen           SSEOpenFunc
+		onError          SSEErrorFunc
+		onRequestFailure SSERequestFailureFunc
 		onEvent          map[string]*callback
 		log              Logger
+		ctx              context.Context
 		closed           bool
 		httpClient       *http.Client
 	}
 
 	callback struct {
-		Func   EventMessageFunc
+		Func   SSEMessageFunc
 		Result any
 	}
 )
 
-// NewEventSource method creates a new instance of [EventSource]
-// with default values for Server-Sent Events(SSE)
+// NewSSESource creates a new [SSESource] with default SSE settings.
 //
-//	es := NewEventSource().
+//	sse := NewSSESource().
 //		SetURL("https://sse.dev/test").
 //		OnMessage(
 //			func(e any) {
-//				event := e.(*Event)
+//				event := e.(*resty.SSE)
 //				fmt.Println(event)
 //			},
 //			nil, // see method godoc
 //		)
 //
-//	err := es.Connect()
+//	err := sse.Get()
 //	fmt.Println(err)
 //
-// See [EventSource.OnMessage], [EventSource.AddEventListener]
-func NewEventSource() *EventSource {
-	es := &EventSource{
+// See [SSESource.OnMessage], [SSESource.AddEventListener]
+func NewSSESource() *SSESource {
+	sse := &SSESource{
 		lock:             new(sync.RWMutex),
 		header:           make(http.Header),
 		retryCount:       3,
 		retryWaitTime:    defaultWaitTime,
 		retryMaxWaitTime: defaultMaxWaitTime,
+		retryConditions:  make([]RetryConditionFunc, 0),
 		maxBufSize:       defaultSseMaxBufSize,
 		onEvent:          make(map[string]*callback),
 		httpClient: &http.Client{
@@ -124,97 +125,141 @@ func NewEventSource() *EventSource {
 			Transport: createTransport(nil, nil),
 		},
 	}
-	return es
+	sse.retryConditions = append(sse.retryConditions,
+		RetryConditionStatusZero,
+		RetryConditionStatusTooManyRequests,
+		RetryConditionStatus5XX,
+	)
+	return sse
 }
 
-// SetURL method sets a [EventSource] connection URL in the instance
+// SetURL method sets the event-source URL on the [SSESource] instance.
 //
-//	es.SetURL("https://sse.dev/test")
-func (es *EventSource) SetURL(url string) *EventSource {
-	es.url = url
-	return es
+//	sse.SetURL("https://sse.dev/test")
+func (sse *SSESource) SetURL(url string) *SSESource {
+	sse.url = url
+	return sse
 }
 
-// SetMethod method sets a [EventSource] connection HTTP method in the instance
+// SetMethod method sets the HTTP method used for the [SSESource] connection.
 //
-//	es.SetMethod("POST"), or es.SetMethod(resty.MethodPost)
-func (es *EventSource) SetMethod(method string) *EventSource {
-	es.method = method
-	return es
+//	sse.SetMethod("POST"), or sse.SetMethod(resty.MethodPost)
+func (sse *SSESource) SetMethod(method string) *SSESource {
+	sse.method = method
+	return sse
 }
 
-// SetHeader method sets a header and its value to the [EventSource] instance.
+// SetHeader method sets a header and its value on the [SSESource] instance.
 // It overwrites the header value if the key already exists. These headers will be sent in
 // the request while establishing a connection to the event source
 //
-//	es.SetHeader("Authorization", "token here").
+//	sse.SetHeader("Authorization", "token here").
 //		SetHeader("X-Header", "value")
-func (es *EventSource) SetHeader(header, value string) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.header.Set(header, value)
-	return es
+func (sse *SSESource) SetHeader(header, value string) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.header.Set(header, value)
+	return sse
 }
 
-// SetBody method sets body value to the [EventSource] instance
+// Context method returns the [context.Context] from the SSE source instance.
+//
+// The returned context is always non-nil; it defaults to the
+// background context.
+func (sse *SSESource) Context() context.Context {
+	sse.lock.RLock()
+	defer sse.lock.RUnlock()
+	if sse.ctx == nil {
+		return context.Background()
+	}
+	return sse.ctx
+}
+
+// SetContext method sets the [context.Context] for the current [SSESource].
+// It overwrites the current context in the SSESource instance.
+//
+// If you want this method to take effect, use this method before invoking
+// [SSESource.Get].
+func (sse *SSESource) SetContext(ctx context.Context) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.ctx = ctx
+	return sse
+}
+
+// SetBody method sets the request body for the [SSESource] connection.
 //
 // Example:
-// es.SetBody(bytes.NewReader([]byte(`{"test":"put_data"}`)))
-func (es *EventSource) SetBody(body io.Reader) *EventSource {
-	es.body = body
-	return es
+// sse.SetBody(bytes.NewReader([]byte(`{"test":"put_data"}`)))
+func (sse *SSESource) SetBody(body io.Reader) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	if body == nil {
+		sse.bodyBytes = nil
+		return sse
+	}
+
+	sse.bodyBytes = nil
+	bodyBytes, err := ioReadAll(body)
+	if err != nil {
+		sse.log.Errorf("resty:sse: unable to read body, error: %v", err)
+		return sse
+	}
+
+	sse.bodyBytes = bodyBytes
+	return sse
 }
 
-// TLSClientConfig method returns the [tls.Config] from underlying client transport
-// otherwise returns nil
-func (es *EventSource) TLSClientConfig() *tls.Config {
-	cfg, err := es.tlsConfig()
+// TLSClientConfig method returns the [tls.Config] from the underlying client
+// transport, or nil when unavailable.
+func (sse *SSESource) TLSClientConfig() *tls.Config {
+	cfg, err := sse.tlsConfig()
 	if err != nil {
-		es.Logger().Errorf("%v", err)
+		sse.Logger().Errorf("%v", err)
 	}
 	return cfg
 }
 
-// SetTLSClientConfig method sets TLSClientConfig for underlying client Transport.
+// SetTLSClientConfig method sets TLS configuration on the underlying client transport.
 //
 // Values supported by https://pkg.go.dev/crypto/tls#Config can be configured.
 //
 //	// Disable SSL cert verification for local development
-//	es.SetTLSClientConfig(&tls.Config{
+//	sse.SetTLSClientConfig(&tls.Config{
 //		InsecureSkipVerify: true
 //	})
 //
 // NOTE: This method overwrites existing [http.Transport.TLSClientConfig]
-func (es *EventSource) SetTLSClientConfig(tlsConfig *tls.Config) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
+func (sse *SSESource) SetTLSClientConfig(tlsConfig *tls.Config) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
 
 	// TLSClientConfiger interface handling
-	if tc, ok := es.httpClient.Transport.(TLSClientConfiger); ok {
+	if tc, ok := sse.httpClient.Transport.(TLSClientConfiger); ok {
 		if err := tc.SetTLSClientConfig(tlsConfig); err != nil {
-			es.log.Errorf("%v", err)
+			sse.log.Errorf("%v", err)
 		}
-		return es
+		return sse
 	}
 
 	// default standard transport handling
-	if transport, ok := es.httpClient.Transport.(*http.Transport); ok {
+	if transport, ok := sse.httpClient.Transport.(*http.Transport); ok {
 		transport.TLSClientConfig = tlsConfig
 	}
 
-	return es
+	return sse
 }
 
 // getting TLS client config if not exists then create one
-func (es *EventSource) tlsConfig() (*tls.Config, error) {
-	es.lock.Lock()
-	defer es.lock.Unlock()
+func (sse *SSESource) tlsConfig() (*tls.Config, error) {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
 
-	if tc, ok := es.httpClient.Transport.(TLSClientConfiger); ok {
+	if tc, ok := sse.httpClient.Transport.(TLSClientConfiger); ok {
 		return tc.TLSClientConfig(), nil
 	}
 
-	transport, ok := es.httpClient.Transport.(*http.Transport)
+	transport, ok := sse.httpClient.Transport.(*http.Transport)
 	if !ok {
 		return nil, ErrNotHttpTransportType
 	}
@@ -225,163 +270,187 @@ func (es *EventSource) tlsConfig() (*tls.Config, error) {
 	return transport.TLSClientConfig, nil
 }
 
-// AddHeader method adds a header and its value to the [EventSource] instance.
+// SetTransport method sets custom [http.Transport] or any [http.RoundTripper]
+// on the underlying client transport.
+//
+//	transport := &http.Transport{
+//		// something like Proxying to httptest.Server, etc...
+//		Proxy: func(req *http.Request) (*url.URL, error) {
+//			return url.Parse(server.URL)
+//		},
+//	}
+//	sse.SetTransport(transport)
+//
+// NOTE:
+//   - If transport is not the type of [http.Transport], you may lose the
+//     ability to set a few Resty client settings. However, if you implement
+//     [TLSClientConfiger] interface, then TLS client config is possible to set.
+//   - It overwrites the Resty client transport instance and its configurations.
+func (sse *SSESource) SetTransport(transport http.RoundTripper) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	if transport != nil {
+		sse.httpClient.Transport = transport
+	}
+	return sse
+}
+
+// AddHeader method appends a header value on the [SSESource] instance.
 // If the header key already exists, it appends. These headers will be sent in
 // the request while establishing a connection to the event source
 //
-//	es.AddHeader("Authorization", "token here").
+//	sse.AddHeader("Authorization", "token here").
 //		AddHeader("X-Header", "value")
-func (es *EventSource) AddHeader(header, value string) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.header.Add(header, value)
-	return es
+func (sse *SSESource) AddHeader(header, value string) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.header.Add(header, value)
+	return sse
 }
 
-// SetRetryCount method enables retry attempts on the SSE client while establishing
-// connection with the server
+// SetRetryCount method sets the retry count used while establishing an SSE
+// connection with the server.
 //
 //	first attempt + retry count = total attempts
 //
 // Default is 3
 //
-//	es.SetRetryCount(10)
-func (es *EventSource) SetRetryCount(count int) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.retryCount = count
-	return es
+//	sse.SetRetryCount(10)
+func (sse *SSESource) SetRetryCount(count int) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.retryCount = count
+	return sse
 }
 
-// SetRetryWaitTime method sets the default wait time for sleep before retrying
-// the request
+// SetRetryWaitTime method sets the default wait time before retrying the
+// connection request.
 //
 // Default is 100 milliseconds.
 //
 // NOTE: The server-sent retry value takes precedence if present.
 //
-//	es.SetRetryWaitTime(1 * time.Second)
-func (es *EventSource) SetRetryWaitTime(waitTime time.Duration) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.retryWaitTime = waitTime
-	return es
+//	sse.SetRetryWaitTime(1 * time.Second)
+func (sse *SSESource) SetRetryWaitTime(waitTime time.Duration) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.retryWaitTime = waitTime
+	return sse
 }
 
-// SetRetryMaxWaitTime method sets the max wait time for sleep before retrying
-// the request
+// SetRetryMaxWaitTime method sets the maximum wait time before retrying the
+// connection request.
 //
 // Default is 2 seconds.
 //
 // NOTE: The server-sent retry value takes precedence if present.
 //
-//	es.SetRetryMaxWaitTime(3 * time.Second)
-func (es *EventSource) SetRetryMaxWaitTime(maxWaitTime time.Duration) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.retryMaxWaitTime = maxWaitTime
-	return es
+//	sse.SetRetryMaxWaitTime(3 * time.Second)
+func (sse *SSESource) SetRetryMaxWaitTime(maxWaitTime time.Duration) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.retryMaxWaitTime = maxWaitTime
+	return sse
 }
 
-// SetMaxBufSize method sets the given buffer size into the SSE client
+// SetSizeMaxBuffer method sets the maximum scanner buffer size for the SSE client.
 //
 // Default is 32kb
 //
-//	es.SetMaxBufSize(64 * 1024) // 64kb
-func (es *EventSource) SetMaxBufSize(bufSize int) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.maxBufSize = bufSize
-	return es
+//	sse.SetSizeMaxBuffer(64 * 1024) // 64kb
+func (sse *SSESource) SetSizeMaxBuffer(bufSize int) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.maxBufSize = bufSize
+	return sse
 }
 
 // Logger method returns the logger instance used by the event source instance.
-func (es *EventSource) Logger() Logger {
-	es.lock.RLock()
-	defer es.lock.RUnlock()
-	return es.log
+func (sse *SSESource) Logger() Logger {
+	sse.lock.RLock()
+	defer sse.lock.RUnlock()
+	return sse.log
 }
 
-// SetLogger method sets given writer for logging
+// SetLogger method sets the [Logger] used by the SSE client.
 //
-// Compliant to interface [resty.Logger]
-func (es *EventSource) SetLogger(l Logger) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.log = l
-	return es
+// Compliant to interface [Logger].
+func (sse *SSESource) SetLogger(l Logger) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.log = l
+	return sse
 }
 
 // just an internal helper method for test case
-func (es *EventSource) outputLogTo(w io.Writer) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.log.(*logger).l.SetOutput(w)
-	return es
+func (sse *SSESource) outputLogTo(w io.Writer) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.log.(*logger).l.SetOutput(w)
+	return sse
 }
 
-// OnOpen registered callback gets triggered when the connection is
-// established with the server
+// OnOpen registers a callback that is triggered when a connection is
+// established with the server.
 //
-//	es.OnOpen(func(url string) {
-//		fmt.Println("I'm connected:", url)
+//	sse.OnOpen(func(url string, resHdr http.Header) {
+//		fmt.Println("I'm connected:", url, resHdr)
 //	})
-func (es *EventSource) OnOpen(ef EventOpenFunc) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	if es.onOpen != nil {
-		es.log.Warnf("Overwriting an existing OnOpen callback from=%s to=%s",
-			functionName(es.onOpen), functionName(ef))
+func (sse *SSESource) OnOpen(ef SSEOpenFunc) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	if sse.onOpen != nil {
+		sse.log.Warnf("Overwriting an existing OnOpen callback from=%s to=%s",
+			functionName(sse.onOpen), functionName(ef))
 	}
-	es.onOpen = ef
-	return es
+	sse.onOpen = ef
+	return sse
 }
 
-// OnError registered callback gets triggered when the error occurred
-// in the process
+// OnError registers a callback that is triggered when an error occurs.
 //
-//	es.OnError(func(err error) {
+//	sse.OnError(func(err error) {
 //		fmt.Println("Error occurred:", err)
 //	})
-func (es *EventSource) OnError(ef EventErrorFunc) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	if es.onError != nil {
-		es.log.Warnf("Overwriting an existing OnError callback from=%s to=%s",
-			functionName(es.onError), functionName(ef))
+func (sse *SSESource) OnError(ef SSEErrorFunc) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	if sse.onError != nil {
+		sse.log.Warnf("Overwriting an existing OnError callback from=%s to=%s",
+			functionName(sse.onError), functionName(ef))
 	}
-	es.onError = ef
-	return es
+	sse.onError = ef
+	return sse
 }
 
-// OnRequestFailure registered callback gets triggered when the HTTP request
-// failure while establishing a SSE connection.
+// OnRequestFailure registers a callback that is triggered when the HTTP request
+// fails while establishing an SSE connection.
 //
-//	es.OnRequestFailure(func(err error, res *http.Response) {
+//	sse.OnRequestFailure(func(err error, res *http.Response) {
 //		fmt.Println("Error and response:", err, res)
 //	})
 //
-// Note:
+// NOTE:
 //   - Do not forget to close the HTTP response body.
 //   - HTTP response may be nil.
-func (es *EventSource) OnRequestFailure(ef EventRequestFailureFunc) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	if es.onRequestFailure != nil {
-		es.log.Warnf("Overwriting an existing OnRequestFailure callback from=%s to=%s",
-			functionName(es.onRequestFailure), functionName(ef))
+func (sse *SSESource) OnRequestFailure(ef SSERequestFailureFunc) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	if sse.onRequestFailure != nil {
+		sse.log.Warnf("Overwriting an existing OnRequestFailure callback from=%s to=%s",
+			functionName(sse.onRequestFailure), functionName(ef))
 	}
-	es.onRequestFailure = ef
-	return es
+	sse.onRequestFailure = ef
+	return sse
 }
 
 // OnMessage method registers a callback to emit every SSE event message
 // from the server. The second result argument is optional; it can be used
 // to register the data type for JSON data.
 //
-//	es.OnMessage(
+//	sse.OnMessage(
 //		func(e any) {
-//			event := e.(*Event)
+//			event := e.(*resty.SSE)
 //			fmt.Println("Event message", event)
 //		},
 //		nil,
@@ -389,25 +458,25 @@ func (es *EventSource) OnRequestFailure(ef EventRequestFailureFunc) *EventSource
 //
 //	// Receiving JSON data from the server, you can set result type
 //	// to do auto-unmarshal
-//	es.OnMessage(
+//	sse.OnMessage(
 //		func(e any) {
 //			event := e.(*MyData)
 //			fmt.Println(event)
 //		},
 //		MyData{},
 //	)
-func (es *EventSource) OnMessage(ef EventMessageFunc, result any) *EventSource {
-	return es.AddEventListener(defaultEventName, ef, result)
+func (sse *SSESource) OnMessage(ef SSEMessageFunc, result any) *SSESource {
+	return sse.AddEventListener(defaultEventName, ef, result)
 }
 
-// AddEventListener method registers a callback to consume a specific event type
-// messages from the server. The second result argument is optional; it can be used
+// AddEventListener method registers a callback to consume messages for a specific
+// event type from the server. The second result argument is optional; it can be used
 // to register the data type for JSON data.
 //
-//	es.AddEventListener(
+//	sse.AddEventListener(
 //		"friend_logged_in",
 //		func(e any) {
-//			event := e.(*Event)
+//			event := e.(*resty.SSE)
 //			fmt.Println(event)
 //		},
 //		nil,
@@ -415,7 +484,7 @@ func (es *EventSource) OnMessage(ef EventMessageFunc, result any) *EventSource {
 //
 //	// Receiving JSON data from the server, you can set result type
 //	// to do auto-unmarshal
-//	es.AddEventListener(
+//	sse.AddEventListener(
 //		"friend_logged_in",
 //		func(e any) {
 //			event := e.(*UserLoggedIn)
@@ -423,166 +492,187 @@ func (es *EventSource) OnMessage(ef EventMessageFunc, result any) *EventSource {
 //		},
 //		UserLoggedIn{},
 //	)
-func (es *EventSource) AddEventListener(eventName string, ef EventMessageFunc, result any) *EventSource {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	if e, found := es.onEvent[eventName]; found {
-		es.log.Warnf("Overwriting an existing OnEvent callback from=%s to=%s",
+func (sse *SSESource) AddEventListener(eventName string, ef SSEMessageFunc, result any) *SSESource {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	if e, found := sse.onEvent[eventName]; found {
+		sse.log.Warnf("Overwriting an existing OnEvent callback from=%s to=%s",
 			functionName(e), functionName(ef))
 	}
 	cb := &callback{Func: ef, Result: nil}
 	if result != nil {
 		cb.Result = getPointer(result)
 	}
-	es.onEvent[eventName] = cb
-	return es
+	sse.onEvent[eventName] = cb
+	return sse
 }
 
 // Get method establishes the connection with the server.
 //
-//	es := NewEventSource().
+//	sse := NewSSESource().
 //		SetURL("https://sse.dev/test").
 //		OnMessage(
 //			func(e any) {
-//				event := e.(*Event)
+//				event := e.(*resty.SSE)
 //				fmt.Println(event)
 //			},
 //			nil, // see method godoc
 //		)
 //
-//	err := es.Get()
+//	err := sse.Get()
 //	fmt.Println(err)
-func (es *EventSource) Get() error {
+func (sse *SSESource) Get() error {
 	// Validate required values
-	if isStringEmpty(es.url) {
+	if isStringEmpty(sse.url) {
 		return fmt.Errorf("resty:sse: event source URL is required")
 	}
 
-	if isStringEmpty(es.method) {
+	if isStringEmpty(sse.method) {
 		// It is up to the user to choose which http method to use, depending on the specific code implementation. No restrictions are imposed here.
 		// Ensure compatibility, use GET as default http method
-		es.method = defaultHTTPMethod
+		sse.method = defaultHTTPMethod
 	}
 
-	if len(es.onEvent) == 0 {
+	if len(sse.onEvent) == 0 {
 		return fmt.Errorf("resty:sse: At least one OnMessage/AddEventListener func is required")
 	}
 
 	// reset to begin
-	es.enableConnect()
+	sse.enableConnect()
 
 	for {
-		if es.isClosed() {
-			return nil
+		ctx := sse.Context()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if sse.isClosed() {
+				return nil
+			}
 		}
-		res, err := es.connect()
+
+		res, err := sse.connect()
 		if err != nil {
 			return err
 		}
-		es.triggerOnOpen(res.Header.Clone())
-		if err := es.listenStream(res); err != nil {
+		sse.triggerOnOpen(res.Header.Clone())
+		if err := sse.listenStream(res); err != nil {
 			return err
 		}
 	}
 }
 
-// Close method used to close SSE connection explicitly
-func (es *EventSource) Close() {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.closed = true
+// Close method closes the SSE connection explicitly.
+func (sse *SSESource) Close() {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.closed = true
 }
 
-func (es *EventSource) enableConnect() {
-	es.lock.Lock()
-	defer es.lock.Unlock()
-	es.closed = false
+func (sse *SSESource) enableConnect() {
+	sse.lock.Lock()
+	defer sse.lock.Unlock()
+	sse.closed = false
 }
 
-func (es *EventSource) isClosed() bool {
-	es.lock.RLock()
-	defer es.lock.RUnlock()
-	return es.closed
+func (sse *SSESource) isClosed() bool {
+	sse.lock.RLock()
+	defer sse.lock.RUnlock()
+	return sse.closed
 }
 
-func (es *EventSource) triggerOnOpen(hdr http.Header) {
-	es.lock.RLock()
-	defer es.lock.RUnlock()
-	if es.onOpen != nil {
-		es.onOpen(strings.Clone(es.url), hdr)
+func (sse *SSESource) triggerOnOpen(hdr http.Header) {
+	sse.lock.RLock()
+	defer sse.lock.RUnlock()
+	if sse.onOpen != nil {
+		sse.onOpen(strings.Clone(sse.url), hdr)
 	}
 }
 
-func (es *EventSource) triggerOnError(err error) {
-	es.lock.RLock()
-	defer es.lock.RUnlock()
-	if es.onError != nil {
-		es.onError(err)
+func (sse *SSESource) triggerOnError(err error) {
+	sse.lock.RLock()
+	defer sse.lock.RUnlock()
+	if sse.onError != nil {
+		sse.onError(err)
 	}
 }
 
-func (es *EventSource) triggerOnRequestFailure(err error, res *http.Response) {
-	es.lock.RLock()
-	defer es.lock.RUnlock()
-	if es.onRequestFailure != nil {
-		es.onRequestFailure(err, res)
+func (sse *SSESource) triggerOnRequestFailure(err error, res *http.Response) {
+	sse.lock.RLock()
+	defer sse.lock.RUnlock()
+	if sse.onRequestFailure != nil {
+		sse.onRequestFailure(err, res)
 	}
 }
 
-func (es *EventSource) createRequest() (*http.Request, error) {
-	req, err := http.NewRequest(es.method, es.url, es.body)
+func (sse *SSESource) createRequest() (*http.Request, error) {
+	var reqBody io.Reader
+	if sse.bodyBytes != nil {
+		// create reader from bytes on each request
+		reqBody = bytes.NewReader(sse.bodyBytes)
+	}
+
+	req, err := http.NewRequestWithContext(sse.Context(), sse.method, sse.url, reqBody)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header = es.header.Clone()
+	req.Header = sse.header.Clone()
 	req.Header.Set(hdrAcceptKey, "text/event-stream")
 	req.Header.Set(hdrCacheControlKey, "no-cache")
 	req.Header.Set(hdrConnectionKey, "keep-alive")
-	if len(es.lastEventID) > 0 {
-		req.Header.Set(hdrLastEvevntID, es.lastEventID)
+	if len(sse.lastEventID) > 0 {
+		req.Header.Set(hdrLastEvevntID, sse.lastEventID)
 	}
 
 	return req, nil
 }
 
-func (es *EventSource) connect() (*http.Response, error) {
-	es.lock.RLock()
-	defer es.lock.RUnlock()
+func (sse *SSESource) connect() (*http.Response, error) {
+	sse.lock.RLock()
+	defer sse.lock.RUnlock()
 
 	var backoff *backoffWithJitter
-	if es.serverSentRetry > 0 {
-		backoff = newBackoffWithJitter(es.serverSentRetry, es.serverSentRetry)
+	if sse.serverSentRetry > 0 {
+		backoff = newBackoffWithJitter(sse.serverSentRetry, sse.serverSentRetry)
 	} else {
-		backoff = newBackoffWithJitter(es.retryWaitTime, es.retryMaxWaitTime)
+		backoff = newBackoffWithJitter(sse.retryWaitTime, sse.retryMaxWaitTime)
 	}
 
 	var (
 		err     error
 		attempt int
 	)
-	for i := 0; i <= es.retryCount; i++ {
+	for i := 0; i <= sse.retryCount; i++ {
 		attempt++
-		req, reqErr := es.createRequest()
+		req, reqErr := sse.createRequest()
 		if reqErr != nil {
 			err = reqErr
 			break
 		}
 
-		resp, doErr := es.httpClient.Do(req)
+		resp, doErr := sse.httpClient.Do(req)
 		if resp != nil && resp.StatusCode == http.StatusOK {
+			// successful connection, return response to listenStream
 			return resp, nil
 		}
 
 		// we have reached the maximum no. of requests
 		// first attempt + retry count = total attempts
-		if attempt-1 == es.retryCount {
+		if attempt-1 == sse.retryCount {
 			err = doErr
 			break
 		}
 
-		rRes := wrapResponse(resp)
-		needsRetry := applyRetryDefaultConditions(rRes, doErr)
+		rRes := wrapResponse(resp, req)
+		needsRetry := isDoNotRetryError(doErr)
+		if !needsRetry && resp != nil {
+			for _, retryCondition := range sse.retryConditions {
+				if needsRetry = retryCondition(rRes, doErr); needsRetry {
+					break
+				}
+			}
+		}
 
 		// retry not required stop here
 		if !needsRetry {
@@ -592,7 +682,7 @@ func (es *EventSource) connect() (*http.Response, error) {
 				err = doErr
 			}
 			if err != nil {
-				es.triggerOnRequestFailure(err, resp)
+				sse.triggerOnRequestFailure(err, resp)
 			}
 			break
 		}
@@ -613,11 +703,11 @@ func (es *EventSource) connect() (*http.Response, error) {
 	return nil, fmt.Errorf("resty:sse: unable to connect stream")
 }
 
-func (es *EventSource) listenStream(res *http.Response) error {
+func (sse *SSESource) listenStream(res *http.Response) error {
 	defer closeq(res.Body)
 
 	scanner := bufio.NewScanner(res.Body)
-	scanner.Buffer(make([]byte, slices.Min([]int{4096, es.maxBufSize})), es.maxBufSize)
+	scanner.Buffer(make([]byte, min(4096, sse.maxBufSize)), sse.maxBufSize)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
 			return 0, nil, nil
@@ -635,51 +725,57 @@ func (es *EventSource) listenStream(res *http.Response) error {
 	})
 
 	for {
-		if es.isClosed() {
-			return nil
+		ctx := sse.Context()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if sse.isClosed() {
+				return nil
+			}
 		}
 
-		if err := es.processEvent(scanner); err != nil {
+		if err := sse.processEvent(scanner); err != nil {
 			return err
 		}
 	}
 }
 
-func (es *EventSource) processEvent(scanner *bufio.Scanner) error {
+func (sse *SSESource) processEvent(scanner *bufio.Scanner) error {
 	e, err := readEvent(scanner)
 	if err != nil {
 		if err == io.EOF {
 			return err
 		}
-		es.triggerOnError(err)
+		sse.triggerOnError(err)
 		return err
 	}
 
 	ed, err := parseEvent(e)
 	if err != nil {
-		es.triggerOnError(err)
+		sse.triggerOnError(err)
 		return nil // parsing errors, will not return error.
 	}
 	defer putRawEvent(ed)
 
 	if len(ed.ID) > 0 {
-		es.lock.Lock()
-		es.lastEventID = string(ed.ID)
-		es.lock.Unlock()
+		sse.lock.Lock()
+		sse.lastEventID = string(ed.ID)
+		sse.lock.Unlock()
 	}
 
 	if len(ed.Retry) > 0 {
 		if retry, err := strconv.Atoi(string(ed.Retry)); err == nil {
-			es.lock.Lock()
-			es.serverSentRetry = time.Millisecond * time.Duration(retry)
-			es.lock.Unlock()
+			sse.lock.Lock()
+			sse.serverSentRetry = time.Millisecond * time.Duration(retry)
+			sse.lock.Unlock()
 		} else {
-			es.triggerOnError(err)
+			sse.triggerOnError(err)
 		}
 	}
 
 	if len(ed.Data) > 0 {
-		es.handleCallback(&Event{
+		sse.handleCallback(&SSE{
 			ID:   string(ed.ID),
 			Name: string(ed.Event),
 			Data: string(ed.Data),
@@ -689,15 +785,15 @@ func (es *EventSource) processEvent(scanner *bufio.Scanner) error {
 	return nil
 }
 
-func (es *EventSource) handleCallback(e *Event) {
+func (sse *SSESource) handleCallback(e *SSE) {
 	eventName := e.Name
 	if len(eventName) == 0 {
 		eventName = defaultEventName
 	}
 
-	es.lock.RLock()
-	cb, found := es.onEvent[eventName]
-	es.lock.RUnlock()
+	sse.lock.RLock()
+	cb, found := sse.onEvent[eventName]
+	sse.lock.RUnlock()
 
 	if found {
 		if cb.Result == nil {
@@ -706,7 +802,7 @@ func (es *EventSource) handleCallback(e *Event) {
 		}
 		r := newInterface(cb.Result)
 		if err := decodeJSON(strings.NewReader(e.Data), r); err != nil {
-			es.triggerOnError(err)
+			sse.triggerOnError(err)
 			return
 		}
 		cb.Func(r)
@@ -726,14 +822,14 @@ func readEventFunc(scanner *bufio.Scanner) ([]byte, error) {
 	return nil, io.EOF
 }
 
-func wrapResponse(res *http.Response) *Response {
+func wrapResponse(res *http.Response, req *http.Request) *Response {
 	if res == nil {
 		return nil
 	}
-	return &Response{RawResponse: res}
+	return &Response{RawResponse: res, Request: &Request{RawRequest: req}}
 }
 
-type rawEvent struct {
+type rawSSE struct {
 	ID    []byte
 	Data  []byte
 	Event []byte
@@ -744,7 +840,7 @@ var parseEvent = parseEventFunc
 
 // event value parsing logic obtained and modified for Resty processing flow.
 // https://github.com/r3labs/sse/blob/c6d5381ee3ca63828b321c16baa008fd6c0b4564/client.go#L322
-func parseEventFunc(msg []byte) (*rawEvent, error) {
+func parseEventFunc(msg []byte) (*rawSSE, error) {
 	if len(msg) < 1 {
 		return nil, errors.New("resty:sse: event message was empty")
 	}
@@ -791,10 +887,10 @@ func trimHeader(size int, data []byte) []byte {
 	return data
 }
 
-var rawEventPool = &sync.Pool{New: func() any { return new(rawEvent) }}
+var rawEventPool = &sync.Pool{New: func() any { return new(rawSSE) }}
 
-func newRawEvent() *rawEvent {
-	e := rawEventPool.Get().(*rawEvent)
+func newRawEvent() *rawSSE {
+	e := rawEventPool.Get().(*rawSSE)
 	e.ID = e.ID[:0]
 	e.Data = e.Data[:0]
 	e.Event = e.Event[:0]
@@ -802,6 +898,6 @@ func newRawEvent() *rawEvent {
 	return e
 }
 
-func putRawEvent(e *rawEvent) {
+func putRawEvent(e *rawSSE) {
 	rawEventPool.Put(e)
 }
