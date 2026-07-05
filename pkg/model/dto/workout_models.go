@@ -659,49 +659,6 @@ func NewWorkoutBreakdownItemsFromUnit(items []model.BreakdownItem, count float64
 	return resp
 }
 
-func convertDistanceToPreferred(distanceMeters float64, units *model.UserPreferredUnits) float64 {
-	if units == nil {
-		return distanceMeters
-	}
-
-	switch units.Distance() {
-	case "mi":
-		return distanceMeters / templatehelpers.MeterPerMile
-	case "km":
-		return distanceMeters / templatehelpers.MeterPerKM
-	case "m":
-		return distanceMeters
-	default:
-		return distanceMeters / templatehelpers.MeterPerKM
-	}
-}
-
-func convertElevationToPreferred(elevationMeters float64, units *model.UserPreferredUnits) float64 {
-	if units == nil {
-		return elevationMeters
-	}
-
-	switch units.Elevation() {
-	case "ft":
-		return elevationMeters * templatehelpers.FeetPerMeter
-	default:
-		return elevationMeters
-	}
-}
-
-func convertSpeedToPreferred(speedMS float64, units *model.UserPreferredUnits) float64 {
-	if units == nil {
-		return speedMS * 3.6
-	}
-
-	switch units.Speed() {
-	case "mph":
-		return speedMS * 3.6 * templatehelpers.MilesPerKM
-	default:
-		return speedMS * 3.6
-	}
-}
-
 func optionalMetric(value float64) *float64 {
 	if value == 0 {
 		return nil
@@ -715,23 +672,23 @@ func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endId
 	resp := WorkoutRangeStatsResponse{
 		StartIndex: startIdx,
 		EndIndex:   endIdx,
-		Distance:   convertDistanceToPreferred(stats.Distance, units),
+		Distance:   stats.Distance,
 		Duration:   stats.Duration.Seconds(),
 		// MovingDuration and PauseDuration are already split in the aggregator
 		MovingDuration:      stats.MovingDuration.Seconds(),
 		PauseDuration:       stats.PauseDuration.Seconds(),
-		MinElevation:        convertElevationToPreferred(stats.MinElevation, units),
-		MaxElevation:        convertElevationToPreferred(stats.MaxElevation, units),
-		TotalUp:             convertElevationToPreferred(stats.TotalUp, units),
-		TotalDown:           convertElevationToPreferred(stats.TotalDown, units),
+		MinElevation:        stats.MinElevation,
+		MaxElevation:        stats.MaxElevation,
+		TotalUp:             stats.TotalUp,
+		TotalDown:           stats.TotalDown,
 		AverageSlope:        stats.AverageSlope,
 		MinSlope:            stats.MinSlope,
 		MaxSlope:            stats.MaxSlope,
-		AverageSpeed:        convertSpeedToPreferred(stats.AverageSpeed, units),
-		AverageSpeedNoPause: convertSpeedToPreferred(stats.AverageSpeedNoPause, units),
-		MinSpeed:            convertSpeedToPreferred(stats.MinSpeed, units),
-		MaxSpeed:            convertSpeedToPreferred(stats.MaxSpeed, units),
-		Units: WorkoutRangeStatsUnitsResponse{
+		AverageSpeed:        stats.AverageSpeed,
+		AverageSpeedNoPause: stats.AverageSpeedNoPause,
+		MinSpeed:            stats.MinSpeed,
+		MaxSpeed:            stats.MaxSpeed,
+		Units: WorkoutRangeStatsUnitsResponse{ // TODO still needed?
 			Distance:    "km",
 			Speed:       "km/h",
 			Elevation:   "m",

@@ -84,6 +84,11 @@ dev-activitypub:
 			--file ./docker/docker-compose.activitypub.yaml \
 			up --build
 
+dev-stop:
+	docker compose --project-directory ./docker/ --file ./docker/docker-compose.dev.yaml down --remove-orphans
+	docker compose --project-directory ./docker/ --file ./docker/docker-compose.activitypub.yaml down --remove-orphans
+	docker compose --project-directory ./docker/ --file ./docker/docker-compose.yaml down --remove-orphans
+
 dev-clean:
 	docker compose --project-directory ./docker/ --file ./docker/docker-compose.dev.yaml down --remove-orphans --volumes
 	docker compose --project-directory ./docker/ --file ./docker/docker-compose.activitypub.yaml down --remove-orphans --volumes

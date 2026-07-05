@@ -23,6 +23,9 @@ import {
   IntervalSelection,
   WorkoutDetailCoordinatorService,
 } from '../../services/workout-detail-coordinator.service';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 
 type NumericRangeStatKey = {
   [K in keyof WorkoutRangeStats]: WorkoutRangeStats[K] extends number | undefined ? K : never;
@@ -144,6 +147,9 @@ export class WorkoutStatisticsComponent {
 
   private readonly stats = signal<WorkoutRangeStats | null>(null);
   private readonly loading = signal(false);
+  private formatDurationPipe = inject(FormatDurationPipe);
+  private formatDistancePipe = inject(FormatDistancePipe);
+  private formatElevationPipe = inject(FormatElevationPipe);
   private requestId = 0;
 
   public constructor() {
@@ -167,12 +173,12 @@ export class WorkoutStatisticsComponent {
 
     const cards: WorkoutStatCard[] = [];
 
-    const distanceCard = this.buildDistanceCard(stats, units, selection, workout.laps?.length ?? 0);
+    const distanceCard = this.buildDistanceCard(stats, selection, workout.laps?.length ?? 0);
     if (distanceCard) {
       cards.push(distanceCard);
     }
 
-    const elevationCard = this.buildElevationCard(stats, units);
+    const elevationCard = this.buildElevationCard(stats);
     if (elevationCard) {
       cards.push(elevationCard);
     }
@@ -241,7 +247,6 @@ export class WorkoutStatisticsComponent {
 
   private buildDistanceCard(
     stats: WorkoutRangeStats,
-    units: WorkoutRangeStatsUnits,
     selection: IntervalSelection | null,
     lapCount: number,
   ): WorkoutStatCard | null {
@@ -251,12 +256,12 @@ export class WorkoutStatisticsComponent {
     if (stats.distance > 0) {
       rows.push({
         labelKey: selectionActive ? _('Distance') : _('Total distance'),
-        value: this.formatDistance(stats.distance, units.distance),
+        value: this.formatDistancePipe.transform(stats.distance),
       });
     }
 
     if (stats.duration > 0) {
-      rows.push({ labelKey: _('Duration'), value: this.formatDurationValue(stats.duration) });
+      rows.push({ labelKey: _('Duration'), value: this.formatDurationPipe.transform(stats.duration) });
     }
 
     const pauseDuration = stats.pause_duration;
@@ -269,14 +274,14 @@ export class WorkoutStatisticsComponent {
     ) {
       rows.push({
         labelKey: _('Duration (No pause)'),
-        value: this.formatDurationValue(noPauseDuration),
+        value: this.formatDurationPipe.transform(noPauseDuration),
       });
     }
 
     if (typeof pauseDuration === 'number' && Number.isFinite(pauseDuration) && pauseDuration >= 0) {
       rows.push({
         labelKey: _('Time paused'),
-        value: this.formatDurationValue(pauseDuration),
+        value: this.formatDurationPipe.transform(pauseDuration),
       });
     }
 
@@ -286,10 +291,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: 'distance-summary',
-          labelKey: _('Distance'),
-          rows,
-        }
+        key: 'distance-summary',
+        labelKey: _('Distance'),
+        rows,
+      }
       : null;
   }
 
@@ -321,28 +326,26 @@ export class WorkoutStatisticsComponent {
 
   private buildElevationCard(
     stats: WorkoutRangeStats,
-    units: WorkoutRangeStatsUnits,
   ): WorkoutStatCard | null {
     const rows: WorkoutStatRow[] = [];
 
     if (stats.total_up > 0) {
       rows.push({
         labelKey: _('Total up'),
-        value: this.formatElevation(stats.total_up, units.elevation),
+        value: this.formatElevationPipe.transform(stats.total_up),
       });
     }
 
     if (stats.total_down > 0) {
       rows.push({
         labelKey: _('Total down'),
-        value: this.formatElevation(stats.total_down, units.elevation),
+        value: this.formatElevationPipe.transform(stats.total_down),
       });
     }
 
     if (stats.max_elevation > stats.min_elevation) {
-      const elevationRange = `${this.formatElevation(stats.min_elevation, units.elevation)} - ${this.formatElevation(
-        stats.max_elevation,
-        units.elevation,
+      const elevationRange = `${this.formatElevationPipe.transform(stats.min_elevation)} - ${this.formatElevationPipe.transform(
+        stats.max_elevation
       )}`;
 
       rows.push({
@@ -353,10 +356,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: 'elevation-summary',
-          labelKey: _('Elevation'),
-          rows,
-        }
+        key: 'elevation-summary',
+        labelKey: _('Elevation'),
+        rows,
+      }
       : null;
   }
 
@@ -407,10 +410,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: config.key,
-          labelKey: config.labelKey,
-          rows,
-        }
+        key: config.key,
+        labelKey: config.labelKey,
+        rows,
+      }
       : null;
   }
 
@@ -435,16 +438,6 @@ export class WorkoutStatisticsComponent {
     return value;
   }
 
-  private formatDistance(value: number, unit: string): string {
-    const formatted = formatNumber(value, this.locale, '1.2-2');
-    return `${formatted} ${unit}`;
-  }
-
-  private formatElevation(value: number, unit: string): string {
-    const formatted = formatNumber(value, this.locale, '1.0-1');
-    return `${formatted} ${unit}`;
-  }
-
   private formatRangeValue(value: number, unit: string, decimals: number | undefined): string {
     if (value === undefined || Number.isNaN(value)) {
       return '-';
@@ -456,20 +449,5 @@ export class WorkoutStatisticsComponent {
     const digits = decimals !== undefined && decimals > 0 ? `1.${decimals}-${decimals}` : '1.0-0';
     const formatted = formatNumber(value, this.locale, digits);
     return unit ? `${formatted} ${unit}` : formatted;
-  }
-
-  private formatDurationValue(seconds: number): string {
-    const totalSeconds = Math.round(seconds);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
-    }
-    return `${secs}s`;
   }
 }

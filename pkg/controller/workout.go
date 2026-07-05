@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -825,6 +826,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		Results: dto.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx, &requester.PreferredUnits),
 	}
 
+	fmt.Println(`Test asdddddddddddddddddddddddasddddddddddddddddddd`)
 	return c.JSON(http.StatusOK, resp)
 }
 
