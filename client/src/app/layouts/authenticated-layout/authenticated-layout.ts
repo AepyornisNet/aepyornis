@@ -12,6 +12,10 @@ import { User } from '../../core/services/user';
   templateUrl: './authenticated-layout.html',
   styleUrl: './authenticated-layout.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(click)': 'toggleMobileSidebar($event)',
+    '(keydown.enter)': 'toggleMobileSidebar($event)',
+  },
 })
 export class AuthenticatedLayout {
   private static readonly SIDEBAR_STATE_KEY = 'sidebarOpen';
@@ -50,6 +54,10 @@ export class AuthenticatedLayout {
   }
 
   public toggleMobileSidebar(event: Event): void {
+    if (!this.mobileSidebarVisible()) {
+      return;
+    }
+
     const target = event.target;
     const ignoredSelectors = ['.sidebar-toggle', '.header-user-menu', '.sidebar-brand'];
 
