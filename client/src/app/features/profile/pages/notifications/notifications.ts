@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { SwPush } from '@angular/service-worker';
 import { AppConfig } from '../../../../core/services/app-config';
@@ -26,7 +26,7 @@ type NotificationTypeOption = {
 
 @Component({
   selector: 'app-profile-notifications',
-  imports: [AppIcon, ReactiveFormsModule, TranslatePipe],
+  imports: [AppIcon, FormField, FormRoot, TranslatePipe],
   templateUrl: './notifications.html',
   styleUrl: './notifications.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,7 +34,6 @@ type NotificationTypeOption = {
 export class ProfileNotificationsPage implements OnInit {
   public readonly appConfig = inject(AppConfig);
   private api = inject(Api);
-  private fb = inject(FormBuilder);
   private swPush = inject(SwPush);
   private translate = inject(TranslateService);
 
@@ -43,22 +42,28 @@ export class ProfileNotificationsPage implements OnInit {
   public readonly requestingWebPush = signal(false);
   public readonly savingNotificationSettings = signal(false);
 
-  public readonly notificationForm: FormGroup = this.fb.group({
-    follow_request: this.fb.group({
-      database: [true],
-      mail: [true],
-      webpush: [true],
-    }),
-    workout_like: this.fb.group({
-      database: [true],
-      mail: [true],
-      webpush: [true],
-    }),
-    workout_reply: this.fb.group({
-      database: [true],
-      mail: [true],
-      webpush: [true],
-    }),
+  public readonly notificationModel = signal({
+    follow_request: {
+      database: true,
+      mail: true,
+      webpush: true,
+    },
+    workout_like: {
+      database: true,
+      mail: true,
+      webpush: true,
+    },
+    workout_reply: {
+      database: true,
+      mail: true,
+      webpush: true,
+    },
+  });
+
+  public readonly notificationForm = form(this.notificationModel, () => {}, {
+    submission: {
+      action: this.saveNotificationSettings.bind(this)
+    }
   });
 
   private readonly notificationProviderOptions: NotificationProviderOption[] = [
@@ -188,10 +193,11 @@ export class ProfileNotificationsPage implements OnInit {
     const provider = settings.method as NotificationProvider;
 
     this.notificationForm
-      .get('follow_request')
-      ?.patchValue({ [provider]: settings.follow_request });
-    this.notificationForm.get('workout_like')?.patchValue({ [provider]: settings.workout_like });
-    this.notificationForm.get('workout_reply')?.patchValue({ [provider]: settings.workout_reply });
+      .follow_request[provider]().value.set(settings.follow_request);
+    this.notificationForm
+      .workout_like[provider]().value.set(settings.workout_like);
+    this.notificationForm
+      .workout_reply[provider]().value.set(settings.workout_reply);
   }
 
   private async payload(
@@ -201,9 +207,9 @@ export class ProfileNotificationsPage implements OnInit {
     return {
       method_settings:
         methodSettings !== null ? methodSettings : await this.currentMethodSettings(provider),
-      follow_request: Boolean(this.notificationForm.get('follow_request')?.get(provider)?.value),
-      workout_like: Boolean(this.notificationForm.get('workout_like')?.get(provider)?.value),
-      workout_reply: Boolean(this.notificationForm.get('workout_reply')?.get(provider)?.value),
+      follow_request: Boolean(this.notificationForm.follow_request[provider]().value()),
+      workout_like: Boolean(this.notificationForm.workout_like[provider]().value()),
+      workout_reply: Boolean(this.notificationForm.workout_reply[provider]().value()),
     };
   }
 

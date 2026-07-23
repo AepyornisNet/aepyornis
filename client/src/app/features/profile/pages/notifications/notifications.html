@@ -1,4 +1,4 @@
-<form [formGroup]="notificationForm" (ngSubmit)="saveNotificationSettings()">
+<form [formRoot]="notificationForm">
   <div class="card shadow-sm mb-4">
     <div class="card-header">
       <h3 class="h5 mb-0">{{ 'Notifications' | translate }}</h3>
@@ -27,7 +27,7 @@
             </thead>
             <tbody>
               @for (type of notificationTypes; track type.key) {
-                <tr [formGroupName]="type.key">
+                <tr>
                   <th class="notification-type" scope="row">
                     <span class="d-block fw-semibold">{{ type.label | translate }}</span>
                     <span class="small text-muted fw-normal">
@@ -42,8 +42,8 @@
                         [attr.aria-label]="
                           (type.label | translate) + ' - ' + (provider.label | translate)
                         "
-                        [formControlName]="provider.key"
                         [id]="'notification_' + provider.key + '_' + type.key"
+                        [formField]="notificationForm[type.key][provider.key]"
                       />
                     </td>
                   }
@@ -103,7 +103,7 @@
     [disabled]="
       savingNotificationSettings() ||
       loadingNotificationSettings() ||
-      notificationForm.invalid ||
+      !notificationForm().valid() ||
       availableNotificationProviders().length === 0
     "
   >
