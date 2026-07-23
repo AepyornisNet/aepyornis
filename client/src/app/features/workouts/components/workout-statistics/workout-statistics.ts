@@ -261,7 +261,10 @@ export class WorkoutStatisticsComponent {
     }
 
     if (stats.duration > 0) {
-      rows.push({ labelKey: _('Duration'), value: this.formatDurationPipe.transform(stats.duration) });
+      rows.push({
+        labelKey: _('Duration'),
+        value: this.formatDurationPipe.transform(stats.duration),
+      });
     }
 
     const pauseDuration = stats.pause_duration;
@@ -291,10 +294,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: 'distance-summary',
-        labelKey: _('Distance'),
-        rows,
-      }
+          key: 'distance-summary',
+          labelKey: _('Distance'),
+          rows,
+        }
       : null;
   }
 
@@ -324,9 +327,7 @@ export class WorkoutStatisticsComponent {
     return { startMs, endMs };
   }
 
-  private buildElevationCard(
-    stats: WorkoutRangeStats,
-  ): WorkoutStatCard | null {
+  private buildElevationCard(stats: WorkoutRangeStats): WorkoutStatCard | null {
     const rows: WorkoutStatRow[] = [];
 
     if (stats.total_up > 0) {
@@ -345,7 +346,7 @@ export class WorkoutStatisticsComponent {
 
     if (stats.max_elevation > stats.min_elevation) {
       const elevationRange = `${this.formatElevationPipe.transform(stats.min_elevation)} - ${this.formatElevationPipe.transform(
-        stats.max_elevation
+        stats.max_elevation,
       )}`;
 
       rows.push({
@@ -356,10 +357,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: 'elevation-summary',
-        labelKey: _('Elevation'),
-        rows,
-      }
+          key: 'elevation-summary',
+          labelKey: _('Elevation'),
+          rows,
+        }
       : null;
   }
 
@@ -410,10 +411,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: config.key,
-        labelKey: config.labelKey,
-        rows,
-      }
+          key: config.key,
+          labelKey: config.labelKey,
+          rows,
+        }
       : null;
   }
 
