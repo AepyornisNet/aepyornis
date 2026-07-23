@@ -585,8 +585,7 @@ export class Heatmap extends BaseMapComponent {
   }
 
   private getSanitizedViewportBounds():
-    | { minLat: number; minLng: number; maxLat: number; maxLng: number }
-    | undefined {
+    { minLat: number; minLng: number; maxLat: number; maxLng: number } | undefined {
     if (!this.map) {
       return undefined;
     }
