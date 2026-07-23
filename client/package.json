@@ -70,7 +70,7 @@
     "@types/jasmine": "~6.0.0",
     "@vendure/ngx-translate-extract": "^10.2.0",
     "angular-eslint": "22.1.0",
-    "eslint": "^9.39.4",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "jasmine-core": "~6.3.0",
