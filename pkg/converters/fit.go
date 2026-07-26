@@ -69,6 +69,11 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 			subType = session.SubSport.String()
 		}
 
+		totalDistance := 0.0
+		if !math.IsNaN(session.TotalDistanceScaled()) {
+			totalDistance = session.TotalDistanceScaled()
+		}
+
 		w := &model.Workout{
 			Data:            clonedData,
 			Stats:           &stats,
@@ -81,7 +86,7 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 			CustomType:      customType,
 			Records:         append([]model.WorkoutRecord(nil), records...),
 			Events:          append([]model.WorkoutEvent(nil), events...),
-			TotalDistance:   session.TotalDistanceScaled(),
+			TotalDistance:   totalDistance,
 			TotalDistance2D: totalDistance2D,
 			TotalDuration:   elapsedDuration,
 			PauseDuration:   pauseDuration,
