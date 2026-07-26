@@ -71,12 +71,16 @@ func (ac *authController) SignIn(c echo.Context) error {
 
 	ac.sessionManager.Put(c.Request().Context(), "email", storedUser.Email)
 
-	if err := ac.createToken(storedUser, c); err != nil {
+	tokenStr, err := ac.createToken(storedUser, c)
+	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	userResp := dto.NewUserProfileResponse(storedUser)
+	userResp.Token = tokenStr
+
 	resp := dto.Response[dto.UserProfileResponse]{
-		Results: dto.NewUserProfileResponse(storedUser),
+		Results: userResp,
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -181,12 +185,12 @@ func (ac *authController) Register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-func (ac *authController) createToken(u *model.User, c echo.Context) error {
+func (ac *authController) createToken(u *model.User, c echo.Context) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return ErrInvalidJWTToken
+		return "", ErrInvalidJWTToken
 	}
 
 	exp := time.Now().Add(time.Hour * 24 * 10)
@@ -196,12 +200,12 @@ func (ac *authController) createToken(u *model.User, c echo.Context) error {
 
 	t, err := token.SignedString(ac.cfg.JWTSecret())
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	ac.setTokenCookie(t, exp, c)
 
-	return nil
+	return t, nil
 }
 
 func (ac *authController) setTokenCookie(t string, exp time.Time, c echo.Context) {
