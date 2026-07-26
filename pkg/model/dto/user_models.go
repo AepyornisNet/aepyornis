@@ -23,6 +23,7 @@ type UserProfileResponse struct {
 	CreatedAt   time.Time        `json:"created_at"`
 	UpdatedAt   time.Time        `json:"updated_at"`
 	Profile     *ProfileSettings `json:"profile,omitempty"`
+	Token       string           `json:"token,omitempty"`
 }
 
 // TODO: Remove duplicate fields between UserProfileResponse and ProfileSettings
