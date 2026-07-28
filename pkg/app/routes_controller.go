@@ -42,6 +42,15 @@ func (a *App) registerUserController(apiGroup *echo.Group) {
 	apiGroup.GET("/:id", uc.GetUserByID).Name = "user-show"
 }
 
+func (a *App) registerNotificationController(apiGroup *echo.Group) {
+	hc := controller.NewNotificationController(a.injector)
+
+	apiGroup.GET("/notifications", hc.GetNotifications).Name = "notification-unread"
+	apiGroup.POST("/notifications/read", hc.MarkAsRead).Name = "notification-mark-as-read"
+	apiGroup.GET("/notifications/settings", hc.GetConfig).Name = "notification-config"
+	apiGroup.POST("/notifications/:type", hc.UpdateConfig).Name = "notification-config-update"
+}
+
 func (a *App) registerAuthController(apiGroupPublic *echo.Group) {
 	ac := controller.NewAuthController(a.injector)
 

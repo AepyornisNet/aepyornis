@@ -68,6 +68,48 @@ WT_HAMMERHEAD_WEBHOOK_SECRET="your-webhook-secret"
 When all four variables are set, users can connect their Karoo device under
 **Profile → Apps → Hammerhead**.
 
+### WebPush & Email Notifications
+
+To enable browser Web Push notifications or email notifications for user activities (likes, comments, follow requests), configure VAPID or email settings:
+
+#### WebPush Notifications
+
+WebPush requires a valid VAPID key pair (ECDSA P-256). You can generate VAPID keys using standard tools (such as `npx web-push generate-vapid-keys`).
+
+```bash
+WT_VAPID_PUBLIC_KEY="your-vapid-public-key"
+WT_VAPID_PRIVATE_KEY="your-vapid-private-key"
+```
+
+| Variable               | Config key          | Description                                                                           |
+| ---------------------- | ------------------- | ------------------------------------------------------------------------------------- |
+| `WT_VAPID_PUBLIC_KEY`  | `vapid_public_key`  | Public VAPID key provided to browser clients for PushSubscription registration         |
+| `WT_VAPID_PRIVATE_KEY` | `vapid_private_key` | Private VAPID key used by the server to sign Web Push messages                        |
+
+When both VAPID keys are provided, the `webpush` provider becomes active. Users can enable WebPush in **Profile → Notifications**, triggering the browser prompt to subscribe to push notifications.
+
+#### Email Notifications
+
+For email notifications:
+
+```bash
+WT_MAIL_SENDER_NAME="WorkoutTracker"
+WT_MAIL_SENDER_ADDRESS="notifications@example.com"
+WT_SMTP_HOST="smtp.example.com"
+
+# Instance Admin Notification Email (optional)
+WT_ADMIN_EMAIL="admin@example.com"
+```
+
+| Variable                 | Config key             | Description                                                   |
+| ------------------------ | ---------------------- | ------------------------------------------------------------- |
+| `WT_MAIL_SENDER_NAME`    | `mail_sender_name`     | Display sender name for outgoing notification emails          |
+| `WT_MAIL_SENDER_ADDRESS` | `mail_sender_address`  | Sender email address for outgoing notification emails         |
+| `WT_SMTP_HOST`           | `smtp_host`            | Hostname of SMTP server for email delivery                    |
+| `WT_MAILJET_PUBLIC_KEY`  | `mailjet_public_key`   | Mailjet API public key                                        |
+| `WT_MAILJET_PRIVATE_KEY` | `mailjet_private_key`  | Mailjet API private key                                       |
+| `WT_ADMIN_EMAIL`         | `admin_email`          | Email address to receive instance events (e.g., new user registration requiring activation) |
+
 > [!NOTE]
 > The environment variables in `postgres.env` used by `docker-compose.yaml`
 > configure the database connection. Edit them before starting the server.

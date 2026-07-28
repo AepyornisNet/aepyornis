@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/notification"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
@@ -37,9 +39,11 @@ type UserController interface {
 type userController struct {
 	cfg          *config.Config
 	db           *gorm.DB
-	followerRepo repository.Follower
 	apProfileSvc service.ActivityPubProfileService
 	actorService service.ActivityPubActorService
+	logger       *slog.Logger
+	notify       service.NotificationService
+	followerRepo repository.Follower
 	userRepo     repository.User
 }
 
@@ -47,9 +51,11 @@ func NewUserController(injector do.Injector) UserController {
 	return &userController{
 		cfg:          do.MustInvoke[*config.Config](injector),
 		db:           do.MustInvoke[*gorm.DB](injector),
-		followerRepo: do.MustInvoke[repository.Follower](injector),
+		logger:       do.MustInvoke[*slog.Logger](injector),
 		apProfileSvc: do.MustInvoke[service.ActivityPubProfileService](injector),
 		actorService: do.MustInvoke[service.ActivityPubActorService](injector),
+		notify:       do.MustInvoke[service.NotificationService](injector),
+		followerRepo: do.MustInvoke[repository.Follower](injector),
 		userRepo:     do.MustInvoke[repository.User](injector),
 	}
 }
@@ -580,6 +586,12 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 			FollowingCount: followingCount,
 			MemberSince:    targetUser.CreatedAt,
 		},
+	}
+
+	if targetUser != nil {
+		if err := uc.notify.Send(c.Request().Context(), targetUser, notification.NewFollowRequest(viewer.Profile.DisplayName)); err != nil {
+			uc.logger.Error("Failed to send notification", "error", err)
+		}
 	}
 
 	return c.JSON(http.StatusOK, resp)

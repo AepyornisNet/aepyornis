@@ -17,6 +17,7 @@ export class Profile implements OnInit {
   public readonly navigationItems = [
     { label: 'General', route: '/profile/settings/general' },
     { label: 'Personal info', route: '/profile/settings/infos' },
+    { label: 'Notifications', route: '/profile/settings/notifications' },
     { label: 'Privacy', route: '/profile/settings/privacy' },
     { label: 'Followers', route: '/profile/settings/followers' },
     { label: 'Actions', route: '/profile/settings/actions' },

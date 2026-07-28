@@ -304,6 +304,14 @@ type ProfileChangePasswordData struct {
 	NewPassword     string `json:"new_password"`
 }
 
+type UserNotificationSettingsData struct {
+	MethodSettings string `json:"method_settings"`
+
+	FollowRequest bool `json:"follow_request"`
+	WorkoutLike   bool `json:"workout_like"`
+	WorkoutReply  bool `json:"workout_reply"`
+}
+
 type CalendarQueryParams struct {
 	Start    *string `query:"start"`
 	End      *string `query:"end"`

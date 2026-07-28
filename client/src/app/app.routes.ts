@@ -165,6 +165,13 @@ export const routes: Routes = [
               import('./features/profile/pages/infos/infos').then((m) => m.ProfileInfosPage),
           },
           {
+            path: 'notifications',
+            loadComponent: () =>
+              import('./features/profile/pages/notifications/notifications').then(
+                (m) => m.ProfileNotificationsPage,
+              ),
+          },
+          {
             path: 'privacy',
             loadComponent: () =>
               import('./features/profile/pages/privacy/privacy').then((m) => m.ProfilePrivacyPage),

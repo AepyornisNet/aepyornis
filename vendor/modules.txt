@@ -8,6 +8,9 @@ git.sr.ht/~mariusor/go-xsd-duration
 # github.com/KyleBanks/depth v1.2.1
 ## explicit
 github.com/KyleBanks/depth
+# github.com/SherClockHolmes/webpush-go v1.4.0
+## explicit; go 1.13
+github.com/SherClockHolmes/webpush-go
 # github.com/alexedwards/scs/gormstore v0.0.0-20251002162104-209de6e426de
 ## explicit; go 1.12
 github.com/alexedwards/scs/gormstore
@@ -204,6 +207,9 @@ github.com/jinzhu/inflection
 # github.com/jinzhu/now v1.1.5
 ## explicit; go 1.12
 github.com/jinzhu/now
+# github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
+## explicit
+github.com/jordan-wright/email
 # github.com/labstack/echo-jwt/v4 v4.4.0
 ## explicit; go 1.24.0
 github.com/labstack/echo-jwt/v4
@@ -219,6 +225,11 @@ github.com/labstack/gommon/log
 # github.com/lmittmann/tint v1.1.3
 ## explicit; go 1.21
 github.com/lmittmann/tint
+# github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
+## explicit; go 1.13
+github.com/mailjet/mailjet-apiv3-go/v4
+github.com/mailjet/mailjet-apiv3-go/v4/fixtures
+github.com/mailjet/mailjet-apiv3-go/v4/resources
 # github.com/mattn/go-colorable v0.1.15
 ## explicit; go 1.18
 github.com/mattn/go-colorable
@@ -257,6 +268,11 @@ github.com/muktihari/fit/proto
 # github.com/ncruces/go-strftime v1.0.0
 ## explicit; go 1.17
 github.com/ncruces/go-strftime
+# github.com/nikoksr/notify v1.5.0
+## explicit; go 1.24.0
+github.com/nikoksr/notify
+github.com/nikoksr/notify/service/mail
+github.com/nikoksr/notify/service/webpush
 # github.com/oklog/ulid/v2 v2.1.1
 ## explicit; go 1.15
 github.com/oklog/ulid/v2
@@ -432,6 +448,7 @@ golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/ed25519
+golang.org/x/crypto/hkdf
 golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
 golang.org/x/crypto/ripemd160

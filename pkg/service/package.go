@@ -8,4 +8,5 @@ var Package = do.Package(
 	do.Lazy(NewActivityPubRequestService),
 	do.Lazy(NewActivityPubActorService),
 	do.Lazy(NewActivityPubProfileService),
+	do.Lazy(NewNotificationService),
 )

@@ -23,7 +23,7 @@ func (a *App) ValidateAPIKeyMiddleware(key string, c echo.Context) (bool, error)
 	}
 
 	// 1. Try validating as JWT token
-	jwtToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	jwtToken, err := jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}

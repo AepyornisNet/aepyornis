@@ -11,6 +11,7 @@ var Package = do.Package(
 	do.Lazy(NewEquipment),
 	do.Lazy(NewFollower),
 	do.Lazy(NewMeasurement),
+	do.Lazy(NewNotification),
 	do.Lazy(NewRouteSegment),
 	do.Lazy(NewUser),
 	do.Lazy(NewWorkout),

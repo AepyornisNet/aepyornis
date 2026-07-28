@@ -19,9 +19,9 @@ const thresholdSlowQueries = 100 * time.Millisecond
 var ErrUnsuportedDriver = errors.New("unsupported driver")
 
 type Model struct {
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	ID        uint64 `gorm:"primaryKey"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"update_at"`
+	ID        uint64    `gorm:"primaryKey" json:"id"`
 }
 
 func Connect(driver, dsn string, debug bool, logger *slog.Logger) (*gorm.DB, error) {
@@ -53,9 +53,20 @@ func Connect(driver, dsn string, debug bool, logger *slog.Logger) (*gorm.DB, err
 
 	if err := RunMigrations(db, func(db *gorm.DB) error {
 		return db.AutoMigrate(
-			&User{}, &Profile{}, &Config{}, &Equipment{}, &Measurement{},
-			&Workout{}, &WorkoutStats{}, &WorkoutFile{}, &WorkoutGeoMeta{}, &WorkoutLap{}, &WorkoutClimb{}, &WorkoutRecord{}, &WorkoutEvent{}, &WorkoutAttachment{}, &RouteSegment{}, &RouteSegmentMatch{},
-			&WorkoutIntervalBest{}, &Follower{}, &APStatusWorkout{}, &APStatusDelivery{}, &APStatus{}, &APStatusLike{}, &HammerheadConnection{},
+			&Config{},
+
+			&Equipment{}, &Measurement{},
+
+			&User{}, &Profile{}, &Notification{}, &UserNotificationSettings{},
+
+			&Workout{}, &WorkoutStats{}, &WorkoutFile{}, &WorkoutGeoMeta{}, &WorkoutIntervalBest{},
+			&WorkoutLap{}, &WorkoutClimb{}, &WorkoutRecord{}, &WorkoutEvent{}, &WorkoutAttachment{},
+
+			&RouteSegment{}, &RouteSegmentMatch{},
+
+			&Follower{}, &APStatusWorkout{}, &APStatusDelivery{}, &APStatus{}, &APStatusLike{},
+
+			&HammerheadConnection{},
 		)
 	}); err != nil {
 		return nil, err

@@ -44,12 +44,14 @@ type ProfileSettings struct {
 
 // AppInfoResponse represents application info in API v2 responses
 type AppInfoResponse struct {
-	Version              string `json:"version"`
-	VersionSha           string `json:"version_sha"`
-	RegistrationDisabled bool   `json:"registration_disabled"`
-	SocialsDisabled      bool   `json:"socials_disabled"`
-	AutoImportEnabled    bool   `json:"auto_import_enabled"`
-	ActivityPubActive    bool   `json:"activity_pub_active"`
+	Version               string   `json:"version"`
+	VersionSha            string   `json:"version_sha"`
+	RegistrationDisabled  bool     `json:"registration_disabled"`
+	SocialsDisabled       bool     `json:"socials_disabled"`
+	AutoImportEnabled     bool     `json:"auto_import_enabled"`
+	ActivityPubActive     bool     `json:"activity_pub_active"`
+	NotificationProviders []string `json:"notification_providers"`
+	WebpushPublicKey      *string  `json:"webpush_public_key,omitempty"`
 }
 
 type ActivityPubProfileSummaryResponse struct {

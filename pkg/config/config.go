@@ -51,6 +51,14 @@ func (c *Config) Load() error {
 	viper.SetDefault("hammerhead_client_secret", "")
 	viper.SetDefault("hammerhead_redirect_uri", "")
 	viper.SetDefault("hammerhead_webhook_secret", "")
+	viper.SetDefault("vapid_public_key", "")
+	viper.SetDefault("vapid_private_key", "")
+	viper.SetDefault("mailjet_public_key", "")
+	viper.SetDefault("mailjet_private_key", "")
+	viper.SetDefault("mail_sender_name", "")
+	viper.SetDefault("mail_sender_address", "")
+	viper.SetDefault("smtp_host", "")
+	viper.SetDefault("admin_email", "")
 
 	for _, envVar := range []string{
 		"host",
@@ -73,6 +81,14 @@ func (c *Config) Load() error {
 		"hammerhead_client_secret",
 		"hammerhead_redirect_uri",
 		"hammerhead_webhook_secret",
+		"vapid_public_key",
+		"vapid_private_key",
+		"mailjet_public_key",
+		"mailjet_private_key",
+		"mail_sender_name",
+		"mail_sender_address",
+		"smtp_host",
+		"admin_email",
 	} {
 		if err := viper.BindEnv(envVar); err != nil {
 			return err
@@ -132,4 +148,19 @@ func (c *Config) JWTSecret() []byte {
 	c.JWTEncryptionKey = rand.String(32, rand.GetAlphaNumericPool())
 
 	return []byte(c.JWTEncryptionKey)
+}
+
+func (c *Config) AvailableNotificationProviders() []string {
+	providers := []string{"database"}
+
+	hasMailjetCredentials := c.MailjetPrivateKey != "" && c.MailjetPublicKey != ""
+	if (hasMailjetCredentials || c.SmtpHost != "") && c.MailSenderAddress != "" && c.MailSenderName != "" {
+		providers = append(providers, "mail")
+	}
+
+	if c.VapidPrivateKey != "" && c.VapidPublicKey != "" {
+		providers = append(providers, "webpush")
+	}
+
+	return providers
 }

@@ -57,6 +57,7 @@ export const ICON_MAP: Record<string, string> = {
   expand: 'faSolidArrowsLeftRight',
   share: 'faSolidShareFromSquare',
   search: 'faSolidMagnifyingGlass',
+  bell: 'faSolidBell',
   'generate-share': 'faSolidRetweet',
   logout: 'faSolidRightFromBracket',
 

@@ -39,6 +39,11 @@ import {
   StatisticsParams,
 } from '../../core/types/statistics';
 import { RegisterRequest, SignInRequest } from '../../core/types/auth';
+import {
+  Notification,
+  UserNotificationSettings,
+  UserNotificationSettingsUpdate,
+} from '../types/notification';
 
 @Injectable({
   providedIn: 'root',
@@ -66,6 +71,43 @@ export class Api {
 
   public whoami(): Observable<APIResponse<UserProfile>> {
     return this.http.get<APIResponse<UserProfile>>(`${this.baseUrl}/whoami`);
+  }
+
+  public getNotifications(
+    params?: PaginationParams,
+  ): Observable<PaginatedAPIResponse<Notification>> {
+    let httpParams = new HttpParams();
+    if (params?.page) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.per_page) {
+      httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+    return this.http.get<PaginatedAPIResponse<Notification>>(`${this.baseUrl}/notifications`, {
+      params: httpParams,
+    });
+  }
+
+  public getNotificationSettings(): Observable<APIResponse<UserNotificationSettings[]>> {
+    return this.http.get<APIResponse<UserNotificationSettings[]>>(
+      `${this.baseUrl}/notifications/settings`,
+    );
+  }
+
+  public updateNotificationSettings(
+    method: string,
+    payload: UserNotificationSettingsUpdate,
+  ): Observable<APIResponse<UserNotificationSettings>> {
+    return this.http.post<APIResponse<UserNotificationSettings>>(
+      `${this.baseUrl}/notifications/${method}`,
+      payload,
+    );
+  }
+
+  public markNotificationsAsRead(ids?: number[]): Observable<APIResponse<{ success: boolean }>> {
+    return this.http.post<APIResponse<{ success: boolean }>>(`${this.baseUrl}/notifications/read`, {
+      ids: ids ?? [],
+    });
   }
 
   public getAppInfo(): Observable<APIResponse<AppInfo>> {

@@ -194,6 +194,17 @@ func (u *User) Create(db *gorm.DB) error {
 	return db.Create(u).Error
 }
 
+func (u *User) AfterCreate(tx *gorm.DB) error {
+	defaultSettings := UserNotificationSettings{
+		UserID:        u.ID,
+		Method:        "database",
+		FollowRequest: true,
+		WorkoutLike:   true,
+		WorkoutReply:  true,
+	}
+	return tx.Create(&defaultSettings).Error
+}
+
 func (u *User) GenerateAPIKey(force bool) {
 	if !force && u.APIKey != "" {
 		return

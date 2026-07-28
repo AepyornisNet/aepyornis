@@ -26,6 +26,104 @@
     <div class="ms-auto">
       <div class="d-flex align-items-center gap-3">
         @if (userName()) {
+          <div
+            #notificationDrop="ngbDropdown"
+            class="dropdown"
+            display="dynamic"
+            ngbDropdown
+            (openChange)="openNotifications($event)"
+          >
+            <button
+              class="btn btn-link link-body-emphasis d-inline-flex align-items-center position-relative ms-2"
+              ngbDropdownToggle
+              [attr.aria-label]="'Notifications' | translate"
+            >
+              <app-icon name="bell" size="18px" />
+              @if (unreadCount() > 0) {
+                <span
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge"
+                >
+                  {{ unreadCount() > 99 ? '99+' : unreadCount() }}
+                </span>
+              }
+            </button>
+
+            <div
+              class="notification-dropdown dropdown-menu dropdown-menu-end shadow"
+              ngbDropdownMenu
+            >
+              <div
+                class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom"
+              >
+                <strong class="small">{{ 'Notifications' | translate }}</strong>
+                @if (notifications().length > 0) {
+                  <button
+                    class="btn btn-link btn-sm p-0 text-decoration-none small text-muted"
+                    type="button"
+                    (click)="markAsRead()"
+                  >
+                    {{ 'Mark all as read' | translate }}
+                  </button>
+                }
+              </div>
+              <div class="notification-list">
+                @if (loadingNotifications()) {
+                  <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">{{ 'Loading' | translate }}</span>
+                    </div>
+                  </div>
+                } @else if (notifications().length === 0) {
+                  <div class="item empty text-muted small py-3 text-center">
+                    {{ 'No notifications' | translate }}
+                  </div>
+                } @else {
+                  @for (item of notifications(); track item.id) {
+                    @if (item.meta?.url) {
+                      <a
+                        class="item clickable px-3 py-2 d-flex align-items-start gap-2 border-bottom text-decoration-none text-body"
+                        [routerLink]="item.meta?.url"
+                        (click)="onNotificationClick(item)"
+                      >
+                        <div class="flex-grow-1 min-w-0">
+                          <span class="fw-semibold small d-block text-truncate">{{
+                            item.subject
+                          }}</span>
+                          <div class="small text-muted text-break">{{ item.msg }}</div>
+                        </div>
+                        <button
+                          class="btn btn-sm btn-link btn-mark-read p-0 ms-1"
+                          type="button"
+                          [title]="'Mark as read' | translate"
+                          (click)="onMarkAsReadClick(item, $event)"
+                        >
+                          <app-icon name="close" size="14px" />
+                        </button>
+                      </a>
+                    } @else {
+                      <div class="item px-3 py-2 d-flex align-items-start gap-2 border-bottom">
+                        <div class="flex-grow-1 min-w-0">
+                          <span class="fw-semibold small d-block text-truncate">{{
+                            item.subject
+                          }}</span>
+                          <div class="small text-muted text-break">{{ item.msg }}</div>
+                        </div>
+                        <button
+                          class="btn btn-sm btn-link btn-mark-read p-0 ms-1"
+                          type="button"
+                          [title]="'Mark as read' | translate"
+                          (click)="onMarkAsReadClick(item, $event)"
+                        >
+                          <app-icon name="close" size="14px" />
+                        </button>
+                      </div>
+                    }
+                  }
+                }
+              </div>
+            </div>
+          </div>
+
           <div class="dropdown" ngbDropdown>
             <button
               class="btn btn-sm btn-link link-body-emphasis d-inline-flex align-items-center header-user-menu"
@@ -33,7 +131,7 @@
               type="button"
             >
               <app-icon class="me-2" name="user" size="16px" />
-              <strong>{{ userName() }}</strong>
+              <strong class="d-none d-sm-inline">{{ userName() }}</strong>
             </button>
 
             <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>

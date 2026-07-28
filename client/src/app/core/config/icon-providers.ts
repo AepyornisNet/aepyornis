@@ -14,6 +14,7 @@ import {
   faSolidArrowUpLong,
   faSolidBan,
   faSolidBars,
+  faSolidBell,
   faSolidBicycle,
   faSolidBookmark,
   faSolidCalculator,
@@ -105,6 +106,7 @@ import { octMarkGithub } from '@ng-icons/octicons';
 export const iconProviders = provideIcons({
   // Font Awesome Solid
   faSolidBars,
+  faSolidBell,
   faSolidBookmark,
   faSolidRoad,
   faSolidGauge,

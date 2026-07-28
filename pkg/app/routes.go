@@ -228,6 +228,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	apiGroup.Use(a.ValidateAuthenticatedUserMiddleware)
 
 	a.registerUserController(apiGroup)
+	a.registerNotificationController(apiGroup)
 	a.registerWorkoutController(apiGroup)
 	a.registerHeatmapController(apiGroup)
 	a.registerRouteSegmentController(apiGroup)
@@ -273,13 +274,18 @@ func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 	resp := dto.Response[dto.AppInfoResponse]{
 		Results: dto.AppInfoResponse{
-			Version:              a.Version.PrettyVersion(),
-			VersionSha:           a.Version.Sha,
-			RegistrationDisabled: a.Config.RegistrationDisabled,
-			SocialsDisabled:      a.Config.SocialsDisabled,
-			AutoImportEnabled:    a.Config.AutoImportEnabled,
-			ActivityPubActive:    a.Config.ActivityPubActive,
+			Version:               a.Version.PrettyVersion(),
+			VersionSha:            a.Version.Sha,
+			RegistrationDisabled:  a.Config.RegistrationDisabled,
+			SocialsDisabled:       a.Config.SocialsDisabled,
+			AutoImportEnabled:     a.Config.AutoImportEnabled,
+			ActivityPubActive:     a.Config.ActivityPubActive,
+			NotificationProviders: a.Config.AvailableNotificationProviders(),
 		},
+	}
+
+	if a.Config.VapidPublicKey != "" {
+		resp.Results.WebpushPublicKey = &a.Config.VapidPublicKey
 	}
 
 	return c.JSON(http.StatusOK, resp)

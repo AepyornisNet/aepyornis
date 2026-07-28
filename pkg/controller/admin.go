@@ -222,13 +222,18 @@ func (ac *adminController) UpdateConfig(c echo.Context) error {
 
 	resp := dto.Response[dto.AppInfoResponse]{
 		Results: dto.AppInfoResponse{
-			Version:              v.PrettyVersion(),
-			VersionSha:           v.Sha,
-			RegistrationDisabled: cfg.RegistrationDisabled,
-			SocialsDisabled:      cfg.SocialsDisabled,
-			AutoImportEnabled:    cfg.AutoImportEnabled,
-			ActivityPubActive:    cfg.ActivityPubActive,
+			Version:               v.PrettyVersion(),
+			VersionSha:            v.Sha,
+			RegistrationDisabled:  cfg.RegistrationDisabled,
+			SocialsDisabled:       cfg.SocialsDisabled,
+			AutoImportEnabled:     cfg.AutoImportEnabled,
+			ActivityPubActive:     cfg.ActivityPubActive,
+			NotificationProviders: cfg.AvailableNotificationProviders(),
 		},
+	}
+
+	if ac.cfg.VapidPublicKey != "" {
+		resp.Results.WebpushPublicKey = &ac.cfg.VapidPublicKey
 	}
 
 	return c.JSON(http.StatusOK, resp)

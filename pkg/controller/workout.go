@@ -14,6 +14,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/notification"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
@@ -59,6 +60,7 @@ type workoutController struct {
 	workoutLikeRepo      repository.WorkoutLike
 	workoutReplyRepo     repository.WorkoutReply
 	workoutRepo          repository.Workout
+	notify               service.NotificationService
 }
 
 var _ WorkoutController = (*workoutController)(nil)
@@ -78,6 +80,7 @@ func NewWorkoutController(injector do.Injector) WorkoutController {
 		workoutLikeRepo:      do.MustInvoke[repository.WorkoutLike](injector),
 		workoutReplyRepo:     do.MustInvoke[repository.WorkoutReply](injector),
 		workoutRepo:          do.MustInvoke[repository.Workout](injector),
+		notify:               do.MustInvoke[service.NotificationService](injector),
 	}
 }
 
@@ -474,6 +477,13 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	if ownerID := workoutOwnerUserID(workout); ownerID != 0 && ownerID != viewer.ID {
+		var owner model.User
+		if err := wc.db.First(&owner, ownerID).Error; err == nil {
+			_ = wc.notify.Send(c.Request().Context(), &owner, notification.NewWorkoutLike(viewer.Profile.DisplayName, workout.ID))
+		}
+	}
+
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs([]uint64{workout.ID})
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -566,7 +576,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (wc *workoutController) likeLocalWorkout(_ echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
+func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
 	workout, err := wc.workoutRepo.GetByIDForRead(localWorkoutID, false)
 	if err != nil {
 		return nil, http.StatusNotFound, err
@@ -587,6 +597,13 @@ func (wc *workoutController) likeLocalWorkout(_ echo.Context, viewer *model.User
 
 	if err := wc.workoutLikeRepo.LikeByProfile(localWorkoutID, viewer.Profile.ID); err != nil {
 		return nil, http.StatusInternalServerError, err
+	}
+
+	if ownerID := workoutOwnerUserID(workout); ownerID != 0 && ownerID != viewer.ID {
+		var owner model.User
+		if err := wc.db.First(&owner, ownerID).Error; err == nil {
+			_ = wc.notify.Send(c.Request().Context(), &owner, notification.NewWorkoutLike(viewer.Profile.DisplayName, workout.ID))
+		}
 	}
 
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs([]uint64{localWorkoutID})
@@ -649,6 +666,13 @@ func (wc *workoutController) CreateReply(c echo.Context) error {
 
 	if err := worker.PublishReplyToActivityPub(c.Request().Context(), wc.client, wc.db, wc.cfg, wc.apOutboxRepo, wc.apStatusDeliveryRepo, viewer, workout, reply); err != nil {
 		wc.logger.Warn("Failed to publish workout reply to ActivityPub", "reply_id", reply.ID, "error", err)
+	}
+
+	if ownerID := workoutOwnerUserID(workout); ownerID != 0 && ownerID != viewer.ID {
+		var owner model.User
+		if err := wc.db.First(&owner, ownerID).Error; err == nil {
+			_ = wc.notify.Send(c.Request().Context(), &owner, notification.NewWorkoutReply(viewer.Profile.DisplayName, workout.ID))
+		}
 	}
 
 	replyResponse := dto.NewWorkoutReplyResponse(reply)
