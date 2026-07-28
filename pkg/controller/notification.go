@@ -5,12 +5,14 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/labstack/echo/v4"
+	"github.com/nikoksr/notify/service/webpush"
 	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
@@ -148,7 +150,22 @@ func (nc *notificationController) UpdateConfig(c echo.Context) error {
 		}
 	}
 
-	if updateData.MethodSettings != "" {
+	if strings.TrimSpace(updateData.MethodSettings) != "" {
+		rawSettings := []byte(updateData.MethodSettings)
+		if !json.Valid(rawSettings) {
+			return renderApiError(c, http.StatusBadRequest, errors.New("method_settings must be valid JSON"))
+		}
+
+		if nType == "webpush" {
+			var sub webpush.Subscription
+			if err := json.Unmarshal(rawSettings, &sub); err != nil {
+				return renderApiError(c, http.StatusBadRequest, errors.New("invalid webpush subscription JSON structure"))
+			}
+			if strings.TrimSpace(sub.Endpoint) == "" || strings.TrimSpace(sub.Keys.Auth) == "" || strings.TrimSpace(sub.Keys.P256dh) == "" {
+				return renderApiError(c, http.StatusBadRequest, errors.New("webpush subscription must contain endpoint, auth, and p256dh keys"))
+			}
+		}
+
 		settings := json.RawMessage(updateData.MethodSettings)
 		currentSettings.MethodSettings = &settings
 	}
