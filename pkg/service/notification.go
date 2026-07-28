@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -32,6 +33,7 @@ type BaseNotification interface {
 type NotificationService interface {
 	SendRaw(ctx context.Context, user *model.User, subject string, message string) error
 	Send(ctx context.Context, user *model.User, nfy BaseNotification) error
+	SendAdminEmail(ctx context.Context, subject string, message string) error
 }
 
 type notificationService struct {
@@ -133,20 +135,39 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 	return nil
 }
 
-func (s *notificationService) getEmailService(receiver *model.User) []notify.Notifier {
+func (s *notificationService) SendAdminEmail(ctx context.Context, subject string, message string) error {
+	adminEmail := strings.TrimSpace(s.cfg.AdminEmail)
+	if adminEmail == "" {
+		return nil
+	}
+
+	services := s.getEmailServiceForAddress(adminEmail)
+	if len(services) > 0 {
+		n := notify.NewWithServices(services...)
+		return n.Send(ctx, subject, message)
+	}
+
+	return nil
+}
+
+func (s *notificationService) getEmailServiceForAddress(emailAddress string) []notify.Notifier {
 	services := []notify.Notifier{}
 
 	if s.cfg.SmtpHost != "" && s.cfg.MailSenderAddress != "" {
 		mailService := mail.New(s.cfg.MailSenderAddress, s.cfg.SmtpHost)
-		mailService.AddReceivers(receiver.Email)
+		mailService.AddReceivers(emailAddress)
 		services = append(services, mailService)
 	} else if s.cfg.MailjetPublicKey != "" && s.cfg.MailjetPrivateKey != "" {
 		mailService := notification.NewMailjet(s.cfg.MailjetPublicKey, s.cfg.MailjetPrivateKey, s.cfg.MailSenderAddress, s.cfg.MailSenderName)
-		mailService.AddReceivers(receiver.Email)
+		mailService.AddReceivers(emailAddress)
 		services = append(services, mailService)
 	}
 
 	return services
+}
+
+func (s *notificationService) getEmailService(receiver *model.User) []notify.Notifier {
+	return s.getEmailServiceForAddress(receiver.Email)
 }
 
 func (s *notificationService) getWebpushService(receiver *model.User) []notify.Notifier {

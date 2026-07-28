@@ -97,9 +97,8 @@ WT_MAIL_SENDER_NAME="WorkoutTracker"
 WT_MAIL_SENDER_ADDRESS="notifications@example.com"
 WT_SMTP_HOST="smtp.example.com"
 
-# Mailjet credentials (optional alternative to SMTP)
-WT_MAILJET_PUBLIC_KEY="your-mailjet-public-key"
-WT_MAILJET_PRIVATE_KEY="your-mailjet-private-key"
+# Instance Admin Notification Email (optional)
+WT_ADMIN_EMAIL="admin@example.com"
 ```
 
 | Variable                 | Config key             | Description                                                   |
@@ -109,6 +108,7 @@ WT_MAILJET_PRIVATE_KEY="your-mailjet-private-key"
 | `WT_SMTP_HOST`           | `smtp_host`            | Hostname of SMTP server for email delivery                    |
 | `WT_MAILJET_PUBLIC_KEY`  | `mailjet_public_key`   | Mailjet API public key                                        |
 | `WT_MAILJET_PRIVATE_KEY` | `mailjet_private_key`  | Mailjet API private key                                       |
+| `WT_ADMIN_EMAIL`         | `admin_email`          | Email address to receive instance events (e.g., new user registration requiring activation) |
 
 > [!NOTE]
 > The environment variables in `postgres.env` used by `docker-compose.yaml`

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/alexedwards/scs/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -29,18 +31,20 @@ type AuthController interface {
 }
 
 type authController struct {
-	cfg            *config.Config
-	db             *gorm.DB
-	sessionManager *scs.SessionManager
-	userRepo       repository.User
+	cfg                 *config.Config
+	db                  *gorm.DB
+	sessionManager      *scs.SessionManager
+	userRepo            repository.User
+	notificationService service.NotificationService
 }
 
 func NewAuthController(injector do.Injector) AuthController {
 	return &authController{
-		cfg:            do.MustInvoke[*config.Config](injector),
-		db:             do.MustInvoke[*gorm.DB](injector),
-		sessionManager: do.MustInvoke[*scs.SessionManager](injector),
-		userRepo:       do.MustInvoke[repository.User](injector),
+		cfg:                 do.MustInvoke[*config.Config](injector),
+		db:                  do.MustInvoke[*gorm.DB](injector),
+		sessionManager:      do.MustInvoke[*scs.SessionManager](injector),
+		userRepo:            do.MustInvoke[repository.User](injector),
+		notificationService: do.MustInvoke[service.NotificationService](injector),
 	}
 }
 
@@ -174,6 +178,12 @@ func (ac *authController) Register(c echo.Context) error {
 
 	if err := u.Create(ac.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if !u.Active && ac.cfg.AdminEmail != "" {
+		subject := "New user registration requires activation"
+		msg := fmt.Sprintf("A new user %s (%s) has registered and requires account activation.", u.Profile.Username, u.Email)
+		_ = ac.notificationService.SendAdminEmail(c.Request().Context(), subject, msg)
 	}
 
 	resp := dto.Response[map[string]string]{
