@@ -89,7 +89,7 @@ func (s *notificationService) isChannelEnabled(ctx context.Context, user *model.
 	var settings model.UserNotificationSettings
 	err := s.db.WithContext(ctx).Where("user_id = ? AND method = ?", user.ID, method).First(&settings).Error
 	if err != nil {
-		return true
+		return false
 	}
 	return settings.IsEnabled(nType)
 }
