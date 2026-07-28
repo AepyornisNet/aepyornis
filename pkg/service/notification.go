@@ -8,6 +8,8 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/notification"
+	"github.com/invopop/ctxi18n"
+	"github.com/invopop/ctxi18n/i18n"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/mail"
 	"github.com/nikoksr/notify/service/webpush"
@@ -18,8 +20,8 @@ import (
 
 type BaseNotification interface {
 	GetType() string
-	GetSubject() string
-	GetMessage() string
+	GetSubject(t *i18n.Locale) string
+	GetMessage(t *i18n.Locale) string
 	GetMeta() *datatypes.JSON
 
 	AllowDB() bool
@@ -65,6 +67,22 @@ func (s *notificationService) SendRaw(ctx context.Context, user *model.User, sub
 	return nil
 }
 
+func (s *notificationService) getTranslator(ctx context.Context, user *model.User) *i18n.Locale {
+	lang := "en"
+	if user != nil && user.Language != "" {
+		lang = user.Language
+	}
+
+	lctx, err := ctxi18n.WithLocale(ctx, lang)
+	if err != nil || lctx == nil {
+		lctx, _ = ctxi18n.WithLocale(ctx, "en")
+	}
+	if lctx == nil {
+		return nil
+	}
+	return ctxi18n.Locale(lctx)
+}
+
 func (s *notificationService) isChannelEnabled(ctx context.Context, user *model.User, method string, nType string) bool {
 	var settings model.UserNotificationSettings
 	err := s.db.WithContext(ctx).Where("user_id = ? AND method = ?", user.ID, method).First(&settings).Error
@@ -75,14 +93,18 @@ func (s *notificationService) isChannelEnabled(ctx context.Context, user *model.
 }
 
 func (s *notificationService) Send(ctx context.Context, user *model.User, in BaseNotification) error {
+	t := s.getTranslator(ctx, user)
+
 	nType := in.GetType()
+	subject := in.GetSubject(t)
+	message := in.GetMessage(t)
 
 	if in.AllowDB() && s.isChannelEnabled(ctx, user, "database", nType) {
 		nfy := model.Notification{
 			UserID:  user.ID,
 			Type:    nType,
-			Subject: in.GetSubject(),
-			Msg:     in.GetMessage(),
+			Subject: subject,
+			Msg:     message,
 			Meta:    in.GetMeta(),
 		}
 
@@ -103,7 +125,7 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 
 	if len(services) > 0 {
 		n := notify.NewWithServices(services...)
-		if err := n.Send(ctx, in.GetSubject(), in.GetMessage()); err != nil {
+		if err := n.Send(ctx, subject, message); err != nil {
 			return err
 		}
 	}

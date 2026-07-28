@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/invopop/ctxi18n/i18n"
 	"gorm.io/datatypes"
 )
 
@@ -23,12 +24,12 @@ func (*workoutReply) GetType() string {
 	return "workout_reply"
 }
 
-func (*workoutReply) GetSubject() string {
-	return "New workout comment"
+func (*workoutReply) GetSubject(t *i18n.Locale) string {
+	return t.T("notifications.workout_reply_subject")
 }
 
-func (w *workoutReply) GetMessage() string {
-	return fmt.Sprintf("%s commented on your workout", w.ActorName)
+func (w *workoutReply) GetMessage(t *i18n.Locale) string {
+	return t.T("notifications.workout_reply_message", w.ActorName)
 }
 
 func (w *workoutReply) GetMeta() *datatypes.JSON {

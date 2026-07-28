@@ -89,3 +89,11 @@ en:
     expedition: "Expedition"
     ultra: "Ultramarathon"
     all: "All Sports"
+
+  notifications:
+    follow_request_subject: "New follow request"
+    follow_request_message: "%s wants to follow you"
+    workout_like_subject: "New workout like"
+    workout_like_message: "%s liked your workout"
+    workout_reply_subject: "New workout comment"
+    workout_reply_message: "%s commented on your workout"

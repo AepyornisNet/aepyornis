@@ -2,8 +2,8 @@ package notification
 
 import (
 	"encoding/json"
-	"fmt"
 
+	"github.com/invopop/ctxi18n/i18n"
 	"gorm.io/datatypes"
 )
 
@@ -21,13 +21,12 @@ func (*followRequest) GetType() string {
 	return "follow_request"
 }
 
-func (*followRequest) GetSubject() string {
-	return "New follow request"
+func (*followRequest) GetSubject(t *i18n.Locale) string {
+	return t.T("notifications.follow_request_subject")
 }
 
-func (r *followRequest) GetMessage() string {
-	content := "%s wants to follow you"
-	return fmt.Sprintf(content, r.FollowerName)
+func (r *followRequest) GetMessage(t *i18n.Locale) string {
+	return t.T("notifications.follow_request_message", r.FollowerName)
 }
 
 func (*followRequest) GetMeta() *datatypes.JSON {

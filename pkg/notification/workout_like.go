@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/invopop/ctxi18n/i18n"
 	"gorm.io/datatypes"
 )
 
@@ -23,12 +24,12 @@ func (*workoutLike) GetType() string {
 	return "workout_like"
 }
 
-func (*workoutLike) GetSubject() string {
-	return "New workout like"
+func (*workoutLike) GetSubject(t *i18n.Locale) string {
+	return t.T("notifications.workout_like_subject")
 }
 
-func (w *workoutLike) GetMessage() string {
-	return fmt.Sprintf("%s liked your workout", w.ActorName)
+func (w *workoutLike) GetMessage(t *i18n.Locale) string {
+	return t.T("notifications.workout_like_message", w.ActorName)
 }
 
 func (w *workoutLike) GetMeta() *datatypes.JSON {
