@@ -62,8 +62,8 @@ export class ProfileNotificationsPage implements OnInit {
 
   public readonly notificationForm = form(this.notificationModel, () => {}, {
     submission: {
-      action: this.saveNotificationSettings.bind(this)
-    }
+      action: this.saveNotificationSettings.bind(this),
+    },
   });
 
   private readonly notificationProviderOptions: NotificationProviderOption[] = [
@@ -192,12 +192,9 @@ export class ProfileNotificationsPage implements OnInit {
   private patchProviderSettings(settings: UserNotificationSettings): void {
     const provider = settings.method as NotificationProvider;
 
-    this.notificationForm
-      .follow_request[provider]().value.set(settings.follow_request);
-    this.notificationForm
-      .workout_like[provider]().value.set(settings.workout_like);
-    this.notificationForm
-      .workout_reply[provider]().value.set(settings.workout_reply);
+    this.notificationForm.follow_request[provider]().value.set(settings.follow_request);
+    this.notificationForm.workout_like[provider]().value.set(settings.workout_like);
+    this.notificationForm.workout_reply[provider]().value.set(settings.workout_reply);
   }
 
   private async payload(

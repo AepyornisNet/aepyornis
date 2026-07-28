@@ -42,8 +42,8 @@
                         [attr.aria-label]="
                           (type.label | translate) + ' - ' + (provider.label | translate)
                         "
-                        [id]="'notification_' + provider.key + '_' + type.key"
                         [formField]="notificationForm[type.key][provider.key]"
+                        [id]="'notification_' + provider.key + '_' + type.key"
                       />
                     </td>
                   }

@@ -96,7 +96,7 @@
         <th>{{ 'Duration' | translate }}</th>
         @if (sortedColumnMeta()) {
           <th class="text-end">
-            {{ $safeNavigationMigration(sortedColumnMeta()?.label) | async }}
+            {{ sortedColumnMeta()?.label | async }}
           </th>
         }
         <th class="d-none d-md-table-cell">{{ 'Average speed/pace (no pause)' | translate }}</th>

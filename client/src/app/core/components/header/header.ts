@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -16,6 +17,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AVAILABLE_LANGUAGES, Language } from '../../config/languages';
 import { NgbDropdown, NgbDropdownMenu, NgbDropdownToggle } from '@ng-bootstrap/ng-bootstrap';
 import { Api } from '../../services/api';
+import { Notification } from '../../types/notification';
 
 @Component({
   selector: 'app-header',
@@ -47,6 +49,9 @@ export class Header {
   public readonly logout = output<void>();
 
   public readonly selectedLanguage = signal('en');
+  public readonly notifications = signal<Notification[]>([]);
+  public readonly loadingNotifications = signal(false);
+  public readonly unreadCount = computed(() => this.notifications().length);
 
   public languages: Language[] = AVAILABLE_LANGUAGES;
 
@@ -65,6 +70,12 @@ export class Header {
       localStorage.setItem('locale', this.selectedLanguage());
       this.translate.use(this.selectedLanguage());
     });
+
+    effect(() => {
+      if (this.userName()) {
+        this.loadNotifications();
+      }
+    });
   }
 
   public onToggleSidebar(): void {
@@ -72,12 +83,44 @@ export class Header {
   }
 
   public openNotifications(open: boolean): void {
-    if (!open) {
-      return;
+    if (open) {
+      this.loadNotifications();
     }
+  }
 
-    this.api.getNotifications().subscribe((resp) => {
-      console.log(resp);
+  public loadNotifications(): void {
+    this.loadingNotifications.set(true);
+    this.api.getNotifications().subscribe({
+      next: (resp) => {
+        this.notifications.set(resp.results ?? []);
+        this.loadingNotifications.set(false);
+      },
+      error: () => {
+        this.loadingNotifications.set(false);
+      },
     });
+  }
+
+  public markAsRead(item?: Notification): void {
+    const ids = item ? [item.id] : undefined;
+    this.api.markNotificationsAsRead(ids).subscribe({
+      next: () => {
+        if (item) {
+          this.notifications.update((list) => list.filter((n) => n.id !== item.id));
+        } else {
+          this.notifications.set([]);
+        }
+      },
+    });
+  }
+
+  public onNotificationClick(item: Notification): void {
+    this.markAsRead(item);
+  }
+
+  public onMarkAsReadClick(item: Notification, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.markAsRead(item);
   }
 }

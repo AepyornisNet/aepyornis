@@ -17,6 +17,7 @@ import (
 
 type NotificationController interface {
 	GetNotifications(c echo.Context) error
+	MarkAsRead(c echo.Context) error
 	GetConfig(c echo.Context) error
 	UpdateConfig(c echo.Context) error
 }
@@ -160,4 +161,33 @@ func (nc *notificationController) UpdateConfig(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, currentSettings)
+}
+
+type MarkAsReadPayload struct {
+	IDs []uint64 `json:"ids"`
+}
+
+// MarkAsRead marks specified or all notifications as read for the user
+// @Summary      Mark notifications as read
+// @Tags         notification
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dto.Response[map[string]bool]
+// @Failure      500  {object}  dto.Response[any]
+// @Router       /notifications/read [post]
+func (nc *notificationController) MarkAsRead(c echo.Context) error {
+	user := currentUser(c)
+	var payload MarkAsReadPayload
+	_ = c.Bind(&payload)
+
+	if err := nc.notificationRepo.MarkAsRead(c.Request().Context(), user, payload.IDs); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, errors.New("could not mark notifications as read"))
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[map[string]bool]{
+		Results: map[string]bool{"success": true},
+	})
 }

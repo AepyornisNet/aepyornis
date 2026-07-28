@@ -104,6 +104,12 @@ export class Api {
     );
   }
 
+  public markNotificationsAsRead(ids?: number[]): Observable<APIResponse<{ success: boolean }>> {
+    return this.http.post<APIResponse<{ success: boolean }>>(`${this.baseUrl}/notifications/read`, {
+      ids: ids ?? [],
+    });
+  }
+
   public getAppInfo(): Observable<APIResponse<AppInfo>> {
     return this.http.get<APIResponse<AppInfo>>(`${this.baseUrl}/app-info`);
   }

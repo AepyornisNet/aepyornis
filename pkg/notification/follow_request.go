@@ -18,7 +18,7 @@ func NewFollowRequest(name string) *followRequest {
 }
 
 func (*followRequest) GetType() string {
-	return "follow-request"
+	return "follow_request"
 }
 
 func (*followRequest) GetSubject() string {

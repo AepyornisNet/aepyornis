@@ -65,11 +65,22 @@ func (s *notificationService) SendRaw(ctx context.Context, user *model.User, sub
 	return nil
 }
 
+func (s *notificationService) isChannelEnabled(ctx context.Context, user *model.User, method string, nType string) bool {
+	var settings model.UserNotificationSettings
+	err := s.db.WithContext(ctx).Where("user_id = ? AND method = ?", user.ID, method).First(&settings).Error
+	if err != nil {
+		return true
+	}
+	return settings.IsEnabled(nType)
+}
+
 func (s *notificationService) Send(ctx context.Context, user *model.User, in BaseNotification) error {
-	if in.AllowDB() {
+	nType := in.GetType()
+
+	if in.AllowDB() && s.isChannelEnabled(ctx, user, "database", nType) {
 		nfy := model.Notification{
 			UserID:  user.ID,
-			Type:    in.GetType(),
+			Type:    nType,
 			Subject: in.GetSubject(),
 			Msg:     in.GetMessage(),
 			Meta:    in.GetMeta(),
@@ -82,11 +93,11 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 	}
 
 	services := []notify.Notifier{}
-	if in.AllowEmail() {
+	if in.AllowEmail() && s.isChannelEnabled(ctx, user, "mail", nType) {
 		services = append(services, s.getEmailService(user)...)
 	}
 
-	if in.AllowWebpush() {
+	if in.AllowWebpush() && s.isChannelEnabled(ctx, user, "webpush", nType) {
 		services = append(services, s.getWebpushService(user)...)
 	}
 
