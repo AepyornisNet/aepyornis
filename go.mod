@@ -32,7 +32,7 @@ require (
 	github.com/labstack/gommon v0.5.0
 	github.com/lmittmann/tint v1.1.3
 	github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
-	github.com/mattn/go-isatty v0.0.22
+	github.com/mattn/go-isatty v0.0.24
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/muktihari/fit v0.28.1
 	github.com/nikoksr/notify v1.5.0
