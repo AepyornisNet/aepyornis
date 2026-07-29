@@ -7,6 +7,7 @@ package resty
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"mime"
@@ -24,9 +25,16 @@ import (
 // Request Middleware(s)
 //_______________________________________________________________________
 
-// PrepareRequestMiddleware method is used to prepare HTTP requests from
-// user provides request values. Request preparation fails if any error occurs
-func PrepareRequestMiddleware(c *Client, r *Request) (err error) {
+// MiddlewareRequestCreate prepares the HTTP request from the user-provided [Request] values.
+// It performs the following operations:
+//   - Parse the request URL with path params and query params
+//   - Parse the request headers from client and request level
+//   - Parse the request body based on the content type and body type
+//   - Create the underlying [http.Request] object
+//   - Add credentials such as Basic Auth and Token Auth into the request
+//
+// Returns an error if request preparation fails.
+func MiddlewareRequestCreate(c *Client, r *Request) (err error) {
 	if err = parseRequestURL(c, r); err != nil {
 		return err
 	}
@@ -38,9 +46,11 @@ func PrepareRequestMiddleware(c *Client, r *Request) (err error) {
 		return err
 	}
 
-	// at this point, possible error from `http.NewRequestWithContext`
-	// is URL-related, and those get caught up in the `parseRequestURL`
-	createRawRequest(c, r)
+	// possible error from `http.NewRequestWithContext` is an invalid
+	// HTTP method since URL-related errors get caught up in the `parseRequestURL`
+	if err = createRawRequest(c, r); err != nil {
+		return err
+	}
 
 	addCredentials(c, r)
 
@@ -123,7 +133,7 @@ func parseRequestURL(c *Client, r *Request) error {
 		}
 
 		if r.client.LoadBalancer() != nil {
-			r.baseURL, err = r.client.LoadBalancer().Next()
+			r.baseURL, err = r.client.LoadBalancer().NextWithContext(r.Context())
 			if err != nil {
 				return &invalidRequestError{Err: err}
 			}
@@ -174,7 +184,7 @@ func parseRequestURL(c *Client, r *Request) error {
 	return nil
 }
 
-func parseRequestHeader(c *Client, r *Request) error {
+func parseRequestHeader(c *Client, r *Request) {
 	for k, v := range c.Header() {
 		if _, ok := r.Header[k]; ok {
 			continue
@@ -189,8 +199,6 @@ func parseRequestHeader(c *Client, r *Request) error {
 	if !r.isHeaderExists(hdrAcceptEncodingKey) {
 		r.Header.Set(hdrAcceptEncodingKey, r.client.ContentDecompresserKeys())
 	}
-
-	return nil
 }
 
 func parseRequestBody(c *Client, r *Request) error {
@@ -238,13 +246,13 @@ func createRawRequest(c *Client, r *Request) (err error) {
 	}
 
 	// get the context reference back from underlying RawRequest
-	r.ctx = r.RawRequest.Context()
+	r.SetContext(r.RawRequest.Context())
 
 	// Assign close connection option
-	r.RawRequest.Close = r.CloseConnection
+	r.RawRequest.Close = r.IsCloseConnection
 
 	// Add headers into http request
-	r.RawRequest.Header = r.Header
+	r.RawRequest.Header = r.Header.Clone()
 
 	// Add cookies from client instance into http request
 	for _, cookie := range c.Cookies() {
@@ -289,6 +297,51 @@ func addCredentials(c *Client, r *Request) error {
 	return nil
 }
 
+var multipartWriteField = func(w *multipart.Writer, name, value string) error {
+	return w.WriteField(name, value)
+}
+
+var multipartWriteFormData = func(w *multipart.Writer, r *Request) error {
+	for k, v := range r.FormData {
+		for _, iv := range v {
+			if err := multipartWriteField(w, k, iv); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+var multipartCreatePart = func(w *multipart.Writer, h textproto.MIMEHeader) (io.Writer, error) {
+	return w.CreatePart(h)
+}
+
+var multipartSetBoundary = func(w *multipart.Writer, r *Request) error {
+	if isStringEmpty(r.multipartBoundary) {
+		return nil
+	}
+	return w.SetBoundary(r.multipartBoundary)
+}
+
+var multipartPipeWriterClose = func(w *io.PipeWriter) error {
+	return w.Close()
+}
+
+func handleMultipartFormData(r *Request) error {
+	r.bodyBuf = acquireBuffer()
+	mw := multipart.NewWriter(r.bodyBuf)
+	defer mw.Close()
+
+	// set custom multipart boundary if exists
+	if err := multipartSetBoundary(mw, r); err != nil {
+		return err
+	}
+
+	r.Header.Set(hdrContentTypeKey, mw.FormDataContentType())
+
+	return multipartWriteFormData(mw, r)
+}
+
 func handleMultipart(c *Client, r *Request) error {
 	for k, v := range c.FormData() {
 		if _, ok := r.FormData[k]; ok {
@@ -297,97 +350,89 @@ func handleMultipart(c *Client, r *Request) error {
 		r.FormData[k] = v[:]
 	}
 
-	mfLen := len(r.multipartFields)
-	if mfLen == 0 {
-		r.bodyBuf = acquireBuffer()
-		mw := multipart.NewWriter(r.bodyBuf)
-
-		// set boundary if it is provided by the user
-		if !isStringEmpty(r.multipartBoundary) {
-			if err := mw.SetBoundary(r.multipartBoundary); err != nil {
-				return err
-			}
-		}
-
-		if err := r.writeFormData(mw); err != nil {
-			return err
-		}
-
-		r.Header.Set(hdrContentTypeKey, mw.FormDataContentType())
-		closeq(mw)
-
-		return nil
+	if len(r.multipartFields) == 0 {
+		return handleMultipartFormData(r)
 	}
 
-	// multipart streaming
-	bodyReader, bodyWriter := io.Pipe()
-	mw := multipart.NewWriter(bodyWriter)
-	r.Body = bodyReader
-	r.multipartErrChan = make(chan error, 1)
-
-	// set boundary if it is provided by the user
-	if !isStringEmpty(r.multipartBoundary) {
-		if err := mw.SetBoundary(r.multipartBoundary); err != nil {
-			return err
-		}
-	}
-
-	go func() {
-		defer close(r.multipartErrChan)
-		if err := createMultipart(mw, r); err != nil {
-			r.multipartErrChan <- err
-		}
-		closeq(mw)
-		closeq(bodyWriter)
-	}()
-
-	r.Header.Set(hdrContentTypeKey, mw.FormDataContentType())
-	return nil
-}
-
-var mpCreatePart = func(w *multipart.Writer, h textproto.MIMEHeader) (io.Writer, error) {
-	return w.CreatePart(h)
-}
-
-func createMultipart(w *multipart.Writer, r *Request) error {
-	if err := r.writeFormData(w); err != nil {
-		return err
-	}
-
+	// pre-process multipart fields to catch possible errors
 	for _, mf := range r.multipartFields {
-		if len(mf.Values) > 0 {
-			for _, v := range mf.Values {
-				w.WriteField(mf.Name, v)
-			}
+		if mf.isValues() {
 			continue
 		}
 
-		if err := mf.openFileIfRequired(); err != nil {
+		if err := mf.openFile(); err != nil {
 			return err
 		}
 
-		p := make([]byte, 512)
-		size, err := mf.Reader.Read(p)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		// auto detect content type if empty
-		if isStringEmpty(mf.ContentType) {
-			mf.ContentType = http.DetectContentType(p[:size])
-		}
-
-		partWriter, err := mpCreatePart(w, mf.createHeader())
-		if err != nil {
-			return err
-		}
-
-		partWriter = mf.wrapProgressCallbackIfPresent(partWriter)
-		partWriter.Write(p[:size])
-
-		if _, err = ioCopy(partWriter, mf.Reader); err != nil {
+		if err := mf.detectContentType(); err != nil {
 			return err
 		}
 	}
+
+	// multipart streaming
+	br, bw := io.Pipe()
+	mw := multipart.NewWriter(bw)
+	r.Body = br
+
+	// set custom multipart boundary if exists
+	if err := multipartSetBoundary(mw, r); err != nil {
+		closeq(bw)
+		return err
+	}
+
+	r.Header.Set(hdrContentTypeKey, mw.FormDataContentType())
+
+	r.multipartErrChan = make(chan error, 1)
+	go func() {
+		defer close(r.multipartErrChan)
+		defer func() {
+			if err := mw.Close(); err != nil {
+				r.multipartErrChan <- err
+			}
+			if err := multipartPipeWriterClose(bw); err != nil {
+				r.multipartErrChan <- err
+			}
+		}()
+
+		if err := multipartWriteFormData(mw, r); err != nil {
+			r.multipartErrChan <- err
+			return
+		}
+
+		ctx, cancel := context.WithCancel(r.Context())
+		r.multipartCancelFunc = cancel
+		for _, mf := range r.multipartFields {
+			if mf.isValues() {
+				for _, v := range mf.Values {
+					if err := multipartWriteField(mw, mf.Name, v); err != nil {
+						r.multipartErrChan <- err
+						return
+					}
+				}
+				continue
+			}
+
+			partWriter, err := multipartCreatePart(mw, mf.createHeader())
+			if err != nil {
+				r.multipartErrChan <- err
+				return
+			}
+
+			partWriter = mf.wrapProgressCallbackIfPresent(partWriter)
+			if len(mf.tempBuf) > 0 {
+				if _, err = partWriter.Write(mf.tempBuf); err != nil {
+					r.multipartErrChan <- err
+					return
+				}
+			}
+
+			reader := &gracefulStopReader{ctx: ctx, r: mf.Reader}
+			if _, err = ioCopy(partWriter, reader); err != nil {
+				r.multipartErrChan <- err
+				return
+			}
+		}
+	}()
 
 	return nil
 }
@@ -407,7 +452,7 @@ func handleFormData(c *Client, r *Request) {
 }
 
 func handleRequestBody(c *Client, r *Request) error {
-	contentType := r.Header.Get(hdrContentTypeKey)
+	contentType := strings.ToLower(r.Header.Get(hdrContentTypeKey))
 	if isStringEmpty(contentType) {
 		// it is highly recommended that the user provide a request content-type
 		// so that we can minimize memory allocation and compute.
@@ -432,17 +477,22 @@ func handleRequestBody(c *Client, r *Request) error {
 		}
 
 		// do seek start for retry attempt if io.ReadSeeker
-		// interface supported
+		// interface supported; otherwise fail loudly rather than
+		// silently retrying the request with an empty body.
 		if r.Attempt > 1 {
-			if rs, ok := r.Body.(io.ReadSeeker); ok {
-				_, _ = rs.Seek(0, io.SeekStart)
+			rs, ok := r.Body.(io.ReadSeeker)
+			if !ok {
+				return ErrReaderNotSeekable
+			}
+			if _, err := rs.Seek(0, io.SeekStart); err != nil {
+				return err
 			}
 		}
 		return nil
 	case []byte:
 		r.bodyBuf.Write(body)
 	case string:
-		r.bodyBuf.Write([]byte(body))
+		r.bodyBuf.WriteString(body)
 	default:
 		encKey := inferContentTypeMapKey(contentType)
 		if jsonKey == encKey {
@@ -478,24 +528,26 @@ func handleRequestBody(c *Client, r *Request) error {
 // Response Middleware(s)
 //_______________________________________________________________________
 
-// AutoParseResponseMiddleware method is used to parse the response body automatically
-// based on registered HTTP response `Content-Type` decoder, see [Client.AddContentTypeDecoder];
-// if [Request.SetResult], [Request.SetError], or [Client.SetError] is used
-func AutoParseResponseMiddleware(c *Client, res *Response) (err error) {
-	if res.Err != nil || res.Request.DoNotParseResponse {
+// MiddlewareResponseAutoParse parses the response body automatically using the
+// Content-Type decoder registered via [Client.AddContentTypeDecoder].
+// When [Request.SetResult], [Request.SetResultError], or [Client.SetResultError]
+// is used, the body is automatically unmarshalled into the provided object.
+func MiddlewareResponseAutoParse(c *Client, res *Response) (err error) {
+	if (res.CascadeError != nil && (res.Request.isMultiPart && res.StatusCode() == 0)) ||
+		res.Request.IsResponseDoNotParse {
 		return // move on
 	}
 
 	if res.StatusCode() == http.StatusNoContent {
-		res.Request.Error = nil
+		res.Request.ResultError = nil
 		return
 	}
 
-	rct := firstNonEmpty(
-		res.Request.ForceResponseContentType,
+	rct := strings.ToLower(firstNonEmpty(
+		res.Request.ResponseForceContentType,
 		res.Header().Get(hdrContentTypeKey),
-		res.Request.ExpectResponseContentType,
-	)
+		res.Request.ResponseExpectContentType,
+	))
 	decKey := inferContentTypeMapKey(rct)
 	decFunc, found := c.inferContentTypeDecoder(rct, decKey)
 	if !found {
@@ -505,8 +557,8 @@ func AutoParseResponseMiddleware(c *Client, res *Response) (err error) {
 	}
 
 	// HTTP status code > 199 and < 300, considered as Result
-	if res.IsSuccess() && res.Request.Result != nil {
-		res.Request.Error = nil
+	if res.IsStatusSuccess() && res.Request.Result != nil {
+		res.Request.ResultError = nil
 		defer closeq(res.Body)
 		err = decFunc(res.Body, res.Request.Result)
 		res.IsRead = true
@@ -514,15 +566,15 @@ func AutoParseResponseMiddleware(c *Client, res *Response) (err error) {
 	}
 
 	// HTTP status code > 399, considered as Error
-	if res.IsError() {
+	if res.IsStatusFailure() {
 		// global error type registered at client-instance
-		if res.Request.Error == nil {
-			res.Request.Error = c.newErrorInterface()
+		if res.Request.ResultError == nil {
+			res.Request.ResultError = c.newErrorInterface()
 		}
 
-		if res.Request.Error != nil {
+		if res.Request.ResultError != nil {
 			defer closeq(res.Body)
-			err = decFunc(res.Body, res.Request.Error)
+			err = decFunc(res.Body, res.Request.ResultError)
 			res.IsRead = true
 			return
 		}
@@ -533,22 +585,85 @@ func AutoParseResponseMiddleware(c *Client, res *Response) (err error) {
 
 var hostnameReplacer = strings.NewReplacer(":", "_", ".", "_")
 
-// SaveToFileResponseMiddleware method used to write HTTP response body into
-// file. The filename is determined in the following order -
-//   - [Request.SetOutputFileName]
+func sanitizeResponseSaveFileNameFromHeader(file string) (string, error) {
+	file = strings.TrimSpace(file)
+	if isStringEmpty(file) {
+		return "", nil
+	}
+
+	normalized := strings.ReplaceAll(file, "\\", "/")
+	if strings.HasPrefix(normalized, "/") || isWindowsAbsPath(normalized) {
+		return "", fmt.Errorf("resty: invalid Content-Disposition filename: absolute path is not allowed")
+	}
+	for _, s := range strings.Split(normalized, "/") {
+		if s == ".." {
+			return "", fmt.Errorf("resty: invalid Content-Disposition filename: parent directory traversal is not allowed")
+		}
+	}
+
+	base := path.Base(normalized)
+	if isStringEmpty(base) || base == "." {
+		return "", fmt.Errorf("resty: invalid Content-Disposition filename")
+	}
+
+	return base, nil
+}
+
+func isWindowsAbsPath(file string) bool {
+	if len(file) < 3 || file[1] != ':' {
+		return false
+	}
+
+	drive := file[0]
+	if (drive < 'A' || drive > 'Z') && (drive < 'a' || drive > 'z') {
+		return false
+	}
+
+	return file[2] == '/'
+}
+
+func isPathWithinBaseDirectory(baseDir, target string) bool {
+	rel, err := filepath.Rel(baseDir, target)
+	if err != nil {
+		return false
+	}
+	if rel == "." {
+		return true
+	}
+	if rel == ".." {
+		return false
+	}
+	return !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// MiddlewareResponseSaveToFile writes the HTTP response body to a file.
+// The filename is determined in the following order:
+//   - [Request.SetResponseSaveFileName]
 //   - Content-Disposition header
-//   - Request URL using [path.Base]
-func SaveToFileResponseMiddleware(c *Client, res *Response) error {
-	if res.Err != nil || !res.Request.IsSaveResponse {
+//   - Request URL path using [path.Base]
+//   - Request URL hostname if the path is empty or "/"
+//
+// Content-Disposition filename values are sanitized before use. Absolute paths
+// and parent-directory traversal segments are rejected.
+//
+// If [Client.SetResponseSaveDirectory] is set and
+// [Request.SetResponseSaveFileName] provides a relative path, the final path
+// must remain within the configured response save directory after cleaning,
+// otherwise this middleware returns an error.
+func MiddlewareResponseSaveToFile(c *Client, res *Response) error {
+	if res.CascadeError != nil || !res.Request.IsResponseSaveToFile {
 		return nil
 	}
 
-	file := res.Request.OutputFileName
+	file := res.Request.ResponseSaveFileName
 	if isStringEmpty(file) {
 		cntDispositionValue := res.Header().Get(hdrContentDisposition)
 		if len(cntDispositionValue) > 0 {
 			if _, params, err := mime.ParseMediaType(cntDispositionValue); err == nil {
-				file = params["filename"]
+				file, err = sanitizeResponseSaveFileNameFromHeader(params["filename"])
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if isStringEmpty(file) {
@@ -561,11 +676,23 @@ func SaveToFileResponseMiddleware(c *Client, res *Response) error {
 		}
 	}
 
-	if len(c.OutputDirectory()) > 0 && !filepath.IsAbs(file) {
-		file = filepath.Join(c.OutputDirectory(), string(filepath.Separator), file)
+	baseDirRaw := c.ResponseSaveDirectory()
+	hasBaseDir := !isStringEmpty(strings.TrimSpace(baseDirRaw))
+	baseDir := ""
+	if hasBaseDir {
+		baseDir = filepath.Clean(baseDirRaw)
+	}
+	constrainToBaseDir := hasBaseDir && !isStringEmpty(res.Request.ResponseSaveFileName) && !filepath.IsAbs(file)
+
+	if hasBaseDir && !filepath.IsAbs(file) {
+		file = filepath.Join(baseDir, file)
 	}
 
 	file = filepath.Clean(file)
+	if constrainToBaseDir && !isPathWithinBaseDirectory(baseDir, file) {
+		return fmt.Errorf("resty: invalid save file path outside response save directory")
+	}
+
 	if err := createDirectory(filepath.Dir(file)); err != nil {
 		return err
 	}

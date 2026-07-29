@@ -14,13 +14,13 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -33,45 +33,47 @@ import (
 // Resty client. The [Request] provides an option to override client-level
 // settings and also an option for the request composition.
 type Request struct {
-	URL                        string
-	Method                     string
-	AuthToken                  string
-	AuthScheme                 string
-	QueryParams                url.Values
-	FormData                   url.Values
-	PathParams                 map[string]string
-	Header                     http.Header
-	Time                       time.Time
-	Body                       any
-	Result                     any
-	Error                      any
-	RawRequest                 *http.Request
-	Cookies                    []*http.Cookie
-	Debug                      bool
-	CloseConnection            bool
-	DoNotParseResponse         bool
-	OutputFileName             string
-	ExpectResponseContentType  string
-	ForceResponseContentType   string
-	DebugBodyLimit             int
-	ResponseBodyLimit          int64
-	ResponseBodyUnlimitedReads bool
-	IsTrace                    bool
-	AllowMethodGetPayload      bool
-	AllowMethodDeletePayload   bool
-	IsDone                     bool
-	IsSaveResponse             bool
-	Timeout                    time.Duration
-	HeaderAuthorizationKey     string
-	RetryCount                 int
-	RetryWaitTime              time.Duration
-	RetryMaxWaitTime           time.Duration
-	RetryStrategy              RetryStrategyFunc
-	IsRetryDefaultConditions   bool
-	AllowNonIdempotentRetry    bool
+	// CorrelationID used to track/relate requests.
+	// By default, Resty sets a GUID as the correlation ID for requests with retry count > 0.
+	CorrelationID string
 
-	// RetryTraceID provides GUID for retry count > 0
-	RetryTraceID string
+	URL                          string
+	Method                       string
+	AuthToken                    string
+	AuthScheme                   string
+	QueryParams                  url.Values
+	FormData                     url.Values
+	PathParams                   map[string]string
+	Header                       http.Header
+	StartTime                    time.Time
+	Body                         any
+	Result                       any
+	ResultError                  any
+	RawRequest                   *http.Request
+	Cookies                      []*http.Cookie
+	IsDebug                      bool
+	IsCloseConnection            bool
+	IsResponseDoNotParse         bool
+	ResponseSaveFileName         string
+	ResponseExpectContentType    string
+	ResponseForceContentType     string
+	DebugBodyLimit               int
+	ResponseBodyLimit            int64
+	IsResponseBodyUnlimitedReads bool
+	IsTrace                      bool
+	IsMethodGetAllowPayload      bool
+	IsMethodDeleteAllowPayload   bool
+	IsDone                       bool
+	IsResponseSaveToFile         bool
+	Timeout                      time.Duration
+	HeaderAuthorizationKey       string
+	RetryCount                   int
+	RetryWaitTime                time.Duration
+	RetryMaxWaitTime             time.Duration
+	RetryDelayStrategy           RetryDelayStrategyFunc
+	IsRetryDefaultConditions     bool
+	IsRetryAllowNonIdempotent    bool
+	Label                        string
 
 	// Attempt provides insights into no. of attempts
 	// Resty made.
@@ -79,29 +81,41 @@ type Request struct {
 	//	first attempt + retry count = total attempts
 	Attempt int
 
-	credentials         *credentials
-	isMultiPart         bool
-	isFormData          bool
-	isContentLengthSet  bool
-	contentLength       int64
-	jsonEscapeHTML      bool
-	ctx                 context.Context
-	ctxCancelFunc       context.CancelFunc
-	values              map[string]any
-	client              *Client
-	bodyBuf             *bytes.Buffer
-	trace               *clientTrace
-	log                 Logger
-	baseURL             string
-	multipartBoundary   string
-	multipartFields     []*MultipartField
-	retryConditions     []RetryConditionFunc
-	retryHooks          []RetryHookFunc
-	resultCurlCmd       string
-	generateCurlCmd     bool
-	debugLogCurlCmd     bool
-	unescapeQueryParams bool
-	multipartErrChan    chan error
+	mu                   *sync.Mutex
+	credentials          *credentials
+	isMultiPart          bool
+	isFormData           bool
+	isContentLengthSet   bool
+	contentLength        int64
+	jsonEscapeHTML       bool
+	ctx                  context.Context
+	ctxCancelFunc        context.CancelFunc
+	values               map[string]any
+	client               *Client
+	bodyBuf              *bytes.Buffer
+	trace                *clientTrace
+	log                  Logger
+	baseURL              string
+	multipartBoundary    string
+	multipartFields      []*MultipartField
+	retryConditions      []RetryConditionFunc
+	isSetRetryConditions bool
+	retryHooks           []RetryHookFunc
+	isSetRetryHooks      bool
+	curlCmdString        string
+	isCurlCmdGenerate    bool
+	isCurlCmdDebugLog    bool
+	unescapeQueryParams  bool
+	multipartErrChan     chan error
+	multipartCancelFunc  context.CancelFunc
+}
+
+// SetCorrelationID method is used to set the correlation ID for the request
+//
+// By default, Resty sets a GUID as the correlation ID for requests with retry count > 0.
+func (r *Request) SetCorrelationID(id string) *Request {
+	r.CorrelationID = id
+	return r
 }
 
 // SetMethod method used to set the HTTP verb for the request
@@ -122,21 +136,25 @@ func (r *Request) SetURL(url string) *Request {
 // The returned context is always non-nil; it defaults to the
 // background context.
 func (r *Request) Context() context.Context {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if r.ctx == nil {
 		return context.Background()
 	}
 	return r.ctx
 }
 
-// SetContext method sets the [context.Context] for current [Request].
+// SetContext method sets the [context.Context] for the current [Request].
 // It overwrites the current context in the Request instance; it does not
 // affect the [Request].RawRequest that was already created.
 //
 // If you want this method to take effect, use this method before invoking
-// [Request.Send] or [Request].HTTPVerb methods.
+// [Request.Send], [Request.Execute], or one of the HTTP verb methods.
 //
 // See [Request.WithContext], [Request.Clone]
 func (r *Request) SetContext(ctx context.Context) *Request {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.ctx = ctx
 	return r
 }
@@ -146,7 +164,7 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 // affect the [Request].RawRequest that was already created.
 //
 // If you want this method to take effect, use this method before invoking
-// [Request.Send] or [Request].HTTPVerb methods.
+// [Request.Send], [Request.Execute], or one of the HTTP verb methods.
 //
 // See [Request.SetContext], [Request.Clone]
 func (r *Request) WithContext(ctx context.Context) *Request {
@@ -178,6 +196,24 @@ func (r *Request) SetContentType(ct string) *Request {
 // It overrides the header value set at the client instance level.
 func (r *Request) SetHeader(header, value string) *Request {
 	r.Header.Set(header, value)
+	return r
+}
+
+// SetHeaderAny method sets a single header field and its value in the current request.
+//
+// It is similar to [Request.SetHeader] but accepts any type as the value and converts
+// it to a string using predefined formatting rules (integers, bools, time.Time, etc.).
+//
+// For Example: To set `X-Request-Id` with an integer value
+//
+//	client.R().SetHeaderAny("X-Request-Id", 12345)
+//
+// It overrides the header value set at the client instance level.
+//
+// See [Client.SetHeaderAny].
+func (r *Request) SetHeaderAny(header string, value any) *Request {
+	strVal := formatAnyToString(value)
+	r.Header.Set(header, strVal)
 	return r
 }
 
@@ -232,6 +268,24 @@ func (r *Request) SetHeaderVerbatim(header, value string) *Request {
 	return r
 }
 
+// SetHeaderVerbatimAny method sets the HTTP header key and value verbatim in the current request.
+//
+// It is similar to [Request.SetHeaderVerbatim] but accepts any type as the value and converts
+// it to a string using predefined formatting rules (integers, bools, time.Time, etc.).
+//
+// For Example: To set header key as `x-trace-id` with an integer value
+//
+//	client.R().SetHeaderVerbatimAny("x-trace-id", 798940)
+//
+// It overrides the header value set at the client instance level.
+//
+// See [Client.SetHeaderVerbatimAny].
+func (r *Request) SetHeaderVerbatimAny(header string, value any) *Request {
+	strVal := formatAnyToString(value)
+	r.Header[header] = []string{strVal}
+	return r
+}
+
 // SetQueryParam method sets a single parameter and its value in the current request.
 // It will be formed as a query string for the request.
 //
@@ -244,6 +298,27 @@ func (r *Request) SetHeaderVerbatim(header, value string) *Request {
 // It overrides the query parameter value set at the client instance level.
 func (r *Request) SetQueryParam(param, value string) *Request {
 	r.QueryParams.Set(param, value)
+	return r
+}
+
+// SetQueryParamAny method sets a single query parameter and its value in the current request.
+// It will be formed as a query string for the request.
+//
+// It is similar to [Request.SetQueryParam] but accepts any type as the value and converts
+// it to a string using predefined formatting rules (integers, bools, time.Time, etc.).
+//
+// For Example: To set `page` and `active` query parameters
+//
+//	client.R().
+//		SetQueryParamAny("page", 5).
+//		SetQueryParamAny("active", true)
+//
+// It overrides the query parameter value set at the client instance level.
+//
+// See [Client.SetQueryParamAny].
+func (r *Request) SetQueryParamAny(param string, value any) *Request {
+	strVal := formatAnyToString(value)
+	r.QueryParams.Set(param, strVal)
 	return r
 }
 
@@ -396,9 +471,9 @@ func (r *Request) SetBody(body any) *Request {
 	return r
 }
 
-// SetResult method is to register the response `Result` object for automatic
+// SetResult method registers the response `Result` object type for automatic
 // unmarshalling of the HTTP response if the response status code is
-// between 200 and 299, and the content type is JSON or XML.
+// between 200 and 299, and the content type is either JSON or XML.
 //
 // Note: [Request.SetResult] input can be a pointer or non-pointer.
 //
@@ -425,22 +500,24 @@ func (r *Request) SetResult(v any) *Request {
 	return r
 }
 
-// SetError method is to register the request `Error` object for automatic unmarshalling for the request,
-// if the response status code is greater than 399 and the content type is either JSON or XML.
+// SetResultError method registers the response `ResultError` object type for automatic
+// unmarshalling for the request, if the response status code is greater than 399 and
+// the content type is either JSON or XML.
 //
-// NOTE: [Request.SetError] input can be a pointer or non-pointer.
+// NOTE: [Request.SetResultError] input can be a pointer or non-pointer.
 //
-//	client.R().SetError(&AuthError{})
+//	client.R().SetResultError(&AuthError{})
 //	// OR
-//	client.R().SetError(AuthError{})
+//	client.R().SetResultError(AuthError{})
 //
-// Accessing an error value from response instance.
+// Accessing an unmarshalled error object from response instance.
 //
-//	response.Error().(*AuthError)
+//	response.ResultError().(*AuthError)
 //
-// If this request Error object is nil, Resty will use the client-level error object Type if it is set.
-func (r *Request) SetError(err any) *Request {
-	r.Error = getPointer(err)
+// If this request ResultError object is nil, it will use the client-level error object
+// type if it is set.
+func (r *Request) SetResultError(err any) *Request {
+	r.ResultError = getPointer(err)
 	return r
 }
 
@@ -497,8 +574,8 @@ func (r *Request) SetFileReader(fieldName, fileName string, reader io.Reader) *R
 	return r
 }
 
-// SetMultipartFormData method allows simple form data to be attached to the request
-// as `multipart:form-data`
+// SetMultipartFormData method sets simple form fields on the request and sends
+// them as multipart/form-data.
 func (r *Request) SetMultipartFormData(data map[string]string) *Request {
 	r.isMultiPart = true
 	for k, v := range data {
@@ -507,8 +584,8 @@ func (r *Request) SetMultipartFormData(data map[string]string) *Request {
 	return r
 }
 
-// SetMultipartOrderedFormData method allows add ordered form data to be attached to the request
-// as `multipart:form-data`
+// SetMultipartOrderedFormData method appends ordered multipart/form-data values
+// for the same field name.
 func (r *Request) SetMultipartOrderedFormData(name string, values []string) *Request {
 	r.isMultiPart = true
 	r.multipartFields = append(r.multipartFields, &MultipartField{
@@ -662,40 +739,40 @@ func (r *Request) SetHeaderAuthorizationKey(k string) *Request {
 	return r
 }
 
-// SetOutputFileName method sets the output file for the current HTTP request. The current
+// SetResponseSaveFileName method sets the output file for the current HTTP request. The current
 // HTTP response will be saved in the given file. It is similar to the `curl -o` flag.
 //
 // Absolute path or relative path can be used.
 //
 // If it is a relative path, then the output file goes under the output directory, as mentioned
-// in the [Client.SetOutputDirectory].
+// in the [Client.SetResponseSaveDirectory].
 //
 //	client.R().
-//		SetOutputFileName("/Users/jeeva/Downloads/ReplyWithHeader-v5.1-beta.zip").
+//		SetResponseSaveFileName("/Users/jeeva/Downloads/ReplyWithHeader-v5.1-beta.zip").
 //		Get("http://bit.ly/1LouEKr")
 //
 // NOTE: In this scenario
 //   - [Response.BodyBytes] might be nil.
-//   - [Response].Body might have been already read.
-func (r *Request) SetOutputFileName(file string) *Request {
-	r.OutputFileName = file
-	r.SetSaveResponse(true)
+//   - [Response.Body] might have already been read.
+func (r *Request) SetResponseSaveFileName(file string) *Request {
+	r.ResponseSaveFileName = file
+	r.SetResponseSaveToFile(true)
 	return r
 }
 
-// SetSaveResponse method used to enable the save response option for the current requests
+// SetResponseSaveToFile method used to enable the save response option for the current requests
 //
-//	client.R().SetSaveResponse(true)
+//	client.R().SetResponseSaveToFile(true)
 //
 // Resty determines the save filename in the following order -
-//   - [Request.SetOutputFileName]
+//   - [Request.SetResponseSaveFileName]
 //   - Content-Disposition header
 //   - Request URL using [path.Base]
 //   - Request URL hostname if path is empty or "/"
 //
-// It overrides the value set at the client instance level, see [Client.SetSaveResponse]
-func (r *Request) SetSaveResponse(save bool) *Request {
-	r.IsSaveResponse = save
+// It overrides the value set at the client instance level, see [Client.SetResponseSaveToFile]
+func (r *Request) SetResponseSaveToFile(save bool) *Request {
+	r.IsResponseSaveToFile = save
 	return r
 }
 
@@ -704,11 +781,11 @@ func (r *Request) SetSaveResponse(save bool) *Request {
 //
 // It overrides the value set at the client instance level, see [Client.SetCloseConnection]
 func (r *Request) SetCloseConnection(close bool) *Request {
-	r.CloseConnection = close
+	r.IsCloseConnection = close
 	return r
 }
 
-// SetDoNotParseResponse method instructs Resty not to parse the response body automatically.
+// SetResponseDoNotParse method instructs Resty not to parse the response body automatically.
 //
 // Resty exposes the raw response body as [io.ReadCloser]. If you use it, do not
 // forget to close the body, otherwise, you might get into connection leaks, and connection
@@ -716,19 +793,19 @@ func (r *Request) SetCloseConnection(close bool) *Request {
 //
 // NOTE: The default [Response] middlewares are not executed when using this option. User
 // takes over the control of handling response body from Resty.
-func (r *Request) SetDoNotParseResponse(notParse bool) *Request {
-	r.DoNotParseResponse = notParse
+func (r *Request) SetResponseDoNotParse(notParse bool) *Request {
+	r.IsResponseDoNotParse = notParse
 	return r
 }
 
 // SetResponseBodyLimit method sets a maximum body size limit in bytes on response,
 // avoid reading too much data to memory.
 //
-// Client will return [resty.ErrResponseBodyTooLarge] if the body size of the body
+// Client will return [ErrResponseBodyTooLarge] if the body size
 // in the uncompressed response is larger than the limit.
 // Body size limit will not be enforced in the following cases:
 //   - ResponseBodyLimit <= 0, which is the default behavior.
-//   - [Request.SetOutputFileName] is called to save response data to the file.
+//   - [Request.SetResponseSaveFileName] is called to save response data to the file.
 //   - "DoNotParseResponse" is set for client or request.
 //
 // It overrides the value set at the client instance level, see [Client.SetResponseBodyLimit]
@@ -748,7 +825,7 @@ func (r *Request) SetResponseBodyLimit(v int64) *Request {
 // NOTE: Use with care
 //   - Turning on this feature keeps the response body in memory, which might cause additional memory usage.
 func (r *Request) SetResponseBodyUnlimitedReads(b bool) *Request {
-	r.ResponseBodyUnlimitedReads = b
+	r.IsResponseBodyUnlimitedReads = b
 	return r
 }
 
@@ -776,6 +853,30 @@ func (r *Request) SetPathParam(param, value string) *Request {
 	return r
 }
 
+// SetPathParamAny method sets a single URL path key-value pair in the
+// current request instance.
+//
+// It is similar to [Request.SetPathParam] but accepts any type as the value and converts
+// it to a string using predefined formatting rules (integers, bools, time.Time, etc.).
+//
+//	client.R().SetPathParamAny("userId", 12345)
+//
+//	Result:
+//	   URL - /v1/users/{userId}/details
+//	   Composed URL - /v1/users/12345/details
+//
+// It replaces the value of the key while composing the request URL.
+// The value will be escaped using [url.PathEscape] function.
+//
+// It overrides the path parameter set at the client instance level.
+//
+// See [Client.SetPathParamAny].
+func (r *Request) SetPathParamAny(param string, value any) *Request {
+	strVal := formatAnyToString(value)
+	r.PathParams[param] = url.PathEscape(strVal)
+	return r
+}
+
 // SetPathParams method sets multiple URL path key-value pairs at one go in the
 // Resty current request instance.
 //
@@ -800,16 +901,16 @@ func (r *Request) SetPathParams(params map[string]string) *Request {
 	return r
 }
 
-// SetRawPathParam method sets a single URL path key-value pair in the
+// SetPathRawParam method sets a single URL path key-value pair in the
 // Resty current request instance without path escape.
 //
-//	client.R().SetRawPathParam("userId", "sample@sample.com")
+//	client.R().SetPathRawParam("userId", "sample@sample.com")
 //
 //	Result:
 //	   URL - /v1/users/{userId}/details
 //	   Composed URL - /v1/users/sample@sample.com/details
 //
-//	client.R().SetRawPathParam("path", "groups/developers")
+//	client.R().SetPathRawParam("path", "groups/developers")
 //
 //	Result:
 //	   URL - /v1/users/{path}/details
@@ -819,12 +920,36 @@ func (r *Request) SetPathParams(params map[string]string) *Request {
 // The value will be used as-is, no path escape applied.
 //
 // It overrides the raw path parameter set at the client instance level.
-func (r *Request) SetRawPathParam(param, value string) *Request {
+func (r *Request) SetPathRawParam(param, value string) *Request {
 	r.PathParams[param] = value
 	return r
 }
 
-// SetRawPathParams method sets multiple URL path key-value pairs at one go in the
+// SetPathRawParamAny method sets a single URL path key-value pair in the
+// current request instance without path escape.
+//
+// It is similar to [Request.SetPathRawParam] but accepts any type as the value and converts
+// it to a string using predefined formatting rules (integers, bools, time.Time, etc.).
+//
+//	client.R().SetPathRawParamAny("userId", 12345)
+//
+//	Result:
+//	   URL - /v1/users/{userId}/details
+//	   Composed URL - /v1/users/12345/details
+//
+// It replaces the value of the key while composing the request URL.
+// The value will be used as-is, no path escape applied.
+//
+// It overrides the raw path parameter set at the client instance level.
+//
+// See [Client.SetPathRawParamAny].
+func (r *Request) SetPathRawParamAny(param string, value any) *Request {
+	strVal := formatAnyToString(value)
+	r.PathParams[param] = strVal
+	return r
+}
+
+// SetPathRawParams method sets multiple URL path key-value pairs at one go in the
 // Resty current request instance without path escape.
 //
 //	client.R().SetPathParams(map[string]string{
@@ -841,28 +966,28 @@ func (r *Request) SetRawPathParam(param, value string) *Request {
 // The value will be used as-is, no path escape applied.
 //
 // It overrides the raw path parameter set at the client instance level.
-func (r *Request) SetRawPathParams(params map[string]string) *Request {
+func (r *Request) SetPathRawParams(params map[string]string) *Request {
 	for p, v := range params {
-		r.SetRawPathParam(p, v)
+		r.SetPathRawParam(p, v)
 	}
 	return r
 }
 
-// SetExpectResponseContentType method allows to provide fallback `Content-Type`
+// SetResponseExpectContentType method allows to provide fallback `Content-Type`
 // for automatic unmarshalling when the `Content-Type` response header is unavailable.
-func (r *Request) SetExpectResponseContentType(contentType string) *Request {
-	r.ExpectResponseContentType = contentType
+func (r *Request) SetResponseExpectContentType(contentType string) *Request {
+	r.ResponseExpectContentType = contentType
 	return r
 }
 
-// SetForceResponseContentType method provides a strong sense of response `Content-Type` for
+// SetResponseForceContentType method provides a strong sense of response `Content-Type` for
 // automatic unmarshalling. Resty gives this a higher priority than the `Content-Type`
 // response header.
 //
-// This means that if both [Request.SetForceResponseContentType] is set and
-// the response `Content-Type` is available, `SetForceResponseContentType` value will win.
-func (r *Request) SetForceResponseContentType(contentType string) *Request {
-	r.ForceResponseContentType = contentType
+// This means that if both [Request.SetResponseForceContentType] is set and
+// the response `Content-Type` is available, `SetResponseForceContentType` value will win.
+func (r *Request) SetResponseForceContentType(contentType string) *Request {
+	r.ResponseForceContentType = contentType
 	return r
 }
 
@@ -924,7 +1049,7 @@ func (r *Request) SetTimeout(timeout time.Duration) *Request {
 	return r
 }
 
-// SetLogger method sets given writer for logging Resty request and response details.
+// SetLogger method sets the [Logger] used for request and response logging.
 // By default, requests and responses inherit their logger from the client.
 //
 // Compliant to interface [resty.Logger].
@@ -935,32 +1060,18 @@ func (r *Request) SetLogger(l Logger) *Request {
 	return r
 }
 
-// EnableDebug method is a helper method for [Request.SetDebug]
-func (r *Request) EnableDebug() *Request {
-	r.SetDebug(true)
-	return r
-}
-
-// DisableDebug method is a helper method for [Request.SetDebug]
-func (r *Request) DisableDebug() *Request {
-	r.SetDebug(false)
-	return r
-}
-
 // SetDebug method enables the debug mode on the current request. It logs
-// the details current request and response.
+// details of the current request and response.
 //
 //	client.R().SetDebug(true)
-//	// OR
-//	client.R().EnableDebug()
 //
-// Also, it can be enabled at the request level for a particular request; see [Request.SetDebug].
+// It overrides the debug value set at the client instance level.
 //   - For [Request], it logs information such as HTTP verb, Relative URL path,
 //     Host, Headers, and Body if it has one.
 //   - For [Response], it logs information such as Status, Response Time, Headers,
 //     and Body if it has one.
 func (r *Request) SetDebug(d bool) *Request {
-	r.Debug = d
+	r.IsDebug = d
 	return r
 }
 
@@ -969,10 +1080,13 @@ func (r *Request) SetDebug(d bool) *Request {
 // The request will retry if any functions return `true`, otherwise return `false`.
 //
 // NOTE:
-//   - The default retry conditions are applied first.
-//   - The client-level retry conditions are applied to all requests.
-//   - The request-level retry conditions are executed first before the client-level
-//     retry conditions. See [Request.SetRetryConditions]
+//   - Retry conditions are executed on each retry attempt.
+//   - Default retry conditions are executed first.
+//   - Client-level retry conditions are applied to all requests.
+//   - Request-level retry conditions are executed before client-level retry conditions.
+//     See [Client.AddRetryConditions], [Request.SetRetryConditions]
+//   - Once a retry condition returns true, the remaining retry conditions are not executed.
+//   - Retry conditions are executed in the order in which they are added.
 func (r *Request) AddRetryConditions(conditions ...RetryConditionFunc) *Request {
 	r.retryConditions = append(r.retryConditions, conditions...)
 	return r
@@ -981,16 +1095,23 @@ func (r *Request) AddRetryConditions(conditions ...RetryConditionFunc) *Request 
 // SetRetryConditions method overwrites the retry conditions in the request.
 // These retry conditions are executed to determine if the request can be retried.
 // The request will retry if any function returns `true`, otherwise return `false`.
+//
+// NOTE:
+//   - It overwrites the existing retry conditions.
+//   - See [Request.AddRetryConditions] method for more details.
 func (r *Request) SetRetryConditions(conditions ...RetryConditionFunc) *Request {
 	r.retryConditions = conditions
+	r.isSetRetryConditions = true
 	return r
 }
 
 // AddRetryHooks method adds one or more side-effecting retry hooks in the request.
 //
 // NOTE:
-//   - All the retry hooks are executed on each request retry.
-//   - The request-level retry hooks are executed first before the client-level hooks.
+//   - Retry hooks are executed on each retry attempt.
+//   - The request-level retry hooks are executed first before client-level hooks.
+//     See [Client.AddRetryHooks]
+//   - Retry hooks are executed in the order in which they are added.
 func (r *Request) AddRetryHooks(hooks ...RetryHookFunc) *Request {
 	r.retryHooks = append(r.retryHooks, hooks...)
 	return r
@@ -999,18 +1120,20 @@ func (r *Request) AddRetryHooks(hooks ...RetryHookFunc) *Request {
 // SetRetryHooks method overwrites side-effecting retry hooks in the request.
 //
 // NOTE:
-//   - All the retry hooks are executed on each request retry.
+//   - It overwrites the existing retry hooks.
+//   - See [Request.AddRetryHooks] method for more details.
 func (r *Request) SetRetryHooks(hooks ...RetryHookFunc) *Request {
 	r.retryHooks = hooks
+	r.isSetRetryHooks = true
 	return r
 }
 
 // SetRetryCount method enables retry on Resty client and allows you
-// to set no. of retry count.
+// to set the retry count.
 //
 //	first attempt + retry count = total attempts
 //
-// See [Request.SetRetryStrategy]
+// See [Request.SetRetryDelayStrategy]
 //
 // NOTE:
 //   - By default, Resty only does retry on idempotent HTTP verb, [RFC 9110 Section 9.2.2], [RFC 9110 Section 18.2]
@@ -1038,32 +1161,20 @@ func (r *Request) SetRetryMaxWaitTime(maxWaitTime time.Duration) *Request {
 	return r
 }
 
-// SetRetryStrategy method used to set the custom Retry strategy on request,
-// it is used to get wait time before each retry. It overrides the retry
-// strategy set at the client instance level, see [Client.SetRetryStrategy]
+// SetRetryDelayStrategy method used to set the custom Retry delay strategy on request,
+// it is used to get wait time before each retry. It overrides the retry delay
+// strategy set at the client instance level, see [Client.SetRetryDelayStrategy]
 //
-// Default (nil) implies capped exponential backoff with a jitter strategy
-func (r *Request) SetRetryStrategy(rs RetryStrategyFunc) *Request {
-	r.RetryStrategy = rs
-	return r
-}
-
-// EnableRetryDefaultConditions method enables the Resty's default retry
-// conditions on request level
-func (r *Request) EnableRetryDefaultConditions() *Request {
-	r.SetRetryDefaultConditions(true)
-	return r
-}
-
-// DisableRetryDefaultConditions method disables the Resty's default retry
-// conditions on request level
-func (r *Request) DisableRetryDefaultConditions() *Request {
-	r.SetRetryDefaultConditions(false)
+// By default, Resty employs the capped exponential backoff with a jitter delay strategy.
+func (r *Request) SetRetryDelayStrategy(rs RetryDelayStrategyFunc) *Request {
+	r.RetryDelayStrategy = rs
 	return r
 }
 
 // SetRetryDefaultConditions method is used to enable/disable the Resty's default
-// retry conditions on request level
+// retry conditions on request level, that checks transport, headers and URL errors.
+//
+// By default it is enabled.
 //
 // It overrides value set at the client instance level, see [Client.SetRetryDefaultConditions]
 func (r *Request) SetRetryDefaultConditions(b bool) *Request {
@@ -1071,104 +1182,61 @@ func (r *Request) SetRetryDefaultConditions(b bool) *Request {
 	return r
 }
 
-// SetAllowNonIdempotentRetry method is used to enable/disable non-idempotent HTTP
+// SetRetryAllowNonIdempotent method is used to enable/disable non-idempotent HTTP
 // methods retry. By default, Resty only allows idempotent HTTP methods, see
 // [RFC 9110 Section 9.2.2], [RFC 9110 Section 18.2]
 //
-// It overrides value set at the client instance level, see [Client.SetAllowNonIdempotentRetry]
+// It overrides value set at the client instance level, see [Client.SetRetryAllowNonIdempotent]
 //
 // [RFC 9110 Section 9.2.2]: https://datatracker.ietf.org/doc/html/rfc9110.html#name-idempotent-methods
 // [RFC 9110 Section 18.2]: https://datatracker.ietf.org/doc/html/rfc9110.html#name-method-registration
-func (r *Request) SetAllowNonIdempotentRetry(b bool) *Request {
-	r.AllowNonIdempotentRetry = b
+func (r *Request) SetRetryAllowNonIdempotent(b bool) *Request {
+	r.IsRetryAllowNonIdempotent = b
 	return r
 }
 
-//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-// HTTP request tracing
-//_______________________________________________________________________
-
-// EnableTrace method enables trace for the current request
-// using [httptrace.ClientTrace] and provides insights.
+// SetTrace method is used to turn on/off the trace capability at the request level.
+// It provides an insight into the request lifecycle using [httptrace.ClientTrace].
 //
 //	client := resty.New()
+//	defer client.Close()
 //
-//	resp, err := client.R().EnableTrace().Get("https://httpbin.org/get")
+//	resp, err := client.R().
+//		SetTrace(true).
+//		Get("https://httpbin.org/get")
 //	fmt.Println("Error:", err)
 //	fmt.Println("Trace Info:", resp.Request.TraceInfo())
 //
-// See [Client.EnableTrace], [Client.SetTrace] are also available to
-// get trace info for all requests.
-func (r *Request) EnableTrace() *Request {
-	r.SetTrace(true)
-	return r
-}
-
-// DisableTrace method disables the request trace for the current request
-func (r *Request) DisableTrace() *Request {
-	r.SetTrace(false)
-	return r
-}
-
-// SetTrace method is used to turn on/off the trace capability at the request level
-//
-// See [Request.EnableTrace] or [Client.SetTrace]
+// See [Client.SetTrace]
 func (r *Request) SetTrace(t bool) *Request {
 	r.IsTrace = t
 	return r
 }
 
-// EnableGenerateCurlCmd method enables the generation of curl commands for the current request.
+// SetCurlCmdGenerate method is used to turn on/off the generate curl command for the current request.
 //
 // By default, Resty does not log the curl command in the debug log since it has the potential
-// to leak sensitive data unless explicitly enabled via [Request.SetDebugLogCurlCmd] or
-// [Client.SetDebugLogCurlCmd].
+// to leak sensitive data unless explicitly enabled via [Request.SetCurlCmdDebugLog] or
+// [Client.SetCurlCmdDebugLog].
 //
-// It overrides the options set in the [Client].
+// It overrides the options set by the [Client.SetCurlCmdGenerate]
 //
 // NOTE: Use with care.
 //   - Potential to leak sensitive data from [Request] and [Response] in the debug log
 //     when the debug log option is enabled.
 //   - Additional memory usage since the request body was reread.
 //   - curl body is not generated for [io.Reader] and multipart request flow.
-func (r *Request) EnableGenerateCurlCmd() *Request {
-	r.SetGenerateCurlCmd(true)
+func (r *Request) SetCurlCmdGenerate(b bool) *Request {
+	r.isCurlCmdGenerate = b
 	return r
 }
 
-// DisableGenerateCurlCmd method disables the option set by [Request.EnableGenerateCurlCmd] or
-// [Request.SetGenerateCurlCmd].
-//
-// It overrides the options set in the [Client].
-func (r *Request) DisableGenerateCurlCmd() *Request {
-	r.SetGenerateCurlCmd(false)
-	return r
-}
-
-// SetGenerateCurlCmd method is used to turn on/off the generate curl command for the current request.
-//
-// By default, Resty does not log the curl command in the debug log since it has the potential
-// to leak sensitive data unless explicitly enabled via [Request.SetDebugLogCurlCmd] or
-// [Client.SetDebugLogCurlCmd].
-//
-// It overrides the options set by the [Client.SetGenerateCurlCmd]
-//
-// NOTE: Use with care.
-//   - Potential to leak sensitive data from [Request] and [Response] in the debug log
-//     when the debug log option is enabled.
-//   - Additional memory usage since the request body was reread.
-//   - curl body is not generated for [io.Reader] and multipart request flow.
-func (r *Request) SetGenerateCurlCmd(b bool) *Request {
-	r.generateCurlCmd = b
-	return r
-}
-
-// SetDebugLogCurlCmd method enables the curl command to be logged in the debug log
+// SetCurlCmdDebugLog method enables the curl command to be logged in the debug log
 // for the current request.
 //
-// It can be overridden at the request level; see [Client.SetDebugLogCurlCmd]
-func (r *Request) SetDebugLogCurlCmd(b bool) *Request {
-	r.debugLogCurlCmd = b
+// It can be overridden at the request level; see [Client.SetCurlCmdDebugLog]
+func (r *Request) SetCurlCmdDebugLog(b bool) *Request {
+	r.isCurlCmdDebugLog = b
 	return r
 }
 
@@ -1178,11 +1246,11 @@ func (r *Request) CurlCmd() string {
 }
 
 func (r *Request) generateCurlCommand() string {
-	if !r.generateCurlCmd {
+	if !r.isCurlCmdGenerate {
 		return ""
 	}
-	if len(r.resultCurlCmd) > 0 {
-		return r.resultCurlCmd
+	if len(r.curlCmdString) > 0 {
+		return r.curlCmdString
 	}
 	if r.RawRequest == nil {
 		if err := r.client.executeRequestMiddlewares(r); err != nil {
@@ -1190,47 +1258,59 @@ func (r *Request) generateCurlCommand() string {
 			return ""
 		}
 	}
-	r.resultCurlCmd = buildCurlCmd(r)
-	return r.resultCurlCmd
+	r.curlCmdString = buildCurlCmd(r)
+	return r.curlCmdString
 }
 
-// SetUnescapeQueryParams method sets the choice of unescape query parameters for the request URL.
+// SetQueryParamsUnescape method sets the choice of unescape query parameters for the request URL.
 // To prevent broken URL, Resty replaces space (" ") with "+" in the query parameters.
 //
-// This method overrides the value set by [Client.SetUnescapeQueryParams]
+// This method overrides the value set by [Client.SetQueryParamsUnescape]
 //
 // NOTE: Request failure is possible due to non-standard usage of Unescaped Query Parameters.
-func (r *Request) SetUnescapeQueryParams(unescape bool) *Request {
+func (r *Request) SetQueryParamsUnescape(unescape bool) *Request {
 	r.unescapeQueryParams = unescape
 	return r
 }
 
-// SetAllowMethodGetPayload method allows the GET method with payload on the request level.
+// SetMethodGetAllowPayload method allows the GET method with payload on the request level.
 // By default, Resty does not allow.
 //
-//	client.R().SetAllowMethodGetPayload(true)
+//	client.R().SetMethodGetAllowPayload(true)
 //
-// It overrides the option set by the [Client.SetAllowMethodGetPayload]
-func (r *Request) SetAllowMethodGetPayload(allow bool) *Request {
-	r.AllowMethodGetPayload = allow
+// It overrides the option set by the [Client.SetMethodGetAllowPayload]
+func (r *Request) SetMethodGetAllowPayload(allow bool) *Request {
+	r.IsMethodGetAllowPayload = allow
 	return r
 }
 
-// SetAllowMethodDeletePayload method allows the DELETE method with payload on the request level.
+// SetMethodDeleteAllowPayload method allows the DELETE method with payload on the request level.
 // By default, Resty does not allow.
 //
-//	client.R().SetAllowMethodDeletePayload(true)
+//	client.R().SetMethodDeleteAllowPayload(true)
 //
 // More info, refer to GH#881
 //
-// It overrides the option set by the [Client.SetAllowMethodDeletePayload]
-func (r *Request) SetAllowMethodDeletePayload(allow bool) *Request {
-	r.AllowMethodDeletePayload = allow
+// It overrides the option set by the [Client.SetMethodDeleteAllowPayload]
+func (r *Request) SetMethodDeleteAllowPayload(allow bool) *Request {
+	r.IsMethodDeleteAllowPayload = allow
 	return r
 }
 
-// TraceInfo method returns the trace info for the request.
-// If either the [Client.EnableTrace] or [Request.EnableTrace] function has not been called
+// SetLabel method sets the label for the request, which can be used for logging and debugging purposes.
+// By default, the label is empty.
+//
+//	client.R().SetLabel("GetUserDetails").Get("/users/12345")
+//
+// In Response middlewares, you can access the label using [Response.Request.Label]
+// Then log the label along with time duration and method to get better insights into the request lifecycle.
+func (r *Request) SetLabel(label string) *Request {
+	r.Label = label
+	return r
+}
+
+// TraceInfo method returns trace information for the request.
+// If either [Client.SetTrace] or [Request.SetTrace] has not been enabled
 // before the request is made, an empty [resty.TraceInfo] object is returned.
 func (r *Request) TraceInfo() TraceInfo {
 	ct := r.trace
@@ -1267,7 +1347,7 @@ func (r *Request) TraceInfo() TraceInfo {
 	// Calculate the total time accordingly when connection is reused,
 	// and DNS start and get conn time may be zero if the request is invalid.
 	// See issue #1016.
-	requestStartTime := r.Time
+	requestStartTime := r.StartTime
 	if ct.gotConnInfo.Reused && !ct.getConn.IsZero() {
 		requestStartTime = ct.getConn
 	} else if !ct.dnsStart.IsZero() {
@@ -1395,7 +1475,17 @@ func (r *Request) Execute(method, url string) (res *Response, err error) {
 	var backoff *backoffWithJitter
 	if r.RetryCount > 0 && isIdempotent {
 		backoff = newBackoffWithJitter(r.RetryWaitTime, r.RetryMaxWaitTime)
-		r.RetryTraceID = newGUID()
+		r.SetCorrelationID(newGUID())
+	}
+
+	retryConditions := append(r.retryConditions, r.client.retryConditions...)
+	if r.isSetRetryConditions {
+		retryConditions = r.retryConditions
+	}
+
+	retryHooks := append(r.retryHooks, r.client.retryHooks...)
+	if r.isSetRetryHooks {
+		retryHooks = r.retryHooks
 	}
 
 	isInvalidRequestErr := false
@@ -1411,11 +1501,10 @@ func (r *Request) Execute(method, url string) (res *Response, err error) {
 				isInvalidRequestErr = true
 				break
 			}
+			// The per-attempt timeout context cancel func is owned and
+			// released by Client.execute (on transport error, or when the
+			// response body is closed), so there is nothing to cancel here.
 			if r.Context().Err() != nil {
-				if r.ctxCancelFunc != nil {
-					r.ctxCancelFunc()
-					r.ctxCancelFunc = nil
-				}
 				if !errors.Is(err, context.DeadlineExceeded) {
 					err = wrapErrors(r.Context().Err(), err)
 					break
@@ -1434,14 +1523,14 @@ func (r *Request) Execute(method, url string) (res *Response, err error) {
 
 			// apply default retry conditions
 			if r.IsRetryDefaultConditions {
-				needsRetry = applyRetryDefaultConditions(res, err)
+				needsRetry = isDoNotRetryError(err)
 			}
 
 			// apply user-defined retry conditions if default one
 			// is still false
 			if !needsRetry && res != nil {
-				// user defined retry conditions
-				for _, retryCondition := range r.retryConditions {
+				// run user-defined retry conditions
+				for _, retryCondition := range retryConditions {
 					if needsRetry = retryCondition(res, err); needsRetry {
 						break
 					}
@@ -1460,7 +1549,7 @@ func (r *Request) Execute(method, url string) (res *Response, err error) {
 			}
 
 			// run user-defined retry hooks
-			for _, retryHookFunc := range r.retryHooks {
+			for _, retryHookFunc := range retryHooks {
 				retryHookFunc(res, err)
 			}
 
@@ -1549,7 +1638,7 @@ func (r *Request) Clone(ctx context.Context) *Request {
 
 	// clone cookies
 	if l := len(r.Cookies); l > 0 {
-		rr.Cookies = make([]*http.Cookie, l)
+		rr.Cookies = make([]*http.Cookie, 0, l)
 		for _, cookie := range r.Cookies {
 			rr.Cookies = append(rr.Cookies, cloneCookie(cookie))
 		}
@@ -1557,7 +1646,7 @@ func (r *Request) Clone(ctx context.Context) *Request {
 
 	// create new interface for result and error
 	rr.Result = newInterface(r.Result)
-	rr.Error = newInterface(r.Error)
+	rr.ResultError = newInterface(r.ResultError)
 
 	// clone multipart fields
 	if l := len(r.multipartFields); l > 0 {
@@ -1568,12 +1657,12 @@ func (r *Request) Clone(ctx context.Context) *Request {
 	}
 
 	// reset values
-	rr.Time = time.Time{}
+	rr.StartTime = time.Time{}
 	rr.Attempt = 0
 	rr.initTraceIfEnabled()
-	r.values = make(map[string]any)
-	r.multipartErrChan = nil
-	r.ctxCancelFunc = nil
+	rr.values = make(map[string]any)
+	rr.multipartErrChan = nil
+	rr.ctxCancelFunc = nil
 
 	// copy bodyBuf
 	if r.bodyBuf != nil {
@@ -1697,28 +1786,17 @@ func (r *Request) isHeaderExists(k string) bool {
 	return f
 }
 
-func (r *Request) writeFormData(w *multipart.Writer) error {
-	for k, v := range r.FormData {
-		for _, iv := range v {
-			if err := w.WriteField(k, iv); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (r *Request) isPayloadSupported() bool {
 	if r.Method == "" {
 		r.Method = MethodGet
 	}
 
-	if r.Method == MethodGet && r.AllowMethodGetPayload {
+	if r.Method == MethodGet && r.IsMethodGetAllowPayload {
 		return true
 	}
 
 	// More info, refer to GH#881
-	if r.Method == MethodDelete && r.AllowMethodDeletePayload {
+	if r.Method == MethodDelete && r.IsMethodDeleteAllowPayload {
 		return true
 	}
 
@@ -1780,7 +1858,7 @@ var idempotentMethods = map[string]struct{}{
 
 func (r *Request) isIdempotent() bool {
 	_, found := idempotentMethods[r.Method]
-	return found || r.AllowNonIdempotentRetry
+	return found || r.IsRetryAllowNonIdempotent
 }
 
 func (r *Request) withTimeout() *http.Request {

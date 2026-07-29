@@ -8,12 +8,11 @@ package resty
 import (
 	"crypto/tls"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -23,17 +22,32 @@ const (
 )
 
 type (
-	// RetryConditionFunc type is for the retry condition function
-	// input: non-nil Response OR request execution error
+	// RetryConditionFunc is the function type used to decide whether a request
+	// should be retried. It receives the response and any execution error from the
+	// previous attempt. Either argument may be nil:
+	//   - res is nil when no HTTP response was received (e.g. network error)
+	//   - err is nil when the request completed without a transport error
 	RetryConditionFunc func(*Response, error) bool
 
-	// RetryHookFunc is for side-effecting functions triggered on retry
+	// RetryHookFunc is a side-effecting function called after each failed attempt
+	// and before the next retry. It can be used for logging, metrics, or mutating
+	// request state. It receives the same response and error as [RetryConditionFunc].
 	RetryHookFunc func(*Response, error)
 
-	// RetryStrategyFunc type is for custom retry strategy implementation
-	// By default Resty uses the capped exponential backoff with a jitter strategy
-	RetryStrategyFunc func(*Response, error) (time.Duration, error)
+	// RetryDelayStrategyFunc defines a custom retry delay strategy.
+	// It receives the response/error from the previous attempt and returns the
+	// wait duration before the next retry.
+	// By default, Resty uses capped exponential backoff with jitter.
+	RetryDelayStrategyFunc func(*Response, error) (time.Duration, error)
 )
+
+// RetryConstantDelayStrategy returns a [RetryDelayStrategyFunc] that always
+// returns the specified delay duration.
+func RetryConstantDelayStrategy(delay time.Duration) RetryDelayStrategyFunc {
+	return func(*Response, error) (time.Duration, error) {
+		return delay, nil
+	}
+}
 
 var (
 	regexErrTooManyRedirects = regexp.MustCompile(`stopped after \d+ redirects\z`)
@@ -41,7 +55,53 @@ var (
 	regexErrInvalidHeader    = regexp.MustCompile("invalid header")
 )
 
-func applyRetryDefaultConditions(res *Response, err error) bool {
+// RetryConditionStatusTooManyRequests is a RetryConditionFunc that returns true
+// if the response status code is 429 Too Many Requests.
+//
+//   - The 429 status code indicates that the user has sent too many requests in a given amount
+//     of time ("rate limiting").
+//   - Retrying after receiving a 429 status code can be effective, especially if the server includes
+//     a Retry-After header indicating when to retry.
+func RetryConditionStatusTooManyRequests(res *Response, _ error) bool {
+	if res == nil {
+		return false
+	}
+	return res.StatusCode() == http.StatusTooManyRequests
+}
+
+// RetryConditionStatus5XX is a [RetryConditionFunc] that returns true when the
+// response status code is 500 or above, excluding 501 (Not Implemented).
+//
+//   - 5XX status codes are generally considered temporary server errors that may be resolved on retry.
+//   - The rationale for excluding 501 Not Implemented is that it indicates the server does not support the
+//     functionality required to fulfill the request.
+func RetryConditionStatus5XX(res *Response, _ error) bool {
+	if res == nil {
+		return false
+	}
+	return res.StatusCode() >= 500 && res.StatusCode() != http.StatusNotImplemented
+}
+
+// RetryConditionStatusZero is a [RetryConditionFunc] that returns true if the
+// response status code is 0.
+//
+//   - A status code of 0 typically indicates that no response was received from the server, which can occur
+//     due to network errors, timeouts, or other issues that prevent the request from being completed.
+//   - Retrying when a status code of 0 is encountered can be effective, as it may allow the request to succeed
+//     on subsequent attempts if the underlying issue is transient.
+func RetryConditionStatusZero(res *Response, _ error) bool {
+	if res == nil {
+		return false
+	}
+	return res.StatusCode() == 0
+}
+
+// isDoNotRetryError checks whether the given request error should trigger a retry.
+//
+// It returns true only for retryable URL/network errors and false for errors that
+// should not be retried, such as TLS certificate errors, invalid scheme, invalid
+// headers, and too many redirects. A nil error returns false.
+func isDoNotRetryError(err error) bool {
 	// no retry on TLS error
 	if _, ok := err.(*tls.CertificateVerificationError); ok {
 		return false
@@ -61,24 +121,15 @@ func applyRetryDefaultConditions(res *Response, err error) bool {
 		return u.Temporary() // possible retry if it's true
 	}
 
-	if res == nil {
-		return false
-	}
-
-	// certain HTTP status codes are temporary so that we can retry
-	//	- 429 Too Many Requests
-	//	- 500 or above (it's better to ignore 501 Not Implemented)
-	//	- 0 No status code received
-	if res.StatusCode() == http.StatusTooManyRequests ||
-		(res.StatusCode() >= 500 && res.StatusCode() != http.StatusNotImplemented) ||
-		res.StatusCode() == 0 {
-		return true
-	}
-
 	return false
 }
 
 func newBackoffWithJitter(min, max time.Duration) *backoffWithJitter {
+	if min == 0 && max == 0 { // GH#992
+		return &backoffWithJitter{
+			rnd: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())),
+		}
+	}
 	if min <= 0 {
 		min = defaultWaitTime
 	}
@@ -87,18 +138,16 @@ func newBackoffWithJitter(min, max time.Duration) *backoffWithJitter {
 	}
 
 	return &backoffWithJitter{
-		lock: new(sync.Mutex),
-		rnd:  rand.New(rand.NewSource(time.Now().UnixNano())),
-		min:  min,
-		max:  max,
+		rnd: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())),
+		min: min,
+		max: max,
 	}
 }
 
 type backoffWithJitter struct {
-	lock *sync.Mutex
-	rnd  *rand.Rand
-	min  time.Duration
-	max  time.Duration
+	rnd *rand.Rand
+	min time.Duration
+	max time.Duration
 }
 
 func (b *backoffWithJitter) NextWaitDuration(c *Client, res *Response, err error, attempt int) (time.Duration, error) {
@@ -115,24 +164,17 @@ func (b *backoffWithJitter) NextWaitDuration(c *Client, res *Response, err error
 		b.max = maxInt
 	}
 
-	var retryStrategyFunc RetryStrategyFunc
-	if c != nil {
-		retryStrategyFunc = c.RetryStrategy()
-	}
-	if res == nil || retryStrategyFunc == nil {
-		return b.balanceMinMax(b.defaultStrategy(attempt)), nil
+	if res == nil || res.Request.RetryDelayStrategy == nil {
+		return b.balanceMinMax(b.defaultDelayStrategy(attempt)), nil
 	}
 
-	delay, rsErr := retryStrategyFunc(res, err)
-	if rsErr != nil {
-		return 0, rsErr
-	}
-	return b.balanceMinMax(delay), nil
+	// invoke custom retry delay strategy
+	return res.Request.RetryDelayStrategy(res, err)
 }
 
-// Return capped exponential backoff with jitter
+// defaultDelayStrategy returns capped exponential backoff with jitter.
 // https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
-func (b *backoffWithJitter) defaultStrategy(attempt int) time.Duration {
+func (b *backoffWithJitter) defaultDelayStrategy(attempt int) time.Duration {
 	temp := math.Min(float64(b.max), float64(b.min)*math.Exp2(float64(attempt)))
 	ri := time.Duration(temp / 2)
 	if ri <= 0 {
@@ -142,11 +184,8 @@ func (b *backoffWithJitter) defaultStrategy(attempt int) time.Duration {
 }
 
 func (b *backoffWithJitter) randDuration(center time.Duration) time.Duration {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-
 	var ri = int64(center)
-	var jitter = b.rnd.Int63n(ri)
+	var jitter = b.rnd.Int64N(ri)
 	return time.Duration(math.Abs(float64(ri + jitter)))
 }
 
@@ -162,10 +201,11 @@ func (b *backoffWithJitter) balanceMinMax(delay time.Duration) time.Duration {
 
 var timeNow = time.Now
 
-// parseRetryAfterHeader parses the Retry-After header and returns the
-// delay duration according to the spec: https://httpwg.org/specs/rfc7231.html#header.retry-after
-// The bool returned will be true if the header was successfully parsed.
-// Otherwise, the header was either not present, or was not parseable according to the spec.
+// parseRetryAfterHeader parses the Retry-After header and returns the delay
+// duration according to the spec:
+// https://httpwg.org/specs/rfc7231.html#header.retry-after
+// The bool return value is true when the header was successfully parsed.
+// Otherwise, the header was either not present or not parseable.
 //
 // Retry-After headers come in two flavors: Seconds or HTTP-Date
 //
@@ -182,6 +222,9 @@ func parseRetryAfterHeader(v string) (time.Duration, bool) {
 		if delay < 0 { // a negative delay doesn't make sense
 			return 0, false
 		}
+		if delay > int64(math.MaxInt64/time.Second) {
+			return time.Duration(math.MaxInt64), true
+		}
 		return time.Second * time.Duration(delay), true
 	}
 
@@ -190,10 +233,13 @@ func parseRetryAfterHeader(v string) (time.Duration, bool) {
 	if err != nil {
 		return 0, false
 	}
-	if until := retryTime.Sub(timeNow()); until > 0 {
-		return until, true
+	if retryTime.Before(timeNow()) {
+		return 0, true // date is in the past
 	}
 
-	// date is in the past
-	return 0, true
+	duration := retryTime.Sub(timeNow())
+	if duration < 0 { // overflow wrapped to negative
+		duration = time.Duration(math.MaxInt64)
+	}
+	return duration, true
 }
