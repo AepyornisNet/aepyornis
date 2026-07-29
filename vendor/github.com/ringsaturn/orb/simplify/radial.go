@@ -1,7 +1,7 @@
 package simplify
 
 import (
-	"github.com/paulmach/orb"
+	"github.com/ringsaturn/orb"
 )
 
 var _ orb.Simplifier = &RadialSimplifier{}

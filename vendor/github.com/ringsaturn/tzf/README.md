@@ -16,7 +16,9 @@ go get github.com/ringsaturn/tzf
 > [!NOTE]
 >
 > This `NewDefaultFinder` uses simplified shape data so it is not entirely
-> accurate around the border.
+> accurate around the border, but the error is small and bounded: every
+> simplified boundary stays within ~111 m of the full-precision border. See
+> [Accuracy](#accuracy) for measured numbers.
 
 It's expensive to init tzf's Finder/FuzzyFinder/DefaultFinder, please consider
 reuse it or as a global var. Below is a global var example:
@@ -153,9 +155,10 @@ precision with shared-edge deduplication and polyline compression. Use
 `NewFullFinder()` to load it.
 
 The [combined-with-oceans.topology.compress.topo.bin] (~5.4MB) applies
-topology-aware Douglas-Peucker simplification (86% point reduction) before
+topology-aware Douglas-Peucker simplification (~85% point reduction) before
 deduplication and compression. It is used by the default `NewDefaultFinder()`
-and may not be perfectly accurate at some border areas.
+and may not be perfectly accurate at some border areas; the deviation is
+bounded to ~111 m (see [Accuracy](#accuracy)).
 
 The [combined-with-oceans.topology.preindex.bin] (~2MB) consists of multiple map
 tiles and is used within both `DefaultFinder` and `FullFinder` as the fast-path
@@ -169,6 +172,57 @@ tiles and is used within both `DefaultFinder` and `FullFinder` as the fast-path
 I have written an article about the history of tzf, its Rust port, and its Rust
 port's Python binding; you can view it
 [here](https://blog.ringsaturn.me/en/posts/2023-01-31-history-of-tzf/).
+
+## Accuracy
+
+The Douglas-Peucker simplification uses an epsilon of 0.001 degrees, which
+caps boundary displacement at roughly 111 m by construction. Measured against
+the full-precision 2026c dataset with `internal/cmd/borderchange` (spherical
+model, certified via Lipschitz interval subdivision):
+
+| Metric                                             |                          Result |
+| -------------------------------------------------- | ------------------------------: |
+| Certified maximum boundary displacement            | 111.2 m (+1.0 m tolerance)      |
+| Boundary length displaced more than 100 m          | 0.41%                           |
+| Boundary length displaced more than 500 m          | 0%                              |
+| Total mis-assigned area                            | 16,828 km² (~0.003% of Earth)   |
+| Mis-assigned area within 100 m of the true border  | 92.8%                           |
+
+In other words, only queries that land within ~111 m of a timezone border can
+ever differ from the full-precision result, and most of that band is far
+narrower. If your use case is sensitive inside that band, use
+`NewFullFinder()`.
+
+Verify the accuracy yourself by running the following commands:
+
+```bash
+gh release download v0.0.2026-c-fix1 --repo ringsaturn/tzf-dist \
+  --pattern "combined-with-oceans.compress.topo.bin"
+
+go run ./internal/cmd/topodecode \
+  combined-with-oceans.compress.topo.bin combined-with-oceans.dist.bin
+
+go run ./internal/cmd/borderchange \
+  -epsilon 0.001 \
+  -certification-tolerance-m 0.5 \
+  -top-pairs 20 \
+  combined-with-oceans.dist.bin > BORDER_CHANGE.md
+```
+
+Output like:
+
+```
+➜  tzf git:(main) ✗ go run ./internal/cmd/borderchange \
+  -epsilon 0.001 \
+  -certification-tolerance-m 0.5 \
+  -top-pairs 20 \
+  combined-with-oceans.dist.bin > BORDER_CHANGE.md
+2026/07/13 10:46:00 borderchange: dataset loaded in 441ms
+2026/07/13 10:46:15 borderchange: simplification finished in 14.276s
+2026/07/13 10:46:16 borderchange: 532881 arcs collected, analyzing with 16 workers
+```
+
+More details: [BORDER_CHANGE.md](./BORDER_CHANGE.md).
 
 ## Performance
 
@@ -194,22 +248,22 @@ Below is a benchmark run on my MacBook Pro with Apple M3 Max:
 
 | Target        | Dataset                            | Scenario                               | Median (ns) | p99 (ns) | Approx throughput (ops/s) | Memory (MiB) |
 | ------------- | ---------------------------------- | -------------------------------------- | ----------: | -------: | ------------------------: | -----------: |
-| DefaultFinder | topology-simplified + preindex     | edge case · GetTimezoneName            |       500.0 |   1250.0 |                   1694.9K |        74.90 |
-| FuzzyFinder   | preindex                           | edge case · GetTimezoneName            |       250.0 |    375.0 |                   3521.1K |         2.40 |
-| Finder        | topology-simplified                | edge case · GetTimezoneName            |       250.0 |    875.0 |                   3022.1K |        72.70 |
-| FullFinder    | full-precision + preindex          | edge case · GetTimezoneName            |       542.0 |   1375.0 |                   1586.3K |       422.90 |
-| Finder        | full-precision                     | edge case · GetTimezoneName            |       292.0 |   1167.0 |                   2678.1K |       420.70 |
-| DefaultFinder | topology-simplified + preindex     | random world cities · GetTimezoneName  |       167.0 |    791.0 |                   3855.1K |        74.90 |
-| FuzzyFinder   | preindex                           | random world cities · GetTimezoneName  |       167.0 |    333.0 |                   4608.3K |         2.40 |
-| Finder        | topology-simplified                | random world cities · GetTimezoneName  |       209.0 |   1250.0 |                   3076.0K |        72.70 |
-| FullFinder    | full-precision + preindex          | random world cities · GetTimezoneName  |       208.0 |    917.0 |                   3527.3K |       422.90 |
-| Finder        | full-precision                     | random world cities · GetTimezoneName  |       250.0 |   1167.0 |                   2953.3K |       420.70 |
-| Finder        | topology-simplified + GridIndex    | random world cities · GetTimezoneName  |       209.0 |   1167.0 |                   3202.0K |        72.70 |
-| Finder        | topology-simplified (no GridIndex) | random world cities · GetTimezoneName  |      1833.0 |   2875.0 |                    612.4K |        67.00 |
-| DefaultFinder | topology-simplified + preindex     | random world cities · GetTimezoneNames |       416.0 |   1375.0 |                   1956.9K |        74.90 |
-| FuzzyFinder   | preindex                           | random world cities · GetTimezoneNames |       208.0 |    334.0 |                   4347.8K |         2.40 |
-| Finder        | topology-simplified                | random world cities · GetTimezoneNames |       417.0 |   1375.0 |                   1931.2K |        72.70 |
-| FullFinder    | full-precision + preindex          | random world cities · GetTimezoneNames |       459.0 |   1750.0 |                   1623.1K |       422.90 |
+| DefaultFinder | topology-simplified + preindex     | edge case · GetTimezoneName            |       583.0 |   1708.0 |                   1439.3K |        31.90 |
+| FuzzyFinder   | preindex                           | edge case · GetTimezoneName            |       250.0 |    500.0 |                   2682.4K |         2.40 |
+| Finder        | topology-simplified                | edge case · GetTimezoneName            |       416.0 |   2291.0 |                   1734.0K |        29.70 |
+| FullFinder    | full-precision + preindex          | edge case · GetTimezoneName            |       625.0 |   2083.0 |                   1317.7K |       155.30 |
+| Finder        | full-precision                     | edge case · GetTimezoneName            |       416.0 |   2000.0 |                   1827.5K |       153.00 |
+| DefaultFinder | topology-simplified + preindex     | random world cities · GetTimezoneName  |       208.0 |    959.0 |                   3499.0K |        31.90 |
+| FuzzyFinder   | preindex                           | random world cities · GetTimezoneName  |       208.0 |    416.0 |                   3461.4K |         2.40 |
+| Finder        | topology-simplified                | random world cities · GetTimezoneName  |       292.0 |   1708.0 |                   2275.8K |        29.70 |
+| FullFinder    | full-precision + preindex          | random world cities · GetTimezoneName  |       208.0 |   1542.0 |                   3003.0K |       155.30 |
+| Finder        | full-precision                     | random world cities · GetTimezoneName  |       291.0 |   1500.0 |                   2498.8K |       153.00 |
+| Finder        | topology-simplified + GridIndex    | random world cities · GetTimezoneName  |       250.0 |   1459.0 |                   2606.9K |        29.70 |
+| Finder        | topology-simplified (no GridIndex) | random world cities · GetTimezoneName  |      2292.0 |   4208.0 |                    473.0K |        24.00 |
+| DefaultFinder | topology-simplified + preindex     | random world cities · GetTimezoneNames |       625.0 |   3250.0 |                    888.1K |        31.90 |
+| FuzzyFinder   | preindex                           | random world cities · GetTimezoneNames |       209.0 |    541.0 |                   2751.8K |         2.40 |
+| Finder        | topology-simplified                | random world cities · GetTimezoneNames |       542.0 |   2416.0 |                   1377.6K |        29.70 |
+| FullFinder    | full-precision + preindex          | random world cities · GetTimezoneNames |       583.0 |   2458.0 |                   1312.9K |       155.30 |
 
 - <https://ringsaturn.github.io/tz-benchmark/> displays a continuous benchmark
   comparison with other packages.
@@ -232,7 +286,9 @@ more information.
 
 ## Thanks
 
-- <https://github.com/paulmach/orb>
+- <https://github.com/paulmach/orb> (used via the
+  [ringsaturn/orb](https://github.com/ringsaturn/orb) fork, which drops the
+  BSON/`mongo-driver` dependency)
 - <https://github.com/tidwall/geojson>
 - <https://github.com/tidwall/tg>
 - <https://github.com/jannikmi/timezonefinder>

@@ -38,7 +38,7 @@ require (
 	github.com/nikoksr/notify v1.5.0
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/paulmach/orb v0.13.0
-	github.com/ringsaturn/tzf v1.2.1
+	github.com/ringsaturn/tzf v1.2.5
 	github.com/samber/do/v2 v2.0.0
 	github.com/samber/slog-echo v1.23.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
@@ -109,7 +109,8 @@ require (
 	github.com/philhofer/vec v0.0.0-20140421144027-536fc796d369 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/ringsaturn/tzf-dist v0.0.2026-b-fix1 // indirect
+	github.com/ringsaturn/orb v0.15.0 // indirect
+	github.com/ringsaturn/tzf-dist v0.0.2026-c-fix1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	github.com/samber/lo v1.52.0 // indirect

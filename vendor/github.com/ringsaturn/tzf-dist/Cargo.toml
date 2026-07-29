@@ -1,9 +1,9 @@
 [package]
 name = "tzf-dist"
 # version is updated to "0.0.{year}-{letter}" (e.g. "0.0.2026-a") by the build workflow
-version = "0.0.2026-b-fix1"
+version = "0.0.2026-c-fix1"
 edition = "2021"
-license = "ODbL-1.0"
+license = "MIT AND ODbL-1.0"
 description = "Binary timezone data distribution for tzf-rs (CompressedTopoTimezones + PreindexTimezones formats)"
 homepage = "https://github.com/ringsaturn/tzf-dist"
 documentation = "https://github.com/ringsaturn/tzf-dist"

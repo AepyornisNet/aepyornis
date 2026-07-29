@@ -110,12 +110,15 @@ func raycastSeg(a, b, p Point) raycastResult {
 	return raycastResult{}
 }
 
-// ringContainsPoint reports whether p is strictly inside ring r using the
-// even-odd ray-casting rule.  Points on the ring boundary return false.
+// ringContainsPoint reports whether p is inside ring r using the even-odd
+// ray-casting rule.  A point on the ring boundary returns allowOnEdge.
+// p must be in the ring's storage space (degrees for float64 rings,
+// 1e5-scaled for int32 rings); segment endpoints are converted to float64 in
+// registers, so the raycast itself is identical for both storage types.
 //
 // When idx is non-nil, only the candidate segments returned by the YStripes
 // index are examined; otherwise all n segments are checked linearly.
-func ringContainsPoint(r Ring, idx *yStripesIndex, p Point) bool {
+func ringContainsPoint[T Coord](r RingOf[T], idx *yStripesIndex, p Point, allowOnEdge bool) bool {
 	n := len(r)
 	if n < 3 {
 		return false
@@ -125,11 +128,11 @@ func ringContainsPoint(r Ring, idx *yStripesIndex, p Point) bool {
 
 	if idx != nil {
 		// Indexed path: iterate only the stripe containing p.Y.
-		idx.forEachCandidate(p.Y, func(i int) bool {
+		forEachCandidate(idx, r, p.Y, func(i int) bool {
 			j := (i + 1) % n
-			res := raycastSeg(r[i], r[j], p)
+			res := raycastSeg(segPoint(r[i]), segPoint(r[j]), p)
 			if res.on {
-				inside = false
+				inside = allowOnEdge
 				return false // stop
 			}
 			if res.inside {
@@ -143,13 +146,19 @@ func ringContainsPoint(r Ring, idx *yStripesIndex, p Point) bool {
 	// Linear fallback for small rings.
 	for i := range n {
 		j := (i + 1) % n
-		res := raycastSeg(r[i], r[j], p)
+		res := raycastSeg(segPoint(r[i]), segPoint(r[j]), p)
 		if res.on {
-			return false
+			return allowOnEdge
 		}
 		if res.inside {
 			inside = !inside
 		}
 	}
 	return inside
+}
+
+// segPoint converts a storage-space point to the float64 Point consumed by
+// raycastSeg; for float64 rings this is an identity the compiler removes.
+func segPoint[T Coord](p PointOf[T]) Point {
+	return Point{X: float64(p.X), Y: float64(p.Y)}
 }

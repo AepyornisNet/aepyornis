@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/paulmach/orb"
-	"github.com/paulmach/orb/simplify"
+	"github.com/ringsaturn/orb"
+	"github.com/ringsaturn/orb/simplify"
 	pb "github.com/ringsaturn/tzf/gen/go/tzf/v1"
 	"github.com/tidwall/rtree"
 )
@@ -149,25 +149,32 @@ func Do(input *pb.Timezones, epsilon float64) *pb.Timezones {
 }
 
 func DoWithStats(input *pb.Timezones, epsilon float64) (*pb.Timezones, Stats) {
+	output, _, stats := DoWithStatsAndBaseline(input, epsilon)
+	return output, stats
+}
+
+// PrepareBaseline returns the normalized, topology-snapped geometry used as
+// the source for topology-aware simplification. It is useful when comparing a
+// previously generated simplified dataset with its original source data.
+func PrepareBaseline(input *pb.Timezones) *pb.Timezones {
+	if input == nil {
+		return nil
+	}
+	return prepareBaseline(input, nil)
+}
+
+// DoWithStatsAndBaseline returns the simplified data and the normalized,
+// topology-snapped geometry that was actually passed to the simplifier. The
+// baseline is useful for measuring simplification error because every retained
+// output vertex has an exact counterpart in it.
+func DoWithStatsAndBaseline(input *pb.Timezones, epsilon float64) (*pb.Timezones, *pb.Timezones, Stats) {
 	stats := Stats{}
 	if input == nil {
-		return nil, stats
+		return nil, nil, stats
 	}
 
-	output := normalizeTimezones(input)
-	// Normalize winding order before topology analysis so that adjacent rings
-	// always traverse their shared boundary in opposite directions. Without this,
-	// hole rings stored with incorrect CCW winding (instead of CW) appear to share
-	// edges in the same direction as the adjacent exterior ring, causing them to be
-	// misclassified as disputed-territory overlaps and skipped.
-	normalizeWindings(output)
-	snapVertices(output, &stats)
-	// Remove zero-length edges (adjacent identical points, including wrap-around)
-	// before topology analysis. Such edges exist in some source rings (e.g. the
-	// Macau border-crossing building outline). markSharedEdges treats them as
-	// same-direction and skips them, preventing isEntirelyShared from recognising
-	// complete enclave pairs and causing independent simplification of partner rings.
-	removeZeroLengthEdges(output)
+	output := prepareBaseline(input, &stats)
+	baseline := normalizeTimezones(output)
 	rings, edgeIndex, vertexIndex := collectRings(output)
 	stats.InputRings = len(rings)
 	for _, ring := range rings {
@@ -209,7 +216,25 @@ func DoWithStats(input *pb.Timezones, epsilon float64) (*pb.Timezones, Stats) {
 	}
 	normalizeWindings(output)
 
-	return output, stats
+	return output, baseline, stats
+}
+
+func prepareBaseline(input *pb.Timezones, stats *Stats) *pb.Timezones {
+	output := normalizeTimezones(input)
+	// Normalize winding order before topology analysis so that adjacent rings
+	// always traverse their shared boundary in opposite directions. Without this,
+	// hole rings stored with incorrect CCW winding (instead of CW) appear to share
+	// edges in the same direction as the adjacent exterior ring, causing them to be
+	// misclassified as disputed-territory overlaps and skipped.
+	normalizeWindings(output)
+	snapVertices(output, stats)
+	// Remove zero-length edges (adjacent identical points, including wrap-around)
+	// before topology analysis. Such edges exist in some source rings (e.g. the
+	// Macau border-crossing building outline). markSharedEdges treats them as
+	// same-direction and skips them, preventing isEntirelyShared from recognising
+	// complete enclave pairs and causing independent simplification of partner rings.
+	removeZeroLengthEdges(output)
+	return output
 }
 
 func removeZeroLengthEdges(input *pb.Timezones) {
@@ -643,7 +668,7 @@ func isEntirelyShared(edges []edgeMeta) bool {
 
 // findCanonicalStart returns the index of the lexicographically smallest point
 // (by Lng then Lat). Using this as the rotation origin ensures that two partner
-// rings sharing all their edges — traversing in opposite directions — both
+// rings sharing all their edges, traversing in opposite directions, both
 // independently rotate to the same start vertex, making their open-path
 // signatures consistent for the shared segment cache.
 func findCanonicalStart(points []*pb.Point) int {

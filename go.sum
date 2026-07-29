@@ -382,10 +382,12 @@ github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/ringsaturn/go-cities.json v0.6.13 h1:p5afPcJ/tEE6uzFCOzLSHJYXgWnGdPmwZB9KBrEASxc=
 github.com/ringsaturn/go-cities.json v0.6.13/go.mod h1:VtklT4Sod9i6kvXXNZV63sfjeCX9l11OQfaAvPu+p4M=
-github.com/ringsaturn/tzf v1.2.1 h1:KAaod68Ey7OSIBfYH+l9/DTKjHnctPUyyAaahaIOn7o=
-github.com/ringsaturn/tzf v1.2.1/go.mod h1:Umn/OVUgCl96XGHcH1NuKKay2HTBN5xqSiL2Gzsrl2k=
-github.com/ringsaturn/tzf-dist v0.0.2026-b-fix1 h1:2XqoK1ymoselNxhSVWTC8SwfBaleLWrd+Wf1mlz/f9Q=
-github.com/ringsaturn/tzf-dist v0.0.2026-b-fix1/go.mod h1:MLn3mRLioai5ceZLV8k+uAr4cLxdVEHoTQIGKpuVS/c=
+github.com/ringsaturn/orb v0.15.0 h1:+jLFo3JzHX2yg5kILpfcLHokKXywqNHBtgEDo6SJOuk=
+github.com/ringsaturn/orb v0.15.0/go.mod h1:kF8F7MSKFRPm0HxTzlLz8k/jkexsV3MVcultHKVFmzg=
+github.com/ringsaturn/tzf v1.2.5 h1:bkZqp++IkuiHXArgY0H7kpxkW57sTgC1Pi8IjNCRl1A=
+github.com/ringsaturn/tzf v1.2.5/go.mod h1:EyV2g/W08JginFQWHE8sr47BKZxyOkhAEyiO53CaK9Y=
+github.com/ringsaturn/tzf-dist v0.0.2026-c-fix1 h1:GPSbb2L+LSfEvrMXAC25VT0n+MMk80W+qnUpnIA48TI=
+github.com/ringsaturn/tzf-dist v0.0.2026-c-fix1/go.mod h1:MLn3mRLioai5ceZLV8k+uAr4cLxdVEHoTQIGKpuVS/c=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR38lUII=
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
