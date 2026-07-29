@@ -39,7 +39,7 @@ require (
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/paulmach/orb v0.13.0
 	github.com/ringsaturn/tzf v1.2.1
-	github.com/samber/do/v2 v2.0.0
+	github.com/samber/do/v2 v2.1.0
 	github.com/samber/slog-echo v1.23.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spazzymoto/echo-scs-session v1.0.0

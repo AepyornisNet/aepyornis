@@ -321,7 +321,7 @@ github.com/ringsaturn/tzf-dist
 ## explicit; go 1.23.0
 github.com/sagikazarmark/locafero
 github.com/sagikazarmark/locafero/internal/queue
-# github.com/samber/do/v2 v2.0.0
+# github.com/samber/do/v2 v2.1.0
 ## explicit; go 1.18
 github.com/samber/do/v2
 github.com/samber/do/v2/stacktrace
