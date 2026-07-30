@@ -63,12 +63,16 @@ type Scope struct {
 
 // ID returns the unique identifier of the scope.
 // This ID is generated using UUID and is immutable throughout the scope's lifetime.
+//
+// Play: https://go.dev/play/p/pao_03UdGE2
 func (s *Scope) ID() string {
 	return s.id
 }
 
 // Name returns the human-readable name of the scope.
 // This name is provided when creating the scope and is immutable.
+//
+// Play: https://go.dev/play/p/pao_03UdGE2
 func (s *Scope) Name() string {
 	return s.name
 }
@@ -82,6 +86,8 @@ func (s *Scope) Name() string {
 //   - packages: Optional package functions to execute in the new scope
 //
 // Returns the newly created child scope.
+//
+// Play: https://go.dev/play/p/pao_03UdGE2
 //
 // Panics if a scope with the same name already exists in the parent.
 func (s *Scope) Scope(name string, packages ...func(Injector)) *Scope {
@@ -107,6 +113,8 @@ func (s *Scope) Scope(name string, packages ...func(Injector)) *Scope {
 
 // RootScope returns the root scope of the scope hierarchy.
 // All scopes in a hierarchy share the same root scope, regardless of their depth.
+//
+// Play: https://go.dev/play/p/pao_03UdGE2
 func (s *Scope) RootScope() *RootScope {
 	return s.rootScope
 }
@@ -117,23 +125,39 @@ func (s *Scope) RootScope() *RootScope {
 //
 // Returns an empty slice for the root scope, and a slice of parent scopes
 // for child scopes, ordered from immediate parent to root.
+//
+// Play: https://go.dev/play/p/e_oxd7b-q9h
 func (s *Scope) Ancestors() []*Scope {
-	if s.parentScope == nil {
-		return []*Scope{}
+	// parentScope is immutable, so the chain can be walked without locking.
+	// This reaches into the unexported parentScope field of other *Scope
+	// instances (not just s), which breaks normal encapsulation, but it lets
+	// the whole chain be walked iteratively with one right-sized allocation,
+	// avoiding the O(n) allocations and O(n^2) total element copies/bytes of
+	// the previous recursive, method-based traversal.
+	depth := 0
+	for p := s.parentScope; p != nil; p = p.parentScope {
+		depth++
 	}
 
-	return append([]*Scope{s.parentScope}, s.parentScope.Ancestors()...)
+	ancestors := make([]*Scope, depth)
+	for i, p := 0, s.parentScope; p != nil; i, p = i+1, p.parentScope {
+		ancestors[i] = p
+	}
+
+	return ancestors
 }
 
 // Children returns the list of immediate child scopes.
 // This method only returns direct children, not grandchildren or deeper descendants.
 //
 // Returns a slice of child scopes. The order is not guaranteed to be stable.
+//
+// Play: https://go.dev/play/p/pao_03UdGE2
 func (s *Scope) Children() []*Scope {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	scopes := []*Scope{}
+	scopes := make([]*Scope, 0, len(s.childScopes))
 	for _, scope := range s.childScopes {
 		scopes = append(scopes, scope)
 	}
@@ -148,6 +172,8 @@ func (s *Scope) Children() []*Scope {
 //   - id: The unique ID of the scope to find
 //
 // Returns the found scope and true if found, or nil and false if not found.
+//
+// Play: https://go.dev/play/p/pao_03UdGE2
 func (s *Scope) ChildByID(id string) (*Scope, bool) {
 	s.mu.RLock()
 	children := make([]*Scope, 0, len(s.childScopes))
@@ -176,6 +202,8 @@ func (s *Scope) ChildByID(id string) (*Scope, bool) {
 //   - name: The name of the scope to find
 //
 // Returns the found scope and true if found, or nil and false if not found.
+//
+// Play: https://go.dev/play/p/pao_03UdGE2
 func (s *Scope) ChildByName(name string) (*Scope, bool) {
 	s.mu.RLock()
 	children := make([]*Scope, 0, len(s.childScopes))
@@ -203,6 +231,8 @@ func (s *Scope) ChildByName(name string) (*Scope, bool) {
 //
 // Returns a slice of ServiceDescription objects representing all available services,
 // including those inherited from parent scopes.
+//
+// Play: https://go.dev/play/p/e_oxd7b-q9h
 func (s *Scope) ListProvidedServices() []ServiceDescription {
 	services := []ServiceDescription{}
 
@@ -231,6 +261,8 @@ func (s *Scope) ListProvidedServices() []ServiceDescription {
 // and for debugging dependency issues.
 //
 // Returns a slice of ServiceDescription objects representing only the invoked services.
+//
+// Play: https://go.dev/play/p/pJcJGOF5zeK
 func (s *Scope) ListInvokedServices() []ServiceDescription {
 	services := []ServiceDescription{}
 
@@ -257,6 +289,8 @@ func (s *Scope) ListInvokedServices() []ServiceDescription {
 // that implement the Healthchecker interface.
 //
 // Returns a map of service names to error values. A nil error indicates a successful health check.
+//
+// Play: https://go.dev/play/p/pJcJGOF5zeK
 func (s *Scope) HealthCheck() map[string]error {
 	return s.HealthCheckWithContext(context.Background())
 }
@@ -268,6 +302,8 @@ func (s *Scope) HealthCheck() map[string]error {
 //   - ctx: Context for cancellation and timeout control
 //
 // Returns a map of service names to error values. A nil error indicates a successful health check.
+//
+// Play: https://go.dev/play/p/pJcJGOF5zeK
 func (s *Scope) HealthCheckWithContext(ctx context.Context) map[string]error {
 	s.logf("requested health check")
 
@@ -315,6 +351,8 @@ func (s *Scope) asyncHealthCheckWithContext(ctx context.Context) map[string]<-ch
 // This method calls ShutdownWithContext with a background context.
 //
 // Returns a ShutdownReport containing any errors and timings that occurred during shutdown.
+//
+// Play: https://go.dev/play/p/nkiBBYow2d5
 func (s *Scope) Shutdown() *ShutdownReport {
 	return s.ShutdownWithContext(context.Background())
 }
@@ -326,6 +364,8 @@ func (s *Scope) Shutdown() *ShutdownReport {
 //   - ctx: Context for cancellation and timeout control
 //
 // Returns a ShutdownReport containing any errors and timings that occurred during shutdown.
+//
+// Play: https://go.dev/play/p/nkiBBYow2d5
 func (s *Scope) ShutdownWithContext(ctx context.Context) *ShutdownReport {
 	s.logf("requested shutdown")
 	start := time.Now()
@@ -400,20 +440,17 @@ func (s *Scope) shutdownServicesInParallel(ctx context.Context) *ShutdownReport 
 		return keys(s.services)
 	}
 
-	for len(listServices()) > 0 {
+	for {
+		// loop over the services that have not been shutdown already
 		services := listServices()
-		servicesToShutdown := []string{}
-
-		// loop over the service that have not been shutdown already
-		for _, name := range services {
-			// Check the service has no dependents (dependencies allowed here).
-			// Services having dependents must be shutdown first.
-			// The next iteration will shutdown current service.
-			_, dependents := s.rootScope.dag.explainService(s.id, s.name, name)
-			if len(dependents) == 0 {
-				servicesToShutdown = append(servicesToShutdown, name)
-			}
+		if len(services) == 0 {
+			break
 		}
+
+		// Check, under a single DAG lock, which services have no dependents
+		// (dependencies allowed here). Services having dependents must be
+		// shutdown first; the next iteration will shutdown the current service.
+		servicesToShutdown := s.rootScope.dag.listServicesHavingNoDependent(s.id, s.name, services)
 
 		if len(servicesToShutdown) > 0 {
 			r := s.shutdownServicesWithoutDependenciesInParallel(ctx, servicesToShutdown)
