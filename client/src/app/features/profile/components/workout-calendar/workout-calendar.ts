@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
   inject,
   input,
   signal,
@@ -17,6 +18,7 @@ import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 import { Api } from '../../../../core/services/api';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-workout-calendar',
@@ -39,6 +41,7 @@ export class WorkoutCalendar {
   private readonly api = inject(Api);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
+  private eventsSubscription?: Subscription;
 
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
@@ -47,27 +50,28 @@ export class WorkoutCalendar {
   public readonly monthLabel = signal(this.formatMonthLabel(this.viewDate()));
 
   public constructor() {
-    this.loadMonthEvents();
+    effect(() => {
+      this.handle();
+      this.viewDate();
+      this.loadMonthEvents();
+    });
   }
 
   public previousMonth(): void {
     const d = this.viewDate();
     this.viewDate.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
     this.monthLabel.set(this.formatMonthLabel(this.viewDate()));
-    this.loadMonthEvents();
   }
 
   public nextMonth(): void {
     const d = this.viewDate();
     this.viewDate.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
     this.monthLabel.set(this.formatMonthLabel(this.viewDate()));
-    this.loadMonthEvents();
   }
 
   public goToToday(): void {
     this.viewDate.set(new Date());
     this.monthLabel.set(this.formatMonthLabel(this.viewDate()));
-    this.loadMonthEvents();
   }
 
   public onEventClicked(event: CalendarEvent): void {
@@ -96,10 +100,11 @@ export class WorkoutCalendar {
     gridEnd.setDate(gridStart.getDate() + 41);
     gridEnd.setHours(23, 59, 59, 0);
 
+    this.eventsSubscription?.unsubscribe();
     this.loading.set(true);
     this.error.set(null);
 
-    this.api
+    this.eventsSubscription = this.api
       .getCalendarEvents({
         handle: this.handle() || undefined,
         start: this.formatDateTime(gridStart),
