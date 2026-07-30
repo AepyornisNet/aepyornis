@@ -66,6 +66,10 @@ type User struct {
 
 	Profile Profile `gorm:"constraint:OnDelete:CASCADE" json:"profile"` // The user's profile settings
 
+	NotificationSettings  []UserNotificationSettings `gorm:"constraint:OnDelete:CASCADE" json:"-"`
+	Notifications         []Notification             `gorm:"constraint:OnDelete:CASCADE" json:"-"`
+	HammerheadConnections []HammerheadConnection     `gorm:"constraint:OnDelete:CASCADE" json:"-"`
+
 	anonymous bool // Whether we have an actual user or not
 }
 
@@ -267,7 +271,21 @@ func (u *User) Save(db *gorm.DB) error {
 }
 
 func (u *User) Delete(db *gorm.DB) error {
-	return db.Select(clause.Associations).Delete(u).Error
+	return db.Transaction(func(tx *gorm.DB) error {
+		if u.ID != 0 {
+			if err := tx.Where("user_id = ?", u.ID).Delete(&UserNotificationSettings{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Where("user_id = ?", u.ID).Delete(&Notification{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Where("user_id = ?", u.ID).Delete(&HammerheadConnection{}).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Select(clause.Associations).Delete(u).Error
+	})
 }
 
 func (u *User) HeightAt(d time.Time) float64 {

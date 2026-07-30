@@ -19,6 +19,7 @@ import { FeedPost } from '../feed-post/feed-post';
 export class RecentActivity {
   private api = inject(Api);
   public readonly feedScope = input<'following' | 'global'>('following');
+  public readonly handle = input<string | null>(null);
 
   public readonly displayedWorkouts = signal<Workout[]>([]);
   public readonly loading = signal(false);
@@ -29,6 +30,7 @@ export class RecentActivity {
   public constructor() {
     effect(() => {
       this.feedScope();
+      this.handle();
       this.displayedWorkouts.set([]);
       this.hasMore.set(true);
       this.loading.set(false);
@@ -40,7 +42,12 @@ export class RecentActivity {
     this.initialLoading.set(true);
     try {
       const response = await firstValueFrom(
-        this.api.getRecentWorkouts(this.pageSize, 0, this.feedScope()),
+        this.api.getRecentWorkouts(
+          this.pageSize,
+          0,
+          this.handle() ? undefined : this.feedScope(),
+          this.handle() || undefined,
+        ),
       );
       if (response?.results) {
         this.displayedWorkouts.set(response.results);
@@ -62,7 +69,12 @@ export class RecentActivity {
     try {
       const currentOffset = this.displayedWorkouts().length;
       const response = await firstValueFrom(
-        this.api.getRecentWorkouts(this.pageSize, currentOffset, this.feedScope()),
+        this.api.getRecentWorkouts(
+          this.pageSize,
+          currentOffset,
+          this.handle() ? undefined : this.feedScope(),
+          this.handle() || undefined,
+        ),
       );
 
       if (response?.results && response.results.length > 0) {

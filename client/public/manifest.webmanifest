@@ -1,6 +1,6 @@
 {
-  "name": "client",
-  "short_name": "client",
+  "name": "Aepyornis",
+  "short_name": "Aepyornis",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

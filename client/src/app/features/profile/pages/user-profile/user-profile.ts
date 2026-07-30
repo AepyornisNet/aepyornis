@@ -7,6 +7,7 @@ import { Totals, WorkoutRecord } from '../../../../core/types/workout';
 import { WorkoutCalendar } from '../../components/workout-calendar/workout-calendar';
 import { KeyMetrics } from '../../components/key-metrics/key-metrics';
 import { Records } from '../../components/records/records';
+import { RecentActivity } from '../../../feed/components/recent-activity/recent-activity';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ActivityPubProfileSummary } from '../../../../core/types/user';
@@ -19,6 +20,7 @@ import { Avatar } from '../../../../core/components/avatar/avatar';
     WorkoutCalendar,
     KeyMetrics,
     Records,
+    RecentActivity,
     TranslatePipe,
     RouterLink,
     AppIcon,

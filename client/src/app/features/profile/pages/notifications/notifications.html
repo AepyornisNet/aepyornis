@@ -74,24 +74,51 @@
             </div>
           </div>
 
-          <button
-            class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-            type="button"
-            [disabled]="!canRequestWebPush() || requestingWebPush()"
-            (click)="requestWebpush()"
-          >
-            @if (requestingWebPush()) {
+          @if (isSubscribed()) {
+            <div class="d-flex align-items-center gap-2">
               <span
-                aria-hidden="true"
-                class="spinner-border spinner-border-sm"
-                role="status"
-              ></span>
-              {{ 'Enabling...' | translate }}
-            } @else {
-              <app-icon name="bell" size="16" />
-              {{ 'Enable on this device' | translate }}
-            }
-          </button>
+                class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1 py-2 px-3"
+              >
+                <app-icon name="check" size="16" />
+                {{ 'Enabled on this device' | translate }}
+              </span>
+              <button
+                class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
+                type="button"
+                [disabled]="requestingWebPush()"
+                (click)="unsubscribeWebpush()"
+              >
+                @if (requestingWebPush()) {
+                  <span
+                    aria-hidden="true"
+                    class="spinner-border spinner-border-sm"
+                    role="status"
+                  ></span>
+                } @else {
+                  {{ 'Disable' | translate }}
+                }
+              </button>
+            </div>
+          } @else {
+            <button
+              class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+              type="button"
+              [disabled]="!canRequestWebPush() || requestingWebPush()"
+              (click)="requestWebpush()"
+            >
+              @if (requestingWebPush()) {
+                <span
+                  aria-hidden="true"
+                  class="spinner-border spinner-border-sm"
+                  role="status"
+                ></span>
+                {{ 'Enabling...' | translate }}
+              } @else {
+                <app-icon name="bell" size="16" />
+                {{ 'Enable on this device' | translate }}
+              }
+            </button>
+          }
         </div>
       </div>
     </div>

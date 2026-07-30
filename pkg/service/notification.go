@@ -9,11 +9,11 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/notification"
+	"github.com/SherClockHolmes/webpush-go"
 	"github.com/invopop/ctxi18n"
 	"github.com/invopop/ctxi18n/i18n"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/mail"
-	"github.com/nikoksr/notify/service/webpush"
 	"github.com/samber/do/v2"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -183,13 +183,13 @@ func (s *notificationService) getWebpushService(receiver *model.User) []notify.N
 	}
 
 	if s.cfg.VapidPrivateKey != "" && s.cfg.VapidPublicKey != "" {
-		var receiver webpush.Subscription
-		if err := json.Unmarshal(*userConfig.MethodSettings, &receiver); err != nil {
+		var receiverSub webpush.Subscription
+		if err := json.Unmarshal(*userConfig.MethodSettings, &receiverSub); err != nil {
 			return services
 		}
 
-		webpushSvc := webpush.New(s.cfg.VapidPublicKey, s.cfg.VapidPrivateKey)
-		webpushSvc.AddReceivers(receiver)
+		webpushSvc := notification.NewWebPush(s.cfg.VapidPublicKey, s.cfg.VapidPrivateKey)
+		webpushSvc.AddReceivers(receiverSub)
 		services = append(services, webpushSvc)
 	}
 

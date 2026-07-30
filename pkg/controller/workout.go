@@ -1104,10 +1104,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		}
 	}
 
-	scope := "following"
-	if c.QueryParam("scope") == "global" {
-		scope = "global"
-	}
+	handle := strings.TrimSpace(c.QueryParam("handle"))
 
 	var workouts []*model.Workout
 	query := wc.db.
@@ -1115,42 +1112,59 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		Preload("Profile").
 		Preload("Profile.User")
 
-	if scope == "global" {
-		query = query.Where(
-			`workouts.profile_id = ? OR workouts.visibility = ? OR (
-				workouts.visibility = ? AND
-				EXISTS (
-					SELECT 1
-					FROM followers f
-					WHERE f.profile_id = ?
-						AND f.following_profile_id = workouts.profile_id
-						AND f.approved = ?
-				)
-			)`,
-			requester.Profile.ID,
-			model.WorkoutVisibilityPublic,
-			model.WorkoutVisibilityFollowers,
-			requester.Profile.ID,
-			true,
-		)
+	if handle != "" {
+		host := wc.cfg.Host
+		if host == "" {
+			host = c.Request().Host
+		}
+		targetUser, err := wc.userRepo.GetByHandle(handle, host)
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+		query = model.ScopeVisibleWorkouts(query, targetUser.Profile.ID, requester.Profile.ID)
 	} else {
-		query = query.Where(
-			`workouts.profile_id = ? OR (
-				(workouts.visibility = ? OR workouts.visibility = ?) AND
-				EXISTS (
-					SELECT 1
-					FROM followers f
-					WHERE f.profile_id = ?
-						AND f.following_profile_id = workouts.profile_id
-						AND f.approved = ?
-				)
-			)`,
-			requester.Profile.ID,
-			model.WorkoutVisibilityPublic,
-			model.WorkoutVisibilityFollowers,
-			requester.Profile.ID,
-			true,
-		)
+		scope := "following"
+		if c.QueryParam("scope") == "global" {
+			scope = "global"
+		}
+
+		if scope == "global" {
+			query = query.Where(
+				`workouts.profile_id = ? OR workouts.visibility = ? OR (
+					workouts.visibility = ? AND
+					EXISTS (
+						SELECT 1
+						FROM followers f
+						WHERE f.profile_id = ?
+							AND f.following_profile_id = workouts.profile_id
+							AND f.approved = ?
+					)
+				)`,
+				requester.Profile.ID,
+				model.WorkoutVisibilityPublic,
+				model.WorkoutVisibilityFollowers,
+				requester.Profile.ID,
+				true,
+			)
+		} else {
+			query = query.Where(
+				`workouts.profile_id = ? OR (
+					(workouts.visibility = ? OR workouts.visibility = ?) AND
+					EXISTS (
+						SELECT 1
+						FROM followers f
+						WHERE f.profile_id = ?
+							AND f.following_profile_id = workouts.profile_id
+							AND f.approved = ?
+					)
+				)`,
+				requester.Profile.ID,
+				model.WorkoutVisibilityPublic,
+				model.WorkoutVisibilityFollowers,
+				requester.Profile.ID,
+				true,
+			)
+		}
 	}
 
 	err := query.

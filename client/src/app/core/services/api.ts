@@ -191,6 +191,7 @@ export class Api {
     limit?: number,
     offset?: number,
     scope?: 'following' | 'global',
+    handle?: string,
   ): Observable<APIResponse<Workout[]>> {
     let httpParams = new HttpParams();
     if (limit) {
@@ -201,6 +202,9 @@ export class Api {
     }
     if (scope) {
       httpParams = httpParams.set('scope', scope);
+    }
+    if (handle) {
+      httpParams = httpParams.set('handle', handle);
     }
     return this.http.get<APIResponse<Workout[]>>(`${this.baseUrl}/workouts/recent`, {
       params: httpParams,

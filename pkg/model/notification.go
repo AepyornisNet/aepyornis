@@ -9,8 +9,8 @@ import (
 type Notification struct {
 	Model
 
-	UserID uint64 `gorm:"not null" json:"-"`          // The ID of the user the notification is sent to
-	User   *User  `gorm:"foreignKey:UserID" json:"-"` // The user this notification is sent to
+	UserID uint64 `gorm:"not null" json:"-"`                                      // The ID of the user the notification is sent to
+	User   *User  `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"` // The user this notification is sent to
 
 	Type   string          `json:"type"`    // The type of notification
 	Meta   *datatypes.JSON `json:"meta"`    // Metainfo of the notification
