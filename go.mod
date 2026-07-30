@@ -5,6 +5,7 @@ go 1.26.2
 replace github.com/anyappinc/fitbit v0.0.3 => github.com/jovandeginste/fitbit v0.0.4-0.20250213164811-b0b3b27c3a84
 
 require (
+	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/alexedwards/scs/gormstore v0.0.0-20251002162104-209de6e426de
 	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/anyappinc/fitbit v0.0.3
@@ -64,7 +65,6 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/SherClockHolmes/webpush-go v1.4.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cappuccinotm/slogx v1.4.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

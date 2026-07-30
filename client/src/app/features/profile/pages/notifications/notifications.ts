@@ -41,6 +41,7 @@ export class ProfileNotificationsPage implements OnInit {
   public readonly loadingNotificationSettings = signal(true);
   public readonly requestingWebPush = signal(false);
   public readonly savingNotificationSettings = signal(false);
+  public readonly isSubscribed = signal(false);
 
   public readonly notificationModel = signal({
     follow_request: {
@@ -92,6 +93,11 @@ export class ProfileNotificationsPage implements OnInit {
 
   public ngOnInit(): void {
     void this.loadNotificationSettings();
+    if (this.swPush.isEnabled) {
+      this.swPush.subscription.subscribe((sub) => {
+        this.isSubscribed.set(Boolean(sub));
+      });
+    }
   }
 
   public availableNotificationProviders(): NotificationProviderOption[] {
@@ -161,6 +167,36 @@ export class ProfileNotificationsPage implements OnInit {
     } catch (err) {
       this.store.error.set(
         this.translate.instant('Failed to enable push notifications: {{message}}', {
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    } finally {
+      this.requestingWebPush.set(false);
+    }
+  }
+
+  public async unsubscribeWebpush(): Promise<void> {
+    if (!this.swPush.isEnabled) {
+      return;
+    }
+
+    this.requestingWebPush.set(true);
+    this.store.error.set(null);
+    this.store.successMessage.set(null);
+
+    try {
+      await this.swPush.unsubscribe();
+      await firstValueFrom(
+        this.api.updateNotificationSettings('webpush', await this.payload('webpush', '')),
+      );
+      this.isSubscribed.set(false);
+      this.store.successMessage.set(
+        this.translate.instant('Push notifications disabled on this device'),
+      );
+      setTimeout(() => this.store.successMessage.set(null), 3000);
+    } catch (err) {
+      this.store.error.set(
+        this.translate.instant('Failed to disable push notifications: {{message}}', {
           message: err instanceof Error ? err.message : String(err),
         }),
       );
