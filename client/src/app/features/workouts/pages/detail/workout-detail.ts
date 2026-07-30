@@ -108,15 +108,18 @@ export class WorkoutDetailPage implements OnInit {
   }
 
   public ngOnInit(): void {
-    this.dataService.clearWorkout();
-
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.dataService.loadWorkout(parseInt(id, 10));
-    } else {
-      this.dataService.error.set('Invalid workout ID');
-      this.dataService.loading.set(false);
-    }
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('id');
+      if (id) {
+        this.coordinatorService.clearSelection();
+        this.coordinatorService.selectHoverIndex(-1);
+        this.dataService.clearWorkout();
+        this.dataService.loadWorkout(parseInt(id, 10));
+      } else {
+        this.dataService.error.set('Invalid workout ID');
+        this.dataService.loading.set(false);
+      }
+    });
   }
 
   public goBack(): void {
