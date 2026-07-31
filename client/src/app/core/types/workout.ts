@@ -3,7 +3,7 @@
  */
 
 import { PaginationParams } from './api-response';
-import { UserProfile } from './user';
+import { UserProfile, UserSummary } from './user';
 
 export type Workout = {
   id: number;
@@ -16,7 +16,7 @@ export type Workout = {
   sub_type?: string;
   custom_type?: string;
   profile_id: number;
-  user?: UserProfile;
+  user?: UserSummary;
   visibility?: '' | 'followers' | 'public';
   locked: boolean;
   created_at: string;
@@ -356,7 +356,7 @@ export type WorkoutReply = {
   id: number;
   object_iri: string;
   user_id?: number;
-  user?: UserProfile;
+  user?: UserSummary;
   actor_iri?: string;
   actor_name?: string;
   avatar_url?: string;
@@ -368,7 +368,7 @@ export type WorkoutReply = {
 export type WorkoutLike = {
   id: number;
   user_id?: number;
-  user?: UserProfile;
+  user?: UserSummary;
   actor_iri?: string;
   actor_name?: string;
   avatar_url?: string;

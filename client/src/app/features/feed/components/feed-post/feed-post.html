@@ -212,50 +212,10 @@
     <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
   <div class="modal-body p-0">
-    @if (loadingLikes()) {
-      <div class="text-center py-4">
-        <div class="spinner-border spinner-border-sm text-primary" role="status">
-          <span class="visually-hidden">{{ 'Loading' | translate }}</span>
-        </div>
-      </div>
-    } @else if (workoutLikes().length === 0) {
-      <div class="text-muted text-center py-4 small">
-        {{ 'No likes yet' | translate }}
-      </div>
-    } @else {
-      <div class="list-group list-group-flush">
-        @for (like of workoutLikes(); track like.id) {
-          <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3">
-            <div class="d-flex align-items-center gap-2 min-w-0">
-              <app-avatar
-                [size]="36"
-                [user]="{
-                  name: getLikeAuthorName(like),
-                  icon_url: like.user?.icon_url || like.avatar_url,
-                }"
-              />
-              <div class="min-w-0">
-                <div class="fw-semibold text-truncate small">
-                  @if (getLikeAuthorHandle(like); as handle) {
-                    <a
-                      class="text-decoration-none link-body-emphasis"
-                      [routerLink]="['/profile', handle]"
-                      (click)="modal.close()"
-                    >
-                      {{ getLikeAuthorName(like) }}
-                    </a>
-                  } @else {
-                    {{ getLikeAuthorName(like) }}
-                  }
-                </div>
-                @if (getLikeAuthorHandle(like); as handle) {
-                  <div class="text-muted small text-truncate">@{{ handle }}</div>
-                }
-              </div>
-            </div>
-          </div>
-        }
-      </div>
-    }
+    <app-workout-likes-list
+      [likes]="workoutLikes()"
+      [loading]="loadingLikes()"
+      (itemClick)="modal.close()"
+    />
   </div>
 </ng-template>

@@ -36,6 +36,7 @@ import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
 import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
+import { WorkoutLikesList } from '../../components/workout-likes-list/workout-likes-list';
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
@@ -45,7 +46,6 @@ import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe'
   selector: 'app-workout-detail',
   imports: [
     AppIcon,
-    Avatar,
     WorkoutMapComponent,
     WorkoutChartComponent,
     WorkoutBreakdownComponent,
@@ -63,6 +63,7 @@ import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe'
     NgbNavContent,
     WorkoutPerformanceCurveComponent,
     WorkoutCommentsComponent,
+    WorkoutLikesList,
     TranslatePipe,
     FormatSpeedPipe,
     FormatDatePipe,
@@ -191,17 +192,10 @@ export class WorkoutDetailPage implements OnInit {
   }
 
   private formatUserHandle(like: WorkoutLike): string {
-    const username = like.user?.username?.trim();
-    if (!username) {
-      return '';
+    if (like.user?.handle) {
+      return like.user.handle.replace(/^@/, '');
     }
-
-    const domain = like.user?.domain?.trim();
-    if (domain) {
-      return `${username}@${domain}`;
-    }
-
-    return username;
+    return like.user?.username?.trim() || '';
   }
 
   private parseActorIri(actorIri?: string): { host: string; username: string } | null {

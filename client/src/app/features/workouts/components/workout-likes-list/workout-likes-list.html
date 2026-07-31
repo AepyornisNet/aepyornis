@@ -1,0 +1,73 @@
+@if (loading()) {
+  <div class="text-center py-4">
+    <div class="spinner-border spinner-border-sm text-primary" role="status">
+      <span class="visually-hidden">{{ 'Loading' | translate }}</span>
+    </div>
+  </div>
+} @else if (likes().length === 0) {
+  <div class="text-muted text-center py-4 small">
+    {{ 'No likes yet' | translate }}
+  </div>
+} @else {
+  <div class="list-group list-group-flush">
+    @for (like of likes(); track like.id) {
+      <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3">
+        <div class="d-flex align-items-center gap-2 min-w-0">
+          @if (getLikeAuthorHandle(like); as handle) {
+            <a
+              class="text-decoration-none"
+              [routerLink]="['/profile', handle]"
+              (click)="onItemClick()"
+            >
+              <app-avatar
+                [size]="36"
+                [user]="{
+                  name: getLikeAuthorName(like),
+                  icon_url: like.user?.icon_url || like.avatar_url,
+                }"
+              />
+            </a>
+          } @else {
+            <app-avatar
+              [size]="36"
+              [user]="{
+                name: getLikeAuthorName(like),
+                icon_url: like.user?.icon_url || like.avatar_url,
+              }"
+            />
+          }
+          <div class="min-w-0">
+            <div class="fw-semibold text-truncate small">
+              @if (getLikeAuthorHandle(like); as handle) {
+                <a
+                  class="text-decoration-none link-body-emphasis"
+                  [routerLink]="['/profile', handle]"
+                  (click)="onItemClick()"
+                >
+                  {{ getLikeAuthorName(like) }}
+                </a>
+              } @else {
+                {{ getLikeAuthorName(like) }}
+              }
+            </div>
+            @if (getLikeDisplayHandle(like); as displayHandle) {
+              <div class="text-muted small text-truncate">
+                @if (getLikeAuthorHandle(like); as handle) {
+                  <a
+                    class="text-decoration-none text-muted"
+                    [routerLink]="['/profile', handle]"
+                    (click)="onItemClick()"
+                  >
+                    {{ displayHandle }}
+                  </a>
+                } @else {
+                  {{ displayHandle }}
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}

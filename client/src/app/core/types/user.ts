@@ -130,6 +130,18 @@ export type ActivityPubProfileSummary = {
   member_since: string;
 };
 
+export type UserSummary = {
+  id: number;
+  username: string;
+  name: string;
+  handle: string;
+  actor_url: string;
+  icon_url: string;
+  is_external: boolean;
+  is_own: boolean;
+  is_following: boolean;
+};
+
 export type ActivityPubActor = {
   id: string;
   name?: string;
