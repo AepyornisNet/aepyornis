@@ -68,7 +68,7 @@ func NewUserController(injector do.Injector) UserController {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.UserProfileResponse]
-// @Failure      401  {object}  dto.Response[any]
+// @Failure      401  {object}  dto.Response[string]
 // @Router       /whoami [get]
 func (uc *userController) GetWhoami(c echo.Context) error {
 	user := currentUser(c)
@@ -90,7 +90,7 @@ func (uc *userController) GetWhoami(c echo.Context) error {
 // @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.TotalsResponse]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /totals [get]
 func (uc *userController) GetTotals(c echo.Context) error {
 	viewer := currentUser(c)
@@ -178,7 +178,7 @@ func (uc *userController) GetTotals(c echo.Context) error {
 // @Param        end    query     string  false  "End date (YYYY-MM-DD, inclusive)"
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]dto.WorkoutRecordResponse]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /records [get]
 func (uc *userController) GetRecords(c echo.Context) error {
 	viewer := currentUser(c)
@@ -224,8 +224,8 @@ func (uc *userController) GetRecords(c echo.Context) error {
 // @Param        per_page      query     int     false  "Per page"
 // @Produce      json
 // @Success      200  {object}  dto.PaginatedResponse[dto.DistanceRecordResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /records/ranking [get]
 func (uc *userController) GetRecordsRanking(c echo.Context) error {
 	viewer := currentUser(c)
@@ -289,8 +289,8 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 // @Param        per_page      query     int     false  "Per page"
 // @Produce      json
 // @Success      200  {object}  dto.PaginatedResponse[dto.ClimbRecordResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /records/climbs/ranking [get]
 func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 	viewer := currentUser(c)
@@ -350,8 +350,8 @@ func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 // @Param        id   path      int  true  "User ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]dto.WorkoutRecordResponse]
-// @Failure      403  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      403  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /{id} [get]
 // TODO: Add more data. This will be used for public profiles.
 func (uc *userController) GetUserByID(c echo.Context) error {
@@ -395,8 +395,8 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 // @Param        q  query     string  false  "Search query or ActivityPub handle"
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]dto.ActivityPubProfileSummaryResponse]
-// @Failure      403  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      403  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /user-profile/search [get]
 func (uc *userController) SearchProfiles(c echo.Context) error {
 	viewer := currentUser(c)
@@ -467,7 +467,7 @@ func (uc *userController) SearchProfiles(c echo.Context) error {
 // @Param        handle  query     string  false  "ActivityPub handle"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.ActivityPubProfileSummaryResponse]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile [get]
 func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 	handle := strings.TrimSpace(c.QueryParam("handle"))
@@ -519,8 +519,8 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 // @Param        handle  query     string  true  "ActivityPub handle"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.ActivityPubProfileSummaryResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile/follow [post]
 func (uc *userController) FollowUserByHandle(c echo.Context) error {
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
@@ -606,8 +606,8 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 // @Param        handle  query     string  true  "ActivityPub handle"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.ActivityPubProfileSummaryResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile/unfollow [post]
 func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {

@@ -36,8 +36,8 @@ func NewMeasurementController(injector do.Injector) MeasurementController {
 // @Param        per_page  query     int false "Per page"
 // @Produce      json
 // @Success      200  {object}  dto.PaginatedResponse[dto.MeasurementResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /measurements [get]
 func (mc *measurementController) GetMeasurements(c echo.Context) error {
 	user := currentUser(c)
@@ -80,8 +80,8 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.MeasurementResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /measurements [post]
 func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 	user := currentUser(c)
@@ -118,8 +118,8 @@ func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 // @Param        date  path  string  true  "Date (YYYY-MM-DD)"
 // @Produce      json
 // @Success      204  {string}  string ""
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /measurements/{date} [delete]
 func (mc *measurementController) DeleteMeasurement(c echo.Context) error {
 	u := currentUser(c)

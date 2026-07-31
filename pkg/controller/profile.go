@@ -94,8 +94,8 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.UserProfileResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /profile [put]
 func (pc *profileController) UpdateProfile(c echo.Context) error {
 	user := currentUser(c)
@@ -176,9 +176,9 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      401  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      401  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/change-password [post]
 func (pc *profileController) ChangePassword(c echo.Context) error {
 	user := currentUser(c)
@@ -219,7 +219,7 @@ func (pc *profileController) ChangePassword(c echo.Context) error {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/reset-api-key [post]
 func (pc *profileController) ResetAPIKey(c echo.Context) error {
 	user := currentUser(c)
@@ -247,8 +247,8 @@ func (pc *profileController) ResetAPIKey(c echo.Context) error {
 // @Security     ApiKeyQuery
 // @Security     CookieAuth
 // @Produce      json
-// @Success      200  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Success      200  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/enable-activity-pub [post]
 func (pc *profileController) EnableActivityPub(c echo.Context) error {
 	user := currentUser(c)
@@ -284,7 +284,7 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]dto.FollowRequestResponse]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/follow-requests [get]
 func (pc *profileController) ListFollowRequests(c echo.Context) error {
 	user := currentUser(c)
@@ -314,9 +314,9 @@ func (pc *profileController) ListFollowRequests(c echo.Context) error {
 // @Param        id   path  int  true  "Follow request ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.FollowRequestResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
-// @Failure      502  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
+// @Failure      502  {object}  dto.Response[string]
 // @Router       /profile/follow-requests/{id}/accept [post]
 func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 	user := currentUser(c)
@@ -349,7 +349,7 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/refresh-workouts [post]
 func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 	user := currentUser(c)

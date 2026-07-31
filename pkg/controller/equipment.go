@@ -56,8 +56,8 @@ func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, e
 // @Param        page      query  int false "Page"
 // @Param        per_page  query  int false "Items per page"
 // @Success      200  {object}  dto.PaginatedResponse[dto.EquipmentResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /equipment [get]
 func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
 	user := currentUser(c)
@@ -101,7 +101,7 @@ func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
 // @Param        id   path  int  true  "Equipment ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.EquipmentResponse]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /equipment/{id} [get]
 func (ec *equipmentController) GetEquipment(c echo.Context) error {
 	e, err := ec.getEquipment(c)
@@ -125,8 +125,8 @@ func (ec *equipmentController) GetEquipment(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      201  {object}  dto.Response[dto.EquipmentResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /equipment [post]
 func (ec *equipmentController) CreateEquipment(c echo.Context) error {
 	user := currentUser(c)
@@ -159,9 +159,9 @@ func (ec *equipmentController) CreateEquipment(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.EquipmentResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      403  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      403  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /equipment/{id} [put]
 func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 	user := currentUser(c)
@@ -202,8 +202,8 @@ func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Equipment ID"
 // @Success      204  "Deleted"
-// @Failure      403  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      403  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /equipment/{id} [delete]
 func (ec *equipmentController) DeleteEquipment(c echo.Context) error {
 	user := currentUser(c)

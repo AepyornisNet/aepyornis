@@ -72,13 +72,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -117,13 +117,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -159,13 +159,13 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -210,13 +210,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -262,13 +262,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -305,19 +305,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -346,13 +346,18 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -387,19 +392,27 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -421,13 +434,40 @@ const docTemplate = `{
                         "name": "username",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (1-based)",
+                        "name": "page",
+                        "in": "query"
                     }
                 ],
                 "responses": {
-                    "501": {
-                        "description": "Not Implemented",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -461,19 +501,28 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -508,19 +557,27 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -556,19 +613,27 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -609,13 +674,81 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ap/users/{username}/outbox/{id}/replies": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activity-pub"
+                ],
+                "summary": "Get ActivityPub workout replies collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Outbox entry UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (1-based)",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -656,13 +789,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -709,19 +848,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -749,19 +888,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -786,7 +925,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -836,13 +975,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -879,13 +1018,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -930,7 +1069,7 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -976,19 +1115,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1025,13 +1164,13 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1126,13 +1265,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1169,13 +1308,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1220,13 +1359,175 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notification"
+                ],
+                "summary": "Get user notifications",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-array_model_Notification"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/read": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notification"
+                ],
+                "summary": "Mark notifications as read",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-map_string_bool"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/settings": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notification"
+                ],
+                "summary": "Get notification config",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-array_model_UserNotificationSettings"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{type}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notification"
+                ],
+                "summary": "Update notification config",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-model_UserNotificationSettings"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1293,13 +1594,64 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/change-password": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Change password",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1329,13 +1681,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1371,7 +1723,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1416,19 +1768,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "502": {
                         "description": "Bad Gateway",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1464,7 +1816,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1500,7 +1852,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1586,7 +1938,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1655,13 +2007,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1737,13 +2089,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1793,13 +2145,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1851,13 +2203,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1902,7 +2254,7 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -1948,19 +2300,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2003,13 +2355,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2054,7 +2406,7 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2099,13 +2451,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2150,13 +2502,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2206,13 +2558,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2262,7 +2614,203 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user-profile": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get user profile by ActivityPub handle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ActivityPub handle",
+                        "name": "handle",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_ActivityPubProfileSummaryResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user-profile/follow": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Follow user by ActivityPub handle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ActivityPub handle",
+                        "name": "handle",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_ActivityPubProfileSummaryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user-profile/search": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Search user profiles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query or ActivityPub handle",
+                        "name": "q",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-array_dto_ActivityPubProfileSummaryResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/user-profile/unfollow": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Unfollow user by ActivityPub handle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ActivityPub handle",
+                        "name": "handle",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_ActivityPubProfileSummaryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2298,7 +2846,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2348,13 +2896,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2392,13 +2940,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2434,13 +2982,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2476,7 +3024,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2502,6 +3050,39 @@ const docTemplate = `{
                     "heatmap"
                 ],
                 "summary": "Get workout coordinates",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "default": 0.0015,
+                        "description": "Grid cell size in degrees used for server-side aggregation",
+                        "name": "cell_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Minimum latitude for viewport filtering",
+                        "name": "min_lat",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Minimum longitude for viewport filtering",
+                        "name": "min_lng",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Maximum latitude for viewport filtering",
+                        "name": "max_lat",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Maximum longitude for viewport filtering",
+                        "name": "max_lng",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2509,10 +3090,61 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.Response-array_array_float64"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/like": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Like ActivityPub workout object",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2539,6 +3171,12 @@ const docTemplate = `{
                         "description": "Offset",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Feed scope (following|global)",
+                        "name": "scope",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2551,7 +3189,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2596,13 +3234,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2648,13 +3286,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2697,13 +3335,65 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/attachments/{attachment_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Download workout attachment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Attachment ID",
+                        "name": "attachment_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "binary attachment file",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2760,13 +3450,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2811,7 +3501,109 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/like": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Like workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/likes": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get workout likes",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-array_dto_WorkoutLikeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2856,7 +3648,136 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/replies": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get workout replies",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Per page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PaginatedResponse-dto_WorkoutReplyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Create a reply on a workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reply content",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-dto_WorkoutReplyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2904,13 +3825,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -2967,13 +3888,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -3018,13 +3939,13 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -3081,13 +4002,13 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response-any"
+                            "$ref": "#/definitions/dto.Response-string"
                         }
                     }
                 }
@@ -3095,11 +4016,64 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.ActivityPubProfileSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "actor_url": {
+                    "type": "string"
+                },
+                "followers_count": {
+                    "type": "integer"
+                },
+                "following_count": {
+                    "type": "integer"
+                },
+                "handle": {
+                    "type": "string"
+                },
+                "icon_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_external": {
+                    "type": "boolean"
+                },
+                "is_following": {
+                    "type": "boolean"
+                },
+                "is_own": {
+                    "type": "boolean"
+                },
+                "member_since": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "posts_count": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.AppInfoResponse": {
             "type": "object",
             "properties": {
+                "activity_pub_active": {
+                    "type": "boolean"
+                },
                 "auto_import_enabled": {
                     "type": "boolean"
+                },
+                "notification_providers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "registration_disabled": {
                     "type": "boolean"
@@ -3111,6 +4085,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "version_sha": {
+                    "type": "string"
+                },
+                "webpush_public_key": {
                     "type": "string"
                 }
             }
@@ -3252,14 +4229,14 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
+                "profile_id": {
+                    "type": "integer"
+                },
                 "updated_at": {
                     "type": "string"
                 },
                 "usage": {
                     "$ref": "#/definitions/dto.EquipmentUsageStats"
-                },
-                "user_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -3388,18 +4365,6 @@ const docTemplate = `{
             "properties": {
                 "center": {
                     "$ref": "#/definitions/dto.MapCenterResponse"
-                },
-                "creator": {
-                    "type": "string"
-                },
-                "details": {
-                    "$ref": "#/definitions/dto.MapDataDetailsResponse"
-                },
-                "extra_metrics": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -3461,6 +4426,12 @@ const docTemplate = `{
         "dto.PaginatedResponse-dto_ClimbRecordResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3490,6 +4461,12 @@ const docTemplate = `{
         "dto.PaginatedResponse-dto_DistanceRecordResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3519,6 +4496,12 @@ const docTemplate = `{
         "dto.PaginatedResponse-dto_EquipmentResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3548,6 +4531,12 @@ const docTemplate = `{
         "dto.PaginatedResponse-dto_MeasurementResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3577,6 +4566,12 @@ const docTemplate = `{
         "dto.PaginatedResponse-dto_RouteSegmentResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3603,9 +4598,50 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PaginatedResponse-dto_WorkoutReplyResponse": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutReplyResponse"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.PaginatedResponse-dto_WorkoutResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3639,10 +4675,14 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "api_key": {
+                    "description": "#nosec G117 -- API response key is intentionally named api_key",
                     "type": "string"
                 },
                 "auto_import_directory": {
                     "type": "string"
+                },
+                "default_workout_visibility": {
+                    "$ref": "#/definitions/model.WorkoutVisibility"
                 },
                 "language": {
                     "type": "string"
@@ -3652,9 +4692,6 @@ const docTemplate = `{
                 },
                 "preferred_units": {
                     "$ref": "#/definitions/model.UserPreferredUnits"
-                },
-                "socials_disabled": {
-                    "type": "boolean"
                 },
                 "theme": {
                     "type": "string"
@@ -3684,6 +4721,12 @@ const docTemplate = `{
         "dto.Response-any": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3696,6 +4739,12 @@ const docTemplate = `{
         "dto.Response-array_array_float64": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3714,9 +4763,38 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Response-array_dto_ActivityPubProfileSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ActivityPubProfileSummaryResponse"
+                    }
+                }
+            }
+        },
         "dto.Response-array_dto_CalendarEventResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3734,6 +4812,12 @@ const docTemplate = `{
         "dto.Response-array_dto_FollowRequestResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3751,6 +4835,12 @@ const docTemplate = `{
         "dto.Response-array_dto_UserProfileResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3765,9 +4855,38 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Response-array_dto_WorkoutLikeResponse": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutLikeResponse"
+                    }
+                }
+            }
+        },
         "dto.Response-array_dto_WorkoutRecordResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3785,6 +4904,12 @@ const docTemplate = `{
         "dto.Response-array_dto_WorkoutResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3799,9 +4924,61 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Response-array_model_Notification": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Notification"
+                    }
+                }
+            }
+        },
+        "dto.Response-array_model_UserNotificationSettings": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.UserNotificationSettings"
+                    }
+                }
+            }
+        },
         "dto.Response-array_string": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3816,9 +4993,35 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Response-dto_ActivityPubProfileSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.ActivityPubProfileSummaryResponse"
+                }
+            }
+        },
         "dto.Response-dto_AppInfoResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3833,6 +5036,12 @@ const docTemplate = `{
         "dto.Response-dto_EquipmentResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3847,6 +5056,12 @@ const docTemplate = `{
         "dto.Response-dto_FollowRequestResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3861,6 +5076,12 @@ const docTemplate = `{
         "dto.Response-dto_MeasurementResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3875,6 +5096,12 @@ const docTemplate = `{
         "dto.Response-dto_RouteSegmentDetailResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3889,6 +5116,12 @@ const docTemplate = `{
         "dto.Response-dto_RouteSegmentsDetailResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3906,6 +5139,12 @@ const docTemplate = `{
         "dto.Response-dto_StatisticsResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3920,6 +5159,12 @@ const docTemplate = `{
         "dto.Response-dto_TotalsResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3927,13 +5172,22 @@ const docTemplate = `{
                     }
                 },
                 "results": {
-                    "$ref": "#/definitions/dto.TotalsResponse"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TotalResponse"
+                    }
                 }
             }
         },
         "dto.Response-dto_UserProfileResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3948,6 +5202,12 @@ const docTemplate = `{
         "dto.Response-dto_WorkoutBreakdownResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3962,6 +5222,12 @@ const docTemplate = `{
         "dto.Response-dto_WorkoutDetailResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3976,6 +5242,12 @@ const docTemplate = `{
         "dto.Response-dto_WorkoutRangeStatsResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -3987,9 +5259,35 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Response-dto_WorkoutReplyResponse": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/dto.WorkoutReplyResponse"
+                }
+            }
+        },
         "dto.Response-dto_WorkoutResponse": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -4004,6 +5302,12 @@ const docTemplate = `{
         "dto.Response-geojson_FeatureCollection": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -4015,9 +5319,35 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.Response-map_string_bool": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/map_string_bool"
+                }
+            }
+        },
         "dto.Response-map_string_string": {
             "type": "object",
             "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -4026,6 +5356,46 @@ const docTemplate = `{
                 },
                 "results": {
                     "$ref": "#/definitions/map_string_string"
+                }
+            }
+        },
+        "dto.Response-model_UserNotificationSettings": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "$ref": "#/definitions/model.UserNotificationSettings"
+                }
+            }
+        },
+        "dto.Response-string": {
+            "type": "object",
+            "properties": {
+                "error_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "results": {
+                    "type": "string"
                 }
             }
         },
@@ -4264,7 +5634,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.TotalsResponse": {
+        "dto.TotalResponse": {
             "type": "object",
             "properties": {
                 "distance": {
@@ -4279,6 +5649,9 @@ const docTemplate = `{
                 },
                 "up": {
                     "type": "number"
+                },
+                "workout_type": {
+                    "type": "string"
                 },
                 "workouts": {
                     "type": "integer"
@@ -4303,11 +5676,14 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "domain": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
-                },
-                "language": {
-                    "type": "string"
                 },
                 "last_version": {
                     "type": "string"
@@ -4315,25 +5691,45 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "prefer_full_date": {
-                    "type": "boolean"
-                },
-                "preferred_units": {
-                    "$ref": "#/definitions/model.UserPreferredUnits"
-                },
                 "profile": {
                     "$ref": "#/definitions/dto.ProfileSettings"
                 },
-                "socials_disabled": {
-                    "type": "boolean"
-                },
-                "theme": {
-                    "type": "string"
-                },
-                "timezone": {
+                "token": {
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "actor_url": {
+                    "type": "string"
+                },
+                "handle": {
+                    "type": "string"
+                },
+                "icon_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_external": {
+                    "type": "boolean"
+                },
+                "is_following": {
+                    "type": "boolean"
+                },
+                "is_own": {
+                    "type": "boolean"
+                },
+                "name": {
                     "type": "string"
                 },
                 "username": {
@@ -4374,6 +5770,29 @@ const docTemplate = `{
                     }
                 },
                 "subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.WorkoutAttachmentItem": {
+            "type": "object",
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "url": {
                     "type": "string"
                 }
             }
@@ -4471,6 +5890,12 @@ const docTemplate = `{
                     "description": "MapData fields (when available)",
                     "type": "string"
                 },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutAttachmentItem"
+                    }
+                },
                 "average_cadence": {
                     "type": "number"
                 },
@@ -4495,6 +5920,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "creator": {
+                    "type": "string"
+                },
                 "custom_type": {
                     "type": "string"
                 },
@@ -4510,7 +5938,16 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.EquipmentResponse"
                     }
                 },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutEventResponse"
+                    }
+                },
                 "has_file": {
+                    "type": "boolean"
+                },
+                "has_location_data": {
                     "type": "boolean"
                 },
                 "has_tracks": {
@@ -4519,11 +5956,23 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "interval_bests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutIntervalRecordResponse"
+                    }
+                },
                 "laps": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.WorkoutLapResponse"
                     }
+                },
+                "liked_by_me": {
+                    "type": "boolean"
+                },
+                "likes_count": {
+                    "type": "integer"
                 },
                 "locked": {
                     "type": "boolean"
@@ -4559,11 +6008,20 @@ const docTemplate = `{
                     "description": "Duration in seconds",
                     "type": "integer"
                 },
-                "records": {
+                "profile_id": {
+                    "type": "integer"
+                },
+                "recent_likes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.WorkoutIntervalRecordResponse"
+                        "$ref": "#/definitions/dto.WorkoutLikeResponse"
                     }
+                },
+                "records": {
+                    "$ref": "#/definitions/dto.WorkoutRecordsResponse"
+                },
+                "replies_count": {
+                    "type": "integer"
                 },
                 "route_segment_matches": {
                     "type": "array",
@@ -4600,13 +6058,36 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/dto.UserProfileResponse"
-                },
-                "user_id": {
-                    "type": "integer"
+                    "$ref": "#/definitions/dto.UserSummaryResponse"
                 },
                 "visibility": {
                     "$ref": "#/definitions/model.WorkoutVisibility"
+                }
+            }
+        },
+        "dto.WorkoutEventResponse": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "string"
+                },
+                "event_group": {
+                    "type": "integer"
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "payload": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "start_timestamp": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
                 }
             }
         },
@@ -4695,6 +6176,32 @@ const docTemplate = `{
                 },
                 "total_up": {
                     "type": "number"
+                }
+            }
+        },
+        "dto.WorkoutLikeResponse": {
+            "type": "object",
+            "properties": {
+                "actor_iri": {
+                    "type": "string"
+                },
+                "actor_name": {
+                    "type": "string"
+                },
+                "avatar_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserSummaryResponse"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -4857,6 +6364,55 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.WorkoutRecordsResponse": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "$ref": "#/definitions/dto.MapDataDetailsResponse"
+                },
+                "extra_metrics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.WorkoutReplyResponse": {
+            "type": "object",
+            "properties": {
+                "actor_iri": {
+                    "type": "string"
+                },
+                "actor_name": {
+                    "type": "string"
+                },
+                "avatar_url": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "object_iri": {
+                    "type": "string"
+                },
+                "published_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserSummaryResponse"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.WorkoutResponse": {
             "type": "object",
             "properties": {
@@ -4866,6 +6422,12 @@ const docTemplate = `{
                 "address_string": {
                     "description": "MapData fields (when available)",
                     "type": "string"
+                },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutAttachmentItem"
+                    }
                 },
                 "average_cadence": {
                     "type": "number"
@@ -4885,6 +6447,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "creator": {
+                    "type": "string"
+                },
                 "custom_type": {
                     "type": "string"
                 },
@@ -4897,10 +6462,19 @@ const docTemplate = `{
                 "has_file": {
                     "type": "boolean"
                 },
+                "has_location_data": {
+                    "type": "boolean"
+                },
                 "has_tracks": {
                     "type": "boolean"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "liked_by_me": {
+                    "type": "boolean"
+                },
+                "likes_count": {
                     "type": "integer"
                 },
                 "locked": {
@@ -4934,6 +6508,18 @@ const docTemplate = `{
                     "description": "Duration in seconds",
                     "type": "integer"
                 },
+                "profile_id": {
+                    "type": "integer"
+                },
+                "recent_likes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutLikeResponse"
+                    }
+                },
+                "replies_count": {
+                    "type": "integer"
+                },
                 "sub_type": {
                     "type": "string"
                 },
@@ -4963,10 +6549,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/dto.UserProfileResponse"
-                },
-                "user_id": {
-                    "type": "integer"
+                    "$ref": "#/definitions/dto.UserSummaryResponse"
                 },
                 "visibility": {
                     "$ref": "#/definitions/model.WorkoutVisibility"
@@ -4987,7 +6570,27 @@ const docTemplate = `{
                 }
             }
         },
-        "geojson.Feature": {
+        "geojson.FeatureCollection": {
+            "type": "object",
+            "properties": {
+                "bbox": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "features": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/geojson.FeatureOf-geojson_Properties"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "geojson.FeatureOf-geojson_Properties": {
             "type": "object",
             "properties": {
                 "bbox": {
@@ -5006,29 +6609,15 @@ const docTemplate = `{
                 }
             }
         },
-        "geojson.FeatureCollection": {
-            "type": "object",
-            "properties": {
-                "bbox": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "features": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/geojson.Feature"
-                    }
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "geojson.Properties": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": {}
+        },
+        "map_string_bool": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "boolean"
+            }
         },
         "map_string_string": {
             "type": "object",
@@ -5059,6 +6648,43 @@ const docTemplate = `{
                 "CategoryUncategorized"
             ]
         },
+        "model.Notification": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "meta": {
+                    "description": "Metainfo of the notification",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "msg": {
+                    "description": "The notification message",
+                    "type": "string"
+                },
+                "read_at": {
+                    "description": "The time the notification was read at",
+                    "type": "string"
+                },
+                "subject": {
+                    "description": "The notification subject",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "The type of notification",
+                    "type": "string"
+                },
+                "update_at": {
+                    "type": "string"
+                }
+            }
+        },
         "model.SlopeKind": {
             "type": "string",
             "enum": [
@@ -5069,6 +6695,38 @@ const docTemplate = `{
                 "SlopeKindClimb",
                 "SlopeKindDescent"
             ]
+        },
+        "model.UserNotificationSettings": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "follow_request": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "method_settings": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "update_at": {
+                    "type": "string"
+                },
+                "workout_like": {
+                    "type": "boolean"
+                },
+                "workout_reply": {
+                    "type": "boolean"
+                }
+            }
         },
         "model.UserPreferredUnits": {
             "type": "object",

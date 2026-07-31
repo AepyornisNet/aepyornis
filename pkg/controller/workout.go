@@ -215,8 +215,8 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 // @Param        per_page  query     int    false "Per page"
 // @Produce      json
 // @Success      200  {object}  dto.PaginatedResponse[dto.WorkoutResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts [get]
 func (wc *workoutController) GetWorkouts(c echo.Context) error {
 	user := currentUser(c)
@@ -282,8 +282,8 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 // @Param        id   path      int  true  "Workout ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.WorkoutDetailResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id} [get]
 func (wc *workoutController) GetWorkout(c echo.Context) error {
 	workout, err := wc.getReadableWorkout(c, true)
@@ -334,8 +334,8 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 // @Param        id   path      int  true  "Workout ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]dto.WorkoutLikeResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/likes [get]
 func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 	workout, err := wc.getReadableWorkout(c, false)
@@ -387,8 +387,8 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 // @Param        per_page  query     int  false "Per page"
 // @Produce      json
 // @Success      200  {object}  dto.PaginatedResponse[dto.WorkoutReplyResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/replies [get]
 func (wc *workoutController) GetWorkoutReplies(c echo.Context) error { //nolint:gocyclo
 	workout, err := wc.getReadableWorkout(c, false)
@@ -462,9 +462,9 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error { //nolint:
 // @Security     CookieAuth
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
-// @Success      200  {object}  dto.Response[map[string]any]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/like [post]
 func (wc *workoutController) LikeWorkout(c echo.Context) error {
 	viewer := currentUser(c)
@@ -516,9 +516,9 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 // @Security     CookieAuth
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  dto.Response[map[string]any]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/like [post]
 func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 	viewer := currentUser(c)
@@ -637,8 +637,8 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 // @Param        id   path  int  true  "Workout ID"
 // @Param        payload body  object{content=string}  true  "Reply content"
 // @Success      201  {object}  dto.Response[dto.WorkoutReplyResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/replies [post]
 func (wc *workoutController) CreateReply(c echo.Context) error {
 	viewer := currentUser(c)
@@ -703,8 +703,8 @@ func (wc *workoutController) CreateReply(c echo.Context) error {
 // @Param        count  query  number  false "Count"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.WorkoutBreakdownResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/breakdown [get]
 func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 	requester := currentUser(c)
@@ -771,8 +771,8 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 // @Param        end_index    query  int  false "End point index (inclusive)"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.WorkoutRangeStatsResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/stats-range [get]
 func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 	requester := currentUser(c)
@@ -831,8 +831,8 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]dto.CalendarEventResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/calendar [get]
 func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	viewer := currentUser(c)
@@ -937,8 +937,8 @@ func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) str
 // @Accept       json
 // @Produce      json
 // @Success      201  {object}  dto.Response[dto.WorkoutResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts [post]
 func (wc *workoutController) CreateWorkout(c echo.Context) error {
 	user := currentUser(c)
@@ -1089,7 +1089,7 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 // @Param        offset  query  int     false "Offset"
 // @Param        scope   query  string  false "Feed scope (following|global)"
 // @Success      200  {object}  dto.Response[[]dto.WorkoutResponse]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/recent [get]
 func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	requester := currentUser(c)
@@ -1216,8 +1216,8 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      404  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/{id} [delete]
 func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 	user := currentUser(c)
@@ -1252,8 +1252,8 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.WorkoutResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id} [put]
 func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 	user := currentUser(c)
@@ -1311,8 +1311,8 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.WorkoutResponse]
-// @Failure      404  {object}  dto.Response[any]
-// @Failure      403  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[string]
+// @Failure      403  {object}  dto.Response[string]
 // @Router       /workouts/{id}/toggle-lock [post]
 func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 	user := currentUser(c)
@@ -1349,7 +1349,7 @@ func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/refresh [post]
 func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 	workout, err := wc.getOwnedWorkout(c)
@@ -1383,7 +1383,7 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 // @Param        id   path  int  true  "Workout ID"
 // @Produce      octet-stream
 // @Success      200  {string}  string  "binary workout file"
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/download [get]
 func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 	workout, err := wc.getOwnedWorkout(c)
@@ -1415,7 +1415,7 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 // @Param        attachment_id  path  int  true  "Attachment ID"
 // @Produce      octet-stream
 // @Success      200  {string}  string  "binary attachment file"
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/attachments/{attachment_id} [get]
 func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
 	workout, err := wc.getReadableWorkout(c, false)

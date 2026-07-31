@@ -47,8 +47,8 @@ func NewNotificationController(injector do.Injector) NotificationController {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]model.Notification]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications [get]
 func (nc *notificationController) GetNotifications(c echo.Context) error {
 	user := currentUser(c)
@@ -73,7 +73,7 @@ func (nc *notificationController) GetNotifications(c echo.Context) error {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[[]model.UserNotificationSettings]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/settings [get]
 func (nc *notificationController) GetConfig(c echo.Context) error {
 	user := currentUser(c)
@@ -118,8 +118,8 @@ func (nc *notificationController) GetConfig(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[model.UserNotificationSettings]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/{type} [post]
 func (nc *notificationController) UpdateConfig(c echo.Context) error {
 	user := currentUser(c)
@@ -193,7 +193,7 @@ type MarkAsReadPayload struct {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]bool]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/read [post]
 func (nc *notificationController) MarkAsRead(c echo.Context) error {
 	user := currentUser(c)

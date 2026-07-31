@@ -39,8 +39,8 @@ func NewWellKnownController(injector do.Injector) WellKnownController {
 // @Param        rel       query  []string  false  "Optional relation filter"
 // @Produce      json
 // @Success      200  {object}  dto.WellKnownNode
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
 // @Router       /.well-known/webfinger [get]
 func (wc *wellKnownController) WebFinger(c echo.Context) error {
 	res := c.QueryParam("resource")

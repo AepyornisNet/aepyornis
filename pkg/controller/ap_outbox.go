@@ -68,9 +68,9 @@ func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User
 // @Param        username  path   string  true   "Username"
 // @Param        page      query  int     false  "Page number (1-based)"
 // @Produce      json
-// @Success      200  {object}  map[string]any
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox [get]
 func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 	targetUser, err := ac.targetActivityPubUser(c)
@@ -174,9 +174,9 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 // @Param        username  path  string  true  "Username"
 // @Param        id        path  string  true  "Outbox entry UUID"
 // @Produce      json
-// @Success      200  {object}  map[string]any
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id} [get]
 func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
@@ -235,8 +235,8 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 // @Param        id        path  string  true  "Outbox entry UUID"
 // @Produce      octet-stream
 // @Success      200  {string}  string  "binary FIT content"
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id}/fit [get]
 func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
@@ -274,8 +274,8 @@ func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 // @Param        id        path  string  true  "Outbox entry UUID"
 // @Produce      octet-stream
 // @Success      200  {string}  string  "binary image content"
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id}/route-image [get]
 func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
@@ -382,9 +382,9 @@ func buildRepliesPagePayload(replies []model.APStatus, repliesID string, page in
 // @Param        id        path   string  true   "Outbox entry UUID"
 // @Param        page      query  int     false  "Page number (1-based)"
 // @Produce      json
-// @Success      200  {object}  map[string]any
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id}/replies [get]
 func (ac *apOutboxController) OutboxReplies(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
