@@ -13,6 +13,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ActivityPubProfileSummary } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Avatar } from '../../../../core/components/avatar/avatar';
+import { User } from '../../../../core/services/user';
 
 @Component({
   selector: 'app-user-profile',
@@ -33,6 +34,7 @@ import { Avatar } from '../../../../core/components/avatar/avatar';
 })
 export class UserProfile implements OnInit {
   private api = inject(Api);
+  private user = inject(User);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
 
@@ -48,7 +50,12 @@ export class UserProfile implements OnInit {
   public ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const handle = params.get('handle');
-      this.currentHandle.set(handle);
+      if (!handle) {
+        this.currentHandle.set(this.user.getUserInfo()()?.username ?? null);
+      } else {
+        this.currentHandle.set(handle);
+      }
+
       this.loadProfileData(handle);
     });
   }
@@ -83,10 +90,10 @@ export class UserProfile implements OnInit {
           this.profileSummary.update((current) =>
             current
               ? {
-                  ...current,
-                  member_since: actor.published || current.member_since,
-                  icon_url: this.extractActorIcon(actor) || current.icon_url,
-                }
+                ...current,
+                member_since: actor.published || current.member_since,
+                icon_url: this.extractActorIcon(actor) || current.icon_url,
+              }
               : current,
           );
         }
