@@ -3,6 +3,7 @@ import { faMap } from '@ng-icons/font-awesome/regular';
 import { faSolidGlobe } from '@ng-icons/font-awesome/solid';
 import { _, TranslateService } from '@ngx-translate/core';
 import maplibregl, { Map, StyleSpecification } from 'maplibre-gl';
+import { ThemeService } from '../../services/theme';
 
 export const OPENFREEMAP_STYLE_BASE_URL = 'https://tiles.openfreemap.org/styles';
 
@@ -24,20 +25,21 @@ export const AERIAL_STYLE: StyleSpecification = {
 @Directive()
 export abstract class BaseMapComponent implements OnDestroy {
   protected readonly translate = inject(TranslateService);
+  protected readonly themeService = inject(ThemeService);
 
   protected map?: Map;
   protected navigationControl?: maplibregl.NavigationControl;
   protected baseLayerControl?: maplibregl.IControl;
   protected readonly baseLayerButtons: Partial<Record<'streets' | 'aerial', HTMLButtonElement>> =
     {};
-  protected readonly darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  protected themeObserver?: MutationObserver;
   protected styleRefreshVersion = 0;
 
   public readonly mapStyle = signal<string | StyleSpecification>(this.getStreetStyleUrl());
   public readonly baseLayer = signal<'streets' | 'aerial'>('streets');
 
   public ngOnDestroy(): void {
-    this.darkModeMediaQuery.removeEventListener('change', this.onSystemThemeChanged);
+    this.themeObserver?.disconnect();
     this.map?.off('style.load', this.onMapStyleLoad);
     this.onDestroy();
   }
@@ -48,7 +50,11 @@ export abstract class BaseMapComponent implements OnDestroy {
 
   protected onMapLoadBase(map: Map): void {
     this.map = map;
-    this.darkModeMediaQuery.addEventListener('change', this.onSystemThemeChanged);
+    this.themeObserver = new MutationObserver(() => this.onSystemThemeChanged());
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-bs-theme'],
+    });
     this.map.on('style.load', this.onMapStyleLoad);
     this.addMapControls();
   }
@@ -75,7 +81,7 @@ export abstract class BaseMapComponent implements OnDestroy {
   protected abstract refreshAfterStyleChange(): void;
 
   protected getStreetStyleUrl(): string {
-    return `${OPENFREEMAP_STYLE_BASE_URL}/${this.darkModeMediaQuery.matches ? 'fiord' : 'bright'}`;
+    return `${OPENFREEMAP_STYLE_BASE_URL}/${this.themeService.isDarkMode() ? 'fiord' : 'bright'}`;
   }
 
   protected addMapControls(): void {

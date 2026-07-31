@@ -14,26 +14,43 @@
     0 20px 30px -10px rgba(250, 122, 28, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bs-body-bg: #0b0f19;
-    --bs-body-bg-rgb: 11, 15, 25;
-    --bs-body-color: #f1f5f9;
-    --bs-body-color-rgb: 241, 245, 249;
-    --bs-tertiary-bg: #111827;
-    --bs-secondary-bg: #1f293d;
-    --bs-border-color: rgba(255, 255, 255, 0.08);
-    --app-bg-gradient-dark: radial-gradient(circle at 50% 0%, #151e32 0%, #0b0f19 75%);
-    --app-card-bg-dark: #131b2e;
-    --app-card-border-dark: rgba(255, 255, 255, 0.08);
-    --app-glass-bg-dark: rgba(19, 27, 46, 0.75);
-    --app-glass-border-dark: rgba(255, 255, 255, 0.1);
-    --app-box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
-    --app-box-shadow-hover: 0 20px 35px -5px rgba(250, 122, 28, 0.25);
-  }
+[data-bs-theme="dark"] {
+  --bs-body-bg: #0b0f19;
+  --bs-body-bg-rgb: 11, 15, 25;
+  --bs-body-color: #f1f5f9;
+  --bs-body-color-rgb: 241, 245, 249;
+  --bs-tertiary-bg: #111827;
+  --bs-secondary-bg: #1f293d;
+  --bs-border-color: rgba(255, 255, 255, 0.08);
+  --app-bg-gradient-dark: radial-gradient(circle at 50% 0%, #151e32 0%, #0b0f19 75%);
+  --app-card-bg-dark: #131b2e;
+  --app-card-border-dark: rgba(255, 255, 255, 0.08);
+  --app-glass-bg-dark: rgba(19, 27, 46, 0.75);
+  --app-glass-border-dark: rgba(255, 255, 255, 0.1);
+  --app-box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+  --app-box-shadow-hover: 0 20px 35px -5px rgba(250, 122, 28, 0.25);
 
   body {
     background: var(--app-bg-gradient-dark) fixed !important;
+  }
+
+  .maplibregl-map {
+    --ml-c-bg-1: #111725;
+    --ml-c-bg-2: #414853;
+    --ml-c-bg-3: #32363f;
+    --ml-c-icon-1: #cbd5e1;
+    --ml-c-icon-2: #ffffff;
+    --ml-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.15), 0 1px 2px -1px rgb(0 0 0 / 0.15);
+    --ml-c-link-1: #cbd5e1;
+    --ml-c-link-2: #ffffff;
+    --ml-c-logo-1: #111725;
+    --ml-c-logo-2: #32363f;
+  }
+}
+
+[data-bs-theme="light"] {
+  body {
+    background: var(--app-bg-gradient-light) fixed !important;
   }
 }
 
@@ -63,21 +80,6 @@
   --ml-c-logo-2: #d7d7d7;
   --ml-c-geoloc: #1da1f2;
   --ml-font-icons: maplibregl-icons-default;
-}
-
-@media (prefers-color-scheme: dark) {
-  .maplibregl-map {
-    --ml-c-bg-1: #111725;
-    --ml-c-bg-2: #414853;
-    --ml-c-bg-3: #32363f;
-    --ml-c-icon-1: #cbd5e1;
-    --ml-c-icon-2: #ffffff;
-    --ml-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.15), 0 1px 2px -1px rgb(0 0 0 / 0.15);
-    --ml-c-link-1: #cbd5e1;
-    --ml-c-link-2: #ffffff;
-    --ml-c-logo-1: #111725;
-    --ml-c-logo-2: #32363f;
-  }
 }
 
 .wt-map-control-button svg {
