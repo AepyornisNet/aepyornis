@@ -34,6 +34,10 @@ func VerifyRequest(req *http.Request, loader KeyResolver) (*RequestActor, error)
 		return actor, nil
 	}
 
+	if req.Header.Get("Signature") == "" {
+		return nil, nil
+	}
+
 	return VerifyDraftSignature(req, loader)
 }
 
