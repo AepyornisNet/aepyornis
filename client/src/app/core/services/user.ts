@@ -4,6 +4,7 @@ import { UserProfile } from '../../core/types/user';
 import { catchError, map, Observable, of, take, tap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { Router } from '@angular/router';
+import { ThemeService } from './theme';
 
 export type UserInfo = {
   username: string;
@@ -19,6 +20,7 @@ export class User {
   private api = inject(Api);
   private translate = inject(TranslateService);
   private router = inject(Router);
+  private themeService = inject(ThemeService);
 
   private readonly userInfo = signal<UserInfo | null>(null);
   private readonly checkingAuth = signal<boolean>(false);
@@ -45,6 +47,8 @@ export class User {
     };
 
     this.userInfo.set(user);
+
+    this.themeService.setTheme(profile.profile?.theme);
 
     const lang = profile.profile?.language;
     if (lang && lang !== 'browser') {
@@ -99,6 +103,7 @@ export class User {
 
   public clearUser(): void {
     this.userInfo.set(null);
+    this.themeService.setTheme('browser');
   }
 
   public logout(): void {

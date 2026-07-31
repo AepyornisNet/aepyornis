@@ -9,6 +9,7 @@ import {
   HammerheadConnectionStatus,
 } from '../../../core/types/user';
 import { TranslateService } from '@ngx-translate/core';
+import { ThemeService } from '../../../core/services/theme';
 
 @Injectable()
 export class ProfileStore {
@@ -16,6 +17,7 @@ export class ProfileStore {
   public readonly appConfig = inject(AppConfig);
   private fb = inject(FormBuilder);
   private translate = inject(TranslateService);
+  private themeService = inject(ThemeService);
 
   public readonly profile = signal<FullUserProfile | null>(null);
   public readonly loading = signal(true);
@@ -58,6 +60,14 @@ export class ProfileStore {
     confirm_password: ['', Validators.required],
   });
 
+  public constructor() {
+    this.profileForm.get('theme')?.valueChanges.subscribe((val) => {
+      if (val) {
+        this.themeService.setTheme(val);
+      }
+    });
+  }
+
   public async loadProfile(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
@@ -86,6 +96,8 @@ export class ProfileStore {
           default_workout_visibility: response.results.profile.default_workout_visibility,
           preferred_units: response.results.profile.preferred_units,
         });
+
+        this.themeService.setTheme(response.results.profile.theme);
       }
     } catch (err) {
       this.error.set(
@@ -118,6 +130,8 @@ export class ProfileStore {
       const response = await firstValueFrom(this.api.updateProfile(payload));
       if (response?.results) {
         this.profile.set(response.results);
+
+        this.themeService.setTheme(response.results.profile.theme);
 
         // Apply the language change if it's not "browser"
         const newLang = response.results.profile.language;
