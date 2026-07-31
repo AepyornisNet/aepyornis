@@ -2,7 +2,7 @@
 
 aside {
   position: fixed;
-  top: 48px;
+  top: 56px;
   left: 0;
   bottom: 0;
   width: 100vw;
@@ -26,10 +26,9 @@ aside {
   height: 56px;
   padding-top: 6px;
   padding-bottom: 6px;
-  background: linear-gradient(135deg, $brand-color 0%, $primary-dark 100%);
+  background-color: $brand-color;
   color: #ffffff;
   font-weight: 700;
-  letter-spacing: -0.02em;
 }
 
 aside {

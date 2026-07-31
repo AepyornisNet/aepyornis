@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -70,6 +69,86 @@ type ActivityPubProfileSummaryResponse struct {
 	MemberSince    time.Time `json:"member_since"`
 }
 
+// UserSummaryResponse represents compact public user profile info attached to workouts, likes, replies, etc.
+type UserSummaryResponse struct {
+	ID          uint64 `json:"id"`
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	Handle      string `json:"handle"`
+	ActorURL    string `json:"actor_url"`
+	IconURL     string `json:"icon_url"`
+	IsExternal  bool   `json:"is_external"`
+	IsOwn       bool   `json:"is_own"`
+	IsFollowing bool   `json:"is_following"`
+}
+
+// NewUserSummaryResponse converts a database User to a public UserSummaryResponse
+func NewUserSummaryResponse(u *model.User) *UserSummaryResponse {
+	if u == nil {
+		return nil
+	}
+	return NewUserSummaryResponseFromProfile(&u.Profile)
+}
+
+// NewUserSummaryResponseFromProfile converts a database Profile to a public UserSummaryResponse
+func NewUserSummaryResponseFromProfile(p *model.Profile) *UserSummaryResponse {
+	if p == nil {
+		return nil
+	}
+
+	var id uint64
+	switch {
+	case p.UserID != nil:
+		id = *p.UserID
+	case p.User != nil:
+		id = p.User.ID
+	default:
+		id = p.ID
+	}
+
+	username := strings.TrimSpace(p.Username)
+	name := strings.TrimSpace(p.DisplayName)
+	var domain string
+	if p.Domain != nil {
+		domain = strings.TrimSpace(*p.Domain)
+	}
+
+	handle := ""
+	if username != "" {
+		if domain != "" {
+			handle = "@" + username + "@" + domain
+		} else {
+			handle = "@" + username
+		}
+	}
+
+	if name == "" {
+		name = username
+		if domain != "" {
+			name = username + "@" + domain
+		}
+	}
+
+	iconURL := ""
+	if p.AvatarRemoteURL != nil && strings.TrimSpace(*p.AvatarRemoteURL) != "" {
+		iconURL = strings.TrimSpace(*p.AvatarRemoteURL)
+	}
+
+	isExternal := !p.Local || domain != ""
+
+	return &UserSummaryResponse{
+		ID:          id,
+		Username:    username,
+		Name:        name,
+		Handle:      handle,
+		ActorURL:    p.ActorURL(),
+		IconURL:     iconURL,
+		IsExternal:  isExternal,
+		IsOwn:       false,
+		IsFollowing: false,
+	}
+}
+
 // NewUserProfileResponse converts a database user to API response
 func NewUserProfileResponse(u *model.User) UserProfileResponse {
 	username := ""
@@ -88,7 +167,7 @@ func NewUserProfileResponse(u *model.User) UserProfileResponse {
 		if name == "" {
 			name = username
 			if domain != nil {
-				name = fmt.Sprintf("%s@%s", username, *domain)
+				name = username + "@" + *domain
 			}
 		}
 		if u.Profile.Birthdate != nil {

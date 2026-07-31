@@ -19,11 +19,14 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Avatar } from '../../../../core/components/avatar/avatar';
 import { Api } from '../../../../core/services/api';
 import { User } from '../../../../core/services/user';
+import { UserSummary } from '../../../../core/types/user';
 import { Workout, WorkoutLike, WorkoutReply } from '../../../../core/types/workout';
+
+import { WorkoutLikesList } from '../../../workouts/components/workout-likes-list/workout-likes-list';
 
 @Component({
   selector: 'app-feed-post',
-  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe],
+  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe, WorkoutLikesList],
   templateUrl: './feed-post.html',
   styleUrl: './feed-post.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -222,7 +225,19 @@ export class FeedPost {
     const myLike: WorkoutLike = {
       id: Date.now(),
       user_id: currentUser?.profile?.id,
-      user: currentUser?.profile,
+      user: currentUser?.profile
+        ? {
+            id: currentUser.profile.id,
+            username: currentUser.profile.username,
+            name: currentUser.profile.name,
+            handle: currentUser.profile.username ? `@${currentUser.profile.username}` : '',
+            actor_url: '',
+            icon_url: currentUser.profile.icon_url || '',
+            is_external: false,
+            is_own: true,
+            is_following: false,
+          }
+        : undefined,
       actor_name: currentUser?.name || currentUser?.profile?.name || currentUser?.username,
       avatar_url: currentUser?.profile?.icon_url,
       created_at: new Date().toISOString(),
@@ -330,18 +345,11 @@ export class FeedPost {
     }
   }
 
-  private formatUserHandle(user?: WorkoutReply['user'] | Workout['user']): string {
-    const username = user?.username?.trim();
-    if (!username) {
-      return '';
+  private formatUserHandle(user?: UserSummary): string {
+    if (user?.handle) {
+      return user.handle.replace(/^@/, '');
     }
-
-    const domain = user?.domain?.trim();
-    if (domain) {
-      return `${username}@${domain}`;
-    }
-
-    return username;
+    return user?.username?.trim() || '';
   }
 
   private parseActorIri(actorIri?: string): { host: string; username: string } | null {

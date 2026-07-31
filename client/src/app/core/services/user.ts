@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, Injector, signal } from '@angular/core';
 import { Api } from './api';
 import { UserProfile } from '../../core/types/user';
 import { catchError, map, Observable, of, take, tap } from 'rxjs';
@@ -18,9 +18,13 @@ export type UserInfo = {
 })
 export class User {
   private api = inject(Api);
-  private translate = inject(TranslateService);
+  private injector = inject(Injector);
   private router = inject(Router);
   private themeService = inject(ThemeService);
+
+  private get translate(): TranslateService {
+    return this.injector.get(TranslateService);
+  }
 
   private readonly userInfo = signal<UserInfo | null>(null);
   private readonly checkingAuth = signal<boolean>(false);

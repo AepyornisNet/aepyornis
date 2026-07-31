@@ -67,8 +67,8 @@ func NewHeatmapController(injector do.Injector) HeatmapController {
 // @Param        max_lat    query  number  false  "Maximum latitude for viewport filtering"
 // @Param        max_lng    query  number  false  "Maximum longitude for viewport filtering"
 // @Success      200  {object}  dto.Response[[][]float64]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/coordinates [get]
 func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 	hasCellSize := false
@@ -187,7 +187,7 @@ func parseHeatmapBounds(c echo.Context) (*heatmapBounds, error) {
 // @Security     CookieAuth
 // @Produce      json
 // @Success      200  {object}  dto.Response[geojson.FeatureCollection]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/centers [get]
 func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()

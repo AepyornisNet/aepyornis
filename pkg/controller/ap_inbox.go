@@ -71,9 +71,9 @@ func requestingActor(c echo.Context) (*aputil.RequestActor, error) {
 // @Param        username  path  string  true  "Username"
 // @Accept       json
 // @Success      202  {string}  string
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
 // @Router       /ap/users/{username}/inbox [post]
 func (ac *apInboxController) Inbox(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)

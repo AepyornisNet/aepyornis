@@ -24,7 +24,7 @@ type WorkoutResponse struct {
 	Creator              string                  `json:"creator,omitempty"`
 	CustomType           string                  `json:"custom_type,omitempty"`
 	ProfileID            uint64                  `json:"profile_id"`
-	User                 *UserProfileResponse    `json:"user,omitempty"`
+	User                 *UserSummaryResponse    `json:"user,omitempty"`
 	Visibility           model.WorkoutVisibility `json:"visibility,omitempty"`
 	Locked               bool                    `json:"locked"`
 	CreatedAt            time.Time               `json:"created_at"`
@@ -328,38 +328,7 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse { //nolint:gocyclo
 	// Add user data when profile/user info is available.
 	// Workout.Profile is the source of truth for username/display name on feed responses.
 	if w.Profile != nil {
-		var userResp UserProfileResponse
-		if w.Profile.User != nil {
-			userResp = NewUserProfileResponse(w.Profile.User)
-		}
-
-		if userResp.ID == 0 && w.Profile.UserID != nil {
-			userResp.ID = *w.Profile.UserID
-		}
-
-		if strings.TrimSpace(userResp.Username) == "" {
-			userResp.Username = strings.TrimSpace(w.Profile.Username)
-		}
-
-		if userResp.Domain == nil && w.Profile.Domain != nil {
-			d := strings.TrimSpace(*w.Profile.Domain)
-			if d != "" {
-				userResp.Domain = &d
-			}
-		}
-
-		if strings.TrimSpace(userResp.Name) == "" {
-			userResp.Name = strings.TrimSpace(w.Profile.DisplayName)
-		}
-
-		if strings.TrimSpace(userResp.Name) == "" {
-			userResp.Name = userResp.Username
-			if userResp.Domain != nil && userResp.Username != "" {
-				userResp.Name = fmt.Sprintf("%s@%s", userResp.Username, *userResp.Domain)
-			}
-		}
-
-		wr.User = &userResp
+		wr.User = NewUserSummaryResponseFromProfile(w.Profile)
 	}
 
 	// Add map data if available
@@ -1190,7 +1159,7 @@ type WorkoutReplyResponse struct {
 	ID          uint64               `json:"id"`
 	ObjectIRI   string               `json:"object_iri"`
 	UserID      *uint64              `json:"user_id,omitempty"`
-	User        *UserProfileResponse `json:"user,omitempty"`
+	User        *UserSummaryResponse `json:"user,omitempty"`
 	ActorIRI    *string              `json:"actor_iri,omitempty"`
 	ActorName   *string              `json:"actor_name,omitempty"`
 	AvatarURL   *string              `json:"avatar_url,omitempty"`
@@ -1220,9 +1189,8 @@ func NewWorkoutReplyResponse(r *model.APStatus) WorkoutReplyResponse {
 			avatarURL := strings.TrimSpace(*r.Profile.AvatarRemoteURL)
 			res.AvatarURL = &avatarURL
 		}
-		if r.Profile.User != nil {
-			userProfile := NewUserProfileResponse(r.Profile.User)
-			res.User = &userProfile
+		if r.Profile != nil {
+			res.User = NewUserSummaryResponseFromProfile(r.Profile)
 		}
 	}
 	return res
@@ -1232,7 +1200,7 @@ func NewWorkoutReplyResponse(r *model.APStatus) WorkoutReplyResponse {
 type WorkoutLikeResponse struct {
 	ID        uint64               `json:"id"`
 	UserID    *uint64              `json:"user_id,omitempty"`
-	User      *UserProfileResponse `json:"user,omitempty"`
+	User      *UserSummaryResponse `json:"user,omitempty"`
 	ActorIRI  *string              `json:"actor_iri,omitempty"`
 	ActorName *string              `json:"actor_name,omitempty"`
 	AvatarURL *string              `json:"avatar_url,omitempty"`
@@ -1257,9 +1225,8 @@ func NewWorkoutLikeResponse(l *model.APStatusLike) WorkoutLikeResponse {
 			avatarURL := strings.TrimSpace(*l.Profile.AvatarRemoteURL)
 			res.AvatarURL = &avatarURL
 		}
-		if l.Profile.User != nil {
-			profile := NewUserProfileResponse(l.Profile.User)
-			res.User = &profile
+		if l.Profile != nil {
+			res.User = NewUserSummaryResponseFromProfile(l.Profile)
 		}
 	}
 

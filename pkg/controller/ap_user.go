@@ -47,8 +47,8 @@ func NewApUserController(injector do.Injector) ApUserController {
 // @Tags         activity-pub
 // @Param        username  path  string  true  "Username"
 // @Produce      json
-// @Success      200  {object}  map[string]any
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username} [get]
 func (ac *apUserController) GetUser(c echo.Context) error {
 	username := c.Param("username")
@@ -117,9 +117,9 @@ func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, 
 // @Param        username  path   string  true   "Username"
 // @Param        page      query  int     false  "Page number (1-based)"
 // @Produce      json
-// @Success      200  {object}  map[string]any
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/following [get]
 func (ac *apUserController) Following(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
@@ -210,9 +210,9 @@ func (ac *apUserController) Following(c echo.Context) error {
 // @Param        username  path   string  true   "Username"
 // @Param        page      query  int     false  "Page number (1-based)"
 // @Produce      json
-// @Success      200  {object}  map[string]any
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      404  {object}  dto.Response[any]
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/followers [get]
 func (ac *apUserController) Followers(c echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)

@@ -29,8 +29,8 @@ func NewStatisticsController(_ do.Injector) StatisticsController {
 // @Param        since  query  string false "Relative start (e.g. '1 year')"
 // @Param        per    query  string false "Aggregation period (day|week|month|year)"
 // @Success      200  {object}  dto.Response[dto.StatisticsResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /statistics [get]
 func (sc *statisticsController) GetStatistics(c echo.Context) error {
 	user := currentUser(c)

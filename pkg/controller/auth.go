@@ -54,9 +54,9 @@ func NewAuthController(injector do.Injector) AuthController {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.UserProfileResponse]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      401  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      401  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /auth/signin [post]
 func (ac *authController) SignIn(c echo.Context) error {
 	var req dto.SigninRequest
@@ -95,7 +95,7 @@ func (ac *authController) SignIn(c echo.Context) error {
 // @Tags         auth
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]string]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /auth/signout [post]
 func (ac *authController) SignOut(c echo.Context) error {
 	ac.clearTokenCookie(c)
@@ -117,9 +117,9 @@ func (ac *authController) SignOut(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      201  {object}  dto.Response[map[string]string]
-// @Failure      400  {object}  dto.Response[any]
-// @Failure      403  {object}  dto.Response[any]
-// @Failure      500  {object}  dto.Response[any]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      403  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
 // @Router       /auth/register [post]
 func (ac *authController) Register(c echo.Context) error {
 	if ac.cfg.RegistrationDisabled {

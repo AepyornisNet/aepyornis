@@ -316,33 +316,10 @@
                 }}</span>
               </h5>
             </div>
-            @if (dataService.likesLoading()) {
-              <div class="card-body text-center py-3">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            } @else {
-              <div class="list-group list-group-flush">
-                @for (like of dataService.likes(); track like.id) {
-                  <div class="list-group-item d-flex align-items-center gap-2 py-2">
-                    <app-avatar
-                      [size]="32"
-                      [user]="{
-                        name: likeAuthorName(like),
-                        icon_url: like.user?.icon_url || like.avatar_url,
-                      }"
-                    />
-
-                    <div class="flex-grow-1 d-flex flex-column min-w-0">
-                      <span class="fw-semibold small text-truncate">{{
-                        likeAuthorName(like)
-                      }}</span>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
+            <app-workout-likes-list
+              [likes]="dataService.likes()"
+              [loading]="dataService.likesLoading()"
+            />
           </div>
         }
 

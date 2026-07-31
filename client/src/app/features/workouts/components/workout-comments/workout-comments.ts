@@ -119,17 +119,10 @@ export class WorkoutCommentsComponent {
   }
 
   private formatUserHandle(reply: WorkoutReply): string {
-    const username = reply.user?.username?.trim();
-    if (!username) {
-      return '';
+    if (reply.user?.handle) {
+      return reply.user.handle.replace(/^@/, '');
     }
-
-    const domain = reply.user?.domain?.trim();
-    if (domain) {
-      return `${username}@${domain}`;
-    }
-
-    return username;
+    return reply.user?.username?.trim() || '';
   }
 
   private parseActorIri(actorIri?: string): { host: string; username: string } | null {
