@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Avatar } from '../../../../core/components/avatar/avatar';
 import { Api } from '../../../../core/services/api';
+import { User } from '../../../../core/services/user';
 import { Workout, WorkoutReply } from '../../../../core/types/workout';
 
 @Component({
@@ -18,6 +19,7 @@ import { Workout, WorkoutReply } from '../../../../core/types/workout';
 })
 export class FeedPost {
   private api = inject(Api);
+  private user = inject(User);
 
   public readonly workout = input.required<Workout>();
 
@@ -75,6 +77,23 @@ export class FeedPost {
 
   public getWorkoutAuthorHandle(workout: Workout): string | null {
     return workout.user?.username?.trim() || null;
+  }
+
+  public isOwnWorkout(workout: Workout): boolean {
+    const currentUser = this.user.getUserInfo()();
+    if (!currentUser) {
+      return false;
+    }
+
+    if (workout.user?.username && currentUser.username) {
+      return workout.user.username === currentUser.username;
+    }
+
+    if (workout.user?.id && currentUser.profile?.id) {
+      return workout.user.id === currentUser.profile.id;
+    }
+
+    return false;
   }
 
   public getAuthorName(reply: WorkoutReply): string {

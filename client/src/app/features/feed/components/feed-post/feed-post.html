@@ -84,25 +84,29 @@
           >{{ workout.likes_count || 0 }} likes &middot;
           {{ workout.replies_count || 0 }} comments</span
         >
-        <div class="d-inline-flex gap-2">
+        <div class="d-inline-flex align-items-center gap-2">
+          @if (!isOwnWorkout(workout)) {
+            <button
+              class="btn btn-sm btn-link p-1 text-decoration-none feed-action-btn"
+              type="button"
+              [class.text-body-secondary]="!workout.liked_by_me"
+              [class.text-danger]="workout.liked_by_me"
+              [disabled]="isLiking()"
+              [title]="(workout.liked_by_me ? 'Unlike' : 'Like') | translate"
+              (click)="likeWorkout()"
+            >
+              <app-icon size="18" [name]="workout.liked_by_me ? 'heart-solid' : 'heart'" />
+            </button>
+          }
           <button
-            class="btn btn-sm"
+            class="btn btn-sm btn-link p-1 text-decoration-none feed-action-btn"
             type="button"
-            [class.btn-outline-secondary]="!workout.liked_by_me"
-            [class.btn-primary]="workout.liked_by_me"
-            [disabled]="isLiking()"
-            (click)="likeWorkout()"
-          >
-            <app-icon name="heart" size="14" />
-          </button>
-          <button
-            class="btn btn-sm btn-outline-secondary"
-            type="button"
-            [class.btn-secondary]="commentsExpanded()"
-            [class.text-white]="commentsExpanded()"
+            [class.text-body-secondary]="!commentsExpanded()"
+            [class.text-primary]="commentsExpanded()"
+            [title]="'Comments' | translate"
             (click)="toggleComments()"
           >
-            <app-icon name="chat" size="14" />
+            <app-icon name="chat" size="18" />
           </button>
         </div>
       </div>
