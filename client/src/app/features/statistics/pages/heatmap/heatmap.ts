@@ -12,8 +12,14 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
-import { LngLatBounds, Map } from 'maplibre-gl';
-import { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, Popup } from 'maplibre-gl';
+import {
+  ExpressionSpecification,
+  GeoJSONSource,
+  LngLatBounds,
+  Map,
+  MapLayerMouseEvent,
+  Popup,
+} from 'maplibre-gl';
 import { Api } from '../../../../core/services/api';
 import { WorkoutPopupData } from '../../../../core/types/statistics';
 import { WorkoutPopup } from '../../components/workout-popup/workout-popup';

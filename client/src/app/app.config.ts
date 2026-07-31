@@ -12,6 +12,7 @@ import {
   provideTranslateService,
   TranslateLoader,
 } from '@ngx-translate/core';
+import { provideMaplibreWorker } from '@maplibre/ngx-maplibre-gl/config';
 
 import { routes } from './app.routes';
 import { iconProviders } from './core/config/icon-providers';
@@ -23,6 +24,7 @@ import { InterpolatingMissingTranslationHandler } from './core/i18n/interpolatin
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideMaplibreWorker('maplibre-gl-worker.mjs'),
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     provideRouter(routes),
