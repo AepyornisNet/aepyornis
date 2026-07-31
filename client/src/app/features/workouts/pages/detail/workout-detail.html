@@ -316,36 +316,33 @@
                 }}</span>
               </h5>
             </div>
-            <div class="card-body">
-              @if (dataService.likesLoading()) {
-                <div class="text-center py-2">
-                  <div class="spinner-border spinner-border-sm text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                  </div>
+            @if (dataService.likesLoading()) {
+              <div class="card-body text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
                 </div>
-              } @else {
-                <div class="list-group">
-                  @for (like of dataService.likes(); track like.id) {
-                    <div class="list-group-item d-flex align-items-center gap-2">
-                      <app-avatar
-                        [size]="28"
-                        [user]="{
-                          name: likeAuthorName(like),
-                          icon_url: like.user?.icon_url || like.avatar_url,
-                        }"
-                      />
+              </div>
+            } @else {
+              <div class="list-group list-group-flush">
+                @for (like of dataService.likes(); track like.id) {
+                  <div class="list-group-item d-flex align-items-center gap-2 py-2">
+                    <app-avatar
+                      [size]="32"
+                      [user]="{
+                        name: likeAuthorName(like),
+                        icon_url: like.user?.icon_url || like.avatar_url,
+                      }"
+                    />
 
-                      <div class="flex-grow-1 d-flex flex-column">
-                        <span>{{ likeAuthorName(like) }}</span>
-                        @if (likeHandle(like)) {
-                          <small class="text-muted">{{ likeHandle(like) }}</small>
-                        }
-                      </div>
+                    <div class="flex-grow-1 d-flex flex-column min-w-0">
+                      <span class="fw-semibold small text-truncate">{{
+                        likeAuthorName(like)
+                      }}</span>
                     </div>
-                  }
-                </div>
-              }
-            </div>
+                  </div>
+                }
+              </div>
+            }
           </div>
         }
 
