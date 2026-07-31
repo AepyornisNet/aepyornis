@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, input } from '@angular/core';
 
 import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
-import maplibregl, { LngLatBounds, Map } from 'maplibre-gl';
+import { LngLatBounds, Map, Marker } from 'maplibre-gl';
 import { MapPoint } from '../../../../core/types/route-segment';
 import { BaseMapComponent } from '../../../../core/components/base-map/base-map';
 
@@ -17,8 +17,8 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
   public readonly selection = input<{ startIndex: number; endIndex: number } | null>(null);
   public readonly center = input<{ lat: number; lng: number } | null>(null);
 
-  private startMarker?: maplibregl.Marker;
-  private endMarker?: maplibregl.Marker;
+  private startMarker?: Marker;
+  private endMarker?: Marker;
 
   public constructor() {
     super();
@@ -74,11 +74,11 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
       },
     });
 
-    this.startMarker = new maplibregl.Marker({ color: 'green', scale: 0.8 })
+    this.startMarker = new Marker({ color: 'green', scale: 0.8 })
       .setLngLat([pts[0].lng, pts[0].lat])
       .addTo(this.map);
 
-    this.endMarker = new maplibregl.Marker({ color: 'red', scale: 0.8 })
+    this.endMarker = new Marker({ color: 'red', scale: 0.8 })
       .setLngLat([pts[pts.length - 1].lng, pts[pts.length - 1].lat])
       .addTo(this.map);
 

@@ -3,7 +3,7 @@
     class="route-segment-map"
     [center]="[center()?.lng ?? 0, center()?.lat ?? 0]"
     [mapStyle]="mapStyle()"
-    [zoom]="[15]"
+    [zoom]="15"
     (mapLoad)="onMapLoad($event)"
   />
 </div>

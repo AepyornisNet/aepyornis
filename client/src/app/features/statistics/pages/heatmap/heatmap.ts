@@ -12,8 +12,8 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
-import maplibregl, { LngLatBounds, Map } from 'maplibre-gl';
-import type { ExpressionSpecification } from 'maplibre-gl';
+import { LngLatBounds, Map } from 'maplibre-gl';
+import { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, Popup } from 'maplibre-gl';
 import { Api } from '../../../../core/services/api';
 import { WorkoutPopupData } from '../../../../core/types/statistics';
 import { WorkoutPopup } from '../../components/workout-popup/workout-popup';
@@ -57,7 +57,7 @@ export class Heatmap extends BaseMapComponent {
   private readonly environmentInjector = inject(EnvironmentInjector);
   private readonly applicationRef = inject(ApplicationRef);
 
-  private markerPopup?: maplibregl.Popup;
+  private markerPopup?: Popup;
   private coordinatesRefreshVersion = 0;
   private coordinatesRequestKey: string | null = null;
   private markerInteractionsBound = false;
@@ -161,7 +161,7 @@ export class Heatmap extends BaseMapComponent {
       features,
     };
 
-    const source = this.map.getSource(HEAT_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    const source = this.map.getSource(HEAT_SOURCE_ID) as GeoJSONSource | undefined;
     if (source) {
       source.setData(heatData);
       return;
@@ -260,7 +260,7 @@ export class Heatmap extends BaseMapComponent {
       features: this.markerFeatures,
     };
 
-    const source = this.map.getSource(MARKERS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    const source = this.map.getSource(MARKERS_SOURCE_ID) as GeoJSONSource | undefined;
     if (source) {
       source.setData(markerData);
       return;
@@ -371,7 +371,7 @@ export class Heatmap extends BaseMapComponent {
       const popupElement = componentRef.location.nativeElement as HTMLElement;
 
       this.markerPopup?.remove();
-      this.markerPopup = new maplibregl.Popup({ closeButton: true })
+      this.markerPopup = new Popup({ closeButton: true })
         .setLngLat(event.lngLat)
         .setDOMContent(popupElement)
         .addTo(this.map!);
@@ -428,7 +428,7 @@ export class Heatmap extends BaseMapComponent {
     return null;
   }
 
-  private zoomToCluster(event: maplibregl.MapLayerMouseEvent): void {
+  private zoomToCluster(event: MapLayerMouseEvent): void {
     if (!this.map) {
       return;
     }
@@ -440,7 +440,7 @@ export class Heatmap extends BaseMapComponent {
       return;
     }
 
-    const source = this.map.getSource(MARKERS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    const source = this.map.getSource(MARKERS_SOURCE_ID) as GeoJSONSource | undefined;
     source
       ?.getClusterExpansionZoom(clusterId)
       .then((zoom) => {

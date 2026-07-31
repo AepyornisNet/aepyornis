@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 
 import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
-import maplibregl, { LngLatBounds, Map } from 'maplibre-gl';
+import { IControl, LngLatBounds, Map, Marker, Popup } from 'maplibre-gl';
 import { MapCenter, MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { User } from '../../../../core/services/user';
@@ -55,13 +55,13 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
   private readonly environmentInjector = inject(EnvironmentInjector);
   private readonly applicationRef = inject(ApplicationRef);
 
-  private startMarker?: maplibregl.Marker;
-  private endMarker?: maplibregl.Marker;
-  private hoverPopup?: maplibregl.Popup;
+  private startMarker?: Marker;
+  private endMarker?: Marker;
+  private hoverPopup?: Popup;
   private hoverPopupComponentRef?: ReturnType<
     typeof createComponent<WorkoutMapPointPopupComponent>
   >;
-  private metricControl?: maplibregl.IControl;
+  private metricControl?: IControl;
   private readonly metricButtons: Partial<Record<MetricLayer, HTMLButtonElement>> = {};
 
   private minElevation = 0;
@@ -275,7 +275,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
       }
 
       if (!this.hoverPopup) {
-        this.hoverPopup = new maplibregl.Popup({
+        this.hoverPopup = new Popup({
           closeButton: false,
           closeOnClick: false,
           offset: 10,
@@ -305,12 +305,12 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
     });
 
     const firstPos = mapData.position[0];
-    this.startMarker = new maplibregl.Marker({ color: 'green', scale: 0.8 })
+    this.startMarker = new Marker({ color: 'green', scale: 0.8 })
       .setLngLat([firstPos[1], firstPos[0]])
       .addTo(this.map);
 
     const lastPos = mapData.position[mapData.position.length - 1];
-    this.endMarker = new maplibregl.Marker({ color: 'red', scale: 0.8 })
+    this.endMarker = new Marker({ color: 'red', scale: 0.8 })
       .setLngLat([lastPos[1], lastPos[0]])
       .addTo(this.map);
 
@@ -674,7 +674,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
     this.updateMetricControlState();
   }
 
-  private createMetricControl(): maplibregl.IControl {
+  private createMetricControl(): IControl {
     const container = document.createElement('div');
     container.className = 'maplibregl-ctrl maplibregl-ctrl-group wt-map-control';
 
