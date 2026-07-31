@@ -327,27 +327,13 @@
                 <div class="list-group">
                   @for (like of dataService.likes(); track like.id) {
                     <div class="list-group-item d-flex align-items-center gap-2">
-                      @if (hasLikeAvatar(like)) {
-                        <img
-                          class="rounded-circle"
-                          height="28"
-                          width="28"
-                          [alt]="likeAuthorName(like)"
-                          [src]="like.avatar_url"
-                        />
-                      } @else {
-                        <div
-                          class="rounded-circle d-flex align-items-center justify-content-center"
-                          style="
-                            width: 28px;
-                            height: 28px;
-                            background: var(--bs-gray-300);
-                            font-size: 0.8rem;
-                          "
-                        >
-                          {{ likeInitial(like) }}
-                        </div>
-                      }
+                      <app-avatar
+                        [size]="28"
+                        [user]="{
+                          name: likeAuthorName(like),
+                          icon_url: like.user?.icon_url || like.avatar_url,
+                        }"
+                      />
 
                       <div class="flex-grow-1 d-flex flex-column">
                         <span>{{ likeAuthorName(like) }}</span>

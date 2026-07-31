@@ -21,19 +21,13 @@
         @for (comment of replies(); track comment.id) {
           <div class="comment-item mb-3 pb-3" [class.border-bottom]="$index < replies().length - 1">
             <div class="d-flex gap-2">
-              <div class="comment-avatar">
-                @if (hasAvatarUrl(comment)) {
-                  <img
-                    class="avatar-image"
-                    [alt]="getAuthorName(comment)"
-                    [src]="comment.avatar_url"
-                  />
-                } @else {
-                  <div class="avatar-circle">
-                    {{ getInitial(comment) }}
-                  </div>
-                }
-              </div>
+              <app-avatar
+                [size]="36"
+                [user]="{
+                  name: getAuthorName(comment),
+                  icon_url: comment.user?.icon_url || comment.avatar_url,
+                }"
+              />
               <div class="comment-content flex-grow-1">
                 <div class="comment-header mb-1">
                   <strong class="comment-author">{{ getAuthorName(comment) }}</strong>
