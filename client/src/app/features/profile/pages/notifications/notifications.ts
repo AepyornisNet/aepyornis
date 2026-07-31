@@ -61,7 +61,7 @@ export class ProfileNotificationsPage implements OnInit {
     },
   });
 
-  public readonly notificationForm = form(this.notificationModel, () => {}, {
+  public readonly notificationForm = form(this.notificationModel, () => undefined, {
     submission: {
       action: this.saveNotificationSettings.bind(this),
     },

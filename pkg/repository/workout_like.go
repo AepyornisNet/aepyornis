@@ -18,6 +18,7 @@ type WorkoutLike interface {
 	ListByWorkoutID(workoutID uint64) ([]model.APStatusLike, error)
 	CountMapByWorkoutIDs(workoutIDs []uint64) (map[uint64]int64, error)
 	LikedMapByProfile(workoutIDs []uint64, profileID uint64) (map[uint64]bool, error)
+	RecentLikesMapByWorkoutIDs(workoutIDs []uint64, limit int) (map[uint64][]model.APStatusLike, error)
 }
 
 type workoutLikeRepository struct {
@@ -225,4 +226,46 @@ func (r *workoutLikeRepository) workoutStatusID(workoutID uint64) (uint64, error
 	}
 
 	return status.ID, nil
+}
+
+func (r *workoutLikeRepository) RecentLikesMapByWorkoutIDs(workoutIDs []uint64, limit int) (map[uint64][]model.APStatusLike, error) {
+	result := map[uint64][]model.APStatusLike{}
+	if len(workoutIDs) == 0 {
+		return result, nil
+	}
+
+	var likes []model.APStatusLike
+	if err := r.db.Preload("Profile").Preload("Profile.User").
+		Joins("JOIN ap_statuses ON ap_statuses.id = ap_status_likes.status_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
+		Where("ap_outbox_workout.workout_id IN ?", workoutIDs).
+		Order("ap_status_likes.created_at DESC, ap_status_likes.id DESC").
+		Find(&likes).Error; err != nil {
+		return nil, err
+	}
+
+	type statusWorkout struct {
+		StatusID  uint64
+		WorkoutID uint64
+	}
+	var sws []statusWorkout
+	_ = r.db.Table("ap_statuses").
+		Select("ap_statuses.id as status_id, ap_outbox_workout.workout_id as workout_id").
+		Joins("JOIN ap_outbox_workout ON ap_outbox_workout.id = ap_statuses.ap_status_workout_id").
+		Where("ap_outbox_workout.workout_id IN ?", workoutIDs).
+		Find(&sws).Error
+
+	statusToWorkout := map[uint64]uint64{}
+	for _, sw := range sws {
+		statusToWorkout[sw.StatusID] = sw.WorkoutID
+	}
+
+	for _, like := range likes {
+		wID := statusToWorkout[like.StatusID]
+		if wID > 0 && len(result[wID]) < limit {
+			result[wID] = append(result[wID], like)
+		}
+	}
+
+	return result, nil
 }

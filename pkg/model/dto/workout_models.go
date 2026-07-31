@@ -36,6 +36,7 @@ type WorkoutResponse struct {
 	LikesCount           int64                   `json:"likes_count"`
 	LikedByMe            bool                    `json:"liked_by_me"`
 	RepliesCount         int64                   `json:"replies_count"`
+	RecentLikes          []WorkoutLikeResponse   `json:"recent_likes,omitempty"`
 	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
 	// MapData fields (when available)
