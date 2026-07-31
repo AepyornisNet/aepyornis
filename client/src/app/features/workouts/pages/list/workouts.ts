@@ -112,7 +112,7 @@ export class Workouts extends PaginatedListView<Workout> {
 
   private readonly _filters = signal<WorkoutListFilterState>({
     type: '',
-    since: '10 years',
+    since: 'forever',
     orderBy: 'date',
     orderDir: 'desc',
   });
