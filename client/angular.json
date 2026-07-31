@@ -35,7 +35,18 @@
                 "glob": "**/*",
                 "input": "public"
               },
-              "src/assets"
+              "src/assets",
+              "./node_modules/maplibre-gl/dist/maplibre-gl.css",
+              {
+                "glob": "maplibre-gl-worker.mjs",
+                "input": "node_modules/maplibre-gl/dist",
+                "output": "/"
+              },
+              {
+                "glob": "maplibre-gl-shared.mjs",
+                "input": "node_modules/maplibre-gl/dist",
+                "output": "/"
+              }
             ],
             "stylePreprocessorOptions": {
               "includePaths": ["src/styles"]

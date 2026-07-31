@@ -2,7 +2,7 @@ import { Directive, inject, OnDestroy, signal } from '@angular/core';
 import { faMap } from '@ng-icons/font-awesome/regular';
 import { faSolidGlobe } from '@ng-icons/font-awesome/solid';
 import { _, TranslateService } from '@ngx-translate/core';
-import maplibregl, { Map, StyleSpecification } from 'maplibre-gl';
+import { IControl, Map, NavigationControl, StyleSpecification } from 'maplibre-gl';
 import { ThemeService } from '../../services/theme';
 
 export const OPENFREEMAP_STYLE_BASE_URL = 'https://tiles.openfreemap.org/styles';
@@ -28,8 +28,8 @@ export abstract class BaseMapComponent implements OnDestroy {
   protected readonly themeService = inject(ThemeService);
 
   protected map?: Map;
-  protected navigationControl?: maplibregl.NavigationControl;
-  protected baseLayerControl?: maplibregl.IControl;
+  protected navigationControl?: NavigationControl;
+  protected baseLayerControl?: IControl;
   protected readonly baseLayerButtons: Partial<Record<'streets' | 'aerial', HTMLButtonElement>> =
     {};
   protected themeObserver?: MutationObserver;
@@ -90,7 +90,7 @@ export abstract class BaseMapComponent implements OnDestroy {
     }
 
     if (!this.navigationControl) {
-      this.navigationControl = new maplibregl.NavigationControl({
+      this.navigationControl = new NavigationControl({
         visualizePitch: true,
         visualizeRoll: true,
         showZoom: true,
@@ -107,7 +107,7 @@ export abstract class BaseMapComponent implements OnDestroy {
     this.updateBaseLayerControlState();
   }
 
-  protected createBaseLayerControl(): maplibregl.IControl {
+  protected createBaseLayerControl(): IControl {
     const container = document.createElement('div');
     container.className = 'maplibregl-ctrl maplibregl-ctrl-group wt-map-control';
 
