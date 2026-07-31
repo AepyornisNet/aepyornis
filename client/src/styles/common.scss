@@ -1,8 +1,46 @@
+// Custom Brand & Design Tokens
+$brand-color: #fa7a1c;
+$primary: #fa7a1c;
+$primary-dark: #e06308;
+
+// Bootstrap Color Mode
+$color-mode-type: media-query;
+
+// Modern rounded corners & sleek layout defaults
+$border-radius: 0.75rem;
+$border-radius-sm: 0.5rem;
+$border-radius-lg: 1rem;
+$border-radius-xl: 1.25rem;
+$border-radius-2xl: 1.5rem;
+$border-radius-pill: 50rem;
+
+$btn-border-radius: 0.625rem;
+$btn-border-radius-sm: 0.45rem;
+$btn-border-radius-lg: 0.85rem;
+$btn-font-weight: 500;
+$btn-padding-y: 0.55rem;
+$btn-padding-x: 1.1rem;
+
+$card-border-radius: 0.75rem;
+$card-border-width: 1px;
+
+$input-border-radius: 0.625rem;
+$input-focus-border-color: rgba(#fa7a1c, 0.6);
+$input-focus-box-shadow: 0 0 0 0.25rem rgba(#fa7a1c, 0.2);
+
+$modal-content-border-radius: 1.25rem;
+$dropdown-border-radius: 0.85rem;
+
 @import 'bootstrap/scss/functions';
 @import 'bootstrap/scss/variables';
+
+// Dark Mode Variable Overrides
+$body-bg-dark: #0b0f19;
+$body-color-dark: #f1f5f9;
+$card-bg-dark: #131b2e;
+$border-color-dark: rgba(255, 255, 255, 0.08);
+
 @import 'bootstrap/scss/variables-dark';
 @import 'bootstrap/scss/maps';
 @import 'bootstrap/scss/mixins';
 @import 'bootstrap/scss/utilities';
-
-$brand-color: #fa7a1c;

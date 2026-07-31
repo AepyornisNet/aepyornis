@@ -1,5 +1,5 @@
 @if (totals().length > 0) {
-  <ul #nav="ngbNav" class="nav-tabs" ngbNav>
+  <ul #nav="ngbNav" class="nav nav-pills mb-2" ngbNav>
     @for (total of totals(); track total.workout_type) {
       <li ngbNavItem>
         <button ngbNavLink>{{ total.workout_type | translate }}</button>

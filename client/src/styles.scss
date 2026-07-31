@@ -1,9 +1,41 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global SCSS Styles & Bootstrap Theme Customizations */
+@import 'common.scss';
+@import 'bootstrap/scss/bootstrap';
 
-/* Importing Bootstrap SCSS file. */
-@use 'bootstrap/scss/bootstrap' with (
-  $color-mode-type: media-query
-);
+/* Premium Theme & Glassmorphism Utilities */
+:root {
+  --app-bg-gradient-light: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --app-card-bg-light: #ffffff;
+  --app-card-border-light: rgba(226, 232, 240, 0.8);
+  --app-glass-bg-light: rgba(255, 255, 255, 0.75);
+  --app-glass-border-light: rgba(255, 255, 255, 0.5);
+  --app-box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  --app-box-shadow-hover:
+    0 20px 30px -10px rgba(250, 122, 28, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bs-body-bg: #0b0f19;
+    --bs-body-bg-rgb: 11, 15, 25;
+    --bs-body-color: #f1f5f9;
+    --bs-body-color-rgb: 241, 245, 249;
+    --bs-tertiary-bg: #111827;
+    --bs-secondary-bg: #1f293d;
+    --bs-border-color: rgba(255, 255, 255, 0.08);
+    --app-bg-gradient-dark: radial-gradient(circle at 50% 0%, #151e32 0%, #0b0f19 75%);
+    --app-card-bg-dark: #131b2e;
+    --app-card-border-dark: rgba(255, 255, 255, 0.08);
+    --app-glass-bg-dark: rgba(19, 27, 46, 0.75);
+    --app-glass-border-dark: rgba(255, 255, 255, 0.1);
+    --app-box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+    --app-box-shadow-hover: 0 20px 35px -5px rgba(250, 122, 28, 0.25);
+  }
+
+  body {
+    background: var(--app-bg-gradient-dark) fixed !important;
+  }
+}
 
 @import 'maplibre-theme/icons.default.css';
 @import 'maplibre-theme/modern.css';
