@@ -9,6 +9,7 @@ import {
 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { Avatar } from '../../../../core/components/avatar/avatar';
 import { TranslatePipe } from '@ngx-translate/core';
 import { WorkoutMapComponent } from '../../components/workout-map/workout-map';
 import { WorkoutChartComponent } from '../../components/workout-chart/workout-chart';
@@ -44,6 +45,7 @@ import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe'
   selector: 'app-workout-detail',
   imports: [
     AppIcon,
+    Avatar,
     WorkoutMapComponent,
     WorkoutChartComponent,
     WorkoutBreakdownComponent,

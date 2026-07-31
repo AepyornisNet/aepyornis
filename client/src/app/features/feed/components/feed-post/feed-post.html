@@ -80,29 +80,67 @@
       <div
         class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top text-body-secondary"
       >
-        <span class="small"
-          >{{ workout.likes_count || 0 }} likes &middot;
-          {{ workout.replies_count || 0 }} comments</span
-        >
-        <div class="d-inline-flex gap-2">
+        <div class="d-flex align-items-center gap-2">
+          @if (workoutLikes().length > 0) {
+            <button
+              class="btn p-0 border-0 avatar-stack text-start"
+              type="button"
+              [title]="'View likes' | translate"
+              (click)="openLikesModal()"
+            >
+              @for (like of workoutLikes().slice(0, 3); track like.id) {
+                <app-avatar
+                  class="avatar-stack-item"
+                  [size]="22"
+                  [user]="{
+                    name: getLikeAuthorName(like),
+                    icon_url: like.user?.icon_url || like.avatar_url,
+                  }"
+                />
+              }
+            </button>
+          }
+          <span class="small d-inline-flex align-items-center gap-1">
+            <button
+              class="btn btn-link p-0 text-decoration-none text-body-secondary small hover-underline"
+              type="button"
+              (click)="openLikesModal()"
+            >
+              {{ likesCount() }} {{ (likesCount() === 1 ? 'like' : 'likes') | translate }}
+            </button>
+            &middot;
+            <button
+              class="btn btn-link p-0 text-decoration-none text-body-secondary small hover-underline"
+              type="button"
+              (click)="toggleComments()"
+            >
+              {{ workout.replies_count || 0 }}
+              {{ (workout.replies_count === 1 ? 'comment' : 'comments') | translate }}
+            </button>
+          </span>
+        </div>
+        <div class="d-inline-flex align-items-center gap-2">
+          @if (!isOwnWorkout(workout)) {
+            <button
+              class="btn btn-sm btn-link p-1 text-decoration-none feed-action-btn"
+              type="button"
+              [class.text-body-secondary]="!isLikedByMe()"
+              [class.text-danger]="isLikedByMe()"
+              [title]="(isLikedByMe() ? 'Unlike' : 'Like') | translate"
+              (click)="likeWorkout()"
+            >
+              <app-icon size="18" [name]="isLikedByMe() ? 'heart-solid' : 'heart'" />
+            </button>
+          }
           <button
-            class="btn btn-sm"
+            class="btn btn-sm btn-link p-1 text-decoration-none feed-action-btn"
             type="button"
-            [class.btn-outline-secondary]="!workout.liked_by_me"
-            [class.btn-primary]="workout.liked_by_me"
-            [disabled]="isLiking()"
-            (click)="likeWorkout()"
-          >
-            <app-icon name="heart" size="14" />
-          </button>
-          <button
-            class="btn btn-sm btn-outline-secondary"
-            type="button"
-            [class.btn-secondary]="commentsExpanded()"
-            [class.text-white]="commentsExpanded()"
+            [class.text-body-secondary]="!commentsExpanded()"
+            [class.text-primary]="commentsExpanded()"
+            [title]="'Comments' | translate"
             (click)="toggleComments()"
           >
-            <app-icon name="chat" size="14" />
+            <app-icon name="chat" size="18" />
           </button>
         </div>
       </div>
@@ -167,3 +205,57 @@
     </div>
   </div>
 }
+
+<ng-template #likesModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title h6 mb-0">{{ 'Liked by' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body p-0">
+    @if (loadingLikes()) {
+      <div class="text-center py-4">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">{{ 'Loading' | translate }}</span>
+        </div>
+      </div>
+    } @else if (workoutLikes().length === 0) {
+      <div class="text-muted text-center py-4 small">
+        {{ 'No likes yet' | translate }}
+      </div>
+    } @else {
+      <div class="list-group list-group-flush">
+        @for (like of workoutLikes(); track like.id) {
+          <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3">
+            <div class="d-flex align-items-center gap-2 min-w-0">
+              <app-avatar
+                [size]="36"
+                [user]="{
+                  name: getLikeAuthorName(like),
+                  icon_url: like.user?.icon_url || like.avatar_url,
+                }"
+              />
+              <div class="min-w-0">
+                <div class="fw-semibold text-truncate small">
+                  @if (getLikeAuthorHandle(like); as handle) {
+                    <a
+                      class="text-decoration-none link-body-emphasis"
+                      [routerLink]="['/profile', handle]"
+                      (click)="modal.close()"
+                    >
+                      {{ getLikeAuthorName(like) }}
+                    </a>
+                  } @else {
+                    {{ getLikeAuthorName(like) }}
+                  }
+                </div>
+                @if (getLikeAuthorHandle(like); as handle) {
+                  <div class="text-muted small text-truncate">@{{ handle }}</div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</ng-template>

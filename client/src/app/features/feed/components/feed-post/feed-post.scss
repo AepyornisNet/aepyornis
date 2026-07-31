@@ -1,8 +1,49 @@
 .activity-card {
-  border: 1px solid rgba(0, 0, 0, 0.125);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-
   .card-body {
     padding: 1rem;
   }
+}
+
+.feed-action-btn {
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease;
+  line-height: 1;
+
+  &:hover {
+    transform: scale(1.15);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.avatar-stack {
+  display: inline-flex;
+  align-items: center;
+
+  .avatar-stack-item {
+    margin-left: -0.45rem;
+    border: 2px solid var(--bs-card-bg, var(--bs-body-bg));
+    border-radius: 50%;
+    transition: transform 0.15s ease;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      z-index: 2;
+    }
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.hover-underline:hover {
+  text-decoration: underline;
 }

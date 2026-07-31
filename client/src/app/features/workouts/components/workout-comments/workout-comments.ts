@@ -13,11 +13,12 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { WorkoutReply } from '../../../../core/types/workout';
 import { Api } from '../../../../core/services/api';
+import { Avatar } from '../../../../core/components/avatar/avatar';
 
 @Component({
   selector: 'app-workout-comments',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, Avatar],
   templateUrl: './workout-comments.html',
   styleUrl: './workout-comments.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

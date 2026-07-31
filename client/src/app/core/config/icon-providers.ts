@@ -42,6 +42,7 @@ import {
   faSolidGear,
   faSolidGlobe,
   faSolidGolfBallTee,
+  faSolidHeart,
   faSolidHeartPulse,
   faSolidHorse,
   faSolidLanguage,
@@ -89,6 +90,7 @@ import {
   faCalendar,
   faCircleUser,
   faClock,
+  faHeart,
   faHourglass,
   faRectangleList,
 } from '@ng-icons/font-awesome/regular';
@@ -116,6 +118,7 @@ export const iconProviders = provideIcons({
   faSolidMapLocationDot,
   faSolidCalculator,
   faSolidWeightHanging,
+  faSolidHeart,
   faSolidHeartPulse,
   faSolidTemperatureHigh,
   faSolidCompass,
@@ -184,6 +187,7 @@ export const iconProviders = provideIcons({
   // Font Awesome Regular
   faClock,
   faCalendar,
+  faHeart,
   faHourglass,
   faRectangleList,
   faCircleUser,

@@ -14,7 +14,7 @@
     0 20px 30px -10px rgba(250, 122, 28, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
 }
 
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   --bs-body-bg: #0b0f19;
   --bs-body-bg-rgb: 11, 15, 25;
   --bs-body-color: #f1f5f9;
@@ -48,7 +48,7 @@
   }
 }
 
-[data-bs-theme="light"] {
+[data-bs-theme='light'] {
   body {
     background: var(--app-bg-gradient-light) fixed !important;
   }

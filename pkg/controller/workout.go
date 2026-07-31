@@ -103,10 +103,17 @@ func applyPublishedFlags(results []dto.WorkoutResponse, published map[uint64]boo
 	}
 }
 
-func applyLikeMetadata(results []dto.WorkoutResponse, counts map[uint64]int64, liked map[uint64]bool) {
+func applyLikeMetadata(results []dto.WorkoutResponse, counts map[uint64]int64, liked map[uint64]bool, recentLikes map[uint64][]model.APStatusLike) {
 	for i := range results {
 		results[i].LikesCount = counts[results[i].ID]
 		results[i].LikedByMe = liked[results[i].ID]
+		if likes, ok := recentLikes[results[i].ID]; ok && len(likes) > 0 {
+			items := make([]dto.WorkoutLikeResponse, 0, len(likes))
+			for _, l := range likes {
+				items = append(items, dto.NewWorkoutLikeResponse(&l))
+			}
+			results[i].RecentLikes = items
+		}
 	}
 }
 
@@ -244,8 +251,9 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
 		liked, likedErr := wc.workoutLikeRepo.LikedMapByProfile(workoutIDs(workouts), user.Profile.ID)
+		recentLikes, _ := wc.workoutLikeRepo.RecentLikesMapByWorkoutIDs(workoutIDs(workouts), 3)
 		if likedErr == nil {
-			applyLikeMetadata(results, counts, liked)
+			applyLikeMetadata(results, counts, liked, recentLikes)
 		}
 	}
 
@@ -1181,8 +1189,9 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
 		liked, likedErr := wc.workoutLikeRepo.LikedMapByProfile(workoutIDs(workouts), requester.Profile.ID)
+		recentLikes, _ := wc.workoutLikeRepo.RecentLikesMapByWorkoutIDs(workoutIDs(workouts), 3)
 		if likedErr == nil {
-			applyLikeMetadata(results, counts, liked)
+			applyLikeMetadata(results, counts, liked, recentLikes)
 		}
 	}
 

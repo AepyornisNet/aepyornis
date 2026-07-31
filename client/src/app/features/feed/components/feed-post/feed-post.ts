@@ -1,13 +1,25 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  TemplateRef,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Avatar } from '../../../../core/components/avatar/avatar';
 import { Api } from '../../../../core/services/api';
-import { Workout, WorkoutReply } from '../../../../core/types/workout';
+import { User } from '../../../../core/services/user';
+import { Workout, WorkoutLike, WorkoutReply } from '../../../../core/types/workout';
 
 @Component({
   selector: 'app-feed-post',
@@ -18,25 +30,27 @@ import { Workout, WorkoutReply } from '../../../../core/types/workout';
 })
 export class FeedPost {
   private api = inject(Api);
+  private user = inject(User);
+  private modalService = inject(NgbModal);
 
   public readonly workout = input.required<Workout>();
 
-  public readonly workoutState = signal<Workout | null>(null);
+  public readonly likesModalTemplate = viewChild<TemplateRef<unknown>>('likesModal');
+
+  public readonly workoutState = linkedSignal(() => this.workout());
+  public readonly isLikedByMe = computed(() => this.workoutState()?.liked_by_me ?? false);
+  public readonly likesCount = computed(() => this.workoutState()?.likes_count ?? 0);
+
   public readonly commentsExpanded = signal(false);
   public readonly loadingReplies = signal(false);
   public readonly replyDraft = signal('');
   public readonly isReplying = signal(false);
   public readonly isLiking = signal(false);
   public readonly replies = signal<WorkoutReply[]>([]);
-
-  public constructor() {
-    effect(() => {
-      this.workoutState.set(this.workout());
-      this.commentsExpanded.set(false);
-      this.replies.set([]);
-      this.replyDraft.set('');
-    });
-  }
+  public readonly workoutLikes = linkedSignal<WorkoutLike[]>(
+    () => this.workout().recent_likes || [],
+  );
+  public readonly loadingLikes = signal(false);
 
   public formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
@@ -75,6 +89,23 @@ export class FeedPost {
 
   public getWorkoutAuthorHandle(workout: Workout): string | null {
     return workout.user?.username?.trim() || null;
+  }
+
+  public isOwnWorkout(workout: Workout): boolean {
+    const currentUser = this.user.getUserInfo()();
+    if (!currentUser) {
+      return false;
+    }
+
+    if (workout.user?.username && currentUser.username) {
+      return workout.user.username === currentUser.username;
+    }
+
+    if (workout.user?.id && currentUser.profile?.id) {
+      return workout.user.id === currentUser.profile.id;
+    }
+
+    return false;
   }
 
   public getAuthorName(reply: WorkoutReply): string {
@@ -131,30 +162,118 @@ export class FeedPost {
     }
   }
 
-  public async likeWorkout(): Promise<void> {
+  public async loadLikes(): Promise<void> {
     const workout = this.workoutState();
-    if (!workout || this.isLiking()) {
+    if (!workout || workout.likes_count === 0) {
+      this.workoutLikes.set([]);
       return;
     }
+
+    this.loadingLikes.set(true);
+    try {
+      const response = await firstValueFrom(this.api.getWorkoutLikes(workout.id));
+      this.workoutLikes.set(response?.results || []);
+    } catch (err) {
+      console.error('Failed to load workout likes:', err);
+    } finally {
+      this.loadingLikes.set(false);
+    }
+  }
+
+  public async openLikesModal(): Promise<void> {
+    this.loadLikes();
+
+    const template = this.likesModalTemplate();
+    if (template) {
+      this.modalService.open(template, { centered: true, scrollable: true });
+    }
+  }
+
+  public getLikeAuthorName(like: WorkoutLike): string {
+    const name = like.user?.name?.trim();
+    if (name) {
+      return name;
+    }
+    if (like.actor_name) {
+      return like.actor_name;
+    }
+    const handle = like.user?.username?.trim();
+    if (handle) {
+      return handle;
+    }
+    return 'User';
+  }
+
+  public getLikeAuthorHandle(like: WorkoutLike): string | null {
+    return like.user?.username?.trim() || null;
+  }
+
+  public async likeWorkout(): Promise<void> {
+    const workout = this.workoutState();
+    if (!workout || this.isLiking() || workout.liked_by_me) {
+      return;
+    }
+
+    const previousLiked = workout.liked_by_me;
+    const previousCount = workout.likes_count || 0;
+    const nextCount = previousCount + 1;
+
+    const currentUser = this.user.getUserInfo()();
+    const myLike: WorkoutLike = {
+      id: Date.now(),
+      user_id: currentUser?.profile?.id,
+      user: currentUser?.profile,
+      actor_name: currentUser?.name || currentUser?.profile?.name || currentUser?.username,
+      avatar_url: currentUser?.profile?.icon_url,
+      created_at: new Date().toISOString(),
+    };
+
+    // Instant local updates
+    this.workoutState.update((current) =>
+      current
+        ? {
+            ...current,
+            liked_by_me: true,
+            likes_count: nextCount,
+          }
+        : current,
+    );
+
+    this.workoutLikes.update((current) => {
+      const exists = current.some(
+        (l) =>
+          (l.user?.username && currentUser?.username && l.user.username === currentUser.username) ||
+          (l.user_id && myLike.user_id && l.user_id === myLike.user_id),
+      );
+      return exists ? current : [myLike, ...current];
+    });
 
     this.isLiking.set(true);
     try {
       const response = await firstValueFrom(this.api.likeWorkout(workout.id));
-      if (!response?.results) {
-        return;
+      if (response?.results) {
+        this.workoutState.update((current) =>
+          current
+            ? {
+                ...current,
+                liked_by_me: true,
+                likes_count: response.results.likes_count,
+              }
+            : current,
+        );
       }
-
+    } catch (error) {
+      console.error('Failed to like workout:', error);
       this.workoutState.update((current) =>
         current
           ? {
               ...current,
-              liked_by_me: response.results.liked,
-              likes_count: response.results.likes_count,
+              liked_by_me: previousLiked,
+              likes_count: previousCount,
             }
           : current,
       );
-    } catch (error) {
-      console.error('Failed to like workout:', error);
+      this.workoutLikes.update((current) => current.filter((l) => l.id !== myLike.id));
     } finally {
       this.isLiking.set(false);
     }

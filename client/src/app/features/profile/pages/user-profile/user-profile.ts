@@ -90,10 +90,10 @@ export class UserProfile implements OnInit {
           this.profileSummary.update((current) =>
             current
               ? {
-                ...current,
-                member_since: actor.published || current.member_since,
-                icon_url: this.extractActorIcon(actor) || current.icon_url,
-              }
+                  ...current,
+                  member_since: actor.published || current.member_since,
+                  icon_url: this.extractActorIcon(actor) || current.icon_url,
+                }
               : current,
           );
         }

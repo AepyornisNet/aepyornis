@@ -28,6 +28,7 @@ export type Workout = {
   likes_count: number;
   liked_by_me: boolean;
   replies_count: number;
+  recent_likes?: WorkoutLike[];
   attachments?: WorkoutAttachment[];
 
   // Optional map data
