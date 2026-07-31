@@ -232,10 +232,10 @@ export class FeedPost {
     this.workoutState.update((current) =>
       current
         ? {
-          ...current,
-          liked_by_me: true,
-          likes_count: nextCount,
-        }
+            ...current,
+            liked_by_me: true,
+            likes_count: nextCount,
+          }
         : current,
     );
 
@@ -255,10 +255,10 @@ export class FeedPost {
         this.workoutState.update((current) =>
           current
             ? {
-              ...current,
-              liked_by_me: true,
-              likes_count: response.results.likes_count,
-            }
+                ...current,
+                liked_by_me: true,
+                likes_count: response.results.likes_count,
+              }
             : current,
         );
       }
@@ -267,10 +267,10 @@ export class FeedPost {
       this.workoutState.update((current) =>
         current
           ? {
-            ...current,
-            liked_by_me: previousLiked,
-            likes_count: previousCount,
-          }
+              ...current,
+              liked_by_me: previousLiked,
+              likes_count: previousCount,
+            }
           : current,
       );
       this.workoutLikes.update((current) => current.filter((l) => l.id !== myLike.id));
@@ -298,9 +298,9 @@ export class FeedPost {
       this.workoutState.update((current) =>
         current
           ? {
-            ...current,
-            replies_count: (current.replies_count || 0) + 1,
-          }
+              ...current,
+              replies_count: (current.replies_count || 0) + 1,
+            }
           : current,
       );
     } catch (error) {
