@@ -13,11 +13,11 @@
         <tr>
           <th>{{ 'Date' | translate }}</th>
           <th class="text-end">{{ 'Weight' | translate }} (kg)</th>
-          <th class="text-end d-none d-md-table-cell">{{ 'Height' | translate }} (cm)</th>
-          <th class="text-end d-none d-lg-table-cell">{{ 'Steps' | translate }}</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'FTP' | translate }} (W)</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'Resting HR' | translate }} (bpm)</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'Max HR' | translate }} (bpm)</th>
+          <th class="text-end">{{ 'Height' | translate }} (cm)</th>
+          <th class="text-end">{{ 'Steps' | translate }}</th>
+          <th class="text-end">{{ 'FTP' | translate }} (W)</th>
+          <th class="text-end">{{ 'Resting HR' | translate }} (bpm)</th>
+          <th class="text-end">{{ 'Max HR' | translate }} (bpm)</th>
           <th class="text-center">{{ 'Actions' | translate }}</th>
         </tr>
       </thead>
@@ -34,35 +34,35 @@
                 <span class="text-muted">-</span>
               }
             </td>
-            <td class="text-end d-none d-md-table-cell">
+            <td class="text-end">
               @if (measurement.height) {
                 {{ measurement.height.toFixed(1) }}
               } @else {
                 <span class="text-muted">-</span>
               }
             </td>
-            <td class="text-end d-none d-lg-table-cell">
+            <td class="text-end">
               @if (measurement.steps) {
                 {{ measurement.steps.toLocaleString() }}
               } @else {
                 <span class="text-muted">-</span>
               }
             </td>
-            <td class="text-end d-none d-xl-table-cell">
+            <td class="text-end">
               @if (measurement.ftp) {
                 {{ measurement.ftp.toFixed(0) }}
               } @else {
                 <span class="text-muted">-</span>
               }
             </td>
-            <td class="text-end d-none d-xl-table-cell">
+            <td class="text-end">
               @if (measurement.resting_heart_rate) {
                 {{ measurement.resting_heart_rate.toFixed(0) }}
               } @else {
                 <span class="text-muted">-</span>
               }
             </td>
-            <td class="text-end d-none d-xl-table-cell">
+            <td class="text-end">
               @if (measurement.max_heart_rate) {
                 {{ measurement.max_heart_rate.toFixed(0) }}
               } @else {
