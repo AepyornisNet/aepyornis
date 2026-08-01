@@ -21,7 +21,7 @@ export class BaseTable<T extends { id: number | string }> {
   public readonly items = input.required<T[]>();
   public readonly multiSelectActive = input<boolean>(false);
   public readonly selectedItems = input<Set<number | string>>(new Set());
-  public readonly getRowLink = input.required<(item: T) => (string | number)[]>();
+  public readonly getRowLink = input<((item: T) => (string | number)[]) | null>(null);
 
   public readonly selectionToggled = output<number | string>();
 
@@ -33,9 +33,18 @@ export class BaseTable<T extends { id: number | string }> {
       index: number;
       multiSelectActive: boolean;
       onCellClick: (event: MouseEvent, item: T) => void;
-      getRowLink: (item: T) => (string | number)[];
+      getRowLink: ((item: T) => (string | number)[]) | null;
     }>
   >('tableRow');
+  public readonly mobileRowTemplate = contentChild<
+    TemplateRef<{
+      $implicit: T;
+      index: number;
+      multiSelectActive: boolean;
+      isSelected: boolean;
+      onCheckboxClick: (item: T) => void;
+    }>
+  >('mobileRow');
 
   public isSelected(id: number | string): boolean {
     return this.selectedItems().has(id);

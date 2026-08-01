@@ -7,11 +7,12 @@ import { Measurement } from '../../../../core/types/measurement';
 import { PaginationParams } from '../../../../core/types/api-response';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { BaseList, BaseListConfig } from '../../../../core/components/base-list/base-list';
+import { BaseTable } from '../../../../core/components/base-table/base-table';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 
 @Component({
   selector: 'app-measurements',
-  imports: [AppIcon, BaseList, TranslatePipe],
+  imports: [AppIcon, BaseList, BaseTable, TranslatePipe],
   templateUrl: './measurements.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

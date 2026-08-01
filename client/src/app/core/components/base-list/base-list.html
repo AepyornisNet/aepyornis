@@ -118,18 +118,14 @@
     <!-- Content -->
     @if (!loading() && !error()) {
       @if (!hasItems()) {
-        <div class="card shadow-sm">
+        <div class="card border-0 shadow-sm">
           <div class="card-body text-center py-5">
             <p class="text-muted mb-0">{{ emptyMessage() | translate }}</p>
           </div>
         </div>
       } @else {
         <!-- Table content (projected) -->
-        <div class="card shadow-sm">
-          <div class="table-responsive">
-            <ng-content select="[table]" />
-          </div>
-        </div>
+        <ng-content select="[table]" />
 
         <!-- Pagination -->
         <app-pagination [source]="paginationSource()" />

@@ -8,89 +8,254 @@
   (addClicked)="openCreateModal()"
 >
   <div table>
-    <table class="table table-hover mb-0">
-      <thead>
-        <tr>
-          <th>{{ 'Date' | translate }}</th>
-          <th class="text-end">{{ 'Weight' | translate }} (kg)</th>
-          <th class="text-end d-none d-md-table-cell">{{ 'Height' | translate }} (cm)</th>
-          <th class="text-end d-none d-lg-table-cell">{{ 'Steps' | translate }}</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'FTP' | translate }} (W)</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'Resting HR' | translate }} (bpm)</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'Max HR' | translate }} (bpm)</th>
-          <th class="text-center">{{ 'Actions' | translate }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (measurement of measurements(); track measurement.id) {
-          <tr>
-            <td>
-              <strong>{{ formatDate(measurement.date) }}</strong>
-            </td>
-            <td class="text-end">
-              @if (measurement.weight) {
-                {{ measurement.weight.toFixed(1) }}
-              } @else {
-                <span class="text-muted">-</span>
-              }
-            </td>
-            <td class="text-end d-none d-md-table-cell">
-              @if (measurement.height) {
-                {{ measurement.height.toFixed(1) }}
-              } @else {
-                <span class="text-muted">-</span>
-              }
-            </td>
-            <td class="text-end d-none d-lg-table-cell">
-              @if (measurement.steps) {
-                {{ measurement.steps.toLocaleString() }}
-              } @else {
-                <span class="text-muted">-</span>
-              }
-            </td>
-            <td class="text-end d-none d-xl-table-cell">
-              @if (measurement.ftp) {
-                {{ measurement.ftp.toFixed(0) }}
-              } @else {
-                <span class="text-muted">-</span>
-              }
-            </td>
-            <td class="text-end d-none d-xl-table-cell">
-              @if (measurement.resting_heart_rate) {
-                {{ measurement.resting_heart_rate.toFixed(0) }}
-              } @else {
-                <span class="text-muted">-</span>
-              }
-            </td>
-            <td class="text-end d-none d-xl-table-cell">
-              @if (measurement.max_heart_rate) {
-                {{ measurement.max_heart_rate.toFixed(0) }}
-              } @else {
-                <span class="text-muted">-</span>
-              }
-            </td>
-            <td class="text-center">
-              <div class="btn-group btn-group-sm" role="group">
-                <button
-                  class="btn btn-outline-secondary"
-                  [attr.title]="'Edit' | translate"
-                  (click)="openEditModal(measurement)"
-                >
-                  <app-icon name="edit" size="16" />
-                </button>
-                <button
-                  class="btn btn-outline-danger"
-                  [attr.title]="'Delete' | translate"
-                  (click)="openDeleteModal(measurement)"
-                >
-                  <app-icon name="delete" size="16" />
-                </button>
+    <app-base-table [items]="measurements()">
+      <ng-template #tableHeader>
+        <th>{{ 'Date' | translate }}</th>
+        <th class="text-end">{{ 'Weight' | translate }} (kg)</th>
+        <th class="text-end">{{ 'Height' | translate }} (cm)</th>
+        <th class="text-end">{{ 'Steps' | translate }}</th>
+        <th class="text-end">{{ 'FTP' | translate }} (W)</th>
+        <th class="text-end">{{ 'Resting HR' | translate }} (bpm)</th>
+        <th class="text-end">{{ 'Max HR' | translate }} (bpm)</th>
+        <th class="text-center">{{ 'Actions' | translate }}</th>
+      </ng-template>
+
+      <ng-template #tableRow let-measurement>
+        <td>
+          <strong>{{ formatDate(measurement.date) }}</strong>
+        </td>
+        <td class="text-end">
+          @if (measurement.weight) {
+            {{ measurement.weight.toFixed(1) }}
+          } @else {
+            <span class="text-muted">-</span>
+          }
+        </td>
+        <td class="text-end">
+          @if (measurement.height) {
+            {{ measurement.height.toFixed(1) }}
+          } @else {
+            <span class="text-muted">-</span>
+          }
+        </td>
+        <td class="text-end">
+          @if (measurement.steps) {
+            {{ measurement.steps.toLocaleString() }}
+          } @else {
+            <span class="text-muted">-</span>
+          }
+        </td>
+        <td class="text-end">
+          @if (measurement.ftp) {
+            {{ measurement.ftp.toFixed(0) }}
+          } @else {
+            <span class="text-muted">-</span>
+          }
+        </td>
+        <td class="text-end">
+          @if (measurement.resting_heart_rate) {
+            {{ measurement.resting_heart_rate.toFixed(0) }}
+          } @else {
+            <span class="text-muted">-</span>
+          }
+        </td>
+        <td class="text-end">
+          @if (measurement.max_heart_rate) {
+            {{ measurement.max_heart_rate.toFixed(0) }}
+          } @else {
+            <span class="text-muted">-</span>
+          }
+        </td>
+        <td class="text-center">
+          <div class="btn-group btn-group-sm" role="group">
+            <button
+              class="btn btn-outline-secondary"
+              [attr.title]="'Edit' | translate"
+              (click)="openEditModal(measurement)"
+            >
+              <app-icon name="edit" size="16" />
+            </button>
+            <button
+              class="btn btn-outline-danger"
+              [attr.title]="'Delete' | translate"
+              (click)="openDeleteModal(measurement)"
+            >
+              <app-icon name="delete" size="16" />
+            </button>
+          </div>
+        </td>
+      </ng-template>
+
+      <ng-template #mobileRow let-measurement>
+        <div class="card mb-3 shadow-sm">
+          <div
+            class="card-header bg-body-tertiary d-flex justify-content-between align-items-center py-2 px-3 border-bottom"
+          >
+            <div class="d-flex align-items-center gap-2">
+              <div
+                class="bg-primary-subtle text-primary rounded-2 d-flex align-items-center justify-content-center"
+                style="width: 32px; height: 32px"
+              >
+                <app-icon name="date" size="16" />
               </div>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+              <span class="fw-bold fs-6 text-body">{{ formatDate(measurement.date) }}</span>
+            </div>
+
+            <div class="btn-group btn-group-sm" role="group">
+              <button
+                class="btn btn-outline-secondary"
+                [attr.title]="'Edit' | translate"
+                (click)="openEditModal(measurement)"
+              >
+                <app-icon name="edit" size="15" />
+              </button>
+              <button
+                class="btn btn-outline-danger"
+                [attr.title]="'Delete' | translate"
+                (click)="openDeleteModal(measurement)"
+              >
+                <app-icon name="delete" size="15" />
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body p-3">
+            <div class="row g-2">
+              <!-- Weight -->
+              <div class="col-6 col-sm-4">
+                <div class="bg-body border rounded-3 p-2 d-flex align-items-center gap-2">
+                  <app-icon class="text-primary flex-shrink-0" name="weight" size="18" />
+                  <div class="overflow-hidden">
+                    <small
+                      class="text-muted text-uppercase text-truncate d-block"
+                      style="font-size: 0.7rem"
+                      >{{ 'Weight' | translate }}</small
+                    >
+                    @if (measurement.weight) {
+                      <span class="fw-bold text-body" style="font-size: 0.9rem"
+                        >{{ measurement.weight.toFixed(1) }}
+                        <small class="fw-normal text-muted">kg</small></span
+                      >
+                    } @else {
+                      <span class="text-muted opacity-50" style="font-size: 0.9rem">-</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Height -->
+              <div class="col-6 col-sm-4">
+                <div class="bg-body border rounded-3 p-2 d-flex align-items-center gap-2">
+                  <app-icon class="text-info flex-shrink-0" name="height" size="18" />
+                  <div class="overflow-hidden">
+                    <small
+                      class="text-muted text-uppercase text-truncate d-block"
+                      style="font-size: 0.7rem"
+                      >{{ 'Height' | translate }}</small
+                    >
+                    @if (measurement.height) {
+                      <span class="fw-bold text-body" style="font-size: 0.9rem"
+                        >{{ measurement.height.toFixed(1) }}
+                        <small class="fw-normal text-muted">cm</small></span
+                      >
+                    } @else {
+                      <span class="text-muted opacity-50" style="font-size: 0.9rem">-</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Steps -->
+              <div class="col-6 col-sm-4">
+                <div class="bg-body border rounded-3 p-2 d-flex align-items-center gap-2">
+                  <app-icon class="text-success flex-shrink-0" name="steps" size="18" />
+                  <div class="overflow-hidden">
+                    <small
+                      class="text-muted text-uppercase text-truncate d-block"
+                      style="font-size: 0.7rem"
+                      >{{ 'Steps' | translate }}</small
+                    >
+                    @if (measurement.steps) {
+                      <span class="fw-bold text-body" style="font-size: 0.9rem">{{
+                        measurement.steps.toLocaleString()
+                      }}</span>
+                    } @else {
+                      <span class="text-muted opacity-50" style="font-size: 0.9rem">-</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- FTP -->
+              <div class="col-6 col-sm-4">
+                <div class="bg-body border rounded-3 p-2 d-flex align-items-center gap-2">
+                  <app-icon class="text-warning flex-shrink-0" name="bolt" size="18" />
+                  <div class="overflow-hidden">
+                    <small
+                      class="text-muted text-uppercase text-truncate d-block"
+                      style="font-size: 0.7rem"
+                      >{{ 'FTP' | translate }}</small
+                    >
+                    @if (measurement.ftp) {
+                      <span class="fw-bold text-body" style="font-size: 0.9rem"
+                        >{{ measurement.ftp.toFixed(0) }}
+                        <small class="fw-normal text-muted">W</small></span
+                      >
+                    } @else {
+                      <span class="text-muted opacity-50" style="font-size: 0.9rem">-</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Resting HR -->
+              <div class="col-6 col-sm-4">
+                <div class="bg-body border rounded-3 p-2 d-flex align-items-center gap-2">
+                  <app-icon class="text-danger flex-shrink-0" name="heart-rate" size="18" />
+                  <div class="overflow-hidden">
+                    <small
+                      class="text-muted text-uppercase text-truncate d-block"
+                      style="font-size: 0.7rem"
+                      >{{ 'Resting HR' | translate }}</small
+                    >
+                    @if (measurement.resting_heart_rate) {
+                      <span class="fw-bold text-body" style="font-size: 0.9rem"
+                        >{{ measurement.resting_heart_rate.toFixed(0) }}
+                        <small class="fw-normal text-muted">bpm</small></span
+                      >
+                    } @else {
+                      <span class="text-muted opacity-50" style="font-size: 0.9rem">-</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Max HR -->
+              <div class="col-6 col-sm-4">
+                <div class="bg-body border rounded-3 p-2 d-flex align-items-center gap-2">
+                  <app-icon class="text-danger flex-shrink-0" name="heart-solid" size="18" />
+                  <div class="overflow-hidden">
+                    <small
+                      class="text-muted text-uppercase text-truncate d-block"
+                      style="font-size: 0.7rem"
+                      >{{ 'Max HR' | translate }}</small
+                    >
+                    @if (measurement.max_heart_rate) {
+                      <span class="fw-bold text-body" style="font-size: 0.9rem"
+                        >{{ measurement.max_heart_rate.toFixed(0) }}
+                        <small class="fw-normal text-muted">bpm</small></span
+                      >
+                    } @else {
+                      <span class="text-muted opacity-50" style="font-size: 0.9rem">-</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </app-base-table>
   </div>
 </app-base-list>
 
