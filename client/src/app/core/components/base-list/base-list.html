@@ -125,11 +125,7 @@
         </div>
       } @else {
         <!-- Table content (projected) -->
-        <div class="card border-0 shadow-sm">
-          <div class="table-responsive">
-            <ng-content select="[table]" />
-          </div>
-        </div>
+        <ng-content select="[table]" />
 
         <!-- Pagination -->
         <app-pagination [source]="paginationSource()" />
