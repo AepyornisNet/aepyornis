@@ -35,7 +35,7 @@ func newEcho(logger *slog.Logger) *echo.Echo {
 	e.HideBanner = true
 	e.HidePort = true
 
-	e.Use(slogecho.New(logger.With("module", "webserver")))
+	e.Use(slogecho.NewWithFilters(logger.With("module", "webserver"), slogecho.IgnorePathSuffix("/health")))
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 	e.Use(middleware.CORS())
