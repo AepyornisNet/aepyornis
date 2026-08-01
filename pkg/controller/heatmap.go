@@ -193,7 +193,7 @@ func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()
 	u := currentUser(c)
 
-	wos, err := hc.workoutRepo.ListByUserID(u.ID)
+	wos, err := hc.workoutRepo.ListByProfileID(u.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
