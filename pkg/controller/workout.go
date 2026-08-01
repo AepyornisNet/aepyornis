@@ -130,7 +130,7 @@ func (wc *workoutController) getOwnedWorkout(c echo.Context) (*model.Workout, er
 	}
 
 	user := currentUser(c)
-	w, err := wc.workoutRepo.GetByUserID(user.Profile.ID, id)
+	w, err := wc.workoutRepo.GetByProfileID(user.Profile.ID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -232,18 +232,18 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	totalCount, err := wc.workoutRepo.CountByUserAndFilters(user.ID, filters)
+	totalCount, err := wc.workoutRepo.CountByProfileAndFilters(user.Profile.ID, filters)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	workouts, err := wc.workoutRepo.ListByUserAndFilters(user.ID, filters, pagination.PerPage, pagination.GetOffset())
+	workouts, err := wc.workoutRepo.ListByProfileAndFilters(user.Profile.ID, filters, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	results := dto.NewWorkoutsResponse(workouts)
-	published, err := wc.apOutboxRepo.PublishedMap(user.ID, workoutIDs(workouts))
+	published, err := wc.apOutboxRepo.PublishedMap(user.Profile.ID, workoutIDs(workouts))
 	if err == nil {
 		applyPublishedFlags(results, published)
 	}
@@ -477,7 +477,7 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if workoutOwnerUserID(workout) == viewer.ID {
+	if workout.ProfileID == viewer.Profile.ID {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 

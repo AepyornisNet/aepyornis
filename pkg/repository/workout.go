@@ -7,11 +7,11 @@ import (
 )
 
 type Workout interface {
-	GetByUserID(userID uint64, id uint64) (*model.Workout, error)
-	ListByUserID(userID uint64) ([]*model.Workout, error)
-	ListByUserIDWithDetails(userID uint64) ([]*model.Workout, error)
-	CountByUserAndFilters(userID uint64, filters *model.WorkoutFilters) (int64, error)
-	ListByUserAndFilters(userID uint64, filters *model.WorkoutFilters, limit int, offset int) ([]*model.Workout, error)
+	GetByProfileID(userID uint64, id uint64) (*model.Workout, error)
+	ListByProfileID(userID uint64) ([]*model.Workout, error)
+	ListByProfileIDWithDetails(userID uint64) ([]*model.Workout, error)
+	CountByProfileAndFilters(userID uint64, filters *model.WorkoutFilters) (int64, error)
+	ListByProfileAndFilters(userID uint64, filters *model.WorkoutFilters, limit int, offset int) ([]*model.Workout, error)
 	GetByIDForRead(id uint64, withRouteSegmentMatches bool) (*model.Workout, error)
 	GetDetailsByID(id uint64) (*model.Workout, error)
 }
@@ -24,41 +24,41 @@ func NewWorkout(injector do.Injector) (Workout, error) {
 	return &workoutRepository{db: do.MustInvoke[*gorm.DB](injector)}, nil
 }
 
-func (r *workoutRepository) GetByUserID(userID uint64, id uint64) (*model.Workout, error) {
+func (r *workoutRepository) GetByProfileID(profileID uint64, id uint64) (*model.Workout, error) {
 	var workout model.Workout
 
 	q := model.PreloadWorkoutDetails(r.db).Preload("File").Preload("Equipment")
-	if err := q.Where(&model.Workout{ProfileID: userID}).First(&workout, id).Error; err != nil {
+	if err := q.Where(&model.Workout{ProfileID: profileID}).First(&workout, id).Error; err != nil {
 		return nil, err
 	}
 
 	return &workout, nil
 }
 
-func (r *workoutRepository) ListByUserID(userID uint64) ([]*model.Workout, error) {
+func (r *workoutRepository) ListByProfileID(profileID uint64) ([]*model.Workout, error) {
 	var workouts []*model.Workout
 
-	if err := model.PreloadWorkoutData(r.db).Where(&model.Workout{ProfileID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := model.PreloadWorkoutData(r.db).Where(&model.Workout{ProfileID: profileID}).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
 	}
 
 	return workouts, nil
 }
 
-func (r *workoutRepository) ListByUserIDWithDetails(userID uint64) ([]*model.Workout, error) {
+func (r *workoutRepository) ListByProfileIDWithDetails(profileID uint64) ([]*model.Workout, error) {
 	var workouts []*model.Workout
 
-	if err := model.PreloadWorkoutDetails(r.db).Where(&model.Workout{ProfileID: userID}).Order("date DESC").Find(&workouts).Error; err != nil {
+	if err := model.PreloadWorkoutDetails(r.db).Where(&model.Workout{ProfileID: profileID}).Order("date DESC").Find(&workouts).Error; err != nil {
 		return nil, err
 	}
 
 	return workouts, nil
 }
 
-func (r *workoutRepository) CountByUserAndFilters(userID uint64, filters *model.WorkoutFilters) (int64, error) {
+func (r *workoutRepository) CountByProfileAndFilters(profileID uint64, filters *model.WorkoutFilters) (int64, error) {
 	var totalCount int64
 
-	q := r.db.Model(&model.Workout{}).Where("profile_id = ?", userID)
+	q := r.db.Model(&model.Workout{}).Where("profile_id = ?", profileID)
 	if filters != nil {
 		q = filters.ToQuery(q)
 	}
@@ -70,7 +70,7 @@ func (r *workoutRepository) CountByUserAndFilters(userID uint64, filters *model.
 	return totalCount, nil
 }
 
-func (r *workoutRepository) ListByUserAndFilters(userID uint64, filters *model.WorkoutFilters, limit int, offset int) ([]*model.Workout, error) {
+func (r *workoutRepository) ListByProfileAndFilters(profileID uint64, filters *model.WorkoutFilters, limit int, offset int) ([]*model.Workout, error) {
 	var workouts []*model.Workout
 
 	q := r.db.Model(&model.Workout{})
@@ -80,7 +80,7 @@ func (r *workoutRepository) ListByUserAndFilters(userID uint64, filters *model.W
 
 	q = model.PreloadWorkoutData(q).
 		Preload("File").
-		Where("profile_id = ?", userID).
+		Where("profile_id = ?", profileID).
 		Order("date DESC")
 
 	if limit > 0 {
