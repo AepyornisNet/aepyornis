@@ -8,7 +8,7 @@ import (
 	"path"
 
 	"github.com/anyappinc/fitbit"
-	"resty.dev/v3"
+	"github.com/go-resty/resty/v2"
 )
 
 type WorkoutConfig struct {
