@@ -13,7 +13,7 @@ require (
 	github.com/biter777/countries v1.7.5
 	github.com/cat-dealer/go-rand/v2 v2.0.0
 	github.com/codingsince1985/geo-golang v1.9.0
-	github.com/dadrus/httpsig v0.0.0-20260508102901-1bbd17383c65
+	github.com/dadrus/httpsig v0.9.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/flopp/go-staticmaps v0.0.0-20250629121348-973b17999e19
 	github.com/fsouza/slognil v0.4.3
