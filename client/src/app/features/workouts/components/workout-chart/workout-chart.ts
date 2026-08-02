@@ -346,7 +346,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
           this.hasMeaningfulSeries(mapData.extra_metrics[metric], true)
         ) {
           const settings = metricSettings[metric];
-          const hiddenByDefault = settings?.hiddenByDefault || false;
+          const hiddenByDefault = settings?.hiddenByDefault || true;
           datasets.push({
             type: 'line',
             label: this.getMetricLabel(metric),
