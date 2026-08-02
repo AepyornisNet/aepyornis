@@ -3,7 +3,7 @@
  */
 
 import { PaginationParams } from './api-response';
-import { UserProfile, UserSummary } from './user';
+import { UserSummary } from './user';
 
 export type Workout = {
   id: number;
@@ -346,6 +346,7 @@ export type CalendarEvent = {
 
 export type WorkoutListParams = PaginationParams & {
   type?: string;
+  sub_type?: string;
   active?: boolean;
   since?: string;
   order_by?: string;

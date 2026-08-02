@@ -2,6 +2,7 @@ import {
   ApplicationRef,
   ChangeDetectionStrategy,
   Component,
+  computed,
   createComponent,
   EnvironmentInjector,
   inject,
@@ -15,6 +16,7 @@ import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
 import {
   ExpressionSpecification,
   GeoJSONSource,
+  IControl,
   LngLatBounds,
   Map,
   MapLayerMouseEvent,
@@ -24,6 +26,8 @@ import { Api } from '../../../../core/services/api';
 import { WorkoutPopupData } from '../../../../core/types/statistics';
 import { WorkoutPopup } from '../../components/workout-popup/workout-popup';
 import { BaseMapComponent } from '../../../../core/components/base-map/base-map';
+import { faSolidFilter, faSolidGear } from '@ng-icons/font-awesome/solid';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 const DEFAULT_HEATMAP_CELL_SIZE = 0.0015;
 const MEDIUM_HEATMAP_CELL_SIZE = 0.0007;
@@ -76,20 +80,152 @@ export class Heatmap extends BaseMapComponent {
   public readonly blur = signal(15);
   public readonly showMarkers = signal(true);
   public readonly onlyTrace = signal(false);
+  public readonly showSettings = signal(false);
+
+  public readonly selectedType = signal<string>('');
+  public readonly selectedSubType = signal<string>('');
+  public readonly selectedSince = signal<string>('forever');
+  public readonly availableTypes = signal<string[]>([]);
+  public readonly subTypesByType = signal<Record<string, string[]>>({});
+  public readonly availableSubTypes = computed(() => {
+    const t = this.selectedType();
+    if (!t) {
+      return [];
+    }
+    return this.subTypesByType()[t] || [];
+  });
+  public readonly showFilters = signal(false);
+
+  public readonly sportLabel = getSportLabel;
+  public readonly sinceOptions = [
+    { value: 'forever', label: 'forever' },
+    { value: '7 days', label: '7 days' },
+    { value: '15 days', label: '15 days' },
+    { value: '1 month', label: '1 month' },
+    { value: '3 months', label: '3 months' },
+    { value: '6 months', label: '6 months' },
+    { value: '1 year', label: '1 year' },
+    { value: '2 years', label: '2 years' },
+    { value: '5 years', label: '5 years' },
+    { value: '10 years', label: '10 years' },
+  ];
+
+  public formatSubType(subType: string): string {
+    if (!subType) {
+      return '';
+    }
+    return subType
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  private settingsButton?: HTMLButtonElement;
+  private settingsControl?: IControl;
+  private filterButton?: HTMLButtonElement;
+  private filterControl?: IControl;
 
   private heatMapData: [number, number, number][] = [];
   private markerFeatures: GeoJSON.Feature[] = [];
 
   protected override onDestroy(): void {
     this.map?.off('moveend', this.onMapMoveEnd);
+    if (this.map && this.settingsControl) {
+      this.map.removeControl(this.settingsControl);
+    }
+    if (this.map && this.filterControl) {
+      this.map.removeControl(this.filterControl);
+    }
   }
 
   public async onMapLoad(map: Map): Promise<void> {
     this.onMapLoadBase(map);
+    this.addSettingsControl();
+    this.addFiltersControl();
     this.bindMarkerInteractions();
     this.refreshHeatmapAfterStyleChange();
     await this.loadHeatmapData();
     this.map!.on('moveend', this.onMapMoveEnd);
+  }
+
+  private addSettingsControl(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group wt-map-control';
+
+    const settingsButton = this.createControlButton(faSolidGear, 'Settings', () => {
+      this.showSettings.set(!this.showSettings());
+      if (this.showSettings()) {
+        this.showFilters.set(false);
+      }
+      this.updateSettingsControlState();
+      this.updateFiltersControlState();
+    });
+    this.settingsButton = settingsButton;
+    container.append(settingsButton);
+
+    this.settingsControl = {
+      onAdd: (): HTMLElement => container,
+      onRemove: (): void => {
+        container.remove();
+      },
+      getDefaultPosition: () => 'top-right' as const,
+    };
+
+    this.map.addControl(this.settingsControl, 'top-right');
+    this.updateSettingsControlState();
+  }
+
+  private updateSettingsControlState(): void {
+    if (!this.settingsButton) {
+      return;
+    }
+    const active = this.showSettings();
+    this.settingsButton.classList.toggle('is-active', active);
+    this.settingsButton.setAttribute('aria-pressed', String(active));
+  }
+
+  private addFiltersControl(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group wt-map-control';
+
+    const filterButton = this.createControlButton(faSolidFilter, 'Filters', () => {
+      this.showFilters.set(!this.showFilters());
+      if (this.showFilters()) {
+        this.showSettings.set(false);
+      }
+      this.updateFiltersControlState();
+      this.updateSettingsControlState();
+    });
+    this.filterButton = filterButton;
+    container.append(filterButton);
+
+    this.filterControl = {
+      onAdd: (): HTMLElement => container,
+      onRemove: (): void => {
+        container.remove();
+      },
+      getDefaultPosition: () => 'top-right' as const,
+    };
+
+    this.map.addControl(this.filterControl, 'top-right');
+    this.updateFiltersControlState();
+  }
+
+  private updateFiltersControlState(): void {
+    if (!this.filterButton) {
+      return;
+    }
+    const active = this.showFilters();
+    this.filterButton.classList.toggle('is-active', active);
+    this.filterButton.setAttribute('aria-pressed', String(active));
   }
 
   public onRenderSettingsChange(): void {
@@ -98,12 +234,68 @@ export class Heatmap extends BaseMapComponent {
     this.setMarkerVisibility(this.showMarkers());
   }
 
+  public async onFilterChange(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const type = this.selectedType();
+      const sub_type = this.selectedSubType();
+      const since = this.selectedSince() !== 'forever' ? this.selectedSince() : undefined;
+
+      const centersResponse = await firstValueFrom(
+        this.api.getWorkoutsCenters({ type, sub_type, since }),
+      );
+      const centerGeoJson = (centersResponse?.results as GeoJSON.FeatureCollection | undefined) ?? {
+        type: 'FeatureCollection',
+        features: [],
+      };
+      this.markerFeatures = (centerGeoJson.features ?? []).map((feature) => {
+        const props = (feature.properties ?? {}) as Record<string, unknown>;
+        const popupData = props['popup_data'];
+        return {
+          ...feature,
+          properties: {
+            ...props,
+            popup_data:
+              popupData && typeof popupData !== 'string' ? JSON.stringify(popupData) : popupData,
+          },
+        };
+      });
+
+      this.fitInitialBounds();
+      await this.refreshCoordinatesIfNeeded(true, true);
+    } catch (err) {
+      console.error('Failed to filter heatmap data:', err);
+      this.error.set('Failed to load heatmap data. Please try again.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  public onSportTypeChange(type: string): void {
+    this.selectedType.set(type);
+    this.selectedSubType.set('');
+    void this.onFilterChange();
+  }
+
   private async loadHeatmapData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
     try {
-      const centersResponse = await firstValueFrom(this.api.getWorkoutsCenters());
+      const filterOptionsResponse = await firstValueFrom(this.api.getWorkoutFilterOptions());
+      if (filterOptionsResponse?.results) {
+        this.availableTypes.set(filterOptionsResponse.results.types || []);
+        this.subTypesByType.set(filterOptionsResponse.results.sub_types_by_type || {});
+      }
+
+      const type = this.selectedType();
+      const sub_type = this.selectedSubType();
+      const since = this.selectedSince() !== 'forever' ? this.selectedSince() : undefined;
+
+      const centersResponse = await firstValueFrom(
+        this.api.getWorkoutsCenters({ type, sub_type, since }),
+      );
 
       const centerGeoJson = (centersResponse?.results as GeoJSON.FeatureCollection | undefined) ?? {
         type: 'FeatureCollection',
@@ -123,7 +315,7 @@ export class Heatmap extends BaseMapComponent {
       });
 
       this.fitInitialBounds();
-      await this.refreshCoordinatesIfNeeded(true, false);
+      await this.refreshCoordinatesIfNeeded(true, true);
     } catch (err) {
       console.error('Failed to load heatmap data:', err);
       this.error.set('Failed to load heatmap data. Please try again.');
@@ -561,6 +753,9 @@ export class Heatmap extends BaseMapComponent {
             maxLng: Number(viewport.maxLng.toFixed(4)),
           }
         : 'global',
+      type: this.selectedType(),
+      sub_type: this.selectedSubType(),
+      since: this.selectedSince(),
     });
     if (!force && requestKey === this.coordinatesRequestKey) {
       return;
@@ -570,6 +765,10 @@ export class Heatmap extends BaseMapComponent {
     const version = ++this.coordinatesRefreshVersion;
 
     try {
+      const type = this.selectedType();
+      const sub_type = this.selectedSubType();
+      const since = this.selectedSince() !== 'forever' ? this.selectedSince() : undefined;
+
       const coordinatesResponse = await firstValueFrom(
         this.api.getWorkoutsCoordinates({
           cellSize,
@@ -577,6 +776,9 @@ export class Heatmap extends BaseMapComponent {
           minLng: viewport?.minLng,
           maxLat: viewport?.maxLat,
           maxLng: viewport?.maxLng,
+          type,
+          sub_type,
+          since,
         }),
       );
       if (version !== this.coordinatesRefreshVersion) {

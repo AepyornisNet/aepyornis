@@ -123,6 +123,7 @@ func (a *App) registerWorkoutController(apiGroup *echo.Group) {
 
 	workoutGroup := apiGroup.Group("/workouts")
 	workoutGroup.GET("", wc.GetWorkouts).Name = "workouts-list"
+	workoutGroup.GET("/filter-options", wc.GetWorkoutFilterOptions).Name = "workouts-filter-options"
 	workoutGroup.POST("", wc.CreateWorkout).Name = "workouts-create"
 	workoutGroup.GET("/recent", wc.GetRecentWorkouts).Name = "workouts-recent"
 	workoutGroup.GET("/calendar", wc.GetWorkoutCalendar).Name = "workouts-calendar"

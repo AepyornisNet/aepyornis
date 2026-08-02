@@ -4,7 +4,8 @@
   <div class="workout-statistics-grid">
     @for (card of cards(); track card.key) {
       <section class="workout-statistics-card">
-        <h6 class="workout-statistics-label mb-3">
+        <h6 class="workout-statistics-label mb-3 d-flex align-items-center gap-2">
+          <app-icon size="18" [class]="getCardIconClass(card.key)" [name]="getCardIcon(card.key)" />
           {{ card.labelKey | translate }}
         </h6>
         @for (row of card.rows; track $index) {

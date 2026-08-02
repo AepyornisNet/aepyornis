@@ -44,6 +44,7 @@ type WorkoutController interface {
 	RefreshWorkout(c echo.Context) error
 	DownloadWorkout(c echo.Context) error
 	DownloadWorkoutAttachment(c echo.Context) error
+	GetWorkoutFilterOptions(c echo.Context) error
 }
 
 type workoutController struct {
@@ -291,13 +292,13 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	ownerUserID := workoutOwnerUserID(workout)
-	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.db, ownerUserID, workout.Type, workout.ID)
+	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.db, workout.ProfileID, workout.Type, workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	result := dto.NewWorkoutDetailResponse(workout, records)
+	ownerUserID := workoutOwnerUserID(workout)
 	published, err := wc.apOutboxRepo.PublishedMap(ownerUserID, []uint64{workout.ID})
 	if err == nil {
 		result.ActivityPubPublished = published[workout.ID]
@@ -1437,6 +1438,48 @@ func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
 
 	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename=\""+attachment.Filename+"\"")
 	return c.Blob(http.StatusOK, attachment.ContentType, attachment.Content)
+}
+
+func (wc *workoutController) GetWorkoutFilterOptions(c echo.Context) error {
+	user := currentUser(c)
+
+	var types []string
+	if err := wc.db.Model(&model.Workout{}).
+		Where("profile_id = ?", user.Profile.ID).
+		Where("type IS NOT NULL AND type != ''").
+		Order("type").
+		Distinct("type").
+		Pluck("type", &types).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	type typeSubPair struct {
+		Type    string `gorm:"column:type"`
+		SubType string `gorm:"column:sub_type"`
+	}
+	var pairs []typeSubPair
+	if err := wc.db.Model(&model.Workout{}).
+		Select("type, sub_type").
+		Where("profile_id = ?", user.Profile.ID).
+		Where("type IS NOT NULL AND type != ''").
+		Where("sub_type IS NOT NULL AND sub_type != ''").
+		Group("type, sub_type").
+		Order("type, sub_type").
+		Find(&pairs).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	subTypesByType := make(map[string][]string)
+	for _, p := range pairs {
+		subTypesByType[p.Type] = append(subTypesByType[p.Type], p.SubType)
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[map[string]any]{
+		Results: map[string]any{
+			"types":             types,
+			"sub_types_by_type": subTypesByType,
+		},
+	})
 }
 
 func uploadedFile(file *multipart.FileHeader) ([]byte, error) {

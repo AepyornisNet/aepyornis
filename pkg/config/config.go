@@ -59,6 +59,8 @@ func (c *Config) Load() error {
 	viper.SetDefault("mail_sender_address", "")
 	viper.SetDefault("smtp_host", "")
 	viper.SetDefault("admin_email", "")
+	viper.SetDefault("legal_notice_path", "")
+	viper.SetDefault("privacy_path", "")
 
 	for _, envVar := range []string{
 		"host",
@@ -89,6 +91,8 @@ func (c *Config) Load() error {
 		"mail_sender_address",
 		"smtp_host",
 		"admin_email",
+		"legal_notice_path",
+		"privacy_path",
 	} {
 		if err := viper.BindEnv(envVar); err != nil {
 			return err

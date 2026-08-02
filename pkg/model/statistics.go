@@ -18,10 +18,10 @@ type StatConfig struct {
 	Per   string `query:"per"`
 }
 
-func loadWorkoutsForRecords(db *gorm.DB, userID uint64, t WorkoutType, startDate, endDate *time.Time) ([]*Workout, error) {
+func loadWorkoutsForRecords(db *gorm.DB, profileID uint64, t WorkoutType, startDate, endDate *time.Time) ([]*Workout, error) {
 	var workouts []*Workout
 
-	query := PreloadWorkoutData(db).Where("profile_id = ?", userID).Where("workouts.type = ?", t)
+	query := PreloadWorkoutData(db).Where("profile_id = ?", profileID).Where("workouts.type = ?", t)
 
 	if startDate != nil {
 		query = query.Where("workouts.date >= ?", *startDate)

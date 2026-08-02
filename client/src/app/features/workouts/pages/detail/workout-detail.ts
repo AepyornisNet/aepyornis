@@ -9,7 +9,6 @@ import {
 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
-import { Avatar } from '../../../../core/components/avatar/avatar';
 import { TranslatePipe } from '@ngx-translate/core';
 import { WorkoutMapComponent } from '../../components/workout-map/workout-map';
 import { WorkoutChartComponent } from '../../components/workout-chart/workout-chart';
@@ -41,6 +40,8 @@ import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+
+import { getMetricDef } from '../../../../core/config/metrics';
 
 @Component({
   selector: 'app-workout-detail',
@@ -99,6 +100,7 @@ export class WorkoutDetailPage implements OnInit {
   public readonly sportLabel = getSportLabel;
   public readonly sportSubtypeLabel = getSportSubtypeLabel;
   public readonly averageSpeedLabel = getAverageSpeedLabel;
+  public readonly getMetricDef = getMetricDef;
 
   public constructor() {
     // React to interval selection changes

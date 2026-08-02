@@ -34,6 +34,16 @@
                 >{{ 'Changelog' | translate }}</a
               >
             }
+            @if (hasLegalNotice()) {
+              <a class="text-decoration-none me-3" routerLink="/legal/notice">{{
+                'Legal Notice' | translate
+              }}</a>
+            }
+            @if (hasPrivacy()) {
+              <a class="text-decoration-none me-3" routerLink="/legal/privacy">{{
+                'Privacy Policy' | translate
+              }}</a>
+            }
             <a
               class="text-decoration-none"
               href="https://github.com/AepyornisNet/aepyornis"

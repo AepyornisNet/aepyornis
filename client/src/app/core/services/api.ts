@@ -126,6 +126,9 @@ export class Api {
     if (params?.type) {
       httpParams = httpParams.set('type', params.type);
     }
+    if (params?.sub_type) {
+      httpParams = httpParams.set('sub_type', params.sub_type);
+    }
     if (params?.active !== undefined) {
       httpParams = httpParams.set('active', params.active ? 'true' : 'false');
     }
@@ -209,6 +212,14 @@ export class Api {
     return this.http.get<APIResponse<Workout[]>>(`${this.baseUrl}/workouts/recent`, {
       params: httpParams,
     });
+  }
+
+  public getWorkoutFilterOptions(): Observable<
+    APIResponse<{ types: string[]; sub_types_by_type: Record<string, string[]> }>
+  > {
+    return this.http.get<
+      APIResponse<{ types: string[]; sub_types_by_type: Record<string, string[]> }>
+    >(`${this.baseUrl}/workouts/filter-options`);
   }
 
   public createWorkoutFromFile(formData: FormData): Observable<APIResponse<Workout[]>> {
@@ -705,13 +716,15 @@ export class Api {
     });
   }
 
-  // Heatmap endpoints
   public getWorkoutsCoordinates(params?: {
     cellSize?: number;
     minLat?: number;
     minLng?: number;
     maxLat?: number;
     maxLng?: number;
+    type?: string;
+    sub_type?: string;
+    since?: string;
   }): Observable<APIResponse<HeatmapCoordinateList>> {
     let httpParams = new HttpParams();
     if (params?.cellSize !== undefined) {
@@ -729,6 +742,15 @@ export class Api {
     if (params?.maxLng !== undefined) {
       httpParams = httpParams.set('max_lng', params.maxLng.toString());
     }
+    if (params?.type) {
+      httpParams = httpParams.set('type', params.type);
+    }
+    if (params?.sub_type) {
+      httpParams = httpParams.set('sub_type', params.sub_type);
+    }
+    if (params?.since) {
+      httpParams = httpParams.set('since', params.since);
+    }
     return this.http.get<APIResponse<HeatmapCoordinateList>>(
       `${this.baseUrl}/workouts/coordinates`,
       {
@@ -737,8 +759,27 @@ export class Api {
     );
   }
 
-  public getWorkoutsCenters(): Observable<APIResponse<GeoJsonFeatureCollection>> {
-    return this.http.get<APIResponse<GeoJsonFeatureCollection>>(`${this.baseUrl}/workouts/centers`);
+  public getWorkoutsCenters(params?: {
+    type?: string;
+    sub_type?: string;
+    since?: string;
+  }): Observable<APIResponse<GeoJsonFeatureCollection>> {
+    let httpParams = new HttpParams();
+    if (params?.type) {
+      httpParams = httpParams.set('type', params.type);
+    }
+    if (params?.sub_type) {
+      httpParams = httpParams.set('sub_type', params.sub_type);
+    }
+    if (params?.since) {
+      httpParams = httpParams.set('since', params.since);
+    }
+    return this.http.get<APIResponse<GeoJsonFeatureCollection>>(
+      `${this.baseUrl}/workouts/centers`,
+      {
+        params: httpParams,
+      },
+    );
   }
 
   // Calendar endpoints
@@ -764,5 +805,14 @@ export class Api {
     return this.http.get<APIResponse<CalendarEvent[]>>(`${this.baseUrl}/workouts/calendar`, {
       params: httpParams,
     });
+  }
+
+  // Legal endpoints
+  public getLegalNotice(lang: string): Observable<string> {
+    return this.http.get(`${this.baseUrl}/legal/notice/${lang}`, { responseType: 'text' });
+  }
+
+  public getPrivacyPolicy(lang: string): Observable<string> {
+    return this.http.get(`${this.baseUrl}/legal/privacy/${lang}`, { responseType: 'text' });
   }
 }

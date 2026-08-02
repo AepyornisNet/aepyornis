@@ -64,4 +64,12 @@ export class AppConfig {
   public getVersionSha(): string {
     return this.appInfo()?.version_sha ?? '';
   }
+
+  public getLegalNoticeLanguages(): string[] {
+    return this.appInfo()?.legal_notice_languages ?? [];
+  }
+
+  public getPrivacyLanguages(): string[] {
+    return this.appInfo()?.privacy_languages ?? [];
+  }
 }

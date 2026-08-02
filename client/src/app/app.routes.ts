@@ -10,6 +10,22 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login),
   },
   {
+    path: 'legal/notice',
+    loadComponent: () =>
+      import('./features/legal/pages/legal-document/legal-document').then(
+        (m) => m.LegalDocumentPage,
+      ),
+    data: { type: 'legal-notice' },
+  },
+  {
+    path: 'legal/privacy',
+    loadComponent: () =>
+      import('./features/legal/pages/legal-document/legal-document').then(
+        (m) => m.LegalDocumentPage,
+      ),
+    data: { type: 'privacy' },
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./layouts/authenticated-layout/authenticated-layout').then(

@@ -2,10 +2,13 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -176,6 +179,8 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	// Public routes
 	apiGroupPublic := e.Group("/api/v2")
 	apiGroupPublic.GET("/app-info", a.apiV2AppInfoHandler).Name = "api-v2-app-info"
+	apiGroupPublic.GET("/legal/notice/:lang", a.getLegalNoticeHandler).Name = "api-v2-legal-notice"
+	apiGroupPublic.GET("/legal/privacy/:lang", a.getPrivacyHandler).Name = "api-v2-legal-privacy"
 	a.registerAuthController(apiGroupPublic)
 	a.registerHammerheadPublicController(apiGroupPublic)
 
@@ -281,6 +286,8 @@ func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 			AutoImportEnabled:     a.Config.AutoImportEnabled,
 			ActivityPubActive:     a.Config.ActivityPubActive,
 			NotificationProviders: a.Config.AvailableNotificationProviders(),
+			LegalNoticeLanguages:  getAvailableLanguages(a.Config.LegalNoticePath),
+			PrivacyLanguages:      getAvailableLanguages(a.Config.PrivacyPath),
 		},
 	}
 
@@ -296,4 +303,100 @@ func (a *App) renderAPIV2Error(c echo.Context, status int, err error) error {
 	resp := dto.Response[any]{}
 	resp.AddError(err)
 	return c.JSON(status, resp)
+}
+
+func getAvailableLanguages(dirPath string) []string {
+	if dirPath == "" {
+		return nil
+	}
+	files, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil
+	}
+	var langs []string
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(strings.ToLower(f.Name()), ".html") {
+			lang := strings.TrimSuffix(strings.ToLower(f.Name()), ".html")
+			if lang != "" {
+				langs = append(langs, lang)
+			}
+		}
+	}
+	return langs
+}
+
+func (a *App) getLegalDocument(dirPath string, requestedLang string) (string, error) {
+	if dirPath == "" {
+		return "", errors.New("document path not configured")
+	}
+
+	requestedLang = strings.ToLower(strings.TrimSpace(requestedLang))
+	if requestedLang == "" {
+		requestedLang = "en"
+	}
+
+	// Sanitize language code to prevent path traversal
+	var cleanLang strings.Builder
+	for _, r := range requestedLang {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			cleanLang.WriteRune(r)
+		}
+	}
+	lang := cleanLang.String()
+	if lang == "" {
+		lang = "en"
+	}
+
+	return a.getLegalDocumentFile(dirPath, lang)
+}
+
+func (a *App) getLegalDocumentFile(dirPath string, lang string) (string, error) {
+	// 1. Try requested language
+	filePath := filepath.Join(dirPath, lang+".html")
+	data, err := os.ReadFile(filePath)
+	if err == nil {
+		return string(data), nil
+	}
+
+	// 2. Try 'en' fallback
+	if lang != "en" {
+		filePath = filepath.Join(dirPath, "en.html")
+		data, err = os.ReadFile(filePath)
+		if err == nil {
+			return string(data), nil
+		}
+	}
+
+	// 3. Fallback to first available file in the folder
+	files, err := os.ReadDir(dirPath)
+	if err == nil {
+		for _, f := range files {
+			if !f.IsDir() && strings.HasSuffix(strings.ToLower(f.Name()), ".html") {
+				data, err = os.ReadFile(filepath.Join(dirPath, f.Name()))
+				if err == nil {
+					return string(data), nil
+				}
+			}
+		}
+	}
+
+	return "", errors.New("document not found")
+}
+
+func (a *App) getLegalNoticeHandler(c echo.Context) error {
+	lang := c.Param("lang")
+	content, err := a.getLegalDocument(a.Config.LegalNoticePath, lang)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+	return c.HTML(http.StatusOK, content)
+}
+
+func (a *App) getPrivacyHandler(c echo.Context) error {
+	lang := c.Param("lang")
+	content, err := a.getLegalDocument(a.Config.PrivacyPath, lang)
+	if err != nil {
+		return a.renderAPIV2Error(c, http.StatusNotFound, err)
+	}
+	return c.HTML(http.StatusOK, content)
 }

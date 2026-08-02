@@ -12,7 +12,6 @@ import { firstValueFrom, Observable } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Workout } from '../../../../core/types/workout';
 import { WorkoutListParams } from '../../../../core/types/workout';
-import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { WorkoutListActions } from '../../components/workout-list-actions/workout-list-actions';
@@ -29,6 +28,7 @@ import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pip
 
 type WorkoutListFilterState = {
   type: string;
+  sub_type: string;
   since: string;
   orderBy: string;
   orderDir: 'desc' | 'asc';
@@ -77,8 +77,26 @@ export class Workouts extends PaginatedListView<Workout> {
     enableMultiSelect: true,
   };
 
-  public readonly workoutTypes = WORKOUT_TYPES;
+  public readonly availableTypes = signal<string[]>([]);
+  public readonly subTypesByType = signal<Record<string, string[]>>({});
+  public readonly availableSubTypes = computed(() => {
+    const t = this.filterState().type;
+    if (!t) {
+      return [];
+    }
+    return this.subTypesByType()[t] || [];
+  });
   public readonly sportLabel = getSportLabel;
+
+  public formatSubType(subType: string): string {
+    if (!subType) {
+      return '';
+    }
+    return subType
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
 
   public readonly sinceOptions: FilterOption[] = [
     { value: 'forever', label: this.translate.stream('forever') },
@@ -112,6 +130,7 @@ export class Workouts extends PaginatedListView<Workout> {
 
   private readonly _filters = signal<WorkoutListFilterState>({
     type: '',
+    sub_type: '',
     since: 'forever',
     orderBy: 'date',
     orderDir: 'desc',
@@ -175,6 +194,19 @@ export class Workouts extends PaginatedListView<Workout> {
     this.loading.set(true);
     this.error.set(null);
 
+    // Load pre-filtered type/subtype options if empty
+    if (this.availableTypes().length === 0) {
+      try {
+        const filterOptionsResponse = await firstValueFrom(this.api.getWorkoutFilterOptions());
+        if (filterOptionsResponse?.results) {
+          this.availableTypes.set(filterOptionsResponse.results.types || []);
+          this.subTypesByType.set(filterOptionsResponse.results.sub_types_by_type || {});
+        }
+      } catch (err) {
+        console.error('Failed to load filter options:', err);
+      }
+    }
+
     const filters = this.filterState();
 
     const params: WorkoutListParams = {
@@ -187,6 +219,9 @@ export class Workouts extends PaginatedListView<Workout> {
 
     if (filters.type) {
       params.type = filters.type;
+    }
+    if (filters.sub_type) {
+      params.sub_type = filters.sub_type;
     }
 
     try {
@@ -201,6 +236,10 @@ export class Workouts extends PaginatedListView<Workout> {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  public onWorkoutSubTypeFilterChange(value: string): void {
+    this.handleFilterChange({ sub_type: value });
   }
 
   public onAddWorkout(): void {
@@ -269,7 +308,7 @@ export class Workouts extends PaginatedListView<Workout> {
   }
 
   public onWorkoutTypeFilterChange(value: string): void {
-    this.handleFilterChange({ type: value });
+    this.handleFilterChange({ type: value, sub_type: '' });
   }
 
   public onWorkoutSinceFilterChange(value: string): void {

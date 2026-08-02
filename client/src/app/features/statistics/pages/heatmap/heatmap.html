@@ -22,54 +22,110 @@
       (mapLoad)="onMapLoad($event)"
     />
 
-    <div class="map-controls card shadow-sm">
-      <div class="mb-2">
-        <label class="form-label mb-1" for="radius">Radius</label>
-        <input
-          class="form-range"
-          id="radius"
-          max="30"
-          min="1"
-          type="range"
-          [ngModel]="radius()"
-          (ngModelChange)="radius.set($event); onRenderSettingsChange()"
-        />
-      </div>
+    @if (showFilters()) {
+      <div class="map-filters card shadow-sm">
+        @if (availableTypes().length > 1) {
+          <div class="mb-2">
+            <label class="form-label mb-1" for="workout-type">{{ 'Sport' | translate }}</label>
+            <select
+              class="form-select form-select-sm"
+              id="workout-type"
+              [ngModel]="selectedType()"
+              (ngModelChange)="onSportTypeChange($event)"
+            >
+              <option value="">{{ 'All' | translate }}</option>
+              @for (t of availableTypes(); track t) {
+                <option [value]="t">{{ sportLabel(t) | translate }}</option>
+              }
+            </select>
+          </div>
+        }
 
-      <div class="mb-2">
-        <label class="form-label mb-1" for="blur">Blur</label>
-        <input
-          class="form-range"
-          id="blur"
-          max="30"
-          min="1"
-          type="range"
-          [ngModel]="blur()"
-          (ngModelChange)="blur.set($event); onRenderSettingsChange()"
-        />
-      </div>
+        @if (selectedType() && availableSubTypes().length > 1) {
+          <div class="mb-2">
+            <label class="form-label mb-1" for="workout-sub-type">{{
+              'Subtype' | translate
+            }}</label>
+            <select
+              class="form-select form-select-sm"
+              id="workout-sub-type"
+              [ngModel]="selectedSubType()"
+              (ngModelChange)="selectedSubType.set($event); onFilterChange()"
+            >
+              <option value="">{{ 'All' | translate }}</option>
+              @for (st of availableSubTypes(); track st) {
+                <option [value]="st">{{ formatSubType(st) | translate }}</option>
+              }
+            </select>
+          </div>
+        }
 
-      <div class="form-check mb-2">
-        <input
-          class="form-check-input"
-          id="showMarkers"
-          type="checkbox"
-          [ngModel]="showMarkers()"
-          (ngModelChange)="showMarkers.set($event); onRenderSettingsChange()"
-        />
-        <label class="form-check-label" for="showMarkers">Show Markers</label>
+        <div class="mb-2">
+          <label class="form-label mb-1" for="workout-since">{{ 'Since' | translate }}</label>
+          <select
+            class="form-select form-select-sm"
+            id="workout-since"
+            [ngModel]="selectedSince()"
+            (ngModelChange)="selectedSince.set($event); onFilterChange()"
+          >
+            @for (opt of sinceOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label | translate }}</option>
+            }
+          </select>
+        </div>
       </div>
+    }
 
-      <div class="form-check mb-3">
-        <input
-          class="form-check-input"
-          id="onlyTrace"
-          type="checkbox"
-          [ngModel]="onlyTrace()"
-          (ngModelChange)="onlyTrace.set($event); onRenderSettingsChange()"
-        />
-        <label class="form-check-label" for="onlyTrace">Only show trace</label>
+    @if (showSettings()) {
+      <div class="map-controls card shadow-sm">
+        <div class="mb-2">
+          <label class="form-label mb-1" for="radius">Radius</label>
+          <input
+            class="form-range"
+            id="radius"
+            max="30"
+            min="1"
+            type="range"
+            [ngModel]="radius()"
+            (ngModelChange)="radius.set($event); onRenderSettingsChange()"
+          />
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label mb-1" for="blur">Blur</label>
+          <input
+            class="form-range"
+            id="blur"
+            max="30"
+            min="1"
+            type="range"
+            [ngModel]="blur()"
+            (ngModelChange)="blur.set($event); onRenderSettingsChange()"
+          />
+        </div>
+
+        <div class="form-check mb-2">
+          <input
+            class="form-check-input"
+            id="showMarkers"
+            type="checkbox"
+            [ngModel]="showMarkers()"
+            (ngModelChange)="showMarkers.set($event); onRenderSettingsChange()"
+          />
+          <label class="form-check-label" for="showMarkers">Show Markers</label>
+        </div>
+
+        <div class="form-check mb-3">
+          <input
+            class="form-check-input"
+            id="onlyTrace"
+            type="checkbox"
+            [ngModel]="onlyTrace()"
+            (ngModelChange)="onlyTrace.set($event); onRenderSettingsChange()"
+          />
+          <label class="form-check-label" for="onlyTrace">Only show trace</label>
+        </div>
       </div>
-    </div>
+    }
   </div>
 }
