@@ -45,19 +45,19 @@ export const METRIC_DEFS: Record<string, MetricDef> = {
   elevation: {
     key: 'elevation',
     icon: 'elevation',
-    color: '#10b981', // green
+    color: '#6366f1', // indigo
     colorClass: 'metric-elevation',
   },
   'elevation-summary': {
     key: 'elevation-summary',
     icon: 'elevation',
-    color: '#10b981', // green
+    color: '#6366f1', // indigo
     colorClass: 'metric-elevation',
   },
   slope: {
     key: 'slope',
     icon: 'slope',
-    color: '#10b981', // green
+    color: '#8b5cf6', // violet
     colorClass: 'metric-slope',
   },
   'heart-rate': {
@@ -75,31 +75,31 @@ export const METRIC_DEFS: Record<string, MetricDef> = {
   cadence: {
     key: 'cadence',
     icon: 'cadence',
-    color: '#f59e0b', // amber
+    color: '#ec4899', // pink
     colorClass: 'metric-cadence',
   },
   power: {
     key: 'power',
     icon: 'power',
-    color: '#3b82f6', // blue
+    color: '#14b8a6', // teal
     colorClass: 'metric-power',
   },
   temperature: {
     key: 'temperature',
     icon: 'temperature',
-    color: '#06b6d4', // cyan
+    color: '#f59e0b', // amber
     colorClass: 'metric-temperature',
   },
   repetitions: {
     key: 'repetitions',
     icon: 'repetitions',
-    color: '#f59e0b', // amber
+    color: '#84cc16', // lime
     colorClass: 'metric-repetitions',
   },
   weight: {
     key: 'weight',
     icon: 'weight',
-    color: '#ef4444', // red
+    color: '#f43f5e', // rose
     colorClass: 'metric-weight',
   },
 };

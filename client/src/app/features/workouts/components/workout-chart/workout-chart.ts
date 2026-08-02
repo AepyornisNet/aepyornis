@@ -8,6 +8,7 @@ import {
   inject,
   input,
   OnDestroy,
+  signal,
   viewChild,
 } from '@angular/core';
 
@@ -40,8 +41,9 @@ import {
   FTP_ZONE_COLORS,
   HR_ZONE_COLORS,
 } from '../zone-colors';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { getMetricDef } from '../../../../core/config/metrics';
+import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 
 Chart.register(
   TimeScale,
@@ -71,6 +73,7 @@ type MetricConfig = {
   templateUrl: './workout-chart.html',
   styleUrl: './workout-chart.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [AppIcon, TranslatePipe],
 })
 export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   private readonly chartCanvas = viewChild<ElementRef<HTMLCanvasElement>>('chartCanvas');
@@ -79,12 +82,25 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   public readonly extraMetrics = input<string[]>([]);
   public readonly viewMode = input<'time' | 'distance'>('time');
 
+  public readonly legendItems = signal<
+    { label: string; hidden: boolean; datasetIndex: number; metricKey: string }[]
+  >([]);
+
+  public getMetricIcon(key: string): string {
+    return getMetricDef(key).icon;
+  }
+
+  public getMetricColorClass(key: string): string {
+    return getMetricDef(key).colorClass;
+  }
+
   private translate = inject(TranslateService);
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private userService = inject(User);
   private chart?: Chart;
   private timeLabels: number[] = [];
   private isUpdatingFromZoom = false; // Flag to prevent infinite loops
+  private datasetMetricKeys: string[] = [];
 
   private readonly speedUnit = computed(
     () => this.userService.getUserInfo()()?.profile?.profile?.preferred_units?.speed || 'km/h',
@@ -255,6 +271,46 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     this.isUpdatingFromZoom = false;
   }
 
+  private updateLegendItems(): void {
+    if (!this.chart) {
+      return;
+    }
+    console.log('workout-chart updateLegendItems datasetMetricKeys:', this.datasetMetricKeys);
+    console.log(
+      'workout-chart updateLegendItems datasets:',
+      this.chart.data.datasets.map((d) => d.label),
+    );
+    const items = this.chart.data.datasets.map((dataset, index) => {
+      const meta = this.chart!.getDatasetMeta(index);
+      return {
+        label: dataset.label || '',
+        hidden: meta.hidden === null ? Boolean(dataset.hidden) : meta.hidden,
+        datasetIndex: index,
+        metricKey: this.datasetMetricKeys[index] || '',
+      };
+    });
+    console.log('workout-chart generated legend items:', items);
+    this.legendItems.set(items);
+  }
+
+  public toggleDataset(item: { datasetIndex: number }): void {
+    if (!this.chart) {
+      return;
+    }
+    const index = item.datasetIndex;
+    const meta = this.chart.getDatasetMeta(index);
+    const dataset = this.chart.data.datasets[index];
+    const isHidden = meta.hidden === null ? Boolean(dataset.hidden) : meta.hidden;
+    meta.hidden = !isHidden;
+
+    const yAxisID = meta.yAxisID;
+    if (yAxisID && this.chart.options.scales![yAxisID]) {
+      (this.chart.options.scales![yAxisID] as { display?: boolean }).display = !meta.hidden;
+    }
+    this.chart.update();
+    this.updateLegendItems();
+  }
+
   private initChart(): void {
     const canvasRef = this.chartCanvas();
     const mapData = this.mapDataValue;
@@ -277,6 +333,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     };
 
     this.chart = new Chart(ctx, config);
+    this.updateLegendItems();
   }
 
   private updateChart(): void {
@@ -290,6 +347,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     this.chart.data.datasets = this.getDatasets();
     this.chart.options = this.getChartOptions();
     this.chart.update();
+    this.updateLegendItems();
   }
 
   private getLabels(): (number | Date)[] {
@@ -316,6 +374,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     const metrics = this.extraMetricsValue;
     const metricSettings = this.getMetricSettings();
     const datasets: ChartDataset[] = [];
+    this.datasetMetricKeys = []; // Reset local metric keys tracker
 
     const hasDefaultSpeed = this.hasMeaningfulSeries(mapData.speed, false);
     const hasDefaultElevation = this.hasMeaningfulSeries(mapData.elevation, false);
@@ -333,6 +392,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         borderColor: getMetricDef('speed').color,
         backgroundColor: getMetricDef('speed').color,
       });
+      this.datasetMetricKeys.push('speed');
     }
 
     // Add extra metrics
@@ -363,7 +423,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             ...(metric === 'heart-rate'
               ? {
                   segment: {
-                    borderColor: (ctx): string =>
+                    borderColor: (ctx: any): string =>
                       this.zoneColor(
                         mapData,
                         'hr-zone',
@@ -377,7 +437,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             ...(metric === 'power'
               ? {
                   segment: {
-                    borderColor: (ctx): string =>
+                    borderColor: (ctx: any): string =>
                       this.zoneColor(
                         mapData,
                         'zone',
@@ -389,6 +449,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
                 }
               : {}),
           });
+          this.datasetMetricKeys.push(metric);
 
           if (hiddenByDefault && firstHiddenExtraMetricIdx < 0) {
             firstHiddenExtraMetricIdx = datasets.length - 1;
@@ -416,6 +477,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         borderColor: getMetricDef('elevation').color,
         backgroundColor: getMetricDef('elevation').color + '20',
       });
+      this.datasetMetricKeys.push('elevation');
     }
 
     return datasets;
@@ -487,23 +549,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
           algorithm: 'lttb',
         },
         legend: {
-          display: true,
-          onClick: (
-            e: unknown,
-            legendItem: { datasetIndex?: number },
-            legend: { chart: Chart },
-          ): void => {
-            const chart = legend.chart;
-            const index = legendItem.datasetIndex!;
-            const meta = chart.getDatasetMeta(index);
-            const isHidden = meta.hidden === null ? false : meta.hidden;
-            meta.hidden = !isHidden;
-            const yAxisID = meta.yAxisID;
-            if (yAxisID && chart.options.scales![yAxisID]) {
-              (chart.options.scales![yAxisID] as { display?: boolean }).display = !meta.hidden;
-            }
-            chart.update();
-          },
+          display: false,
         },
         tooltip: {
           callbacks: {

@@ -1,3 +1,24 @@
-<div class="chart-wrapper">
-  <canvas #chartCanvas></canvas>
+<div class="chart-wrapper flex-column d-flex">
+  <div class="chart-legend d-flex flex-wrap gap-3 mb-2 justify-content-center">
+    @for (dataset of legendItems(); track dataset.label) {
+      <button
+        class="btn btn-sm d-flex align-items-center gap-1 border-0 bg-transparent px-2"
+        [class.text-muted]="dataset.hidden"
+        (click)="toggleDataset(dataset)"
+      >
+        <app-icon
+          size="16"
+          [class]="getMetricColorClass(dataset.metricKey)"
+          [name]="getMetricIcon(dataset.metricKey)"
+          [style.opacity]="dataset.hidden ? 0.4 : 1"
+        />
+        <span [style.text-decoration]="dataset.hidden ? 'line-through' : 'none'">
+          {{ dataset.label | translate }}
+        </span>
+      </button>
+    }
+  </div>
+  <div class="canvas-wrapper flex-grow-1 position-relative">
+    <canvas #chartCanvas></canvas>
+  </div>
 </div>
