@@ -57,7 +57,7 @@ func Connect(driver, dsn string, debug bool, logger *slog.Logger) (*gorm.DB, err
 
 			&Equipment{}, &Measurement{},
 
-			&User{}, &Profile{}, &Notification{}, &UserNotificationSettings{},
+			&User{}, &Profile{}, &Notification{}, &UserNotificationSettings{}, &UserWebpushSubscription{},
 
 			&Workout{}, &WorkoutStats{}, &WorkoutFile{}, &WorkoutGeoMeta{}, &WorkoutIntervalBest{},
 			&WorkoutLap{}, &WorkoutClimb{}, &WorkoutRecord{}, &WorkoutEvent{}, &WorkoutAttachment{},

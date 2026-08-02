@@ -66,7 +66,7 @@
         <h3 class="h5 mb-0">{{ 'Push notifications' | translate }}</h3>
       </div>
       <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
           <div>
             <div class="fw-semibold">{{ 'This device' | translate }}</div>
             <div class="small text-muted">
@@ -120,6 +120,46 @@
             </button>
           }
         </div>
+
+        @if (webpushSubscriptions().length > 0) {
+          <hr class="my-3" />
+          <h4 class="h6 mb-2">{{ 'Registered push endpoints' | translate }}</h4>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'Endpoint service' | translate }}</th>
+                  <th scope="col">{{ 'User Agent' | translate }}</th>
+                  <th class="text-end" scope="col">{{ 'Action' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (sub of webpushSubscriptions(); track sub.id) {
+                  <tr>
+                    <td>
+                      <span class="badge bg-secondary-subtle text-secondary border">
+                        {{ formatEndpointDomain(sub.endpoint) }}
+                      </span>
+                    </td>
+                    <td class="small text-muted text-truncate" style="max-width: 250px">
+                      {{ sub.user_agent || '-' }}
+                    </td>
+                    <td class="text-end">
+                      <button
+                        class="btn btn-outline-danger btn-sm"
+                        type="button"
+                        [disabled]="requestingWebPush()"
+                        (click)="unsubscribeWebpush(sub.endpoint)"
+                      >
+                        {{ 'Remove' | translate }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </div>
   }

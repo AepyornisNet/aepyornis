@@ -48,6 +48,9 @@ func (a *App) registerNotificationController(apiGroup *echo.Group) {
 	apiGroup.GET("/notifications", hc.GetNotifications).Name = "notification-unread"
 	apiGroup.POST("/notifications/read", hc.MarkAsRead).Name = "notification-mark-as-read"
 	apiGroup.GET("/notifications/settings", hc.GetConfig).Name = "notification-config"
+	apiGroup.GET("/notifications/webpush/subscriptions", hc.GetWebpushSubscriptions).Name = "notification-webpush-subscriptions"
+	apiGroup.POST("/notifications/webpush/subscribe", hc.SubscribeWebpush).Name = "notification-webpush-subscribe"
+	apiGroup.POST("/notifications/webpush/unsubscribe", hc.UnsubscribeWebpush).Name = "notification-webpush-unsubscribe"
 	apiGroup.POST("/notifications/:type", hc.UpdateConfig).Name = "notification-config-update"
 }
 
