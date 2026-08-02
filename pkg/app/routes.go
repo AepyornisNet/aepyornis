@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -326,7 +327,7 @@ func getAvailableLanguages(dirPath string) []string {
 
 func (a *App) getLegalDocument(dirPath string, requestedLang string) (string, error) {
 	if dirPath == "" {
-		return "", fmt.Errorf("document path not configured")
+		return "", errors.New("document path not configured")
 	}
 
 	requestedLang = strings.ToLower(strings.TrimSpace(requestedLang))
@@ -346,6 +347,10 @@ func (a *App) getLegalDocument(dirPath string, requestedLang string) (string, er
 		lang = "en"
 	}
 
+	return a.getLegalDocumentFile(dirPath, lang)
+}
+
+func (a *App) getLegalDocumentFile(dirPath string, lang string) (string, error) {
 	// 1. Try requested language
 	filePath := filepath.Join(dirPath, lang+".html")
 	data, err := os.ReadFile(filePath)
@@ -375,7 +380,7 @@ func (a *App) getLegalDocument(dirPath string, requestedLang string) (string, er
 		}
 	}
 
-	return "", fmt.Errorf("document not found")
+	return "", errors.New("document not found")
 }
 
 func (a *App) getLegalNoticeHandler(c echo.Context) error {
