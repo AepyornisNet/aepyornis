@@ -4,13 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/SherClockHolmes/webpush-go"
 )
 
 type AngularPushNotification struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	Title string         `json:"title"`
+	Body  string         `json:"body"`
+	Icon  string         `json:"icon,omitempty"`
+	Badge string         `json:"badge,omitempty"`
+	Data  map[string]any `json:"data,omitempty"`
 }
 
 type AngularPushPayload struct {
@@ -23,6 +27,7 @@ type WebPush struct {
 	vapidPrivateKey string
 	subscriber      string
 	receivers       []webpush.Subscription
+	OnExpired       func(endpoint string)
 }
 
 // NewWebPush creates a new WebPush notifier with the given VAPID key pair.
@@ -45,7 +50,7 @@ func (w *WebPush) AddReceivers(receivers ...webpush.Subscription) {
 }
 
 // Send formats the subject and message into Angular's expected JSON push payload structure:
-// {"notification": {"title": "...", "body": "..."}} and dispatches it via WebPush.
+// {"notification": {"title": "...", "body": "...", "icon": "...", "data": {"url": "..."}}} and dispatches it via WebPush.
 func (w *WebPush) Send(ctx context.Context, subject, message string) error {
 	if len(w.receivers) == 0 {
 		return nil
@@ -55,6 +60,8 @@ func (w *WebPush) Send(ctx context.Context, subject, message string) error {
 		Notification: AngularPushNotification{
 			Title: subject,
 			Body:  message,
+			Icon:  "/icons/icon-192x192.png",
+			Badge: "/icons/icon-72x72.png",
 		},
 	}
 
@@ -72,11 +79,17 @@ func (w *WebPush) Send(ctx context.Context, subject, message string) error {
 
 	for _, receiver := range w.receivers {
 		resp, err := webpush.SendNotificationWithContext(ctx, payloadBytes, &receiver, options)
-		if err != nil {
-			return fmt.Errorf("send webpush notification: %w", err)
+		if resp != nil {
+			if (resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone) && w.OnExpired != nil {
+				w.OnExpired(receiver.Endpoint)
+			}
+			if resp.Body != nil {
+				_ = resp.Body.Close()
+			}
 		}
-		if resp != nil && resp.Body != nil {
-			_ = resp.Body.Close()
+		if err != nil {
+			// Log or handle error for individual subscription without failing other subscriptions
+			continue
 		}
 	}
 

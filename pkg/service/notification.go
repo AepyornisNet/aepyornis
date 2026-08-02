@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -89,6 +89,9 @@ func (s *notificationService) isChannelEnabled(ctx context.Context, user *model.
 	var settings model.UserNotificationSettings
 	err := s.db.WithContext(ctx).Where("user_id = ? AND method = ?", user.ID, method).First(&settings).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return true
+		}
 		return false
 	}
 	return settings.IsEnabled(nType)
@@ -173,25 +176,41 @@ func (s *notificationService) getEmailService(receiver *model.User) []notify.Not
 func (s *notificationService) getWebpushService(receiver *model.User) []notify.Notifier {
 	services := []notify.Notifier{}
 
-	var userConfig model.UserNotificationSettings
-	if err := s.db.Where("user_id = ? AND method = 'webpush'", receiver.ID).First(&userConfig).Error; err != nil {
+	if s.cfg.VapidPrivateKey == "" || s.cfg.VapidPublicKey == "" {
 		return services
 	}
 
-	if userConfig.MethodSettings == nil {
+	var subscriptions []model.UserWebpushSubscription
+	if err := s.db.Where("user_id = ?", receiver.ID).Find(&subscriptions).Error; err != nil || len(subscriptions) == 0 {
 		return services
 	}
 
-	if s.cfg.VapidPrivateKey != "" && s.cfg.VapidPublicKey != "" {
-		var receiverSub webpush.Subscription
-		if err := json.Unmarshal(*userConfig.MethodSettings, &receiverSub); err != nil {
-			return services
-		}
+	webpushSvc := notification.NewWebPush(s.cfg.VapidPublicKey, s.cfg.VapidPrivateKey)
 
-		webpushSvc := notification.NewWebPush(s.cfg.VapidPublicKey, s.cfg.VapidPrivateKey)
-		webpushSvc.AddReceivers(receiverSub)
-		services = append(services, webpushSvc)
+	subscriber := strings.TrimSpace(s.cfg.AdminEmail)
+	if subscriber == "" {
+		subscriber = strings.TrimSpace(s.cfg.MailSenderAddress)
+	}
+	if subscriber == "" {
+		subscriber = "admin@aepyornis.local"
+	}
+	subscriber = strings.TrimPrefix(subscriber, "mailto:")
+	webpushSvc.SetSubscriber(subscriber)
+
+	webpushSvc.OnExpired = func(endpoint string) {
+		_ = s.db.Where("user_id = ? AND endpoint = ?", receiver.ID, endpoint).Delete(&model.UserWebpushSubscription{}).Error
 	}
 
+	for _, sub := range subscriptions {
+		webpushSvc.AddReceivers(webpush.Subscription{
+			Endpoint: sub.Endpoint,
+			Keys: webpush.Keys{
+				Auth:   sub.Auth,
+				P256dh: sub.P256dh,
+			},
+		})
+	}
+
+	services = append(services, webpushSvc)
 	return services
 }

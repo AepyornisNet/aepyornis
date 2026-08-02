@@ -22,6 +22,9 @@ type NotificationController interface {
 	MarkAsRead(c echo.Context) error
 	GetConfig(c echo.Context) error
 	UpdateConfig(c echo.Context) error
+	GetWebpushSubscriptions(c echo.Context) error
+	SubscribeWebpush(c echo.Context) error
+	UnsubscribeWebpush(c echo.Context) error
 }
 
 type notificationController struct {
@@ -164,6 +167,17 @@ func (nc *notificationController) UpdateConfig(c echo.Context) error {
 			if strings.TrimSpace(sub.Endpoint) == "" || strings.TrimSpace(sub.Keys.Auth) == "" || strings.TrimSpace(sub.Keys.P256dh) == "" {
 				return renderApiError(c, http.StatusBadRequest, errors.New("webpush subscription must contain endpoint, auth, and p256dh keys"))
 			}
+			var existingSub model.UserWebpushSubscription
+			errSub := nc.db.WithContext(c.Request().Context()).Where("user_id = ? AND endpoint = ?", user.ID, sub.Endpoint).First(&existingSub).Error
+			if errors.Is(errSub, gorm.ErrRecordNotFound) {
+				_ = nc.db.WithContext(c.Request().Context()).Create(&model.UserWebpushSubscription{
+					UserID:    user.ID,
+					Endpoint:  sub.Endpoint,
+					P256dh:    sub.Keys.P256dh,
+					Auth:      sub.Keys.Auth,
+					UserAgent: c.Request().UserAgent(),
+				}).Error
+			}
 		}
 
 		settings := json.RawMessage(updateData.MethodSettings)
@@ -202,6 +216,141 @@ func (nc *notificationController) MarkAsRead(c echo.Context) error {
 
 	if err := nc.notificationRepo.MarkAsRead(c.Request().Context(), user, payload.IDs); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, errors.New("could not mark notifications as read"))
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[map[string]bool]{
+		Results: map[string]bool{"success": true},
+	})
+}
+
+type SubscribeWebpushPayload struct {
+	Endpoint string `json:"endpoint"`
+	Keys     struct {
+		Auth   string `json:"auth"`
+		P256dh string `json:"p256dh"`
+	} `json:"keys"`
+	UserAgent string `json:"user_agent"`
+}
+
+type UnsubscribeWebpushPayload struct {
+	Endpoint string `json:"endpoint"`
+}
+
+// GetWebpushSubscriptions returns current user's registered WebPush subscriptions
+// @Summary      Get registered WebPush subscriptions
+// @Tags         notification
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Success      200  {object}  dto.Response[[]model.UserWebpushSubscription]
+// @Failure      500  {object}  dto.Response[string]
+// @Router       /notifications/webpush/subscriptions [get]
+func (nc *notificationController) GetWebpushSubscriptions(c echo.Context) error {
+	user := currentUser(c)
+	var subs []model.UserWebpushSubscription
+	if err := nc.db.WithContext(c.Request().Context()).Where("user_id = ?", user.ID).Order("created_at desc").Find(&subs).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[[]model.UserWebpushSubscription]{
+		Results: subs,
+	})
+}
+
+// SubscribeWebpush registers or updates a WebPush subscription for current user
+// @Summary      Subscribe WebPush endpoint
+// @Tags         notification
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dto.Response[model.UserWebpushSubscription]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
+// @Router       /notifications/webpush/subscribe [post]
+func (nc *notificationController) SubscribeWebpush(c echo.Context) error {
+	user := currentUser(c)
+
+	var payload SubscribeWebpushPayload
+	if err := c.Bind(&payload); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	endpoint := strings.TrimSpace(payload.Endpoint)
+	auth := strings.TrimSpace(payload.Keys.Auth)
+	p256dh := strings.TrimSpace(payload.Keys.P256dh)
+
+	if endpoint == "" || auth == "" || p256dh == "" {
+		return renderApiError(c, http.StatusBadRequest, errors.New("webpush subscription must contain endpoint, auth, and p256dh keys"))
+	}
+
+	userAgent := strings.TrimSpace(payload.UserAgent)
+	if userAgent == "" {
+		userAgent = c.Request().UserAgent()
+	}
+
+	var existing model.UserWebpushSubscription
+	err := nc.db.WithContext(c.Request().Context()).Where("user_id = ? AND endpoint = ?", user.ID, endpoint).First(&existing).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			existing = model.UserWebpushSubscription{
+				UserID:    user.ID,
+				Endpoint:  endpoint,
+				P256dh:    p256dh,
+				Auth:      auth,
+				UserAgent: userAgent,
+			}
+			if err := nc.db.WithContext(c.Request().Context()).Create(&existing).Error; err != nil {
+				return renderApiError(c, http.StatusInternalServerError, err)
+			}
+		} else {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+	} else {
+		existing.P256dh = p256dh
+		existing.Auth = auth
+		existing.UserAgent = userAgent
+		if err := nc.db.WithContext(c.Request().Context()).Save(&existing).Error; err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[model.UserWebpushSubscription]{
+		Results: existing,
+	})
+}
+
+// UnsubscribeWebpush deletes a WebPush subscription for current user
+// @Summary      Unsubscribe WebPush endpoint
+// @Tags         notification
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dto.Response[map[string]bool]
+// @Failure      500  {object}  dto.Response[string]
+// @Router       /notifications/webpush/unsubscribe [post]
+func (nc *notificationController) UnsubscribeWebpush(c echo.Context) error {
+	user := currentUser(c)
+
+	var payload UnsubscribeWebpushPayload
+	_ = c.Bind(&payload)
+
+	endpoint := strings.TrimSpace(payload.Endpoint)
+	if endpoint == "" {
+		endpoint = strings.TrimSpace(c.QueryParam("endpoint"))
+	}
+
+	query := nc.db.WithContext(c.Request().Context()).Where("user_id = ?", user.ID)
+	if endpoint != "" {
+		query = query.Where("endpoint = ?", endpoint)
+	}
+
+	if err := query.Delete(&model.UserWebpushSubscription{}).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, dto.Response[map[string]bool]{

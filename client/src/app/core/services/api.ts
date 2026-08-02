@@ -14,6 +14,7 @@ import {
   ProfileUpdateRequest,
   UserProfile,
   UserUpdateRequest,
+  UserWebpushSubscription,
 } from '../../core/types/user';
 import {
   CalendarEvent,
@@ -101,6 +102,30 @@ export class Api {
     return this.http.post<APIResponse<UserNotificationSettings>>(
       `${this.baseUrl}/notifications/${method}`,
       payload,
+    );
+  }
+
+  public getWebpushSubscriptions(): Observable<APIResponse<UserWebpushSubscription[]>> {
+    return this.http.get<APIResponse<UserWebpushSubscription[]>>(
+      `${this.baseUrl}/notifications/webpush/subscriptions`,
+    );
+  }
+
+  public subscribeWebpush(payload: {
+    endpoint: string;
+    keys: { auth: string; p256dh: string };
+    user_agent?: string;
+  }): Observable<APIResponse<UserWebpushSubscription>> {
+    return this.http.post<APIResponse<UserWebpushSubscription>>(
+      `${this.baseUrl}/notifications/webpush/subscribe`,
+      payload,
+    );
+  }
+
+  public unsubscribeWebpush(endpoint?: string): Observable<APIResponse<{ success: boolean }>> {
+    return this.http.post<APIResponse<{ success: boolean }>>(
+      `${this.baseUrl}/notifications/webpush/unsubscribe`,
+      { endpoint: endpoint ?? '' },
     );
   }
 

@@ -42,6 +42,15 @@ export type UserPreferredUnits = {
 
 export type NotificationProvider = 'database' | 'mail' | 'webpush';
 
+export type UserWebpushSubscription = {
+  id: number;
+  user_id: number;
+  endpoint: string;
+  user_agent?: string;
+  created_at: string;
+  updated_at?: string;
+};
+
 export type NotificationType = 'follow_request' | 'workout_like' | 'workout_reply';
 
 export type ProfileSettings = {

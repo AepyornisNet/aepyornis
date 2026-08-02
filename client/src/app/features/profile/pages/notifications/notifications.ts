@@ -4,7 +4,11 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { SwPush } from '@angular/service-worker';
 import { AppConfig } from '../../../../core/services/app-config';
 import { ProfileStore } from '../../services/profile-store';
-import { NotificationProvider, NotificationType } from '../../../../core/types/user';
+import {
+  NotificationProvider,
+  NotificationType,
+  UserWebpushSubscription,
+} from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { firstValueFrom } from 'rxjs';
@@ -42,6 +46,7 @@ export class ProfileNotificationsPage implements OnInit {
   public readonly requestingWebPush = signal(false);
   public readonly savingNotificationSettings = signal(false);
   public readonly isSubscribed = signal(false);
+  public readonly webpushSubscriptions = signal<UserWebpushSubscription[]>([]);
 
   public readonly notificationModel = signal({
     follow_request: {
@@ -93,6 +98,7 @@ export class ProfileNotificationsPage implements OnInit {
 
   public ngOnInit(): void {
     void this.loadNotificationSettings();
+    void this.loadWebpushSubscriptions();
     if (this.swPush.isEnabled) {
       this.swPush.subscription.subscribe((sub) => {
         this.isSubscribed.set(Boolean(sub));
@@ -156,6 +162,20 @@ export class ProfileNotificationsPage implements OnInit {
 
     try {
       const subscription = await this.swPush.requestSubscription({ serverPublicKey });
+      const subJson = subscription.toJSON();
+      const keys = subJson.keys as Record<string, string> | undefined;
+      if (keys?.['auth'] && keys?.['p256dh']) {
+        await firstValueFrom(
+          this.api.subscribeWebpush({
+            endpoint: subscription.endpoint,
+            keys: {
+              auth: keys['auth'],
+              p256dh: keys['p256dh'],
+            },
+            user_agent: navigator.userAgent,
+          }),
+        );
+      }
       await firstValueFrom(
         this.api.updateNotificationSettings(
           'webpush',
@@ -164,6 +184,7 @@ export class ProfileNotificationsPage implements OnInit {
       );
       this.store.successMessage.set(this.translate.instant('Push notifications enabled'));
       setTimeout(() => this.store.successMessage.set(null), 3000);
+      await this.loadWebpushSubscriptions();
     } catch (err) {
       this.store.error.set(
         this.translate.instant('Failed to enable push notifications: {{message}}', {
@@ -175,33 +196,63 @@ export class ProfileNotificationsPage implements OnInit {
     }
   }
 
-  public async unsubscribeWebpush(): Promise<void> {
-    if (!this.swPush.isEnabled) {
-      return;
-    }
-
+  public async unsubscribeWebpush(targetEndpoint?: string): Promise<void> {
     this.requestingWebPush.set(true);
     this.store.error.set(null);
     this.store.successMessage.set(null);
 
     try {
-      await this.swPush.unsubscribe();
-      await firstValueFrom(
-        this.api.updateNotificationSettings('webpush', await this.payload('webpush', '')),
-      );
-      this.isSubscribed.set(false);
-      this.store.successMessage.set(
-        this.translate.instant('Push notifications disabled on this device'),
-      );
+      if (targetEndpoint) {
+        await firstValueFrom(this.api.unsubscribeWebpush(targetEndpoint));
+        if (this.swPush.isEnabled) {
+          const currentSub = await firstValueFrom(this.swPush.subscription);
+          if (currentSub?.endpoint === targetEndpoint) {
+            await this.swPush.unsubscribe();
+            this.isSubscribed.set(false);
+          }
+        }
+      } else {
+        if (this.swPush.isEnabled) {
+          const currentSub = await firstValueFrom(this.swPush.subscription);
+          if (currentSub) {
+            await firstValueFrom(this.api.unsubscribeWebpush(currentSub.endpoint));
+            await this.swPush.unsubscribe();
+          }
+        }
+        this.isSubscribed.set(false);
+      }
+      this.store.successMessage.set(this.translate.instant('Push notification endpoint removed'));
       setTimeout(() => this.store.successMessage.set(null), 3000);
+      await this.loadWebpushSubscriptions();
     } catch (err) {
       this.store.error.set(
-        this.translate.instant('Failed to disable push notifications: {{message}}', {
+        this.translate.instant('Failed to remove push notification endpoint: {{message}}', {
           message: err instanceof Error ? err.message : String(err),
         }),
       );
     } finally {
       this.requestingWebPush.set(false);
+    }
+  }
+
+  public async loadWebpushSubscriptions(): Promise<void> {
+    if (!this.appConfig.getAppInfo()()?.webpush_public_key) {
+      return;
+    }
+    try {
+      const res = await firstValueFrom(this.api.getWebpushSubscriptions());
+      this.webpushSubscriptions.set(res.results ?? []);
+    } catch (err) {
+      console.error('Failed to load webpush subscriptions:', err);
+    }
+  }
+
+  public formatEndpointDomain(endpoint: string): string {
+    try {
+      const url = new URL(endpoint);
+      return url.hostname;
+    } catch {
+      return endpoint;
     }
   }
 
