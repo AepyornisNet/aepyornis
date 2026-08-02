@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/labstack/echo/v4"
@@ -89,9 +90,16 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 
 	u := currentUser(c)
 
+	filters, err := model.GetWorkoutsFilters(c)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
 	query := hc.db.Table("workout_records AS wr").
 		Joins("JOIN workouts ON workouts.id = wr.workout_id").
 		Where("workouts.profile_id = ?", u.Profile.ID)
+
+	query = filters.ToQueryWithoutOrder(query)
 
 	if bounds != nil {
 		query = query.Where(
@@ -193,7 +201,12 @@ func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
 	coords := geojson.NewFeatureCollection()
 	u := currentUser(c)
 
-	wos, err := hc.workoutRepo.ListByProfileID(u.Profile.ID)
+	filters, err := model.GetWorkoutsFilters(c)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	wos, err := hc.workoutRepo.ListByProfileAndFilters(u.Profile.ID, filters, 0, 0)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

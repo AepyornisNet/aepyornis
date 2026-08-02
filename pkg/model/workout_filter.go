@@ -8,6 +8,7 @@ import (
 type WorkoutFilters struct {
 	db       *gorm.DB
 	Type     WorkoutType `query:"type"`
+	SubType  string      `query:"sub_type"`
 	Active   bool        `query:"active"`
 	Since    string      `query:"since"`
 	OrderBy  string      `query:"order_by"`
@@ -44,8 +45,19 @@ func (wf *WorkoutFilters) ToQuery(db *gorm.DB) *gorm.DB {
 	wf.db = db
 
 	wf.setTypeFilter()
+	wf.setSubTypeFilter()
 	wf.setSinceFilter()
 	wf.setOrderFilter()
+
+	return wf.db
+}
+
+func (wf *WorkoutFilters) ToQueryWithoutOrder(db *gorm.DB) *gorm.DB {
+	wf.db = db
+
+	wf.setTypeFilter()
+	wf.setSubTypeFilter()
+	wf.setSinceFilter()
 
 	return wf.db
 }
@@ -55,7 +67,15 @@ func (wf *WorkoutFilters) setTypeFilter() {
 		return
 	}
 
-	wf.db = wf.db.Where(&Workout{Type: wf.Type})
+	wf.db = wf.db.Where("workouts.type = ?", wf.Type)
+}
+
+func (wf *WorkoutFilters) setSubTypeFilter() {
+	if wf.SubType == "" {
+		return
+	}
+
+	wf.db = wf.db.Where("workouts.sub_type = ?", wf.SubType)
 }
 
 func (wf *WorkoutFilters) setSinceFilter() {

@@ -20,20 +20,42 @@
   </div>
 
   <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3" filters>
-    <div class="col">
-      <label class="form-label small text-muted" for="filter-type">{{ 'Type' | translate }}</label>
-      <select
-        class="form-select form-select-sm"
-        id="filter-type"
-        [value]="filterState().type"
-        (change)="onWorkoutTypeFilterChange($any($event.target).value)"
-      >
-        <option value="">{{ 'All' | translate }}</option>
-        @for (type of workoutTypes; track type.value) {
-          <option [value]="type.value">{{ type.name | translate }}</option>
-        }
-      </select>
-    </div>
+    @if (availableTypes().length > 1) {
+      <div class="col">
+        <label class="form-label small text-muted" for="filter-type">{{
+          'Type' | translate
+        }}</label>
+        <select
+          class="form-select form-select-sm"
+          id="filter-type"
+          [value]="filterState().type"
+          (change)="onWorkoutTypeFilterChange($any($event.target).value)"
+        >
+          <option value="">{{ 'All' | translate }}</option>
+          @for (type of availableTypes(); track type) {
+            <option [value]="type">{{ sportLabel(type) | translate }}</option>
+          }
+        </select>
+      </div>
+    }
+    @if (filterState().type && availableSubTypes().length > 1) {
+      <div class="col">
+        <label class="form-label small text-muted" for="filter-subtype">{{
+          'Subtype' | translate
+        }}</label>
+        <select
+          class="form-select form-select-sm"
+          id="filter-subtype"
+          [value]="filterState().sub_type"
+          (change)="onWorkoutSubTypeFilterChange($any($event.target).value)"
+        >
+          <option value="">{{ 'All' | translate }}</option>
+          @for (subType of availableSubTypes(); track subType) {
+            <option [value]="subType">{{ formatSubType(subType) | translate }}</option>
+          }
+        </select>
+      </div>
+    }
     <div class="col">
       <label class="form-label small text-muted" for="filter-since">{{
         'Since' | translate

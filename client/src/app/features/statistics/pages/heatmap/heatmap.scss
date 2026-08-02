@@ -27,6 +27,16 @@
   padding: 12px;
 }
 
+.map-filters {
+  position: absolute;
+  top: 12px;
+  right: 52px;
+  left: auto;
+  z-index: 10;
+  width: 260px;
+  padding: 12px;
+}
+
 :host ::ng-deep .wt-map-control {
   margin-top: 8px;
 }

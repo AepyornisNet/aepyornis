@@ -22,6 +22,60 @@
       (mapLoad)="onMapLoad($event)"
     />
 
+    @if (showFilters()) {
+      <div class="map-filters card shadow-sm">
+        @if (availableTypes().length > 1) {
+          <div class="mb-2">
+            <label class="form-label mb-1" for="workout-type">{{ 'Sport' | translate }}</label>
+            <select
+              class="form-select form-select-sm"
+              id="workout-type"
+              [ngModel]="selectedType()"
+              (ngModelChange)="onSportTypeChange($event)"
+            >
+              <option value="">{{ 'All' | translate }}</option>
+              @for (t of availableTypes(); track t) {
+                <option [value]="t">{{ sportLabel(t) | translate }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        @if (selectedType() && availableSubTypes().length > 1) {
+          <div class="mb-2">
+            <label class="form-label mb-1" for="workout-sub-type">{{
+              'Subtype' | translate
+            }}</label>
+            <select
+              class="form-select form-select-sm"
+              id="workout-sub-type"
+              [ngModel]="selectedSubType()"
+              (ngModelChange)="selectedSubType.set($event); onFilterChange()"
+            >
+              <option value="">{{ 'All' | translate }}</option>
+              @for (st of availableSubTypes(); track st) {
+                <option [value]="st">{{ formatSubType(st) | translate }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="mb-2">
+          <label class="form-label mb-1" for="workout-since">{{ 'Since' | translate }}</label>
+          <select
+            class="form-select form-select-sm"
+            id="workout-since"
+            [ngModel]="selectedSince()"
+            (ngModelChange)="selectedSince.set($event); onFilterChange()"
+          >
+            @for (opt of sinceOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label | translate }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    }
+
     @if (showSettings()) {
       <div class="map-controls card shadow-sm">
         <div class="mb-2">
