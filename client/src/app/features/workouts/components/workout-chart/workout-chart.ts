@@ -26,6 +26,7 @@ import {
   LineController,
   LineElement,
   PointElement,
+  ScriptableLineSegmentContext,
   TimeScale,
   Tooltip,
   TooltipItem,
@@ -35,12 +36,7 @@ import zoomPlugin from 'chartjs-plugin-zoom';
 import { MapDataDetails } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { User } from '../../../../core/services/user';
-import {
-  DEFAULT_HEART_RATE_COLOR,
-  DEFAULT_POWER_COLOR,
-  FTP_ZONE_COLORS,
-  HR_ZONE_COLORS,
-} from '../zone-colors';
+import { FTP_ZONE_COLORS, HR_ZONE_COLORS } from '../zone-colors';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { getMetricDef } from '../../../../core/config/metrics';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
@@ -423,7 +419,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             ...(metric === 'heart-rate'
               ? {
                   segment: {
-                    borderColor: (ctx: any): string =>
+                    borderColor: (ctx: ScriptableLineSegmentContext): string =>
                       this.zoneColor(
                         mapData,
                         'hr-zone',
@@ -437,7 +433,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             ...(metric === 'power'
               ? {
                   segment: {
-                    borderColor: (ctx: any): string =>
+                    borderColor: (ctx: ScriptableLineSegmentContext): string =>
                       this.zoneColor(
                         mapData,
                         'zone',
