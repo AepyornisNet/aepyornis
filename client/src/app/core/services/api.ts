@@ -765,4 +765,13 @@ export class Api {
       params: httpParams,
     });
   }
+
+  // Legal endpoints
+  public getLegalNotice(lang: string): Observable<string> {
+    return this.http.get(`${this.baseUrl}/legal/notice/${lang}`, { responseType: 'text' });
+  }
+
+  public getPrivacyPolicy(lang: string): Observable<string> {
+    return this.http.get(`${this.baseUrl}/legal/privacy/${lang}`, { responseType: 'text' });
+  }
 }

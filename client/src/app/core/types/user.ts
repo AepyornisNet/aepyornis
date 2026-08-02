@@ -28,6 +28,8 @@ export type AppInfo = {
   activity_pub_active: boolean;
   notification_providers: NotificationProvider[];
   webpush_public_key?: string;
+  legal_notice_languages?: string[];
+  privacy_languages?: string[];
 };
 
 export type UserPreferredUnits = {

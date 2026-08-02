@@ -51,6 +51,8 @@ type EnvConfig struct {
 
 	JWTEncryptionKeyFile string `mapstructure:"jwt_encryption_key_file" gorm:"-"` // File containing the encryption key for JWT
 	DSNFile              string `mapstructure:"dsn_file" gorm:"-"`                // File containing the database DSN
+	LegalNoticePath      string `mapstructure:"legal_notice_path" gorm:"-"`       // Path to folder containing Legal Notice HTML files
+	PrivacyPath          string `mapstructure:"privacy_path" gorm:"-"`            // Path to folder containing Privacy Policy HTML files
 }
 
 func getConfig(db *gorm.DB) (*Config, error) {

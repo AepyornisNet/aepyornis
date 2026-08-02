@@ -51,6 +51,8 @@ type AppInfoResponse struct {
 	ActivityPubActive     bool     `json:"activity_pub_active"`
 	NotificationProviders []string `json:"notification_providers"`
 	WebpushPublicKey      *string  `json:"webpush_public_key,omitempty"`
+	LegalNoticeLanguages  []string `json:"legal_notice_languages"`
+	PrivacyLanguages      []string `json:"privacy_languages"`
 }
 
 type ActivityPubProfileSummaryResponse struct {
