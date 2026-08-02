@@ -286,15 +286,17 @@ func (e *expectations) assert(
 	nc NonceChecker,
 ) error {
 	var (
-		nonce             string
 		missingComponents []string
 		cmv               compositeMessageVerifier
 		mv                messageVerifier
 	)
 
+	nonce := NonceValue{}
+
 	nonceValue, noncePresent := params.Params.Get(string(Nonce))
 	if noncePresent {
-		nonce = nonceValue.(string) //nolint: forcetypeassert
+		nonce.Value = nonceValue.(string) //nolint: forcetypeassert
+		nonce.Present = true
 	}
 
 	if err := nc.CheckNonce(msg.Context, nonce); err != nil {
@@ -310,7 +312,7 @@ func (e *expectations) assert(
 
 	if params.expires.Equal(time.Time{}) {
 		if *e.reqExpiresTS {
-			return fmt.Errorf("%w: expected expires parameter not preset", ErrMissingParameter)
+			return fmt.Errorf("%w: expected expires parameter not present", ErrMissingParameter)
 		}
 	} else if now.After(params.expires.Add(e.tolerance)) {
 		return fmt.Errorf("%w: signature expired", ErrValidity)
@@ -318,7 +320,7 @@ func (e *expectations) assert(
 
 	if params.created.Equal(time.Time{}) {
 		if *e.reqCreatedTS {
-			return fmt.Errorf("%w: expected created parameter not preset", ErrMissingParameter)
+			return fmt.Errorf("%w: expected created parameter not present", ErrMissingParameter)
 		}
 	} else {
 		if now.Before(params.created.Add(-1 * e.tolerance)) {
