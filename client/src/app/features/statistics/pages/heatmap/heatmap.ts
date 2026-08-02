@@ -15,6 +15,7 @@ import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
 import {
   ExpressionSpecification,
   GeoJSONSource,
+  IControl,
   LngLatBounds,
   Map,
   MapLayerMouseEvent,
@@ -24,6 +25,7 @@ import { Api } from '../../../../core/services/api';
 import { WorkoutPopupData } from '../../../../core/types/statistics';
 import { WorkoutPopup } from '../../components/workout-popup/workout-popup';
 import { BaseMapComponent } from '../../../../core/components/base-map/base-map';
+import { faSolidGear } from '@ng-icons/font-awesome/solid';
 
 const DEFAULT_HEATMAP_CELL_SIZE = 0.0015;
 const MEDIUM_HEATMAP_CELL_SIZE = 0.0007;
@@ -76,20 +78,64 @@ export class Heatmap extends BaseMapComponent {
   public readonly blur = signal(15);
   public readonly showMarkers = signal(true);
   public readonly onlyTrace = signal(false);
+  public readonly showSettings = signal(false);
+
+  private settingsButton?: HTMLButtonElement;
+  private settingsControl?: IControl;
 
   private heatMapData: [number, number, number][] = [];
   private markerFeatures: GeoJSON.Feature[] = [];
 
   protected override onDestroy(): void {
     this.map?.off('moveend', this.onMapMoveEnd);
+    if (this.map && this.settingsControl) {
+      this.map.removeControl(this.settingsControl);
+    }
   }
 
   public async onMapLoad(map: Map): Promise<void> {
     this.onMapLoadBase(map);
+    this.addSettingsControl();
     this.bindMarkerInteractions();
     this.refreshHeatmapAfterStyleChange();
     await this.loadHeatmapData();
     this.map!.on('moveend', this.onMapMoveEnd);
+  }
+
+  private addSettingsControl(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group wt-map-control';
+
+    const settingsButton = this.createControlButton(faSolidGear, 'Settings', () => {
+      this.showSettings.set(!this.showSettings());
+      this.updateSettingsControlState();
+    });
+    this.settingsButton = settingsButton;
+    container.append(settingsButton);
+
+    this.settingsControl = {
+      onAdd: (): HTMLElement => container,
+      onRemove: (): void => {
+        container.remove();
+      },
+      getDefaultPosition: () => 'top-right' as const,
+    };
+
+    this.map.addControl(this.settingsControl, 'top-right');
+    this.updateSettingsControlState();
+  }
+
+  private updateSettingsControlState(): void {
+    if (!this.settingsButton) {
+      return;
+    }
+    const active = this.showSettings();
+    this.settingsButton.classList.toggle('is-active', active);
+    this.settingsButton.setAttribute('aria-pressed', String(active));
   }
 
   public onRenderSettingsChange(): void {
@@ -123,7 +169,7 @@ export class Heatmap extends BaseMapComponent {
       });
 
       this.fitInitialBounds();
-      await this.refreshCoordinatesIfNeeded(true, false);
+      await this.refreshCoordinatesIfNeeded(true, true);
     } catch (err) {
       console.error('Failed to load heatmap data:', err);
       this.error.set('Failed to load heatmap data. Please try again.');
