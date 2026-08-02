@@ -45,8 +45,13 @@
           @if (dataService.workout()!.total_distance) {
             <div class="stat-card">
               <div class="stat-label">{{ 'Distance' | translate }}</div>
-              <div class="stat-value">
-                {{ dataService.workout()!.total_distance! | formatDistance }}
+              <div class="stat-value d-flex align-items-center gap-2">
+                <app-icon
+                  size="22"
+                  [class]="getMetricDef('distance').colorClass"
+                  [name]="getMetricDef('distance').icon"
+                />
+                <span>{{ dataService.workout()!.total_distance! | formatDistance }}</span>
               </div>
             </div>
           }
@@ -54,8 +59,13 @@
           @if (dataService.workout()!.total_duration) {
             <div class="stat-card">
               <div class="stat-label">{{ 'Duration' | translate }}</div>
-              <div class="stat-value">
-                {{ dataService.workout()!.total_duration! | formatDuration }}
+              <div class="stat-value d-flex align-items-center gap-2">
+                <app-icon
+                  size="22"
+                  [class]="getMetricDef('duration').colorClass"
+                  [name]="getMetricDef('duration').icon"
+                />
+                <span>{{ dataService.workout()!.total_duration! | formatDuration }}</span>
               </div>
             </div>
           }
@@ -65,11 +75,16 @@
               <div class="stat-label">
                 {{ averageSpeedLabel(dataService.workout()!.type) | translate }}
               </div>
-              <div class="stat-value">
-                {{
+              <div class="stat-value d-flex align-items-center gap-2">
+                <app-icon
+                  size="22"
+                  [class]="getMetricDef('speed').colorClass"
+                  [name]="getMetricDef('speed').icon"
+                />
+                <span>{{
                   dataService.workout()!.average_speed_no_pause!
                     | formatSpeed: dataService.workout()!.type
-                }}
+                }}</span>
               </div>
             </div>
           }
@@ -77,8 +92,13 @@
           @if (dataService.workout()!.total_repetitions) {
             <div class="stat-card">
               <div class="stat-label">{{ 'Repetitions' | translate }}</div>
-              <div class="stat-value">
-                {{ dataService.workout()!.total_repetitions! }}
+              <div class="stat-value d-flex align-items-center gap-2">
+                <app-icon
+                  size="22"
+                  [class]="getMetricDef('repetitions').colorClass"
+                  [name]="getMetricDef('repetitions').icon"
+                />
+                <span>{{ dataService.workout()!.total_repetitions! }}</span>
               </div>
             </div>
           }
@@ -86,8 +106,13 @@
           @if (dataService.workout()!.total_weight) {
             <div class="stat-card">
               <div class="stat-label">{{ 'Weight' | translate }}</div>
-              <div class="stat-value">
-                {{ dataService.workout()!.total_weight! }}
+              <div class="stat-value d-flex align-items-center gap-2">
+                <app-icon
+                  size="22"
+                  [class]="getMetricDef('weight').colorClass"
+                  [name]="getMetricDef('weight').icon"
+                />
+                <span>{{ dataService.workout()!.total_weight! }}</span>
               </div>
             </div>
           }

@@ -42,6 +42,8 @@ import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 
+import { getMetricDef } from '../../../../core/config/metrics';
+
 @Component({
   selector: 'app-workout-detail',
   imports: [
@@ -99,6 +101,7 @@ export class WorkoutDetailPage implements OnInit {
   public readonly sportLabel = getSportLabel;
   public readonly sportSubtypeLabel = getSportSubtypeLabel;
   public readonly averageSpeedLabel = getAverageSpeedLabel;
+  public readonly getMetricDef = getMetricDef;
 
   public constructor() {
     // React to interval selection changes

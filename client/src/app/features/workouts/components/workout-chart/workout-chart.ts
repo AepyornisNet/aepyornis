@@ -41,6 +41,7 @@ import {
   HR_ZONE_COLORS,
 } from '../zone-colors';
 import { TranslateService } from '@ngx-translate/core';
+import { getMetricDef } from '../../../../core/config/metrics';
 
 Chart.register(
   TimeScale,
@@ -329,6 +330,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         yAxisID: 'speed',
         spanGaps: true,
         hidden: false,
+        borderColor: getMetricDef('speed').color,
+        backgroundColor: getMetricDef('speed').color,
       });
     }
 
@@ -347,6 +350,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         ) {
           const settings = metricSettings[metric];
           const hiddenByDefault = settings?.hiddenByDefault || true;
+          const metricIndex = metrics.indexOf(metric);
           datasets.push({
             type: 'line',
             label: this.getMetricLabel(metric),
@@ -354,6 +358,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             yAxisID: metric,
             spanGaps: true,
             hidden: hiddenByDefault,
+            borderColor: getMetricDef(metric, metricIndex).color,
+            backgroundColor: getMetricDef(metric, metricIndex).color,
             ...(metric === 'heart-rate'
               ? {
                   segment: {
@@ -363,7 +369,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
                         'hr-zone',
                         ctx.p0DataIndex,
                         HR_ZONE_COLORS,
-                        DEFAULT_HEART_RATE_COLOR,
+                        getMetricDef('heart-rate').color,
                       ),
                   },
                 }
@@ -377,7 +383,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
                         'zone',
                         ctx.p0DataIndex,
                         FTP_ZONE_COLORS,
-                        DEFAULT_POWER_COLOR,
+                        getMetricDef('power').color,
                       ),
                   },
                 }
@@ -407,6 +413,8 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         fill: 'start',
         spanGaps: true,
         hidden: false,
+        borderColor: getMetricDef('elevation').color,
+        backgroundColor: getMetricDef('elevation').color + '20',
       });
     }
 

@@ -16,6 +16,7 @@ import {
   faSolidBars,
   faSolidBell,
   faSolidBicycle,
+  faSolidBolt,
   faSolidBookmark,
   faSolidCalculator,
   faSolidChartLine,
@@ -47,6 +48,7 @@ import {
   faSolidHorse,
   faSolidLanguage,
   faSolidLockOpen,
+  faSolidLungs,
   faSolidMagnifyingGlass,
   faSolidMapLocationDot,
   faSolidMountain,
@@ -183,6 +185,8 @@ export const iconProviders = provideIcons({
   faSolidBan,
   faSolidTrophy,
   faSolidWrench,
+  faSolidBolt,
+  faSolidLungs,
 
   // Font Awesome Regular
   faClock,

@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { _, TranslatePipe } from '@ngx-translate/core';
+import { getMetricDef } from '../../../../core/config/metrics';
 
 import { Api } from '../../../../core/services/api';
 import {
@@ -126,9 +127,11 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   },
 ];
 
+import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+
 @Component({
   selector: 'app-workout-statistics',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, AppIcon],
   templateUrl: './workout-statistics.html',
   styleUrl: './workout-statistics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -183,6 +186,14 @@ export class WorkoutStatisticsComponent {
 
     return cards;
   });
+
+  public getCardIconClass(key: string): string {
+    return getMetricDef(key).colorClass;
+  }
+
+  public getCardIcon(key: string): string {
+    return getMetricDef(key).icon;
+  }
 
   public hasStatistics(): boolean {
     return this.cards().length > 0;
