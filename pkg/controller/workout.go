@@ -291,13 +291,13 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	ownerUserID := workoutOwnerUserID(workout)
-	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.db, ownerUserID, workout.Type, workout.ID)
+	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.db, workout.ProfileID, workout.Type, workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	result := dto.NewWorkoutDetailResponse(workout, records)
+	ownerUserID := workoutOwnerUserID(workout)
 	published, err := wc.apOutboxRepo.PublishedMap(ownerUserID, []uint64{workout.ID})
 	if err == nil {
 		result.ActivityPubPublished = published[workout.ID]
