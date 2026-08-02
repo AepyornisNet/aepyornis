@@ -52,11 +52,11 @@ type syncedNonceStore struct {
 
 var errInvalidNonce = errors.New("nonce already seen")
 
-func (s *syncedNonceStore) CheckNonce(_ context.Context, n string) error {
-	if n == "" {
+func (s *syncedNonceStore) CheckNonce(_ context.Context, n httpsig.NonceValue) error {
+	if !n.Present || n.Value == "" {
 		return nil
 	}
-	_, ok := s.Map.LoadOrStore(n, struct{}{})
+	_, ok := s.Map.LoadOrStore(n.Value, struct{}{})
 	if ok {
 		return errInvalidNonce
 	}
