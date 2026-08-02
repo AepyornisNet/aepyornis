@@ -131,6 +131,10 @@ github.com/go-openapi/swag/typeutils
 # github.com/go-openapi/swag/yamlutils v0.25.4
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/yamlutils
+# github.com/go-resty/resty/v2 v2.17.2
+## explicit; go 1.23.0
+github.com/go-resty/resty/v2
+github.com/go-resty/resty/v2/shellescape
 # github.com/go-sql-driver/mysql v1.9.3
 ## explicit; go 1.21.0
 github.com/go-sql-driver/mysql
@@ -635,6 +639,3 @@ modernc.org/memory
 # modernc.org/sqlite v1.42.2
 ## explicit; go 1.24.0
 modernc.org/sqlite/lib
-# resty.dev/v3 v3.0.0-beta.6
-## explicit; go 1.23.0
-resty.dev/v3

@@ -11,7 +11,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/anyappinc/fitbit"
-	"resty.dev/v3"
+	"github.com/go-resty/resty/v2"
 )
 
 func (fs *fitbitSync) initRESTClient() {
@@ -126,7 +126,7 @@ func (fs *fitbitSync) uploadActivity(a fitbit.Activity) error {
 
 	var response dto.Response[[]dto.WorkoutResponse]
 
-	if err := json.Unmarshal(res.Bytes(), &response); err != nil {
+	if err := json.Unmarshal(res.Body(), &response); err != nil {
 		return err
 	}
 
