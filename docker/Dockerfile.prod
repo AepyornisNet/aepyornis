@@ -1,4 +1,4 @@
-FROM node:24-alpine AS client
+FROM node:25-alpine AS client
 
 RUN apk --no-cache add make
 
