@@ -299,6 +299,17 @@ export class Workouts extends PaginatedListView<Workout> {
     this.baseList().toggleItemSelection(id);
   }
 
+  public toggleSelectAll(): void {
+    const baseListComponent = this.baseList();
+    const allIds = this.workouts().map((w) => w.id);
+    const allSelected = allIds.every((id) => baseListComponent.isItemSelected(id));
+    if (allSelected) {
+      baseListComponent.removeFromSelection(allIds);
+    } else {
+      baseListComponent.addToSelection(allIds);
+    }
+  }
+
   private handleFilterChange(update: Partial<WorkoutListFilterState>): void {
     this._filters.update((state) => ({
       ...state,

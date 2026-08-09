@@ -108,6 +108,7 @@
       [multiSelectActive]="isMultiSelectActive()"
       [selectedItems]="baseList().selectedItems()"
       (selectionToggled)="toggleItemSelection($event)"
+      (selectAllToggled)="toggleSelectAll()"
     >
       <!-- Table header -->
       <ng-template #tableHeader>

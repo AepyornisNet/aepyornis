@@ -101,4 +101,22 @@ export class BaseList {
     this.selectedItems.set(new Set(ids));
     this.selectionChanged.emit(this.selectedItems());
   }
+
+  public addToSelection(ids: (number | string)[]): void {
+    this.selectedItems.update((selected) => {
+      const newSet = new Set(selected);
+      ids.forEach((id) => newSet.add(id));
+      return newSet;
+    });
+    this.selectionChanged.emit(this.selectedItems());
+  }
+
+  public removeFromSelection(ids: (number | string)[]): void {
+    this.selectedItems.update((selected) => {
+      const newSet = new Set(selected);
+      ids.forEach((id) => newSet.delete(id));
+      return newSet;
+    });
+    this.selectionChanged.emit(this.selectedItems());
+  }
 }
