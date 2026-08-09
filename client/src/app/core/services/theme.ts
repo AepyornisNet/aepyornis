@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
 export type ThemeOption = 'light' | 'dark' | 'browser';
+export const OPENFREEMAP_STYLE_BASE_URL = 'https://tiles.openfreemap.org/styles';
 
 @Injectable({
   providedIn: 'root',
@@ -8,6 +9,7 @@ export type ThemeOption = 'light' | 'dark' | 'browser';
 export class ThemeService {
   private readonly currentThemeSetting = signal<ThemeOption>('browser');
   private readonly activeTheme = signal<'light' | 'dark'>('light');
+  private readonly mapStyleSetting = signal<string>('default');
 
   public constructor() {
     const savedTheme = localStorage.getItem('theme') as ThemeOption | null;
@@ -30,6 +32,12 @@ export class ThemeService {
     this.applyTheme();
   }
 
+  public setMapStyle(style?: string | null): void {
+    const validStyle = style || 'default';
+    localStorage.setItem('map_style', validStyle);
+    this.mapStyleSetting.set(validStyle);
+  }
+
   public getThemeSetting(): ThemeOption {
     return this.currentThemeSetting();
   }
@@ -40,6 +48,14 @@ export class ThemeService {
 
   public isDarkMode(): boolean {
     return this.activeTheme() === 'dark';
+  }
+
+  public getStreetStyleUrl(): string {
+    const style = this.mapStyleSetting();
+    if (style && style !== 'default') {
+      return `${OPENFREEMAP_STYLE_BASE_URL}/${style}`;
+    }
+    return `${OPENFREEMAP_STYLE_BASE_URL}/${this.isDarkMode() ? 'fiord' : 'bright'}`;
   }
 
   private applyTheme(): void {

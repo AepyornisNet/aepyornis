@@ -124,6 +124,11 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 	user.PreferredUnits = updateData.PreferredUnits
 	user.Language = updateData.Language
 	user.Theme = updateData.Theme
+	if updateData.MapStyle != "" {
+		user.MapStyle = updateData.MapStyle
+	} else {
+		user.MapStyle = model.DefaultProfileMapStyle
+	}
 	user.TotalsShow = model.WorkoutType(updateData.TotalsShow)
 	user.TZ = updateData.Timezone
 	if !updateData.DefaultWorkoutVisibility.IsValid() {

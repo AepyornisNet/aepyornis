@@ -56,6 +56,17 @@
         </select>
       </div>
 
+      <div class="mb-3">
+        <label class="form-label" for="map_style">{{ 'Default map style' | translate }}</label>
+        <select class="form-select" formControlName="map_style" id="map_style">
+          <option value="default">{{ 'Default' | translate }}</option>
+          <option value="bright">OpenFreeMap Bright</option>
+          <option value="fiord">OpenFreeMap Fiord</option>
+          <option value="liberty">OpenFreeMap Liberty</option>
+          <option value="positron">OpenFreeMap Positron</option>
+        </select>
+      </div>
+
       @if (store.appConfig.isAutoImportEnabled()) {
         <div class="mb-3">
           <label class="form-label" for="auto_import_directory">{{

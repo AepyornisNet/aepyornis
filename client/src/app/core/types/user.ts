@@ -57,6 +57,7 @@ export type ProfileSettings = {
   preferred_units: UserPreferredUnits;
   language: string;
   theme: string;
+  map_style?: string;
   totals_show: string;
   timezone: string;
   auto_import_directory: string;
@@ -96,6 +97,7 @@ export type ProfileUpdateRequest = {
   preferred_units: UserPreferredUnits;
   language: string;
   theme: string;
+  map_style?: string;
   totals_show: string;
   timezone: string;
   auto_import_directory: string;
