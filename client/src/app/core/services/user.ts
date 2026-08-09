@@ -53,6 +53,7 @@ export class User {
     this.userInfo.set(user);
 
     this.themeService.setTheme(profile.profile?.theme);
+    this.themeService.setMapStyle(profile.profile?.map_style);
 
     const lang = profile.profile?.language;
     if (lang && lang !== 'browser') {
@@ -108,6 +109,7 @@ export class User {
   public clearUser(): void {
     this.userInfo.set(null);
     this.themeService.setTheme('browser');
+    this.themeService.setMapStyle('default');
   }
 
   public logout(): void {

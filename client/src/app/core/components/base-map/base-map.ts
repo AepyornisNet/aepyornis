@@ -5,8 +5,6 @@ import { _, TranslateService } from '@ngx-translate/core';
 import { IControl, Map, NavigationControl, StyleSpecification } from 'maplibre-gl';
 import { ThemeService } from '../../services/theme';
 
-export const OPENFREEMAP_STYLE_BASE_URL = 'https://tiles.openfreemap.org/styles';
-
 export const AERIAL_STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -81,7 +79,7 @@ export abstract class BaseMapComponent implements OnDestroy {
   protected abstract refreshAfterStyleChange(): void;
 
   protected getStreetStyleUrl(): string {
-    return `${OPENFREEMAP_STYLE_BASE_URL}/${this.themeService.isDarkMode() ? 'fiord' : 'bright'}`;
+    return this.themeService.getStreetStyleUrl();
   }
 
   protected addMapControls(): void {

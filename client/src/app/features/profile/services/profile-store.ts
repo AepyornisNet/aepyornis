@@ -42,6 +42,7 @@ export class ProfileStore {
     timezone: ['UTC'],
     language: ['browser'],
     theme: ['browser'],
+    map_style: ['default'],
     auto_import_directory: [''],
     prefer_full_date: [false],
     default_workout_visibility: [''],
@@ -64,6 +65,12 @@ export class ProfileStore {
     this.profileForm.get('theme')?.valueChanges.subscribe((val) => {
       if (val) {
         this.themeService.setTheme(val);
+      }
+    });
+
+    this.profileForm.get('map_style')?.valueChanges.subscribe((val) => {
+      if (val) {
+        this.themeService.setMapStyle(val);
       }
     });
   }
@@ -91,6 +98,7 @@ export class ProfileStore {
           timezone: response.results.profile.timezone,
           language: response.results.profile.language,
           theme: response.results.profile.theme,
+          map_style: response.results.profile.map_style || 'default',
           auto_import_directory: response.results.profile.auto_import_directory,
           prefer_full_date: response.results.profile.prefer_full_date,
           default_workout_visibility: response.results.profile.default_workout_visibility,
@@ -98,6 +106,7 @@ export class ProfileStore {
         });
 
         this.themeService.setTheme(response.results.profile.theme);
+        this.themeService.setMapStyle(response.results.profile.map_style);
       }
     } catch (err) {
       this.error.set(
@@ -132,6 +141,7 @@ export class ProfileStore {
         this.profile.set(response.results);
 
         this.themeService.setTheme(response.results.profile.theme);
+        this.themeService.setMapStyle(response.results.profile.map_style);
 
         // Apply the language change if it's not "browser"
         const newLang = response.results.profile.language;

@@ -43,6 +43,7 @@ type UserData struct {
 
 	Language                 string            `json:"language"`                   // The user's preferred language
 	Theme                    string            `json:"theme"`                      // The user's preferred color scheme
+	MapStyle                 string            `json:"map_style"`                  // The user's preferred default map style
 	TotalsShow               WorkoutType       `json:"totals_show"`                // What workout type of totals to show
 	TZ                       string            `json:"timezone"`                   // The user's preferred timezone
 	AutoImportDirectory      string            `json:"auto_import_directory"`      // The user's preferred directory for auto-import
@@ -228,6 +229,7 @@ func (u *User) GenerateSalt() {
 func (u *User) ResetDefaults() {
 	u.Language = DefaultProfileLanguage
 	u.Theme = DefaultProfileTheme
+	u.MapStyle = DefaultProfileMapStyle
 	u.TotalsShow = WorkoutTypeRunning
 	u.PreferredUnits.SpeedRaw = "km/h"
 	u.PreferredUnits.DistanceRaw = "km"

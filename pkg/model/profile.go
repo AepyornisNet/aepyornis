@@ -18,6 +18,7 @@ import (
 const (
 	DefaultProfileLanguage = "browser"
 	DefaultProfileTheme    = "browser"
+	DefaultProfileMapStyle = "default"
 )
 
 type Profile struct {

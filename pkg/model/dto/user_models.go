@@ -32,6 +32,7 @@ type ProfileSettings struct {
 	PreferredUnits           model.UserPreferredUnits `json:"preferred_units"`
 	Language                 string                   `json:"language"`
 	Theme                    string                   `json:"theme"`
+	MapStyle                 string                   `json:"map_style"`
 	TotalsShow               string                   `json:"totals_show"`
 	Timezone                 string                   `json:"timezone"`
 	AutoImportDirectory      string                   `json:"auto_import_directory"`
@@ -178,6 +179,11 @@ func NewUserProfileResponse(u *model.User) UserProfileResponse {
 		}
 	}
 
+	mapStyle := u.MapStyle
+	if mapStyle == "" {
+		mapStyle = model.DefaultProfileMapStyle
+	}
+
 	resp := UserProfileResponse{
 		ID:          u.ID,
 		Email:       u.Email,
@@ -195,6 +201,7 @@ func NewUserProfileResponse(u *model.User) UserProfileResponse {
 			PreferredUnits:           u.PreferredUnits,
 			Language:                 u.Language,
 			Theme:                    u.Theme,
+			MapStyle:                 mapStyle,
 			TotalsShow:               string(u.TotalsShow),
 			Timezone:                 u.TZ,
 			AutoImportDirectory:      u.AutoImportDirectory,

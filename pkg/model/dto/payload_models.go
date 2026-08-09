@@ -291,6 +291,7 @@ type ProfileUpdateData struct {
 	PreferredUnits           model.UserPreferredUnits `json:"preferred_units"`
 	Language                 string                   `json:"language"`
 	Theme                    string                   `json:"theme"`
+	MapStyle                 string                   `json:"map_style"`
 	TotalsShow               string                   `json:"totals_show"`
 	Timezone                 string                   `json:"timezone"`
 	AutoImportDirectory      string                   `json:"auto_import_directory"`
