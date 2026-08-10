@@ -31,10 +31,16 @@ export class BaseTable<T extends { id: number | string }> {
   public readonly selectionState = computed<'none' | 'some' | 'all'>(() => {
     const currentPageIds = this.items().map((item) => item.id);
     const total = currentPageIds.length;
-    if (total === 0) return 'none';
+    if (total === 0) {
+      return 'none';
+    }
     const selectedOnPage = currentPageIds.filter((id) => this.selectedItems().has(id)).length;
-    if (selectedOnPage === 0) return 'none';
-    if (selectedOnPage >= total) return 'all';
+    if (selectedOnPage === 0) {
+      return 'none';
+    }
+    if (selectedOnPage >= total) {
+      return 'all';
+    }
     return 'some';
   });
 

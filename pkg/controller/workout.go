@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"archive/zip"
+	"bytes"
 	"errors"
 	"io"
 	"log/slog"
@@ -45,6 +47,8 @@ type WorkoutController interface {
 	DownloadWorkout(c echo.Context) error
 	DownloadWorkoutAttachment(c echo.Context) error
 	GetWorkoutFilterOptions(c echo.Context) error
+	DownloadWorkoutsZip(c echo.Context) error
+	AddEquipmentToWorkouts(c echo.Context) error
 }
 
 type workoutController struct {
@@ -1480,6 +1484,137 @@ func (wc *workoutController) GetWorkoutFilterOptions(c echo.Context) error {
 			"sub_types_by_type": subTypesByType,
 		},
 	})
+}
+
+// DownloadWorkoutsZip packs multiple workouts into a single ZIP file and returns it.
+// @Summary      Download multiple workouts as ZIP
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        ids  query  []int  true  "Workout IDs to include"
+// @Produce      octet-stream
+// @Success      200  {string}  string  "binary zip file"
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
+// @Router       /workouts/download-zip [get]
+func (wc *workoutController) DownloadWorkoutsZip(c echo.Context) error {
+	user := currentUser(c)
+
+	var req struct {
+		IDs []uint64 `json:"ids" query:"ids" form:"ids"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	if len(req.IDs) == 0 {
+		return renderApiError(c, http.StatusBadRequest, errors.New("no workout IDs provided"))
+	}
+
+	var workouts []model.Workout
+	if err := wc.db.Preload("File").Where("profile_id = ?", user.Profile.ID).Find(&workouts, req.IDs).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	if len(workouts) == 0 {
+		return renderApiError(c, http.StatusNotFound, errors.New("no workouts found"))
+	}
+
+	var buf bytes.Buffer
+	zipWriter := zip.NewWriter(&buf)
+
+	for _, w := range workouts {
+		if !w.HasFile() {
+			continue
+		}
+
+		filename := w.File.Filename
+		if filename == "" {
+			filename = "workout_" + strconv.FormatUint(w.ID, 10) + ".gpx"
+		}
+
+		f, err := zipWriter.Create(filename)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		if _, err := f.Write(w.File.Content); err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+	}
+
+	if err := zipWriter.Close(); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\"workouts.zip\"")
+	return c.Blob(http.StatusOK, "application/zip", buf.Bytes())
+}
+
+// AddEquipmentToWorkouts links multiple equipment items to multiple workouts.
+// @Summary      Bulk add equipment to workouts
+// @Tags         workouts
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Workout and Equipment IDs mapping"
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
+// @Router       /workouts/add-equipment [post]
+func (wc *workoutController) AddEquipmentToWorkouts(c echo.Context) error {
+	user := currentUser(c)
+
+	var req struct {
+		WorkoutIDs   []uint64 `json:"workout_ids"`
+		EquipmentIDs []uint64 `json:"equipment_ids"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	if len(req.WorkoutIDs) == 0 {
+		return renderApiError(c, http.StatusBadRequest, errors.New("no workout IDs provided"))
+	}
+	if len(req.EquipmentIDs) == 0 {
+		return renderApiError(c, http.StatusBadRequest, errors.New("no equipment IDs provided"))
+	}
+
+	// Fetch equipment
+	equipment, err := wc.equipmentRepo.GetByUserIDs(user.Profile.ID, req.EquipmentIDs)
+	if err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if len(equipment) == 0 {
+		return renderApiError(c, http.StatusBadRequest, errors.New("no valid equipment found"))
+	}
+
+	// Fetch workouts
+	var workouts []model.Workout
+	if err := wc.db.Where("profile_id = ?", user.Profile.ID).Find(&workouts, req.WorkoutIDs).Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	// Link each equipment to each workout
+	tx := wc.db.Begin()
+	for _, w := range workouts {
+		if err := tx.Model(&w).Association("Equipment").Append(equipment); err != nil {
+			tx.Rollback()
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	resp := dto.Response[map[string]string]{
+		Results: map[string]string{"message": "Equipment added to workouts successfully"},
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 func uploadedFile(file *multipart.FileHeader) ([]byte, error) {

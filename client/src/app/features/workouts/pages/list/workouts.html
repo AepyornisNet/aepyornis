@@ -8,7 +8,7 @@
   (addClicked)="onAddWorkout()"
 >
   <!-- Bulk actions when items are selected -->
-  <div bulkActions class="d-flex gap-2">
+  <div bulkActions class="d-flex align-items-center gap-2 flex-wrap">
     <button
       class="btn btn-sm btn-outline-danger"
       [title]="'Delete selected workouts' | translate"
@@ -17,6 +17,25 @@
       <app-icon name="delete" size="16" />
       <span class="d-none d-sm-inline ms-1">{{ 'Delete' | translate }}</span>
     </button>
+    <button
+      class="btn btn-sm btn-outline-primary"
+      [title]="'Download selected workouts as ZIP' | translate"
+      (click)="bulkDownloadZip()"
+    >
+      <app-icon name="download" size="16" />
+      <span class="d-none d-sm-inline ms-1">{{ 'Download ZIP' | translate }}</span>
+    </button>
+
+    <div>
+      <button
+        class="btn btn-sm btn-outline-secondary"
+        [title]="'Add equipment to selected workouts' | translate"
+        (click)="openAddEquipmentModal()"
+      >
+        <app-icon name="settings" size="16" />
+        <span class="d-none d-sm-inline ms-1">{{ 'Add Equipment' | translate }}</span>
+      </button>
+    </div>
   </div>
 
   <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3" filters>
@@ -107,8 +126,8 @@
       [items]="workouts()"
       [multiSelectActive]="isMultiSelectActive()"
       [selectedItems]="baseList().selectedItems()"
-      (selectionToggled)="toggleItemSelection($event)"
       (selectAllToggled)="toggleSelectAll()"
+      (selectionToggled)="toggleItemSelection($event)"
     >
       <!-- Table header -->
       <ng-template #tableHeader>
@@ -255,3 +274,42 @@
     </app-base-table>
   </div>
 </app-base-list>
+
+<ng-template #addEquipmentModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ 'Add Equipment' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <p>{{ 'Select the equipment you want to add to the selected workouts.' | translate }}</p>
+    <div class="mb-3">
+      <label class="form-label small text-muted" for="bulk-equipment-select">{{
+        'Equipment' | translate
+      }}</label>
+      <select
+        class="form-select"
+        id="bulk-equipment-select"
+        [ngModel]="selectedEquipmentId()"
+        (ngModelChange)="selectedEquipmentId.set($event)"
+      >
+        <option [ngValue]="null">{{ 'Select equipment...' | translate }}</option>
+        @for (eq of equipmentList(); track eq.id) {
+          <option [ngValue]="eq.id">{{ eq.name }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" (click)="modal.dismiss()">
+      {{ 'Cancel' | translate }}
+    </button>
+    <button
+      class="btn btn-primary"
+      type="button"
+      [disabled]="!selectedEquipmentId()"
+      (click)="bulkAddEquipment()"
+    >
+      {{ 'Confirm' | translate }}
+    </button>
+  </div>
+</ng-template>
