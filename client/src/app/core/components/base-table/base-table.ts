@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   contentChild,
   input,
   output,
@@ -24,6 +25,24 @@ export class BaseTable<T extends { id: number | string }> {
   public readonly getRowLink = input<((item: T) => (string | number)[]) | null>(null);
 
   public readonly selectionToggled = output<number | string>();
+  public readonly selectAllToggled = output<void>();
+
+  /** 'none' | 'some' | 'all' — drives the header checkbox state, scoped to current page */
+  public readonly selectionState = computed<'none' | 'some' | 'all'>(() => {
+    const currentPageIds = this.items().map((item) => item.id);
+    const total = currentPageIds.length;
+    if (total === 0) {
+      return 'none';
+    }
+    const selectedOnPage = currentPageIds.filter((id) => this.selectedItems().has(id)).length;
+    if (selectedOnPage === 0) {
+      return 'none';
+    }
+    if (selectedOnPage >= total) {
+      return 'all';
+    }
+    return 'some';
+  });
 
   // Content projection for custom templates
   public readonly headerTemplate = contentChild<TemplateRef<unknown>>('tableHeader');

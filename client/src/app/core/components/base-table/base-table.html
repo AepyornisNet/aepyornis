@@ -6,7 +6,15 @@
         @if (headerTemplate()) {
           <tr>
             @if (multiSelectActive()) {
-              <th style="width: 50px"></th>
+              <th style="width: 50px">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="selectionState() === 'all'"
+                  [indeterminate]="selectionState() === 'some'"
+                  (change)="selectAllToggled.emit()"
+                />
+              </th>
             }
             <ng-container [ngTemplateOutlet]="headerTemplate()!" />
           </tr>
@@ -63,7 +71,15 @@
       @if (headerTemplate()) {
         <tr>
           @if (multiSelectActive()) {
-            <th style="width: 50px"></th>
+            <th style="width: 50px">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                [checked]="selectionState() === 'all'"
+                [indeterminate]="selectionState() === 'some'"
+                (change)="selectAllToggled.emit()"
+              />
+            </th>
           }
           <ng-container [ngTemplateOutlet]="headerTemplate()!" />
         </tr>

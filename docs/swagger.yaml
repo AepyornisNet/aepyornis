@@ -35,7 +35,15 @@ definitions:
         type: boolean
       auto_import_enabled:
         type: boolean
+      legal_notice_languages:
+        items:
+          type: string
+        type: array
       notification_providers:
+        items:
+          type: string
+        type: array
+      privacy_languages:
         items:
           type: string
         type: array
@@ -443,6 +451,8 @@ definitions:
         $ref: '#/definitions/model.WorkoutVisibility'
       language:
         type: string
+      map_style:
+        type: string
       prefer_full_date:
         type: boolean
       preferred_units:
@@ -626,6 +636,21 @@ definitions:
       results:
         items:
           $ref: '#/definitions/model.UserNotificationSettings'
+        type: array
+    type: object
+  dto.Response-array_model_UserWebpushSubscription:
+    properties:
+      error_codes:
+        items:
+          type: string
+        type: array
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/model.UserWebpushSubscription'
         type: array
     type: object
   dto.Response-array_string:
@@ -893,6 +918,19 @@ definitions:
         type: array
       results:
         $ref: '#/definitions/model.UserNotificationSettings'
+    type: object
+  dto.Response-model_UserWebpushSubscription:
+    properties:
+      error_codes:
+        items:
+          type: string
+        type: array
+      errors:
+        items:
+          type: string
+        type: array
+      results:
+        $ref: '#/definitions/model.UserWebpushSubscription'
     type: object
   dto.Response-string:
     properties:
@@ -1811,6 +1849,21 @@ definitions:
       weight:
         description: The user's preferred weight unit
         type: string
+    type: object
+  model.UserWebpushSubscription:
+    properties:
+      created_at:
+        type: string
+      endpoint:
+        type: string
+      id:
+        type: integer
+      updated_at:
+        type: string
+      user_agent:
+        type: string
+      user_id:
+        type: integer
     type: object
   model.WorkoutVisibility:
     enum:
@@ -2797,6 +2850,74 @@ paths:
       - ApiKeyQuery: []
       - CookieAuth: []
       summary: Get notification config
+      tags:
+      - notification
+  /notifications/webpush/subscribe:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-model_UserWebpushSubscription'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Subscribe WebPush endpoint
+      tags:
+      - notification
+  /notifications/webpush/subscriptions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-array_model_UserWebpushSubscription'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get registered WebPush subscriptions
+      tags:
+      - notification
+  /notifications/webpush/unsubscribe:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-map_string_bool'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Unsubscribe WebPush endpoint
       tags:
       - notification
   /profile:
@@ -4078,6 +4199,39 @@ paths:
       summary: Toggle workout lock
       tags:
       - workouts
+  /workouts/add-equipment:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workout and Equipment IDs mapping
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Bulk add equipment to workouts
+      tags:
+      - workouts
   /workouts/calendar:
     get:
       produces:
@@ -4168,6 +4322,43 @@ paths:
       summary: Get workout coordinates
       tags:
       - heatmap
+  /workouts/download-zip:
+    get:
+      parameters:
+      - collectionFormat: csv
+        description: Workout IDs to include
+        in: query
+        items:
+          type: integer
+        name: ids
+        required: true
+        type: array
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: binary zip file
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Download multiple workouts as ZIP
+      tags:
+      - workouts
   /workouts/like:
     post:
       consumes:

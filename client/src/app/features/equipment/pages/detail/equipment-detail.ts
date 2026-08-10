@@ -1,16 +1,27 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  OnInit,
+  signal,
+  TemplateRef,
+  viewChild,
+} from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { Api } from '../../../../core/services/api';
 import { Equipment } from '../../../../core/types/equipment';
 import { TranslatePipe } from '@ngx-translate/core';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
+import { EquipmentForm, EquipmentFormData } from '../../components/equipment-form/equipment-form';
+
 @Component({
   selector: 'app-equipment-detail',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, EquipmentForm],
   templateUrl: './equipment-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -18,62 +29,18 @@ export class EquipmentDetail implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private modalService = inject(NgbModal);
+
+  public readonly editModalTemplate = viewChild<TemplateRef<unknown>>('editModal');
+  public readonly deleteModalTemplate = viewChild<TemplateRef<unknown>>('deleteModal');
+  private activeModalRef?: NgbModalRef;
 
   public readonly equipment = signal<Equipment | null>(null);
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
 
-  // Modal state
-  public readonly showEditModal = signal(false);
-  public readonly showDeleteModal = signal(false);
-
-  // Form state
-  public readonly equipmentForm = signal({
-    name: '',
-    description: '',
-    notes: '',
-    active: true,
-    default_for: [] as string[],
-  });
-
   public readonly workoutTypes = WORKOUT_TYPES;
   public readonly sportLabel = getSportLabel;
-
-  // Form update helpers
-  public updateFormName(value: string): void {
-    const form = this.equipmentForm();
-    this.equipmentForm.set({ ...form, name: value });
-  }
-
-  public updateFormDescription(value: string): void {
-    const form = this.equipmentForm();
-    this.equipmentForm.set({ ...form, description: value });
-  }
-
-  public updateFormNotes(value: string): void {
-    const form = this.equipmentForm();
-    this.equipmentForm.set({ ...form, notes: value });
-  }
-
-  public updateFormActive(value: boolean): void {
-    const form = this.equipmentForm();
-    this.equipmentForm.set({ ...form, active: value });
-  }
-
-  public toggleDefaultFor(value: string): void {
-    const form = this.equipmentForm();
-    const next = new Set(form.default_for);
-    if (next.has(value)) {
-      next.delete(value);
-    } else {
-      next.add(value);
-    }
-    this.equipmentForm.set({ ...form, default_for: Array.from(next) });
-  }
-
-  public isDefaultForSelected(value: string): boolean {
-    return this.equipmentForm().default_for.includes(value);
-  }
 
   public ngOnInit(): void {
     this.route.params.subscribe((params) => {
@@ -131,30 +98,25 @@ export class EquipmentDetail implements OnInit {
       return;
     }
 
-    this.equipmentForm.set({
-      name: eq.name,
-      description: eq.description || '',
-      notes: eq.notes || '',
-      active: eq.active,
-      default_for: eq.default_for ? [...eq.default_for] : [],
-    });
-    this.showEditModal.set(true);
+    const template = this.editModalTemplate();
+    if (template) {
+      this.activeModalRef = this.modalService.open(template, { centered: true });
+    }
   }
 
   public closeEditModal(): void {
-    this.showEditModal.set(false);
+    this.activeModalRef?.dismiss();
   }
 
-  public async updateEquipment(): Promise<void> {
+  public async updateEquipment(formData: EquipmentFormData): Promise<void> {
     const eq = this.equipment();
     if (!eq) {
       return;
     }
 
     try {
-      const form = this.equipmentForm();
-      await firstValueFrom(this.api.updateEquipment(eq.id, form));
-      this.closeEditModal();
+      await firstValueFrom(this.api.updateEquipment(eq.id, formData));
+      this.activeModalRef?.close();
       this.loadEquipment(eq.id);
     } catch (err) {
       console.error('Failed to update equipment:', err);
@@ -163,11 +125,14 @@ export class EquipmentDetail implements OnInit {
   }
 
   public openDeleteModal(): void {
-    this.showDeleteModal.set(true);
+    const template = this.deleteModalTemplate();
+    if (template) {
+      this.activeModalRef = this.modalService.open(template, { centered: true });
+    }
   }
 
   public closeDeleteModal(): void {
-    this.showDeleteModal.set(false);
+    this.activeModalRef?.dismiss();
   }
 
   public async deleteEquipment(): Promise<void> {
@@ -178,11 +143,12 @@ export class EquipmentDetail implements OnInit {
 
     try {
       await firstValueFrom(this.api.deleteEquipment(eq.id));
+      this.activeModalRef?.close();
       this.router.navigate(['/equipment']);
     } catch (err) {
       console.error('Failed to delete equipment:', err);
       this.error.set('Failed to delete equipment. Please try again.');
-      this.closeDeleteModal();
+      this.activeModalRef?.dismiss();
     }
   }
 

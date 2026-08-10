@@ -298,6 +298,26 @@ export class Api {
     return this.http.delete<APIResponse<{ message: string }>>(`${this.baseUrl}/workouts/${id}`);
   }
 
+  public downloadWorkoutsZip(ids: number[]): Observable<Blob> {
+    const params = ids.map((id) => `ids=${id}`).join('&');
+    return this.http.get(`${this.baseUrl}/workouts/download-zip?${params}`, {
+      responseType: 'blob',
+    });
+  }
+
+  public addEquipmentToWorkouts(
+    workoutIds: number[],
+    equipmentIds: number[],
+  ): Observable<APIResponse<{ message: string }>> {
+    return this.http.post<APIResponse<{ message: string }>>(
+      `${this.baseUrl}/workouts/add-equipment`,
+      {
+        workout_ids: workoutIds,
+        equipment_ids: equipmentIds,
+      },
+    );
+  }
+
   public toggleWorkoutLock(id: number): Observable<APIResponse<Workout>> {
     return this.http.post<APIResponse<Workout>>(`${this.baseUrl}/workouts/${id}/toggle-lock`, {});
   }

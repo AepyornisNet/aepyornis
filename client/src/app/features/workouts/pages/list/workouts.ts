@@ -4,11 +4,13 @@ import {
   computed,
   inject,
   signal,
+  TemplateRef,
   viewChild,
 } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
 import { firstValueFrom, Observable } from 'rxjs';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { Api } from '../../../../core/services/api';
 import { Workout } from '../../../../core/types/workout';
 import { WorkoutListParams } from '../../../../core/types/workout';
@@ -25,6 +27,8 @@ import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe'
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
+import { FormsModule } from '@angular/forms';
+import { Equipment } from '../../../../core/types/equipment';
 
 type WorkoutListFilterState = {
   type: string;
@@ -53,6 +57,7 @@ type FilterOption = {
     FormatDurationPipe,
     FormatDistancePipe,
     FormatDatePipe,
+    FormsModule,
   ],
   templateUrl: './workouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,8 +67,11 @@ export class Workouts extends PaginatedListView<Workout> {
   private translate = inject(TranslateService);
   private formatElevationPipe = inject(FormatElevationPipe);
   private formatSpeedPipe = inject(FormatSpeedPipe);
+  private modalService = inject(NgbModal);
 
   public readonly baseList = viewChild.required(BaseList);
+  public readonly addEquipmentModalTemplate = viewChild<TemplateRef<unknown>>('addEquipmentModal');
+  private activeModalRef?: NgbModalRef;
 
   // Alias for better template readability
   public workouts = this.items;
@@ -76,6 +84,21 @@ export class Workouts extends PaginatedListView<Workout> {
     enableFilters: true,
     enableMultiSelect: true,
   };
+
+  public readonly equipmentList = signal<Equipment[]>([]);
+  public readonly selectedEquipmentId = signal<number | null>(null);
+  public readonly showAddEquipmentModal = signal<boolean>(false);
+
+  private async loadEquipment(): Promise<void> {
+    try {
+      const resp = await firstValueFrom(this.api.getEquipment());
+      if (resp?.results) {
+        this.equipmentList.set(resp.results);
+      }
+    } catch (err) {
+      console.error('Failed to load equipment list:', err);
+    }
+  }
 
   public readonly availableTypes = signal<string[]>([]);
   public readonly subTypesByType = signal<Record<string, string[]>>({});
@@ -207,6 +230,10 @@ export class Workouts extends PaginatedListView<Workout> {
       }
     }
 
+    if (this.equipmentList().length === 0) {
+      await this.loadEquipment();
+    }
+
     const filters = this.filterState();
 
     const params: WorkoutListParams = {
@@ -287,6 +314,64 @@ export class Workouts extends PaginatedListView<Workout> {
     );
   }
 
+  public bulkDownloadZip(): void {
+    const selectedIds = Array.from(this.baseList().selectedItems()).map((id) => id as number);
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    this.api.downloadWorkoutsZip(selectedIds).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'workouts.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Failed to download ZIP:', err);
+        this.error.set('Failed to download workouts ZIP.');
+      },
+    });
+  }
+
+  public openAddEquipmentModal(): void {
+    this.selectedEquipmentId.set(null);
+    const template = this.addEquipmentModalTemplate();
+    if (template) {
+      this.activeModalRef = this.modalService.open(template, { centered: true });
+    }
+  }
+
+  public closeAddEquipmentModal(): void {
+    this.activeModalRef?.dismiss();
+    this.selectedEquipmentId.set(null);
+  }
+
+  public bulkAddEquipment(): void {
+    const selectedIds = Array.from(this.baseList().selectedItems()).map((id) => id as number);
+    const equipId = this.selectedEquipmentId();
+    if (selectedIds.length === 0 || !equipId) {
+      return;
+    }
+
+    this.api.addEquipmentToWorkouts(selectedIds, [equipId]).subscribe({
+      next: () => {
+        this.activeModalRef?.close();
+        this.selectedEquipmentId.set(null);
+        this.baseList().clearSelection();
+        this.loadData(this.currentPage());
+      },
+      error: (err) => {
+        console.error('Failed to add equipment to workouts:', err);
+        this.error.set('Failed to add equipment to workouts.');
+      },
+    });
+  }
+
   public isMultiSelectActive(): boolean {
     return this.baseList().multiSelectActive();
   }
@@ -297,6 +382,17 @@ export class Workouts extends PaginatedListView<Workout> {
 
   public toggleItemSelection(id: number | string): void {
     this.baseList().toggleItemSelection(id);
+  }
+
+  public toggleSelectAll(): void {
+    const baseListComponent = this.baseList();
+    const allIds = this.workouts().map((w) => w.id);
+    const allSelected = allIds.every((id) => baseListComponent.isItemSelected(id));
+    if (allSelected) {
+      baseListComponent.removeFromSelection(allIds);
+    } else {
+      baseListComponent.addToSelection(allIds);
+    }
   }
 
   private handleFilterChange(update: Partial<WorkoutListFilterState>): void {
