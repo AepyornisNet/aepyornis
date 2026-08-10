@@ -260,244 +260,67 @@
 </app-base-list>
 
 <!-- Create Modal -->
-@if (showCreateModal()) {
-  <div class="modal fade show d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ 'Add Measurement' | translate }}</h5>
-          <button
-            aria-label="Close"
-            class="btn-close"
-            type="button"
-            (click)="closeCreateModal()"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label" for="create-date">{{ 'Date' | translate }}</label>
-            <input
-              class="form-control"
-              id="create-date"
-              type="date"
-              [value]="measurementForm().date"
-              (input)="updateFormDate($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-weight">{{ 'Weight' | translate }} (kg)</label>
-            <input
-              class="form-control"
-              id="create-weight"
-              step="0.1"
-              type="number"
-              [value]="measurementForm().weight || ''"
-              (input)="updateFormWeight($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-height">{{ 'Height' | translate }} (cm)</label>
-            <input
-              class="form-control"
-              id="create-height"
-              step="0.1"
-              type="number"
-              [value]="measurementForm().height || ''"
-              (input)="updateFormHeight($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-steps">{{ 'Steps' | translate }}</label>
-            <input
-              class="form-control"
-              id="create-steps"
-              type="number"
-              [value]="measurementForm().steps || ''"
-              (input)="updateFormSteps($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-ftp"> {{ 'FTP' | translate }} (W) </label>
-            <input
-              class="form-control"
-              id="create-ftp"
-              step="1"
-              type="number"
-              [value]="measurementForm().ftp || ''"
-              (input)="updateFormFTP($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-rhr">
-              {{ 'Resting HR' | translate }} (bpm)
-            </label>
-            <input
-              class="form-control"
-              id="create-rhr"
-              step="1"
-              type="number"
-              [value]="measurementForm().resting_heart_rate || ''"
-              (input)="updateFormRestingHeartRate($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-mhr"> {{ 'Max HR' | translate }} (bpm) </label>
-            <input
-              class="form-control"
-              id="create-mhr"
-              step="1"
-              type="number"
-              [value]="measurementForm().max_heart_rate || ''"
-              (input)="updateFormMaxHeartRate($any($event.target).value)"
-            />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
-            {{ 'Cancel' | translate }}
-          </button>
-          <button class="btn btn-primary" type="button" (click)="createMeasurement()">
-            {{ 'Create' | translate }}
-          </button>
-        </div>
-      </div>
-    </div>
+<ng-template #createModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ 'Add Measurement' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
-}
+  <div class="modal-body">
+    <app-measurement-form #createForm (formSubmit)="createMeasurement($event)" />
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" (click)="modal.dismiss()">
+      {{ 'Cancel' | translate }}
+    </button>
+    <button class="btn btn-primary" type="button" (click)="createForm.onSubmit()">
+      {{ 'Create' | translate }}
+    </button>
+  </div>
+</ng-template>
 
 <!-- Edit Modal -->
-@if (showEditModal()) {
-  <div class="modal fade show d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ 'Update measurement' | translate }}</h5>
-          <button
-            aria-label="Close"
-            class="btn-close"
-            type="button"
-            (click)="closeEditModal()"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label" for="edit-date">{{ 'Date' | translate }}</label>
-            <input
-              class="form-control"
-              id="edit-date"
-              type="date"
-              [value]="measurementForm().date"
-              (input)="updateFormDate($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-weight">{{ 'Weight' | translate }} (kg)</label>
-            <input
-              class="form-control"
-              id="edit-weight"
-              step="0.1"
-              type="number"
-              [value]="measurementForm().weight || ''"
-              (input)="updateFormWeight($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-height">{{ 'Height' | translate }} (cm)</label>
-            <input
-              class="form-control"
-              id="edit-height"
-              step="0.1"
-              type="number"
-              [value]="measurementForm().height || ''"
-              (input)="updateFormHeight($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-steps">{{ 'Steps' | translate }}</label>
-            <input
-              class="form-control"
-              id="edit-steps"
-              type="number"
-              [value]="measurementForm().steps || ''"
-              (input)="updateFormSteps($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-ftp"> {{ 'FTP' | translate }} (W) </label>
-            <input
-              class="form-control"
-              id="edit-ftp"
-              step="1"
-              type="number"
-              [value]="measurementForm().ftp || ''"
-              (input)="updateFormFTP($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-rhr"> {{ 'Resting HR' | translate }} (bpm) </label>
-            <input
-              class="form-control"
-              id="edit-rhr"
-              step="1"
-              type="number"
-              [value]="measurementForm().resting_heart_rate || ''"
-              (input)="updateFormRestingHeartRate($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-mhr"> {{ 'Max HR' | translate }} (bpm) </label>
-            <input
-              class="form-control"
-              id="edit-mhr"
-              step="1"
-              type="number"
-              [value]="measurementForm().max_heart_rate || ''"
-              (input)="updateFormMaxHeartRate($any($event.target).value)"
-            />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'Cancel' | translate }}
-          </button>
-          <button class="btn btn-primary" type="button" (click)="updateMeasurement()">
-            {{ 'Update' | translate }}
-          </button>
-        </div>
-      </div>
-    </div>
+<ng-template #editModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ 'Update measurement' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
-}
+  <div class="modal-body">
+    <app-measurement-form
+      #editForm
+      [measurement]="selectedMeasurement()"
+      (formSubmit)="updateMeasurement($event)"
+    />
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" (click)="modal.dismiss()">
+      {{ 'Cancel' | translate }}
+    </button>
+    <button class="btn btn-primary" type="button" (click)="editForm.onSubmit()">
+      {{ 'Update' | translate }}
+    </button>
+  </div>
+</ng-template>
 
 <!-- Delete Modal -->
-@if (showDeleteModal() && selectedMeasurement()) {
-  <div class="modal fade show d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ 'Delete' | translate }}</h5>
-          <button
-            aria-label="Close"
-            class="btn-close"
-            type="button"
-            (click)="closeDeleteModal()"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <p>{{ 'Are you sure?' | translate }}</p>
-          <p>
-            <strong>{{ formatDate(selectedMeasurement()!.date) }}</strong>
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'Cancel' | translate }}
-          </button>
-          <button class="btn btn-danger" type="button" (click)="deleteMeasurement()">
-            {{ 'Delete' | translate }}
-          </button>
-        </div>
-      </div>
-    </div>
+<ng-template #deleteModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ 'Delete' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
-}
+  <div class="modal-body">
+    <p>{{ 'Are you sure?' | translate }}</p>
+    @if (selectedMeasurement()) {
+      <p>
+        <strong>{{ selectedMeasurement()!.date | formatDate }}</strong>
+      </p>
+    }
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" (click)="modal.dismiss()">
+      {{ 'Cancel' | translate }}
+    </button>
+    <button class="btn btn-danger" type="button" (click)="deleteMeasurement()">
+      {{ 'Delete' | translate }}
+    </button>
+  </div>
+</ng-template>

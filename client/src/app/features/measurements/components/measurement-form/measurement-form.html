@@ -1,0 +1,72 @@
+<form [formRoot]="measurementSignalForm" (ngSubmit)="onSubmit($event)">
+  <div class="mb-3">
+    <label class="form-label" for="measurement-form-date">{{ 'Date' | translate }}</label>
+    <input
+      class="form-control"
+      id="measurement-form-date"
+      type="date"
+      [formField]="measurementSignalForm.date"
+    />
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="measurement-form-weight">{{ 'Weight' | translate }} (kg)</label>
+    <input
+      class="form-control"
+      id="measurement-form-weight"
+      step="0.1"
+      type="number"
+      [formField]="measurementSignalForm.weight"
+    />
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="measurement-form-height">{{ 'Height' | translate }} (cm)</label>
+    <input
+      class="form-control"
+      id="measurement-form-height"
+      step="0.1"
+      type="number"
+      [formField]="measurementSignalForm.height"
+    />
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="measurement-form-steps">{{ 'Steps' | translate }}</label>
+    <input
+      class="form-control"
+      id="measurement-form-steps"
+      type="number"
+      [formField]="measurementSignalForm.steps"
+    />
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="measurement-form-ftp"> {{ 'FTP' | translate }} (W) </label>
+    <input
+      class="form-control"
+      id="measurement-form-ftp"
+      step="1"
+      type="number"
+      [formField]="measurementSignalForm.ftp"
+    />
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="measurement-form-rhr">
+      {{ 'Resting HR' | translate }} (bpm)
+    </label>
+    <input
+      class="form-control"
+      id="measurement-form-rhr"
+      step="1"
+      type="number"
+      [formField]="measurementSignalForm.resting_heart_rate"
+    />
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="measurement-form-mhr"> {{ 'Max HR' | translate }} (bpm) </label>
+    <input
+      class="form-control"
+      id="measurement-form-mhr"
+      step="1"
+      type="number"
+      [formField]="measurementSignalForm.max_heart_rate"
+    />
+  </div>
+</form>

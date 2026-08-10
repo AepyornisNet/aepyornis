@@ -92,216 +92,65 @@
 </app-base-list>
 
 <!-- Create Modal -->
-@if (showCreateModal()) {
-  <div class="modal fade show d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ 'Add equipment' | translate }}</h5>
-          <button
-            aria-label="Close"
-            class="btn-close"
-            type="button"
-            (click)="closeCreateModal()"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label" for="create-name">{{ 'Name' | translate }}</label>
-            <input
-              class="form-control"
-              id="create-name"
-              type="text"
-              [value]="equipmentForm().name"
-              (input)="updateFormName($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-description">{{
-              'Description' | translate
-            }}</label>
-            <textarea
-              class="form-control"
-              id="create-description"
-              rows="3"
-              [value]="equipmentForm().description"
-              (input)="updateFormDescription($any($event.target).value)"
-            ></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-notes">{{ 'Notes' | translate }}</label>
-            <textarea
-              class="form-control"
-              id="create-notes"
-              rows="5"
-              [value]="equipmentForm().notes"
-              (input)="updateFormNotes($any($event.target).value)"
-            ></textarea>
-          </div>
-          <div class="mb-3">
-            <span class="form-label">{{ 'Default For Workout Types' | translate }}</span>
-            <div class="d-flex flex-wrap gap-3">
-              @for (type of workoutTypes; track type.value) {
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    [checked]="isDefaultForSelected(type.value)"
-                    [id]="'create-default-' + type.value"
-                    (change)="toggleDefaultFor(type.value)"
-                  />
-                  <label class="form-check-label" [for]="'create-default-' + type.value">
-                    {{ type.name | translate }}
-                  </label>
-                </div>
-              }
-            </div>
-          </div>
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              id="create-active"
-              type="checkbox"
-              [checked]="equipmentForm().active"
-              (change)="updateFormActive($any($event.target).checked)"
-            />
-            <label class="form-check-label" for="create-active">
-              {{ 'Active' | translate }}
-            </label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
-            {{ 'Cancel' | translate }}
-          </button>
-          <button class="btn btn-primary" type="button" (click)="createEquipment()">
-            {{ 'Create' | translate }}
-          </button>
-        </div>
-      </div>
-    </div>
+<ng-template #createModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ 'Add equipment' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
-}
+  <div class="modal-body">
+    <app-equipment-form #createForm (formSubmit)="createEquipment($event)" />
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" (click)="modal.dismiss()">
+      {{ 'Cancel' | translate }}
+    </button>
+    <button class="btn btn-primary" type="button" (click)="createForm.onSubmit()">
+      {{ 'Create' | translate }}
+    </button>
+  </div>
+</ng-template>
 
 <!-- Edit Modal -->
-@if (showEditModal()) {
-  <div class="modal fade show d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ 'Equipment' | translate }}</h5>
-          <button
-            aria-label="Close"
-            class="btn-close"
-            type="button"
-            (click)="closeEditModal()"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label" for="edit-name">{{ 'Name' | translate }}</label>
-            <input
-              class="form-control"
-              id="edit-name"
-              type="text"
-              [value]="equipmentForm().name"
-              (input)="updateFormName($any($event.target).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-description">{{ 'Description' | translate }}</label>
-            <textarea
-              class="form-control"
-              id="edit-description"
-              rows="3"
-              [value]="equipmentForm().description"
-              (input)="updateFormDescription($any($event.target).value)"
-            ></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="edit-notes">{{ 'Notes' | translate }}</label>
-            <textarea
-              class="form-control"
-              id="edit-notes"
-              rows="5"
-              [value]="equipmentForm().notes"
-              (input)="updateFormNotes($any($event.target).value)"
-            ></textarea>
-          </div>
-          <div class="mb-3">
-            <span class="form-label">{{ 'Default For Workout Types' | translate }}</span>
-            <div class="d-flex flex-wrap gap-3">
-              @for (type of workoutTypes; track type.value) {
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    [checked]="isDefaultForSelected(type.value)"
-                    [id]="'edit-default-' + type.value"
-                    (change)="toggleDefaultFor(type.value)"
-                  />
-                  <label class="form-check-label" [for]="'edit-default-' + type.value">
-                    {{ type.name | translate }}
-                  </label>
-                </div>
-              }
-            </div>
-          </div>
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              id="edit-active"
-              type="checkbox"
-              [checked]="equipmentForm().active"
-              (change)="updateFormActive($any($event.target).checked)"
-            />
-            <label class="form-check-label" for="edit-active">
-              {{ 'Active' | translate }}
-            </label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" (click)="closeEditModal()">
-            {{ 'Cancel' | translate }}
-          </button>
-          <button class="btn btn-primary" type="button" (click)="updateEquipment()">
-            {{ 'Update' | translate }}
-          </button>
-        </div>
-      </div>
-    </div>
+<ng-template #editModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ 'Equipment' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
-}
+  <div class="modal-body">
+    <app-equipment-form
+      #editForm
+      [equipment]="selectedEquipment()"
+      (formSubmit)="updateEquipment($event)"
+    />
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" (click)="modal.dismiss()">
+      {{ 'Cancel' | translate }}
+    </button>
+    <button class="btn btn-primary" type="button" (click)="editForm.onSubmit()">
+      {{ 'Update' | translate }}
+    </button>
+  </div>
+</ng-template>
 
 <!-- Delete Modal -->
-@if (showDeleteModal() && selectedEquipment()) {
-  <div class="modal fade show d-block" style="background-color: rgba(0, 0, 0, 0.5)" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ 'Delete' | translate }}</h5>
-          <button
-            aria-label="Close"
-            class="btn-close"
-            type="button"
-            (click)="closeDeleteModal()"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <p>{{ 'Are you sure?' | translate }}</p>
-          <p>
-            <strong>{{ selectedEquipment()!.name }}</strong>
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">
-            {{ 'Cancel' | translate }}
-          </button>
-          <button class="btn btn-danger" type="button" (click)="deleteEquipment()">
-            {{ 'Delete' | translate }}
-          </button>
-        </div>
-      </div>
-    </div>
+<ng-template #deleteModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ 'Delete' | translate }}</h5>
+    <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
-}
+  <div class="modal-body">
+    <p>{{ 'Are you sure?' | translate }}</p>
+    <p>
+      <strong>{{ selectedEquipment()?.name }}</strong>
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" (click)="modal.dismiss()">
+      {{ 'Cancel' | translate }}
+    </button>
+    <button class="btn btn-danger" type="button" (click)="deleteEquipment()">
+      {{ 'Delete' | translate }}
+    </button>
+  </div>
+</ng-template>

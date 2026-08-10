@@ -1,0 +1,61 @@
+<form [formRoot]="equipmentSignalForm" (ngSubmit)="onSubmit($event)">
+  <div class="mb-3">
+    <label class="form-label" for="equipment-form-name">{{ 'Name' | translate }}</label>
+    <input
+      class="form-control"
+      id="equipment-form-name"
+      type="text"
+      [formField]="equipmentSignalForm.name"
+    />
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="equipment-form-description">{{
+      'Description' | translate
+    }}</label>
+    <textarea
+      class="form-control"
+      id="equipment-form-description"
+      rows="3"
+      [formField]="equipmentSignalForm.description"
+    ></textarea>
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="equipment-form-notes">{{ 'Notes' | translate }}</label>
+    <textarea
+      class="form-control"
+      id="equipment-form-notes"
+      rows="5"
+      [formField]="equipmentSignalForm.notes"
+    ></textarea>
+  </div>
+  <div class="mb-3">
+    <span class="form-label">{{ 'Default For Workout Types' | translate }}</span>
+    <div class="d-flex flex-wrap gap-3">
+      @for (type of workoutTypes; track type.value) {
+        <div class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            [checked]="isDefaultForSelected(type.value)"
+            [id]="'equipment-default-' + type.value"
+            (change)="toggleDefaultFor(type.value)"
+          />
+          <label class="form-check-label" [for]="'equipment-default-' + type.value">
+            {{ type.name | translate }}
+          </label>
+        </div>
+      }
+    </div>
+  </div>
+  <div class="form-check mb-3">
+    <input
+      class="form-check-input"
+      id="equipment-form-active"
+      type="checkbox"
+      [formField]="equipmentSignalForm.active"
+    />
+    <label class="form-check-label" for="equipment-form-active">
+      {{ 'Active' | translate }}
+    </label>
+  </div>
+</form>
