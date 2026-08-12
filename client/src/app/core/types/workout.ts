@@ -162,13 +162,6 @@ export type WorkoutBreakdown = {
   items?: WorkoutBreakdownItem[];
 };
 
-export type WorkoutRangeStatsUnits = {
-  distance: string;
-  speed: string;
-  elevation: string;
-  temperature: string;
-};
-
 export type WorkoutRangeStats = {
   start_index: number;
   end_index: number;
@@ -211,8 +204,6 @@ export type WorkoutRangeStats = {
   average_temperature?: number;
   min_temperature?: number;
   max_temperature?: number;
-
-  units: WorkoutRangeStatsUnits;
 };
 
 export type ClimbSegment = {

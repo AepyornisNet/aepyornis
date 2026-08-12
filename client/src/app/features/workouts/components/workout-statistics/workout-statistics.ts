@@ -17,7 +17,6 @@ import { Api } from '../../../../core/services/api';
 import {
   WorkoutDetail,
   WorkoutRangeStats,
-  WorkoutRangeStatsUnits,
 } from '../../../../core/types/workout';
 import {
   IntervalSelection,
@@ -35,7 +34,7 @@ type NumericRangeStatKey = {
 type RangeStatConfig = {
   key: string;
   labelKey: string;
-  unit: (units: WorkoutRangeStatsUnits) => string;
+  unit: string;
   decimals?: number;
   averageField?: NumericRangeStatKey;
   movingField?: NumericRangeStatKey;
@@ -60,7 +59,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'cadence',
     labelKey: _('Cadence'),
-    unit: () => 'rpm',
+    unit: 'rpm',
     decimals: 0,
     averageField: 'average_cadence',
     minField: 'min_cadence',
@@ -70,7 +69,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'heart-rate',
     labelKey: _('Heart rate'),
-    unit: () => 'bpm',
+    unit: 'bpm',
     decimals: 0,
     averageField: 'average_heart_rate',
     minField: 'min_heart_rate',
@@ -80,7 +79,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'respiration-rate',
     labelKey: _('Respiration rate'),
-    unit: () => 'bpm',
+    unit: 'bpm',
     decimals: 0,
     averageField: 'average_respiration_rate',
     minField: 'min_respiration_rate',
@@ -90,7 +89,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'power',
     labelKey: _('Power'),
-    unit: () => 'W',
+    unit: 'W',
     decimals: 0,
     averageField: 'average_power',
     minField: 'min_power',
@@ -100,7 +99,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'slope',
     labelKey: _('Slope'),
-    unit: () => '%',
+    unit: '%',
     decimals: 1,
     averageField: 'average_slope',
     minField: 'min_slope',
@@ -110,7 +109,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'temperature',
     labelKey: _('Temperature'),
-    unit: (units) => units.temperature,
+    unit: '°C',
     decimals: 1,
     ignoreZero: false,
     averageField: 'average_temperature',
@@ -158,7 +157,6 @@ export class WorkoutStatisticsComponent {
       return [];
     }
 
-    const units = this.resolveUnits(stats);
     const selection = this.coordinator.selectedInterval();
     const availableMetrics = workout.records?.extra_metrics ?? [];
 
@@ -180,7 +178,7 @@ export class WorkoutStatisticsComponent {
     }
 
     RANGE_CONFIGS.forEach((config) => {
-      const rangeCard = this.buildRangeCard(stats, config, units, availableMetrics);
+      const rangeCard = this.buildRangeCard(stats, config, availableMetrics);
       if (rangeCard) {
         cards.push(rangeCard);
       }
@@ -237,10 +235,6 @@ export class WorkoutStatisticsComponent {
     }
   }
 
-  private resolveUnits(stats: WorkoutRangeStats | null): WorkoutRangeStatsUnits {
-    return stats?.units ?? { distance: 'km', speed: 'km/h', elevation: 'm', temperature: '°C' };
-  }
-
   private buildDistanceCard(
     stats: WorkoutRangeStats,
     selection: IntervalSelection | null,
@@ -290,10 +284,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: 'distance-summary',
-          labelKey: _('Distance'),
-          rows,
-        }
+        key: 'distance-summary',
+        labelKey: _('Distance'),
+        rows,
+      }
       : null;
   }
 
@@ -356,10 +350,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: 'speed',
-          labelKey: _('Speed'),
-          rows,
-        }
+        key: 'speed',
+        labelKey: _('Speed'),
+        rows,
+      }
       : null;
   }
 
@@ -393,17 +387,16 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: 'elevation-summary',
-          labelKey: _('Elevation'),
-          rows,
-        }
+        key: 'elevation-summary',
+        labelKey: _('Elevation'),
+        rows,
+      }
       : null;
   }
 
   private buildRangeCard(
     stats: WorkoutRangeStats,
     config: RangeStatConfig,
-    units: WorkoutRangeStatsUnits,
     availableMetrics: string[],
   ): WorkoutStatCard | null {
     if (config.metricKey && !availableMetrics.includes(config.metricKey)) {
@@ -415,42 +408,41 @@ export class WorkoutStatisticsComponent {
     const moving = this.resolveValue(stats, config.movingField, config.ignoreZero !== false);
     const min = this.resolveValue(stats, config.minField, config.ignoreZero !== false);
     const max = this.resolveValue(stats, config.maxField, config.ignoreZero !== false);
-    const unitLabel = config.unit(units);
 
     if (average !== undefined) {
       rows.push({
         labelKey: _('Average'),
-        value: this.formatRangeValue(average, unitLabel, config.decimals),
+        value: this.formatRangeValue(average, config.unit, config.decimals),
       });
     }
 
     if (moving !== undefined && config.movingField) {
       rows.push({
         labelKey: _('Average (no pause)'),
-        value: this.formatRangeValue(moving, unitLabel, config.decimals),
+        value: this.formatRangeValue(moving, config.unit, config.decimals),
       });
     }
 
     if (min !== undefined) {
       rows.push({
         labelKey: _('Minimum'),
-        value: this.formatRangeValue(min, unitLabel, config.decimals),
+        value: this.formatRangeValue(min, config.unit, config.decimals),
       });
     }
 
     if (max !== undefined) {
       rows.push({
         labelKey: _('Maximum'),
-        value: this.formatRangeValue(max, unitLabel, config.decimals),
+        value: this.formatRangeValue(max, config.unit, config.decimals),
       });
     }
 
     return rows.length
       ? {
-          key: config.key,
-          labelKey: config.labelKey,
-          rows,
-        }
+        key: config.key,
+        labelKey: config.labelKey,
+        rows,
+      }
       : null;
   }
 

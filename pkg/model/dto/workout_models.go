@@ -96,13 +96,6 @@ type WorkoutBreakdownResponse struct {
 	Items []WorkoutBreakdownItemResponse `json:"items,omitempty"`
 }
 
-type WorkoutRangeStatsUnitsResponse struct {
-	Distance    string `json:"distance"`
-	Speed       string `json:"speed"`
-	Elevation   string `json:"elevation"`
-	Temperature string `json:"temperature"`
-}
-
 type WorkoutRangeStatsResponse struct {
 	StartIndex int `json:"start_index"`
 	EndIndex   int `json:"end_index"`
@@ -145,8 +138,6 @@ type WorkoutRangeStatsResponse struct {
 	AverageTemperature *float64 `json:"average_temperature,omitempty"`
 	MinTemperature     *float64 `json:"min_temperature,omitempty"`
 	MaxTemperature     *float64 `json:"max_temperature,omitempty"`
-
-	Units WorkoutRangeStatsUnitsResponse `json:"units"`
 }
 
 type WorkoutBreakdownItemResponse struct {
@@ -668,7 +659,7 @@ func optionalMetric(value float64) *float64 {
 	return &v
 }
 
-func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endIdx int, units *model.UserPreferredUnits) WorkoutRangeStatsResponse {
+func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endIdx int) WorkoutRangeStatsResponse {
 	resp := WorkoutRangeStatsResponse{
 		StartIndex: startIdx,
 		EndIndex:   endIdx,
@@ -688,19 +679,6 @@ func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endId
 		AverageSpeedNoPause: stats.AverageSpeedNoPause,
 		MinSpeed:            stats.MinSpeed,
 		MaxSpeed:            stats.MaxSpeed,
-		Units: WorkoutRangeStatsUnitsResponse{ // TODO still needed?
-			Distance:    "km",
-			Speed:       "km/h",
-			Elevation:   "m",
-			Temperature: "°C",
-		},
-	}
-
-	if units != nil {
-		resp.Units.Distance = units.Distance()
-		resp.Units.Speed = units.Speed()
-		resp.Units.Elevation = units.Elevation()
-		resp.Units.Temperature = units.Temperature()
 	}
 
 	resp.AverageCadence = optionalMetric(stats.AverageCadence)

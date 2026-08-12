@@ -780,8 +780,6 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/stats-range [get]
 func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
-	requester := currentUser(c)
-
 	params := struct {
 		StartIndex *int `query:"start_index"`
 		EndIndex   *int `query:"end_index"`
@@ -822,7 +820,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 	}
 
 	resp := dto.Response[dto.WorkoutRangeStatsResponse]{
-		Results: dto.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx, &requester.PreferredUnits),
+		Results: dto.NewWorkoutRangeStatsResponse(stats, startIdx, endIdx),
 	}
 
 	return c.JSON(http.StatusOK, resp)
