@@ -26,6 +26,7 @@ import {
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
+import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 
 type NumericRangeStatKey = {
   [K in keyof WorkoutRangeStats]: WorkoutRangeStats[K] extends number | undefined ? K : never;
@@ -56,17 +57,6 @@ type WorkoutStatCard = {
 };
 
 const RANGE_CONFIGS: RangeStatConfig[] = [
-  {
-    key: 'speed',
-    labelKey: _('Speed'),
-    unit: (units) => units.speed,
-    decimals: 1,
-    averageField: 'average_speed',
-    movingField: 'average_speed_no_pause',
-    minField: 'min_speed',
-    maxField: 'max_speed',
-    ignoreZero: false,
-  },
   {
     key: 'cadence',
     labelKey: _('Cadence'),
@@ -150,6 +140,7 @@ export class WorkoutStatisticsComponent {
   private formatDurationPipe = inject(FormatDurationPipe);
   private formatDistancePipe = inject(FormatDistancePipe);
   private formatElevationPipe = inject(FormatElevationPipe);
+  private formatSpeedPipe = inject(FormatSpeedPipe);
   private requestId = 0;
 
   public constructor() {
@@ -176,6 +167,11 @@ export class WorkoutStatisticsComponent {
     const distanceCard = this.buildDistanceCard(stats, selection, workout.laps?.length ?? 0);
     if (distanceCard) {
       cards.push(distanceCard);
+    }
+
+    const speedCard = this.buildSpeedCard(stats, workout.type);
+    if (speedCard) {
+      cards.push(speedCard);
     }
 
     const elevationCard = this.buildElevationCard(stats);
@@ -294,10 +290,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: 'distance-summary',
-          labelKey: _('Distance'),
-          rows,
-        }
+        key: 'distance-summary',
+        labelKey: _('Distance'),
+        rows,
+      }
       : null;
   }
 
@@ -325,6 +321,46 @@ export class WorkoutStatisticsComponent {
     }
 
     return { startMs, endMs };
+  }
+
+  private buildSpeedCard(stats: WorkoutRangeStats, workoutType: string): WorkoutStatCard | null {
+    const rows: WorkoutStatRow[] = [];
+
+    if (stats.average_speed) {
+      rows.push({
+        labelKey: _('Average'),
+        value: this.formatSpeedPipe.transform(stats.average_speed, workoutType)
+      });
+    }
+
+    if (stats.average_speed_no_pause) {
+      rows.push({
+        labelKey: _('Average (no pause)'),
+        value: this.formatSpeedPipe.transform(stats.average_speed_no_pause, workoutType)
+      });
+    }
+
+    if (stats.min_speed) {
+      rows.push({
+        labelKey: _('Minimum'),
+        value: this.formatSpeedPipe.transform(stats.min_speed, workoutType)
+      });
+    }
+
+    if (stats.max_speed) {
+      rows.push({
+        labelKey: _('Maximum'),
+        value: this.formatSpeedPipe.transform(stats.max_speed)
+      });
+    }
+
+    return rows.length
+      ? {
+        key: 'speed',
+        labelKey: _('Speed'),
+        rows,
+      }
+      : null;
   }
 
   private buildElevationCard(stats: WorkoutRangeStats): WorkoutStatCard | null {
@@ -357,10 +393,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: 'elevation-summary',
-          labelKey: _('Elevation'),
-          rows,
-        }
+        key: 'elevation-summary',
+        labelKey: _('Elevation'),
+        rows,
+      }
       : null;
   }
 
@@ -411,10 +447,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-          key: config.key,
-          labelKey: config.labelKey,
-          rows,
-        }
+        key: config.key,
+        labelKey: config.labelKey,
+        rows,
+      }
       : null;
   }
 
