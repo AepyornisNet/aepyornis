@@ -290,10 +290,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: 'distance-summary',
-        labelKey: _('Distance'),
-        rows,
-      }
+          key: 'distance-summary',
+          labelKey: _('Distance'),
+          rows,
+        }
       : null;
   }
 
@@ -329,37 +329,37 @@ export class WorkoutStatisticsComponent {
     if (stats.average_speed) {
       rows.push({
         labelKey: _('Average'),
-        value: this.formatSpeedPipe.transform(stats.average_speed, workoutType)
+        value: this.formatSpeedPipe.transform(stats.average_speed, workoutType),
       });
     }
 
     if (stats.average_speed_no_pause) {
       rows.push({
         labelKey: _('Average (no pause)'),
-        value: this.formatSpeedPipe.transform(stats.average_speed_no_pause, workoutType)
+        value: this.formatSpeedPipe.transform(stats.average_speed_no_pause, workoutType),
       });
     }
 
     if (stats.min_speed) {
       rows.push({
         labelKey: _('Minimum'),
-        value: this.formatSpeedPipe.transform(stats.min_speed, workoutType)
+        value: this.formatSpeedPipe.transform(stats.min_speed, workoutType),
       });
     }
 
     if (stats.max_speed) {
       rows.push({
         labelKey: _('Maximum'),
-        value: this.formatSpeedPipe.transform(stats.max_speed)
+        value: this.formatSpeedPipe.transform(stats.max_speed),
       });
     }
 
     return rows.length
       ? {
-        key: 'speed',
-        labelKey: _('Speed'),
-        rows,
-      }
+          key: 'speed',
+          labelKey: _('Speed'),
+          rows,
+        }
       : null;
   }
 
@@ -393,10 +393,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: 'elevation-summary',
-        labelKey: _('Elevation'),
-        rows,
-      }
+          key: 'elevation-summary',
+          labelKey: _('Elevation'),
+          rows,
+        }
       : null;
   }
 
@@ -447,10 +447,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: config.key,
-        labelKey: config.labelKey,
-        rows,
-      }
+          key: config.key,
+          labelKey: config.labelKey,
+          rows,
+        }
       : null;
   }
 
