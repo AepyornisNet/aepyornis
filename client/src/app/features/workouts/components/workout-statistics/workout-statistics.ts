@@ -14,10 +14,7 @@ import { _, TranslatePipe } from '@ngx-translate/core';
 import { getMetricDef } from '../../../../core/config/metrics';
 
 import { Api } from '../../../../core/services/api';
-import {
-  WorkoutDetail,
-  WorkoutRangeStats,
-} from '../../../../core/types/workout';
+import { WorkoutDetail, WorkoutRangeStats } from '../../../../core/types/workout';
 import {
   IntervalSelection,
   WorkoutDetailCoordinatorService,
@@ -284,10 +281,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: 'distance-summary',
-        labelKey: _('Distance'),
-        rows,
-      }
+          key: 'distance-summary',
+          labelKey: _('Distance'),
+          rows,
+        }
       : null;
   }
 
@@ -350,10 +347,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: 'speed',
-        labelKey: _('Speed'),
-        rows,
-      }
+          key: 'speed',
+          labelKey: _('Speed'),
+          rows,
+        }
       : null;
   }
 
@@ -387,10 +384,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: 'elevation-summary',
-        labelKey: _('Elevation'),
-        rows,
-      }
+          key: 'elevation-summary',
+          labelKey: _('Elevation'),
+          rows,
+        }
       : null;
   }
 
@@ -439,10 +436,10 @@ export class WorkoutStatisticsComponent {
 
     return rows.length
       ? {
-        key: config.key,
-        labelKey: config.labelKey,
-        rows,
-      }
+          key: config.key,
+          labelKey: config.labelKey,
+          rows,
+        }
       : null;
   }
 
