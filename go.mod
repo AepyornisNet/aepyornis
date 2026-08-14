@@ -5,6 +5,7 @@ go 1.26.2
 replace github.com/anyappinc/fitbit v0.0.3 => github.com/jovandeginste/fitbit v0.0.4-0.20250213164811-b0b3b27c3a84
 
 require (
+	github.com/IMilja/echo-scs-session v0.0.0-20260807055445-da2ec45153dc
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/alexedwards/scs/gormstore v0.0.0-20251002162104-209de6e426de
 	github.com/alexedwards/scs/v2 v2.9.0
@@ -28,7 +29,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/invopop/ctxi18n v0.9.0
-	github.com/labstack/echo-jwt/v4 v4.4.0
+	github.com/labstack/echo-jwt/v5 v5.0.2
 	github.com/labstack/echo/v5 v5.3.1
 	github.com/labstack/gommon v0.5.0
 	github.com/lmittmann/tint v1.2.0
@@ -41,9 +42,8 @@ require (
 	github.com/paulmach/orb v0.13.0
 	github.com/ringsaturn/tzf v1.2.1
 	github.com/samber/do/v2 v2.1.0
-	github.com/samber/slog-echo v1.23.0
+	github.com/samber/slog-echo/v2 v2.0.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	github.com/spazzymoto/echo-scs-session v1.0.0
 	github.com/spf13/cast v1.10.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
@@ -59,8 +59,6 @@ require (
 	gorm.io/driver/postgres v1.6.2
 	gorm.io/gorm v1.31.2
 )
-
-require github.com/labstack/echo/v4 v4.15.4 // indirect
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -114,7 +112,7 @@ require (
 	github.com/ringsaturn/tzf-dist v0.0.2026-b-fix1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
-	github.com/samber/lo v1.52.0 // indirect
+	github.com/samber/lo v1.53.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
@@ -125,9 +123,9 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vgarvardt/backoff v1.0.0 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
-	go.opentelemetry.io/otel v1.39.0 // indirect
-	go.opentelemetry.io/otel/metric v1.39.0 // indirect
-	go.opentelemetry.io/otel/trace v1.39.0 // indirect
+	go.opentelemetry.io/otel v1.43.0 // indirect
+	go.opentelemetry.io/otel/metric v1.43.0 // indirect
+	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
 	golang.org/x/image v0.36.0 // indirect

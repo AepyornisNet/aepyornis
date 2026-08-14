@@ -5,6 +5,9 @@ filippo.io/edwards25519/field
 # git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078
 ## explicit; go 1.14
 git.sr.ht/~mariusor/go-xsd-duration
+# github.com/IMilja/echo-scs-session v0.0.0-20260807055445-da2ec45153dc
+## explicit; go 1.25.0
+github.com/IMilja/echo-scs-session
 # github.com/KyleBanks/depth v1.2.1
 ## explicit
 github.com/KyleBanks/depth
@@ -214,20 +217,15 @@ github.com/jinzhu/now
 # github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 ## explicit
 github.com/jordan-wright/email
-# github.com/labstack/echo-jwt/v4 v4.4.0
-## explicit; go 1.24.0
-github.com/labstack/echo-jwt/v4
-# github.com/labstack/echo/v4 v4.15.4
+# github.com/labstack/echo-jwt/v5 v5.0.2
 ## explicit; go 1.25.0
-github.com/labstack/echo/v4
-github.com/labstack/echo/v4/middleware
+github.com/labstack/echo-jwt/v5
 # github.com/labstack/echo/v5 v5.3.1
 ## explicit; go 1.25.0
 github.com/labstack/echo/v5
 github.com/labstack/echo/v5/middleware
 # github.com/labstack/gommon v0.5.0
 ## explicit; go 1.23.0
-github.com/labstack/gommon/bytes
 github.com/labstack/gommon/color
 github.com/labstack/gommon/log
 # github.com/lmittmann/tint v1.2.0
@@ -336,22 +334,19 @@ github.com/samber/do/v2/stacktrace
 # github.com/samber/go-type-to-string v1.8.0
 ## explicit; go 1.18
 github.com/samber/go-type-to-string
-# github.com/samber/lo v1.52.0
+# github.com/samber/lo v1.53.0
 ## explicit; go 1.18
 github.com/samber/lo
 github.com/samber/lo/internal/constraints
 github.com/samber/lo/internal/xrand
 github.com/samber/lo/internal/xtime
 github.com/samber/lo/mutable
-# github.com/samber/slog-echo v1.23.0
-## explicit; go 1.21
-github.com/samber/slog-echo
+# github.com/samber/slog-echo/v2 v2.0.0
+## explicit; go 1.25.0
+github.com/samber/slog-echo/v2
 # github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 ## explicit
 github.com/skratchdot/open-golang/open
-# github.com/spazzymoto/echo-scs-session v1.0.0
-## explicit; go 1.15
-github.com/spazzymoto/echo-scs-session
 # github.com/spf13/afero v1.15.0
 ## explicit; go 1.23.0
 github.com/spf13/afero
@@ -422,20 +417,20 @@ go.mongodb.org/mongo-driver/v2/internal/binaryutil
 go.mongodb.org/mongo-driver/v2/internal/bsoncoreutil
 go.mongodb.org/mongo-driver/v2/internal/decimal128
 go.mongodb.org/mongo-driver/v2/x/bsonx/bsoncore
-# go.opentelemetry.io/otel v1.39.0
-## explicit; go 1.24.0
+# go.opentelemetry.io/otel v1.43.0
+## explicit; go 1.25.0
 go.opentelemetry.io/otel/attribute
 go.opentelemetry.io/otel/attribute/internal
 go.opentelemetry.io/otel/attribute/internal/xxhash
 go.opentelemetry.io/otel/codes
-go.opentelemetry.io/otel/semconv/v1.37.0
-# go.opentelemetry.io/otel/metric v1.39.0
-## explicit; go 1.24.0
+go.opentelemetry.io/otel/semconv/v1.40.0
+# go.opentelemetry.io/otel/metric v1.43.0
+## explicit; go 1.25.0
 go.opentelemetry.io/otel/metric
 go.opentelemetry.io/otel/metric/embedded
 go.opentelemetry.io/otel/metric/noop
-# go.opentelemetry.io/otel/trace v1.39.0
-## explicit; go 1.24.0
+# go.opentelemetry.io/otel/trace v1.43.0
+## explicit; go 1.25.0
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
 go.opentelemetry.io/otel/trace/internal/telemetry
@@ -445,8 +440,6 @@ go.opentelemetry.io/otel/trace/noop
 go.yaml.in/yaml/v3
 # golang.org/x/crypto v0.54.0
 ## explicit; go 1.25.0
-golang.org/x/crypto/acme
-golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/blake2s
@@ -484,13 +477,6 @@ golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-golang.org/x/net/http/httpguts
-golang.org/x/net/http2
-golang.org/x/net/http2/h2c
-golang.org/x/net/http2/hpack
-golang.org/x/net/idna
-golang.org/x/net/internal/httpcommon
-golang.org/x/net/internal/httpsfv
 golang.org/x/net/publicsuffix
 # golang.org/x/oauth2 v0.34.0
 ## explicit; go 1.24.0

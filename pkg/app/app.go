@@ -50,7 +50,12 @@ func (a *App) Serve() error {
 
 	a.logger.Info("Starting web server on " + a.Config.Bind)
 
-	return a.echo.Start(a.Config.Bind)
+	sc := echo.StartConfig{
+		Address:    a.Config.Bind,
+		HideBanner: true,
+		HidePort:   true,
+	}
+	return sc.Start(context.Background(), a.echo)
 }
 
 func (a *App) Configure() error {

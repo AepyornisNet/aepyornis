@@ -39,7 +39,7 @@ func (a *App) serveClientAsset(c *echo.Context, assetPath string) error {
 	data, err := fs.ReadFile(a.Assets, assetPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return echo.NewHTTPError(http.StatusNotFound)
+			return echo.NewHTTPError(http.StatusNotFound, "not found")
 		}
 
 		return err

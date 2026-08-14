@@ -62,8 +62,7 @@ func TestUpdateConfig_Validation(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/notifications/invalid_provider", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetParamNames("type")
-		c.SetParamValues("invalid_provider")
+		c.SetPathValues(echo.PathValues{{Name: "type", Value: "invalid_provider"}})
 		c.Set("user", user)
 
 		err := nc.UpdateConfig(c)
@@ -82,8 +81,7 @@ func TestUpdateConfig_Validation(t *testing.T) {
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetParamNames("type")
-		c.SetParamValues("webpush")
+		c.SetPathValues(echo.PathValues{{Name: "type", Value: "webpush"}})
 		c.Set("user", user)
 
 		err := nc.UpdateConfig(c)
@@ -102,8 +100,7 @@ func TestUpdateConfig_Validation(t *testing.T) {
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetParamNames("type")
-		c.SetParamValues("webpush")
+		c.SetPathValues(echo.PathValues{{Name: "type", Value: "webpush"}})
 		c.Set("user", user)
 
 		err := nc.UpdateConfig(c)
@@ -125,8 +122,7 @@ func TestUpdateConfig_Validation(t *testing.T) {
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetParamNames("type")
-		c.SetParamValues("webpush")
+		c.SetPathValues(echo.PathValues{{Name: "type", Value: "webpush"}})
 		c.Set("user", user)
 
 		err := nc.UpdateConfig(c)

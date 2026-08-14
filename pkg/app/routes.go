@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -16,15 +15,13 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
-	echojwt "github.com/labstack/echo-jwt/v4"
+	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/vgarvardt/gue/v6"
 
-	slogecho "github.com/samber/slog-echo"
-
-	session "github.com/spazzymoto/echo-scs-session"
+	session "github.com/IMilja/echo-scs-session"
 )
 
 func (a *App) WebRoot() string {
@@ -35,13 +32,39 @@ func (a *App) WebRoot() string {
 func newEcho(logger *slog.Logger) *echo.Echo {
 	e := echo.New()
 
-	e.HideBanner = true
-	e.HidePort = true
-
-	e.Use(slogecho.NewWithFilters(logger.With("module", "webserver"), slogecho.IgnorePathSuffix("/health")))
+	webLogger := logger.With("module", "webserver")
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		Skipper: func(c *echo.Context) bool {
+			return strings.HasSuffix(c.Request().URL.Path, "/health")
+		},
+		LogLatency:       true,
+		LogHost:          true,
+		LogMethod:        true,
+		LogURI:           true,
+		LogRequestID:     true,
+		LogStatus:        true,
+		LogContentLength: true,
+		LogResponseSize:  true,
+		LogValuesFunc: func(c *echo.Context, v middleware.RequestLoggerValues) error {
+			attrs := []slog.Attr{
+				slog.String("method", v.Method),
+				slog.String("uri", v.URI),
+				slog.Int("status", v.Status),
+				slog.Duration("latency", v.Latency),
+				slog.String("host", v.Host),
+				slog.String("bytes_in", v.ContentLength),
+				slog.Int64("bytes_out", v.ResponseSize),
+			}
+			if v.Error != nil {
+				attrs = append(attrs, slog.String("error", v.Error.Error()))
+			}
+			webLogger.LogAttrs(c.Request().Context(), slog.LevelInfo, "REQUEST", attrs...)
+			return nil
+		},
+	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
-	e.Use(middleware.CORS())
+	e.Use(middleware.CORS("*"))
 	e.Use(middleware.Gzip())
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(middleware.MethodOverrideWithConfig(middleware.MethodOverrideConfig{
@@ -55,7 +78,7 @@ func (a *App) ConfigureWebserver() error {
 	var err error
 
 	e := newEcho(a.rawLogger)
-	e.Debug = a.Config.Debug
+	e.HTTPErrorHandler = echo.DefaultHTTPErrorHandler(a.Config.Debug)
 
 	a.sessionManager = scs.New()
 	a.sessionManager.Cookie.Path = "/"
@@ -79,7 +102,6 @@ func (a *App) ConfigureWebserver() error {
 	a.injector = newInjector(a.db, a.Config, &a.Version, a.sessionManager, a.logger, gc)
 
 	e.Use(session.LoadAndSave(a.sessionManager))
-	e.Use(a.ContextValueMiddleware)
 	e.Use(func(handlerFunc echo.HandlerFunc) echo.HandlerFunc {
 		return func(context *echo.Context) error {
 			a.setContext(context)
@@ -90,11 +112,11 @@ func (a *App) ConfigureWebserver() error {
 	publicGroup := e.Group(a.WebRoot())
 	publicGroup.GET("/health", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "OK")
-	}).Name = "health"
+	})
 	a.apiV2Routes(publicGroup)
 	a.registerActivityPubController(publicGroup)
 
-	publicGroup.GET("/*", a.serveClientAppHandler).Name = "client-app"
+	publicGroup.GET("/*", a.serveClientAppHandler)
 
 	a.echo = e
 
@@ -130,38 +152,6 @@ func (a *App) ValidateAuthenticatedUserMiddleware(next echo.HandlerFunc) echo.Ha
 	}
 }
 
-// extend *echo.Context
-type contextValue struct {
-	echo.Context
-}
-
-func (c contextValue) Get(key string) any {
-	if val := c.Context.Get(key); val != nil {
-		return val
-	}
-
-	return c.Request().Context().Value(key)
-}
-
-func (c contextValue) Set(key string, val any) {
-	// we're replacing the whole Request in *echo.Context
-	// with a copied request that has the updated context value
-	c.SetRequest(
-		c.Request().WithContext(
-			context.WithValue(c.Request().Context(), key, val),
-		),
-	)
-	c.Context.Set(key, val)
-}
-
-func (a *App) ContextValueMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c *echo.Context) error {
-		// instead of passing next(c) as you usually would,
-		// you return it with the extended version
-		return next(contextValue{c})
-	}
-}
-
 // @title           Workout Tracker API
 // @version         2.0
 // @description     Workout Tracker HTTP API (v2).
@@ -178,9 +168,9 @@ func (a *App) ContextValueMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 func (a *App) apiV2Routes(e *echo.Group) {
 	// Public routes
 	apiGroupPublic := e.Group("/api/v2")
-	apiGroupPublic.GET("/app-info", a.apiV2AppInfoHandler).Name = "api-v2-app-info"
-	apiGroupPublic.GET("/legal/notice/:lang", a.getLegalNoticeHandler).Name = "api-v2-legal-notice"
-	apiGroupPublic.GET("/legal/privacy/:lang", a.getPrivacyHandler).Name = "api-v2-legal-privacy"
+	apiGroupPublic.GET("/app-info", a.apiV2AppInfoHandler)
+	apiGroupPublic.GET("/legal/notice/:lang", a.getLegalNoticeHandler)
+	apiGroupPublic.GET("/legal/privacy/:lang", a.getPrivacyHandler)
 	a.registerAuthController(apiGroupPublic)
 	a.registerHammerheadPublicController(apiGroupPublic)
 
@@ -208,11 +198,12 @@ func (a *App) apiV2Routes(e *echo.Group) {
 
 			return false
 		},
-		SuccessHandler: func(ctx *echo.Context) {
+		SuccessHandler: func(ctx *echo.Context) error {
 			if err := a.setUserFromContext(ctx); err != nil {
 				a.logger.Warn("error validating user", "error", err.Error())
-				return
+				return nil
 			}
+			return nil
 		},
 	}))
 
@@ -243,7 +234,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	a.registerProfileController(apiGroup)
 	a.registerAdminController(apiGroup)
 
-	apiGroup.POST("/lookup-address", a.apiV2LookupAddressHandler).Name = "lookup-address"
+	apiGroup.POST("/lookup-address", a.apiV2LookupAddressHandler)
 }
 
 // apiV2LookupAddressHandler searches an address
