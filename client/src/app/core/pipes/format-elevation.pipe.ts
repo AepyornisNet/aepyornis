@@ -16,9 +16,9 @@ export class FormatElevationPipe implements PipeTransform {
 
   public convert(meters: number): number {
     if (this.elevationUnit === 'm') {
-      return meters
+      return meters;
     }
-    return meters * metersToFeet
+    return meters * metersToFeet;
   }
 
   public transform(meters: number | undefined | null): string {
@@ -26,6 +26,6 @@ export class FormatElevationPipe implements PipeTransform {
       return `-`;
     }
 
-    return `${this.convert(meters).toFixed(0)} ${this.elevationUnit}`
+    return `${this.convert(meters).toFixed(0)} ${this.elevationUnit}`;
   }
 }

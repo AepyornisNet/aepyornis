@@ -39,7 +39,6 @@ export class FormatSpeedPipe implements PipeTransform {
     }
 
     return metersPerSecond * metersPerSecondToMilesPerHour;
-
   }
 
   public transform(
@@ -54,7 +53,7 @@ export class FormatSpeedPipe implements PipeTransform {
 
     if (workoutTypeConfig?.pace) {
       const pace_unit: string = this.speedUnit === 'km/h' ? `km` : `mi`;
-      const pace = this.convert(metersPerSecond, type)
+      const pace = this.convert(metersPerSecond, type);
       const minutes = Math.floor(pace);
       const secs = Math.round((pace - minutes) * 60);
       return `${minutes}:${secs.toString().padStart(2, '0')} /${pace_unit}`;

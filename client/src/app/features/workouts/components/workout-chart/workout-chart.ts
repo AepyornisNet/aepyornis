@@ -2,7 +2,6 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  computed,
   effect,
   ElementRef,
   inject,
@@ -368,7 +367,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
       return [];
     }
 
-    const workout = this.workout()
+    const workout = this.workout();
     const metrics = this.extraMetricsValue;
     const metricSettings = this.getMetricSettings();
     const datasets: ChartDataset[] = [];
@@ -379,7 +378,9 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     // Add speed dataset (convert to preferred unit)
     if (hasDefaultSpeed) {
-      const speedData = mapData.speed.map((val) => this.formatSpeedPipe.convert(val, workout?.type)); // TODO
+      const speedData = mapData.speed.map((val) =>
+        this.formatSpeedPipe.convert(val, workout?.type),
+      );
       datasets.push({
         type: 'line',
         label: 'Speed',
@@ -420,31 +421,31 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             backgroundColor: getMetricDef(metric, metricIndex).color,
             ...(metric === 'heart-rate'
               ? {
-                segment: {
-                  borderColor: (ctx: ScriptableLineSegmentContext): string =>
-                    this.zoneColor(
-                      mapData,
-                      'hr-zone',
-                      ctx.p0DataIndex,
-                      HR_ZONE_COLORS,
-                      getMetricDef('heart-rate').color,
-                    ),
-                },
-              }
+                  segment: {
+                    borderColor: (ctx: ScriptableLineSegmentContext): string =>
+                      this.zoneColor(
+                        mapData,
+                        'hr-zone',
+                        ctx.p0DataIndex,
+                        HR_ZONE_COLORS,
+                        getMetricDef('heart-rate').color,
+                      ),
+                  },
+                }
               : {}),
             ...(metric === 'power'
               ? {
-                segment: {
-                  borderColor: (ctx: ScriptableLineSegmentContext): string =>
-                    this.zoneColor(
-                      mapData,
-                      'zone',
-                      ctx.p0DataIndex,
-                      FTP_ZONE_COLORS,
-                      getMetricDef('power').color,
-                    ),
-                },
-              }
+                  segment: {
+                    borderColor: (ctx: ScriptableLineSegmentContext): string =>
+                      this.zoneColor(
+                        mapData,
+                        'zone',
+                        ctx.p0DataIndex,
+                        FTP_ZONE_COLORS,
+                        getMetricDef('power').color,
+                      ),
+                  },
+                }
               : {}),
           });
           this.datasetMetricKeys.push(metric);
@@ -633,7 +634,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   }
 
   private getMetricSettings(): Record<string, MetricConfig> {
-    const workout = this.workout()
+    const workout = this.workout();
 
     return {
       speed: {
