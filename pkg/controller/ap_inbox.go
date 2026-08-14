@@ -13,12 +13,12 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 )
 
 type ApInboxController interface {
-	Inbox(c echo.Context) error
+	Inbox(c *echo.Context) error
 }
 
 type apInboxController struct {
@@ -42,7 +42,7 @@ func NewApInboxController(injector do.Injector) ApInboxController {
 	}
 }
 
-func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User, error) {
+func (ac *apInboxController) targetActivityPubUser(c *echo.Context) (*model.User, error) {
 	username := c.Param("username")
 	if username == "" {
 		return nil, errors.New("username not found")
@@ -56,7 +56,7 @@ func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User,
 	return user, nil
 }
 
-func requestingActor(c echo.Context) (*aputil.RequestActor, error) {
+func requestingActor(c *echo.Context) (*aputil.RequestActor, error) {
 	actor, ok := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
 	if ok && actor != nil {
 		return actor, nil
@@ -75,7 +75,7 @@ func requestingActor(c echo.Context) (*aputil.RequestActor, error) {
 // @Failure      404  {object}  map[string]string
 // @Failure      500  {object}  map[string]string
 // @Router       /ap/users/{username}/inbox [post]
-func (ac *apInboxController) Inbox(c echo.Context) error {
+func (ac *apInboxController) Inbox(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)

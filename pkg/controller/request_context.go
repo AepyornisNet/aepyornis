@@ -2,10 +2,10 @@ package controller
 
 import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
-func currentUser(c echo.Context) *model.User {
+func currentUser(c *echo.Context) *model.User {
 	d := c.Get("user_info")
 
 	u, ok := d.(*model.User)

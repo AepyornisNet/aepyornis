@@ -17,7 +17,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/fsouza/slognil"
 	"github.com/invopop/ctxi18n/i18n"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
 	"github.com/samber/do/v2"

@@ -6,7 +6,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 const activityPubContentType = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
@@ -21,7 +21,7 @@ func apiErrorCode(err error) string {
 	return ""
 }
 
-func renderApiError(c echo.Context, status int, err error) error {
+func renderApiError(c *echo.Context, status int, err error) error {
 	resp := dto.Response[any]{}
 	resp.AddError(err)
 
@@ -32,6 +32,6 @@ func renderApiError(c echo.Context, status int, err error) error {
 	return c.JSON(status, resp)
 }
 
-func renderActivityPubResponse(c echo.Context, payload []byte) error {
+func renderActivityPubResponse(c *echo.Context, payload []byte) error {
 	return c.Blob(http.StatusOK, activityPubContentType, payload)
 }

@@ -6,14 +6,14 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 )
 
 type MeasurementController interface {
-	GetMeasurements(c echo.Context) error
-	CreateMeasurement(c echo.Context) error
-	DeleteMeasurement(c echo.Context) error
+	GetMeasurements(c *echo.Context) error
+	CreateMeasurement(c *echo.Context) error
+	DeleteMeasurement(c *echo.Context) error
 }
 
 type measurementController struct {
@@ -39,7 +39,7 @@ func NewMeasurementController(injector do.Injector) MeasurementController {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /measurements [get]
-func (mc *measurementController) GetMeasurements(c echo.Context) error {
+func (mc *measurementController) GetMeasurements(c *echo.Context) error {
 	user := currentUser(c)
 
 	var pagination dto.PaginationParams
@@ -83,7 +83,7 @@ func (mc *measurementController) GetMeasurements(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /measurements [post]
-func (mc *measurementController) CreateMeasurement(c echo.Context) error {
+func (mc *measurementController) CreateMeasurement(c *echo.Context) error {
 	user := currentUser(c)
 
 	d := &dto.Measurement{Units: &user.PreferredUnits}
@@ -121,7 +121,7 @@ func (mc *measurementController) CreateMeasurement(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /measurements/{date} [delete]
-func (mc *measurementController) DeleteMeasurement(c echo.Context) error {
+func (mc *measurementController) DeleteMeasurement(c *echo.Context) error {
 	u := currentUser(c)
 
 	dateStr := c.Param("date")

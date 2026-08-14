@@ -15,17 +15,17 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
 type ApOutboxController interface {
-	Outbox(c echo.Context) error
-	OutboxItem(c echo.Context) error
-	OutboxFit(c echo.Context) error
-	OutboxRouteImage(c echo.Context) error
-	OutboxReplies(c echo.Context) error
+	Outbox(c *echo.Context) error
+	OutboxItem(c *echo.Context) error
+	OutboxFit(c *echo.Context) error
+	OutboxRouteImage(c *echo.Context) error
+	OutboxReplies(c *echo.Context) error
 }
 
 type apOutboxController struct {
@@ -48,7 +48,7 @@ func NewApOutboxController(injector do.Injector) ApOutboxController {
 	}
 }
 
-func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User, error) {
+func (ac *apOutboxController) targetActivityPubUser(c *echo.Context) (*model.User, error) {
 	username := c.Param("username")
 	if username == "" {
 		return nil, errors.New("username not found")
@@ -72,7 +72,7 @@ func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox [get]
-func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
+func (ac *apOutboxController) Outbox(c *echo.Context) error { //nolint:gocyclo
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -178,7 +178,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id} [get]
-func (ac *apOutboxController) OutboxItem(c echo.Context) error {
+func (ac *apOutboxController) OutboxItem(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -238,7 +238,7 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id}/fit [get]
-func (ac *apOutboxController) OutboxFit(c echo.Context) error {
+func (ac *apOutboxController) OutboxFit(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -277,7 +277,7 @@ func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id}/route-image [get]
-func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
+func (ac *apOutboxController) OutboxRouteImage(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -386,7 +386,7 @@ func buildRepliesPagePayload(replies []model.APStatus, repliesID string, page in
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox/{id}/replies [get]
-func (ac *apOutboxController) OutboxReplies(c echo.Context) error {
+func (ac *apOutboxController) OutboxReplies(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)

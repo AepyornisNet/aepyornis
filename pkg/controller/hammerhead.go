@@ -23,7 +23,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/alexedwards/scs/v2"
 	gorand "github.com/cat-dealer/go-rand/v2"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
@@ -40,11 +40,11 @@ const (
 var ErrHammerheadNotConfigured = errors.New("hammerhead oauth is not configured")
 
 type HammerheadController interface {
-	GetConnection(c echo.Context) error
-	Connect(c echo.Context) error
-	Callback(c echo.Context) error
-	Disconnect(c echo.Context) error
-	Webhook(c echo.Context) error
+	GetConnection(c *echo.Context) error
+	Connect(c *echo.Context) error
+	Callback(c *echo.Context) error
+	Disconnect(c *echo.Context) error
+	Webhook(c *echo.Context) error
 }
 
 type hammerheadController struct {
@@ -89,7 +89,7 @@ func NewHammerheadController(injector do.Injector) HammerheadController {
 	}
 }
 
-func (hc *hammerheadController) GetConnection(c echo.Context) error {
+func (hc *hammerheadController) GetConnection(c *echo.Context) error {
 	user := currentUser(c)
 
 	var conn model.HammerheadConnection
@@ -112,7 +112,7 @@ func (hc *hammerheadController) GetConnection(c echo.Context) error {
 	})
 }
 
-func (hc *hammerheadController) Connect(c echo.Context) error {
+func (hc *hammerheadController) Connect(c *echo.Context) error {
 	user := currentUser(c)
 	cfg := hc.cfg
 	if cfg.HammerheadClientID == "" || cfg.HammerheadSecret == "" {
@@ -141,7 +141,7 @@ func (hc *hammerheadController) Connect(c echo.Context) error {
 	})
 }
 
-func (hc *hammerheadController) Callback(c echo.Context) error {
+func (hc *hammerheadController) Callback(c *echo.Context) error {
 	user := currentUser(c)
 
 	if oauthErr := c.QueryParam("error"); oauthErr != "" {
@@ -205,7 +205,7 @@ func (hc *hammerheadController) Callback(c echo.Context) error {
 	return hc.redirectToAppsPage(c, "connected")
 }
 
-func (hc *hammerheadController) Disconnect(c echo.Context) error {
+func (hc *hammerheadController) Disconnect(c *echo.Context) error {
 	user := currentUser(c)
 
 	var conn model.HammerheadConnection
@@ -235,7 +235,7 @@ func (hc *hammerheadController) Disconnect(c echo.Context) error {
 	})
 }
 
-func (hc *hammerheadController) Webhook(c echo.Context) error {
+func (hc *hammerheadController) Webhook(c *echo.Context) error {
 	payloadRaw, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -490,7 +490,7 @@ func (hc *hammerheadController) validWebhookSignature(payload []byte, signature 
 	return hmac.Equal(expected, provided)
 }
 
-func (hc *hammerheadController) redirectURI(c echo.Context) string {
+func (hc *hammerheadController) redirectURI(c *echo.Context) string {
 	if configured := hc.cfg.HammerheadRedirect; configured != "" {
 		return configured
 	}
@@ -506,7 +506,7 @@ func (hc *hammerheadController) redirectURI(c echo.Context) string {
 	return scheme + "://" + host + path
 }
 
-func (hc *hammerheadController) redirectToAppsPage(c echo.Context, status string) error {
+func (hc *hammerheadController) redirectToAppsPage(c *echo.Context, status string) error {
 	target := joinWithWebRoot(hc.cfg.WebRoot, "/profile/settings/apps")
 	if status != "" {
 		target = target + "?hammerhead=" + url.QueryEscape(status)

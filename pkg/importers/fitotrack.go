@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
-func importFitotrack(c echo.Context, body io.ReadCloser) (*Content, error) {
+func importFitotrack(c *echo.Context, body io.ReadCloser) (*Content, error) {
 	headers := c.Request().Header
 
 	if t := headers.Get("FitoTrack-Type"); t != "workout-gpx" {

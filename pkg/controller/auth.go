@@ -14,7 +14,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/alexedwards/scs/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
@@ -25,9 +25,9 @@ var (
 )
 
 type AuthController interface {
-	SignIn(c echo.Context) error
-	SignOut(c echo.Context) error
-	Register(c echo.Context) error
+	SignIn(c *echo.Context) error
+	SignOut(c *echo.Context) error
+	Register(c *echo.Context) error
 }
 
 type authController struct {
@@ -58,7 +58,7 @@ func NewAuthController(injector do.Injector) AuthController {
 // @Failure      401  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /auth/signin [post]
-func (ac *authController) SignIn(c echo.Context) error {
+func (ac *authController) SignIn(c *echo.Context) error {
 	var req dto.SigninRequest
 	if err := c.Bind(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -97,7 +97,7 @@ func (ac *authController) SignIn(c echo.Context) error {
 // @Success      200  {object}  dto.Response[map[string]string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /auth/signout [post]
-func (ac *authController) SignOut(c echo.Context) error {
+func (ac *authController) SignOut(c *echo.Context) error {
 	ac.clearTokenCookie(c)
 
 	if err := ac.sessionManager.Destroy(c.Request().Context()); err != nil {
@@ -121,7 +121,7 @@ func (ac *authController) SignOut(c echo.Context) error {
 // @Failure      403  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /auth/register [post]
-func (ac *authController) Register(c echo.Context) error {
+func (ac *authController) Register(c *echo.Context) error {
 	if ac.cfg.RegistrationDisabled {
 		return renderApiError(c, http.StatusForbidden, errors.New("registration is disabled"))
 	}
@@ -195,7 +195,7 @@ func (ac *authController) Register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-func (ac *authController) createToken(u *model.User, c echo.Context) (string, error) {
+func (ac *authController) createToken(u *model.User, c *echo.Context) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims, ok := token.Claims.(jwt.MapClaims)
@@ -218,7 +218,7 @@ func (ac *authController) createToken(u *model.User, c echo.Context) (string, er
 	return t, nil
 }
 
-func (ac *authController) setTokenCookie(t string, exp time.Time, c echo.Context) {
+func (ac *authController) setTokenCookie(t string, exp time.Time, c *echo.Context) {
 	cookie := new(http.Cookie)
 	cookie.Path = "/"
 	cookie.HttpOnly = true
@@ -231,7 +231,7 @@ func (ac *authController) setTokenCookie(t string, exp time.Time, c echo.Context
 	c.SetCookie(cookie)
 }
 
-func (ac *authController) clearTokenCookie(c echo.Context) {
+func (ac *authController) clearTokenCookie(c *echo.Context) {
 	exp := time.Now()
 	ac.setTokenCookie("", exp, c)
 }

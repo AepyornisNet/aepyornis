@@ -17,8 +17,8 @@ import (
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
 	echojwt "github.com/labstack/echo-jwt/v4"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/vgarvardt/gue/v6"
 
@@ -81,14 +81,14 @@ func (a *App) ConfigureWebserver() error {
 	e.Use(session.LoadAndSave(a.sessionManager))
 	e.Use(a.ContextValueMiddleware)
 	e.Use(func(handlerFunc echo.HandlerFunc) echo.HandlerFunc {
-		return func(context echo.Context) error {
+		return func(context *echo.Context) error {
 			a.setContext(context)
 			return handlerFunc(context)
 		}
 	})
 
 	publicGroup := e.Group(a.WebRoot())
-	publicGroup.GET("/health", func(c echo.Context) error {
+	publicGroup.GET("/health", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	}).Name = "health"
 	a.apiV2Routes(publicGroup)
@@ -102,7 +102,7 @@ func (a *App) ConfigureWebserver() error {
 }
 
 func (a *App) ValidateAdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(ctx echo.Context) error {
+	return func(ctx *echo.Context) error {
 		u := a.getCurrentUser(ctx)
 		if u.IsAnonymous() || !u.IsActive() {
 			log.Warn("User is not found")
@@ -119,7 +119,7 @@ func (a *App) ValidateAdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (a *App) ValidateAuthenticatedUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(ctx echo.Context) error {
+	return func(ctx *echo.Context) error {
 		u := a.getCurrentUser(ctx)
 		if u.IsAnonymous() || !u.IsActive() {
 			log.Warn("User is not found")
@@ -130,7 +130,7 @@ func (a *App) ValidateAuthenticatedUserMiddleware(next echo.HandlerFunc) echo.Ha
 	}
 }
 
-// extend echo.Context
+// extend *echo.Context
 type contextValue struct {
 	echo.Context
 }
@@ -144,7 +144,7 @@ func (c contextValue) Get(key string) any {
 }
 
 func (c contextValue) Set(key string, val any) {
-	// we're replacing the whole Request in echo.Context
+	// we're replacing the whole Request in *echo.Context
 	// with a copied request that has the updated context value
 	c.SetRequest(
 		c.Request().WithContext(
@@ -155,7 +155,7 @@ func (c contextValue) Set(key string, val any) {
 }
 
 func (a *App) ContextValueMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		// instead of passing next(c) as you usually would,
 		// you return it with the extended version
 		return next(contextValue{c})
@@ -188,7 +188,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	apiGroup.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey:  a.Config.JWTSecret(),
 		TokenLookup: "cookie:token",
-		ErrorHandler: func(c echo.Context, err error) error {
+		ErrorHandler: func(c *echo.Context, err error) error {
 			log.Warn(err.Error())
 
 			r := dto.Response[any]{}
@@ -197,7 +197,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 
 			return c.JSON(http.StatusUnauthorized, r)
 		},
-		Skipper: func(ctx echo.Context) bool {
+		Skipper: func(ctx *echo.Context) bool {
 			if ctx.Request().Header.Get("Authorization") != "" {
 				return true
 			}
@@ -208,7 +208,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 
 			return false
 		},
-		SuccessHandler: func(ctx echo.Context) {
+		SuccessHandler: func(ctx *echo.Context) {
 			if err := a.setUserFromContext(ctx); err != nil {
 				a.logger.Warn("error validating user", "error", err.Error())
 				return
@@ -219,13 +219,13 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	apiGroup.Use(middleware.KeyAuthWithConfig(middleware.KeyAuthConfig{
 		Validator: a.ValidateAPIKeyMiddleware,
 		KeyLookup: "query:api-key",
-		Skipper: func(ctx echo.Context) bool {
+		Skipper: func(ctx *echo.Context) bool {
 			return ctx.Request().URL.Query().Get("api-key") == ""
 		},
 	}))
 	apiGroup.Use(middleware.KeyAuthWithConfig(middleware.KeyAuthConfig{
 		Validator: a.ValidateAPIKeyMiddleware,
-		Skipper: func(ctx echo.Context) bool {
+		Skipper: func(ctx *echo.Context) bool {
 			return ctx.Request().Header.Get("Authorization") == ""
 		},
 	}))
@@ -257,7 +257,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 // @Success      200  {object}  dto.Response[[]string]
 // @Failure      400  {object}  dto.Response[any]
 // @Router       /lookup-address [post]
-func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
+func (a *App) apiV2LookupAddressHandler(c *echo.Context) error {
 	q := c.Param("location")
 
 	results, err := geocoder.Search(q)
@@ -276,7 +276,7 @@ func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.AppInfoResponse]
 // @Router       /app-info [get]
-func (a *App) apiV2AppInfoHandler(c echo.Context) error {
+func (a *App) apiV2AppInfoHandler(c *echo.Context) error {
 	resp := dto.Response[dto.AppInfoResponse]{
 		Results: dto.AppInfoResponse{
 			Version:               a.Version.PrettyVersion(),
@@ -299,7 +299,7 @@ func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 }
 
 // renderAPIV2Error renders an API v2 error response
-func (a *App) renderAPIV2Error(c echo.Context, status int, err error) error {
+func (a *App) renderAPIV2Error(c *echo.Context, status int, err error) error {
 	resp := dto.Response[any]{}
 	resp.AddError(err)
 	return c.JSON(status, resp)
@@ -383,7 +383,7 @@ func (a *App) getLegalDocumentFile(dirPath string, lang string) (string, error) 
 	return "", errors.New("document not found")
 }
 
-func (a *App) getLegalNoticeHandler(c echo.Context) error {
+func (a *App) getLegalNoticeHandler(c *echo.Context) error {
 	lang := c.Param("lang")
 	content, err := a.getLegalDocument(a.Config.LegalNoticePath, lang)
 	if err != nil {
@@ -392,7 +392,7 @@ func (a *App) getLegalNoticeHandler(c echo.Context) error {
 	return c.HTML(http.StatusOK, content)
 }
 
-func (a *App) getPrivacyHandler(c echo.Context) error {
+func (a *App) getPrivacyHandler(c *echo.Context) error {
 	lang := c.Param("lang")
 	content, err := a.getLegalDocument(a.Config.PrivacyPath, lang)
 	if err != nil {

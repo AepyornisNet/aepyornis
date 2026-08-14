@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/AepyornisNet/aepyornis/pkg/controller"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 func (a *App) registerActivityPubController(e *echo.Group) {

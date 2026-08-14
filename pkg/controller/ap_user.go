@@ -14,14 +14,14 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 )
 
 type ApUserController interface {
-	GetUser(c echo.Context) error
-	Following(c echo.Context) error
-	Followers(c echo.Context) error
+	GetUser(c *echo.Context) error
+	Following(c *echo.Context) error
+	Followers(c *echo.Context) error
 }
 
 type apUserController struct {
@@ -50,7 +50,7 @@ func NewApUserController(injector do.Injector) ApUserController {
 // @Success      200  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username} [get]
-func (ac *apUserController) GetUser(c echo.Context) error {
+func (ac *apUserController) GetUser(c *echo.Context) error {
 	username := c.Param("username")
 	if username == "" {
 		return renderApiError(c, http.StatusNotFound, errors.New("username not found"))
@@ -97,7 +97,7 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 	return renderActivityPubResponse(c, resp)
 }
 
-func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, error) {
+func (ac *apUserController) targetActivityPubUser(c *echo.Context) (*model.User, error) {
 	username := c.Param("username")
 	if username == "" {
 		return nil, errors.New("username not found")
@@ -121,7 +121,7 @@ func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, 
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/following [get]
-func (ac *apUserController) Following(c echo.Context) error {
+func (ac *apUserController) Following(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -214,7 +214,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/followers [get]
-func (ac *apUserController) Followers(c echo.Context) error {
+func (ac *apUserController) Followers(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)

@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +15,7 @@ type WorkoutFilters struct {
 	OrderDir string      `query:"order_dir"`
 }
 
-func GetWorkoutsFilters(c echo.Context) (*WorkoutFilters, error) {
+func GetWorkoutsFilters(c *echo.Context) (*WorkoutFilters, error) {
 	filters := WorkoutFilters{}
 
 	if err := c.Bind(&filters); err != nil {

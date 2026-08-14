@@ -12,7 +12,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/fsouza/slognil"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

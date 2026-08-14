@@ -6,17 +6,17 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 )
 
 type EquipmentController interface {
-	GetEquipmentList(c echo.Context) error
-	GetEquipment(c echo.Context) error
-	CreateEquipment(c echo.Context) error
-	UpdateEquipment(c echo.Context) error
-	DeleteEquipment(c echo.Context) error
+	GetEquipmentList(c *echo.Context) error
+	GetEquipment(c *echo.Context) error
+	CreateEquipment(c *echo.Context) error
+	UpdateEquipment(c *echo.Context) error
+	DeleteEquipment(c *echo.Context) error
 }
 
 type equipmentController struct {
@@ -29,7 +29,7 @@ func NewEquipmentController(injector do.Injector) EquipmentController {
 	}
 }
 
-func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, error) {
+func (ec *equipmentController) getEquipment(c *echo.Context) (*model.Equipment, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, e
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /equipment [get]
-func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
+func (ec *equipmentController) GetEquipmentList(c *echo.Context) error {
 	user := currentUser(c)
 	profileID := user.Profile.ID
 
@@ -103,7 +103,7 @@ func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
 // @Success      200  {object}  dto.Response[dto.EquipmentResponse]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /equipment/{id} [get]
-func (ec *equipmentController) GetEquipment(c echo.Context) error {
+func (ec *equipmentController) GetEquipment(c *echo.Context) error {
 	e, err := ec.getEquipment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -128,7 +128,7 @@ func (ec *equipmentController) GetEquipment(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /equipment [post]
-func (ec *equipmentController) CreateEquipment(c echo.Context) error {
+func (ec *equipmentController) CreateEquipment(c *echo.Context) error {
 	user := currentUser(c)
 
 	var e model.Equipment
@@ -163,7 +163,7 @@ func (ec *equipmentController) CreateEquipment(c echo.Context) error {
 // @Failure      403  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /equipment/{id} [put]
-func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
+func (ec *equipmentController) UpdateEquipment(c *echo.Context) error {
 	user := currentUser(c)
 
 	e, err := ec.getEquipment(c)
@@ -205,7 +205,7 @@ func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 // @Failure      403  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /equipment/{id} [delete]
-func (ec *equipmentController) DeleteEquipment(c echo.Context) error {
+func (ec *equipmentController) DeleteEquipment(c *echo.Context) error {
 	user := currentUser(c)
 
 	e, err := ec.getEquipment(c)
