@@ -99,8 +99,8 @@ func NewRouteSegmentDetailResponse(rs *model.RouteSegment) RouteSegmentDetailRes
 	response.Points = make([]MapPoint, len(rs.Points))
 	for i, p := range rs.Points {
 		response.Points[i] = MapPoint{
-			Lat:           p.Lat,
-			Lng:           p.Lng,
+			Lat:           p.Point.Lat,
+			Lng:           p.Point.Lng,
 			Elevation:     p.Elevation,
 			TotalDistance: p.TotalDistance,
 		}

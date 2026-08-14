@@ -91,8 +91,8 @@ func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams)
 
 	for _, p := range points {
 		gpxPoint := gpx.Point{
-			Latitude:  p.Lat,
-			Longitude: p.Lng,
+			Latitude:  p.Point.Lat,
+			Longitude: p.Point.Lng,
 			Elevation: *gpx.NewNullableFloat64(p.ExtraMetrics.Get("elevation")),
 		}
 

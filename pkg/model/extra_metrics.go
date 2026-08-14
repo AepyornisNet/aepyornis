@@ -64,12 +64,12 @@ func (em ExtraMetrics) ParseGPXExtensions(extension gpx.Extension) {
 
 func (ExtraMetrics) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
-	case "mysql", "sqlite":
+	case "sqlite":
 		return "JSON"
 	case "postgres":
 		return "JSONB"
 	}
-	return ""
+	return "JSONB"
 }
 
 func getGPXExtensionKeyValue(n *gpx.ExtensionNode) (string, float64) {

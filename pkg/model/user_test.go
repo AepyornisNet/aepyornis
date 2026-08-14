@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/fsouza/slognil"
@@ -34,7 +35,12 @@ func dummyMapData() *WorkoutGeoMeta {
 func createMemoryDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	db, err := Connect("memory", "", false, slognil.NewLogger())
+	dsn := os.Getenv("WT_DSN")
+	if dsn == "" {
+		t.Skip("PostGIS test database not configured (set WT_DSN)")
+	}
+
+	db, err := Connect("postgres", dsn, false, slognil.NewLogger())
 	require.NoError(t, err)
 
 	return db

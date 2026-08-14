@@ -103,14 +103,14 @@ func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
 
 	if bounds != nil {
 		query = query.Where(
-			"wr.lat >= ? AND wr.lat <= ? AND wr.lng >= ? AND wr.lng <= ?",
+			"ST_Y(wr.point) >= ? AND ST_Y(wr.point) <= ? AND ST_X(wr.point) >= ? AND ST_X(wr.point) <= ?",
 			bounds.minLat, bounds.maxLat, bounds.minLng, bounds.maxLng,
 		)
 	}
 
 	if !hasCellSize {
 		rows := make([]rawCoordinateRow, 0)
-		if err := query.Select("wr.lat AS lat, wr.lng AS lng").Find(&rows).Error; err != nil {
+		if err := query.Select("ST_Y(wr.point) AS lat, ST_X(wr.point) AS lng").Find(&rows).Error; err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 
@@ -127,7 +127,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
 
 	rows := make([]aggregatedCoordinateRow, 0)
 	if err := query.
-		Select("floor(wr.lat / ?) AS lat_cell, floor(wr.lng / ?) AS lng_cell, count(*) AS weight", cellSize, cellSize).
+		Select("floor(ST_Y(wr.point) / ?) AS lat_cell, floor(ST_X(wr.point) / ?) AS lng_cell, count(*) AS weight", cellSize, cellSize).
 		Group("lat_cell, lng_cell").
 		Find(&rows).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)

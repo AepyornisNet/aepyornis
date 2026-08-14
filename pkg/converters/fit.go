@@ -15,6 +15,7 @@ import (
 	"github.com/muktihari/fit/profile/filedef"
 	"github.com/muktihari/fit/profile/mesgdef"
 	"github.com/muktihari/fit/profile/typedef"
+	"github.com/restayway/gogis"
 	"gorm.io/datatypes"
 )
 
@@ -553,8 +554,7 @@ func mapDataFromActivity(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.
 
 		points = append(points, model.WorkoutRecord{
 			Time:          ts,
-			Lat:           lat,
-			Lng:           lng,
+			Point:         gogis.Point{Lat: lat, Lng: lng},
 			Elevation:     elevationValue,
 			Distance:      deltaDist,
 			TotalDistance: dist,

@@ -30,7 +30,7 @@ func (w *Workout) fixMissingDataRecords() {
 		}
 
 		if r.Distance2D == 0 && r.Distance != 0 {
-			r.Distance2D = gpx.Distance2D(r.Lat, r.Lng, rNext.Lat, rNext.Lng, false)
+			r.Distance2D = gpx.Distance2D(r.Point.Lat, r.Point.Lng, rNext.Point.Lat, rNext.Point.Lng, false)
 			r.TotalDistance2D = rPrev.TotalDistance2D + r.Distance2D
 		}
 	}
@@ -77,12 +77,12 @@ func GetGeoMeta(workout *Workout) *WorkoutGeoMeta {
 	lat, lng := 0.0, 0.0
 	validPoints := 0
 	for _, r := range workout.Records {
-		if r.Lat == 0 && r.Lng == 0 {
+		if r.Point.Lat == 0 && r.Point.Lng == 0 {
 			continue
 		}
 
-		lat += r.Lat
-		lng += r.Lng
+		lat += r.Point.Lat
+		lng += r.Point.Lng
 		validPoints++
 	}
 

@@ -2,6 +2,7 @@ package app
 
 import (
 	"log/slog"
+	"os"
 	"testing"
 
 	appassets "github.com/AepyornisNet/aepyornis/assets"
@@ -47,10 +48,16 @@ func TestApp_Configure(t *testing.T) {
 	a := defaultApp(t)
 	assert.Nil(t, a.db)
 
-	t.Setenv("WT_DATABASE_DRIVER", "memory")
+	dsn := os.Getenv("WT_DSN")
+	if dsn == "" {
+		t.Skip("PostGIS test database not configured (set WT_DSN)")
+	}
+
+	t.Setenv("WT_DATABASE_DRIVER", "postgres")
+	t.Setenv("WT_DSN", dsn)
 	require.NoError(t, a.Configure())
 
-	assert.Equal(t, "memory", a.Config.DatabaseDriver)
+	assert.Equal(t, "postgres", a.Config.DatabaseDriver)
 	assert.NotNil(t, a.db)
 }
 
@@ -72,9 +79,15 @@ func TestApp_RandomJWTErrorIdemPotent(t *testing.T) {
 }
 
 func TestApp_Configure_CreatesActivityPubEnabledAdminWhenEnabled(t *testing.T) {
+	dsn := os.Getenv("WT_DSN")
+	if dsn == "" {
+		t.Skip("PostGIS test database not configured (set WT_DSN)")
+	}
+
 	a := defaultApp(t)
 
-	t.Setenv("WT_DATABASE_DRIVER", "memory")
+	t.Setenv("WT_DATABASE_DRIVER", "postgres")
+	t.Setenv("WT_DSN", dsn)
 	t.Setenv("WT_ACTIVITY_PUB_ACTIVE", "true")
 	require.NoError(t, a.Configure())
 
@@ -89,9 +102,15 @@ func TestApp_Configure_CreatesActivityPubEnabledAdminWhenEnabled(t *testing.T) {
 }
 
 func TestApp_Configure_CreatesPrivateAdminDefaultsWhenActivityPubDisabled(t *testing.T) {
+	dsn := os.Getenv("WT_DSN")
+	if dsn == "" {
+		t.Skip("PostGIS test database not configured (set WT_DSN)")
+	}
+
 	a := defaultApp(t)
 
-	t.Setenv("WT_DATABASE_DRIVER", "memory")
+	t.Setenv("WT_DATABASE_DRIVER", "postgres")
+	t.Setenv("WT_DSN", dsn)
 	t.Setenv("WT_ACTIVITY_PUB_ACTIVE", "false")
 	require.NoError(t, a.Configure())
 

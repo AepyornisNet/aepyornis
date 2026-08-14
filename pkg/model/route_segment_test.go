@@ -49,10 +49,10 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 		len(w1[0].Records),
 		w1[0].Type,
 		w1[0].HasTracks(),
-		rp.Lat,
-		rp.Lng,
-		wp.Lat,
-		wp.Lng,
+		rp.Point.Lat,
+		rp.Point.Lng,
+		wp.Point.Lat,
+		wp.Point.Lng,
 		minStart,
 	)
 

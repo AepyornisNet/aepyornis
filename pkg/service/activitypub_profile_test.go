@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
@@ -101,7 +102,12 @@ func createActivityPubProfileService(t *testing.T, db *gorm.DB) ActivityPubProfi
 func createActivityPubProfileTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	db, err := model.Connect("memory", "", false, slognil.NewLogger())
+	dsn := os.Getenv("WT_DSN")
+	if dsn == "" {
+		t.Skip("PostGIS test database not configured (set WT_DSN)")
+	}
+
+	db, err := model.Connect("postgres", dsn, false, slognil.NewLogger())
 	require.NoError(t, err)
 
 	return db

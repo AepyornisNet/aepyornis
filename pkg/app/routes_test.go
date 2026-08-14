@@ -1,6 +1,7 @@
 package app
 
 import (
+	"os"
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -10,7 +11,13 @@ import (
 
 func configuredApp(t *testing.T) *App {
 	t.Helper()
-	t.Setenv("WT_DATABASE_DRIVER", "memory")
+	dsn := os.Getenv("WT_DSN")
+	if dsn == "" {
+		t.Skip("PostGIS test database not configured (set WT_DSN)")
+	}
+
+	t.Setenv("WT_DATABASE_DRIVER", "postgres")
+	t.Setenv("WT_DSN", dsn)
 
 	a := defaultApp(t)
 

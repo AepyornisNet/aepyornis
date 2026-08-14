@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
@@ -16,11 +17,22 @@ import (
 	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
-func TestApInbox_AcceptFollowActivity(t *testing.T) {
-	db, err := model.Connect("memory", "", false, slognil.NewLogger())
+func createTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	dsn := os.Getenv("WT_DSN")
+	if dsn == "" {
+		t.Skip("PostGIS test database not configured (set WT_DSN)")
+	}
+	db, err := model.Connect("postgres", dsn, false, slognil.NewLogger())
 	require.NoError(t, err)
+	return db
+}
+
+func TestApInbox_AcceptFollowActivity(t *testing.T) {
+	db := createTestDB(t)
 
 	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
@@ -49,7 +61,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 		URL:         func() *string { u := remoteActorIRI; return &u }(),
 		InboxURL:    func() *string { u := remoteActorIRI + "/inbox"; return &u }(),
 	}
-	_, err = do.MustInvoke[repository.Follower](injector).UpsertFollowingRequest(localUser.Profile.ID, remoteProfile)
+	_, err := do.MustInvoke[repository.Follower](injector).UpsertFollowingRequest(localUser.Profile.ID, remoteProfile)
 	require.NoError(t, err)
 
 	payload := []byte(`{
@@ -86,8 +98,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 }
 
 func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
-	db, err := model.Connect("memory", "", false, slognil.NewLogger())
-	require.NoError(t, err)
+	db := createTestDB(t)
 
 	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
@@ -132,7 +143,7 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	c.SetPathValues(echo.PathValues{{Name: "username", Value: "admin"}})
 	c.Set(aputil.RequestingActorContextKey, &aputil.RequestActor{Actor: vocab.Actor{ID: vocab.ID(remoteActorIRI)}})
 
-	err = ctrl.Inbox(c)
+	err := ctrl.Inbox(c)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, rec.Code)
 
