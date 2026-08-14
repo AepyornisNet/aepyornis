@@ -334,16 +334,6 @@ github.com/samber/do/v2/stacktrace
 # github.com/samber/go-type-to-string v1.8.0
 ## explicit; go 1.18
 github.com/samber/go-type-to-string
-# github.com/samber/lo v1.53.0
-## explicit; go 1.18
-github.com/samber/lo
-github.com/samber/lo/internal/constraints
-github.com/samber/lo/internal/xrand
-github.com/samber/lo/internal/xtime
-github.com/samber/lo/mutable
-# github.com/samber/slog-echo/v2 v2.0.0
-## explicit; go 1.25.0
-github.com/samber/slog-echo/v2
 # github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 ## explicit
 github.com/skratchdot/open-golang/open

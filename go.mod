@@ -42,7 +42,6 @@ require (
 	github.com/paulmach/orb v0.13.0
 	github.com/ringsaturn/tzf v1.2.1
 	github.com/samber/do/v2 v2.1.0
-	github.com/samber/slog-echo/v2 v2.0.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cast v1.10.0
 	github.com/spf13/cobra v1.10.2
@@ -112,7 +111,6 @@ require (
 	github.com/ringsaturn/tzf-dist v0.0.2026-b-fix1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
-	github.com/samber/lo v1.53.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
