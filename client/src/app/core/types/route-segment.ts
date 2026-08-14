@@ -22,8 +22,6 @@ export type RouteSegment = {
 export type MapPoint = {
   lat: number;
   lng: number;
-  elevation: number;
-  total_distance: number;
 };
 
 export type RouteSegmentMatch = {

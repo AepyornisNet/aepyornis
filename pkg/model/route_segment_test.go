@@ -6,6 +6,7 @@ import (
 	_ "github.com/AepyornisNet/aepyornis/pkg/converters"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testAnonymousProfile() *model.Profile {
@@ -35,22 +36,22 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	w1, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
 	assert.NoError(t, err)
 	assert.Len(t, w1, 1)
-	rp, wp := rs.Points[0], w1[0].Records[0]
-	minStart := rp.DistanceTo(&wp)
+	rp, wp := rs.Points.Points[0], w1[0].Records[0]
+	minStart := model.PointDistance(rp, wp.Point)
 	for i := range w1[0].Records {
-		d := rp.DistanceTo(&w1[0].Records[i])
+		d := model.PointDistance(rp, w1[0].Records[i].Point)
 		if d < minStart {
 			minStart = d
 		}
 	}
 	t.Logf(
 		"route points=%d workout points=%d type=%s hasTracks=%v first_route=(%.5f,%.5f) first_workout=(%.5f,%.5f) min_start_distance=%.2fm",
-		len(rs.Points),
+		len(rs.Points.Points),
 		len(w1[0].Records),
 		w1[0].Type,
 		w1[0].HasTracks(),
-		rp.Point.Lat,
-		rp.Point.Lng,
+		rp.Lat,
+		rp.Lng,
 		wp.Point.Lat,
 		wp.Point.Lng,
 		minStart,
@@ -104,7 +105,7 @@ func TestRouteSegment_StartingPoints_Match(t *testing.T) {
 	assert.NotEmpty(t, sp)
 
 	for _, p := range sp {
-		assert.Less(t, rs.Points[0].DistanceTo(&w1.Records[p]), model.MaxDeltaMeter)
+		assert.Less(t, model.PointDistance(rs.Points.Points[0], w1.Records[p].Point), model.MaxDeltaMeter)
 	}
 }
 
@@ -149,4 +150,22 @@ func TestRouteSegment_Match(t *testing.T) {
 
 	assert.Greater(t, rsm.Distance, 900.0)
 	assert.True(t, rsm.MatchesDistance(rs.TotalDistance))
+}
+
+func TestRouteSegment_DatabaseSaveAndGet(t *testing.T) {
+	db := model.TestDB(t)
+
+	rs, err := model.NewRouteSegment("test notes", "finsepiste.gpx", []byte(finsepiste))
+	assert.NoError(t, err)
+	require.NoError(t, rs.Create(db))
+	assert.NotZero(t, rs.ID)
+
+	var loaded model.RouteSegment
+	require.NoError(t, db.First(&loaded, rs.ID).Error)
+	assert.Equal(t, rs.Name, loaded.Name)
+	assert.Equal(t, len(rs.Points.Points), len(loaded.Points.Points))
+	if len(rs.Points.Points) > 0 {
+		assert.InDelta(t, rs.Points.Points[0].Lat, loaded.Points.Points[0].Lat, 0.0001)
+		assert.InDelta(t, rs.Points.Points[0].Lng, loaded.Points.Points[0].Lng, 0.0001)
+	}
 }

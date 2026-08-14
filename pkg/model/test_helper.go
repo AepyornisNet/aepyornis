@@ -18,7 +18,7 @@ import (
 type GormMigrator struct{}
 
 func (GormMigrator) Hash() (string, error) {
-	return "aepyornis-postgis-schema", nil
+	return "aepyornis-postgis-schema-v2", nil
 }
 
 func (GormMigrator) Migrate(_ context.Context, _ *sql.DB, conf pgtestdb.Config) error {

@@ -61,12 +61,28 @@ func (m *WorkoutRecord) EnhancedElevation() float64 {
 	return m.Elevation
 }
 
+// PointDistance calculates 2D distance between two gogis points in meters.
+func PointDistance(p1, p2 gogis.Point) float64 {
+	pt1 := gpx.Point{Latitude: p1.Lat, Longitude: p1.Lng}
+	pt2 := gpx.Point{Latitude: p2.Lat, Longitude: p2.Lng}
+
+	return pt1.Distance2D(&pt2)
+}
+
 func (m *WorkoutRecord) DistanceTo(m2 *WorkoutRecord) float64 {
 	if m == nil || m2 == nil {
 		return math.Inf(1)
 	}
 
-	return m.AsGPXPoint().Distance2D(m2.AsGPXPoint())
+	return PointDistance(m.Point, m2.Point)
+}
+
+func (m *WorkoutRecord) DistanceToPoint(p gogis.Point) float64 {
+	if m == nil {
+		return math.Inf(1)
+	}
+
+	return PointDistance(m.Point, p)
 }
 
 func (m *WorkoutRecord) AsGPXPoint() *gpx.Point {

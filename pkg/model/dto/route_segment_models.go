@@ -57,10 +57,8 @@ func NewRouteSegmentsResponse(rss []*model.RouteSegment) []RouteSegmentResponse 
 
 // MapPoint represents a GPS point on a route segment
 type MapPoint struct {
-	Lat           float64 `json:"lat"`
-	Lng           float64 `json:"lng"`
-	Elevation     float64 `json:"elevation"`
-	TotalDistance float64 `json:"total_distance"`
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
 }
 
 // RouteSegmentMatch represents a match of a route segment in a workout
@@ -96,13 +94,11 @@ func NewRouteSegmentDetailResponse(rs *model.RouteSegment) RouteSegmentDetailRes
 	}
 
 	// Convert points
-	response.Points = make([]MapPoint, len(rs.Points))
-	for i, p := range rs.Points {
+	response.Points = make([]MapPoint, len(rs.Points.Points))
+	for i, p := range rs.Points.Points {
 		response.Points[i] = MapPoint{
-			Lat:           p.Point.Lat,
-			Lng:           p.Point.Lng,
-			Elevation:     p.Elevation,
-			TotalDistance: p.TotalDistance,
+			Lat: p.Lat,
+			Lng: p.Lng,
 		}
 	}
 
