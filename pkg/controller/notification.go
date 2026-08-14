@@ -11,20 +11,20 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/nikoksr/notify/service/webpush"
 	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
 type NotificationController interface {
-	GetNotifications(c echo.Context) error
-	MarkAsRead(c echo.Context) error
-	GetConfig(c echo.Context) error
-	UpdateConfig(c echo.Context) error
-	GetWebpushSubscriptions(c echo.Context) error
-	SubscribeWebpush(c echo.Context) error
-	UnsubscribeWebpush(c echo.Context) error
+	GetNotifications(c *echo.Context) error
+	MarkAsRead(c *echo.Context) error
+	GetConfig(c *echo.Context) error
+	UpdateConfig(c *echo.Context) error
+	GetWebpushSubscriptions(c *echo.Context) error
+	SubscribeWebpush(c *echo.Context) error
+	UnsubscribeWebpush(c *echo.Context) error
 }
 
 type notificationController struct {
@@ -53,7 +53,7 @@ func NewNotificationController(injector do.Injector) NotificationController {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications [get]
-func (nc *notificationController) GetNotifications(c echo.Context) error {
+func (nc *notificationController) GetNotifications(c *echo.Context) error {
 	user := currentUser(c)
 
 	unread, err := nc.notificationRepo.GetUnread(c.Request().Context(), user)
@@ -78,7 +78,7 @@ func (nc *notificationController) GetNotifications(c echo.Context) error {
 // @Success      200  {object}  dto.Response[[]model.UserNotificationSettings]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/settings [get]
-func (nc *notificationController) GetConfig(c echo.Context) error {
+func (nc *notificationController) GetConfig(c *echo.Context) error {
 	user := currentUser(c)
 
 	settings, err := nc.notificationRepo.GetAllUserSettings(c.Request().Context(), user)
@@ -124,7 +124,7 @@ func (nc *notificationController) GetConfig(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/{type} [post]
-func (nc *notificationController) UpdateConfig(c echo.Context) error {
+func (nc *notificationController) UpdateConfig(c *echo.Context) error {
 	user := currentUser(c)
 
 	nType := c.Param("type")
@@ -209,7 +209,7 @@ type MarkAsReadPayload struct {
 // @Success      200  {object}  dto.Response[map[string]bool]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/read [post]
-func (nc *notificationController) MarkAsRead(c echo.Context) error {
+func (nc *notificationController) MarkAsRead(c *echo.Context) error {
 	user := currentUser(c)
 	var payload MarkAsReadPayload
 	_ = c.Bind(&payload)
@@ -246,7 +246,7 @@ type UnsubscribeWebpushPayload struct {
 // @Success      200  {object}  dto.Response[[]model.UserWebpushSubscription]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/webpush/subscriptions [get]
-func (nc *notificationController) GetWebpushSubscriptions(c echo.Context) error {
+func (nc *notificationController) GetWebpushSubscriptions(c *echo.Context) error {
 	user := currentUser(c)
 	var subs []model.UserWebpushSubscription
 	if err := nc.db.WithContext(c.Request().Context()).Where("user_id = ?", user.ID).Order("created_at desc").Find(&subs).Error; err != nil {
@@ -270,7 +270,7 @@ func (nc *notificationController) GetWebpushSubscriptions(c echo.Context) error 
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/webpush/subscribe [post]
-func (nc *notificationController) SubscribeWebpush(c echo.Context) error {
+func (nc *notificationController) SubscribeWebpush(c *echo.Context) error {
 	user := currentUser(c)
 
 	var payload SubscribeWebpushPayload
@@ -333,7 +333,7 @@ func (nc *notificationController) SubscribeWebpush(c echo.Context) error {
 // @Success      200  {object}  dto.Response[map[string]bool]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /notifications/webpush/unsubscribe [post]
-func (nc *notificationController) UnsubscribeWebpush(c echo.Context) error {
+func (nc *notificationController) UnsubscribeWebpush(c *echo.Context) error {
 	user := currentUser(c)
 
 	var payload UnsubscribeWebpushPayload

@@ -12,7 +12,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 	"github.com/vgarvardt/gue/v6"
@@ -20,15 +20,15 @@ import (
 )
 
 type RouteSegmentController interface {
-	GetRouteSegments(c echo.Context) error
-	GetRouteSegment(c echo.Context) error
-	CreateRouteSegment(c echo.Context) error
-	CreateRouteSegmentFromWorkout(c echo.Context) error
-	DeleteRouteSegment(c echo.Context) error
-	RefreshRouteSegment(c echo.Context) error
-	UpdateRouteSegment(c echo.Context) error
-	DownloadRouteSegment(c echo.Context) error
-	FindRouteSegmentMatches(c echo.Context) error
+	GetRouteSegments(c *echo.Context) error
+	GetRouteSegment(c *echo.Context) error
+	CreateRouteSegment(c *echo.Context) error
+	CreateRouteSegmentFromWorkout(c *echo.Context) error
+	DeleteRouteSegment(c *echo.Context) error
+	RefreshRouteSegment(c *echo.Context) error
+	UpdateRouteSegment(c *echo.Context) error
+	DownloadRouteSegment(c *echo.Context) error
+	FindRouteSegmentMatches(c *echo.Context) error
 }
 
 type routeSegmentController struct {
@@ -49,7 +49,7 @@ func NewRouteSegmentController(injector do.Injector) RouteSegmentController {
 	}
 }
 
-func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteSegment, error) {
+func (rc *routeSegmentController) getRouteSegment(c *echo.Context) (*model.RouteSegment, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteS
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments [get]
-func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
+func (rc *routeSegmentController) GetRouteSegments(c *echo.Context) error {
 	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -117,7 +117,7 @@ func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 // @Success      200  {object}  dto.Response[dto.RouteSegmentDetailResponse]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /route-segments/{id} [get]
-func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
+func (rc *routeSegmentController) GetRouteSegment(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -144,7 +144,7 @@ func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments [post]
-func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
+func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 	form, err := c.MultipartForm()
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -198,7 +198,7 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/route-segment [post]
-func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) error {
+func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c *echo.Context) error {
 	workoutID, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -247,7 +247,7 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments/{id} [delete]
-func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
+func (rc *routeSegmentController) DeleteRouteSegment(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -276,7 +276,7 @@ func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments/{id}/refresh [post]
-func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
+func (rc *routeSegmentController) RefreshRouteSegment(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -311,7 +311,7 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments/{id} [put]
-func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
+func (rc *routeSegmentController) UpdateRouteSegment(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -361,7 +361,7 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 // @Success      200  {string}  string  "binary GPX content"
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /route-segments/{id}/download [get]
-func (rc *routeSegmentController) DownloadRouteSegment(c echo.Context) error {
+func (rc *routeSegmentController) DownloadRouteSegment(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -385,7 +385,7 @@ func (rc *routeSegmentController) DownloadRouteSegment(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments/{id}/matches [post]
-func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error {
+func (rc *routeSegmentController) FindRouteSegmentMatches(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)

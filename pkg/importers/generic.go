@@ -4,10 +4,10 @@ import (
 	"cmp"
 	"io"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
-func importGeneric(c echo.Context, body io.ReadCloser) (*Content, error) {
+func importGeneric(c *echo.Context, body io.ReadCloser) (*Content, error) {
 	name := cmp.Or(c.QueryParam("name"), "workout.gpx")
 	t := cmp.Or(c.QueryParam("type"), "auto")
 

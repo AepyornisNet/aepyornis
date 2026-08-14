@@ -20,7 +20,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 	"github.com/vgarvardt/gue/v6"
@@ -28,27 +28,27 @@ import (
 )
 
 type WorkoutController interface {
-	GetWorkouts(c echo.Context) error
-	GetWorkout(c echo.Context) error
-	GetWorkoutLikes(c echo.Context) error
-	GetWorkoutReplies(c echo.Context) error
-	LikeWorkout(c echo.Context) error
-	LikeWorkoutByObject(c echo.Context) error
-	CreateReply(c echo.Context) error
-	GetWorkoutBreakdown(c echo.Context) error
-	GetWorkoutRangeStats(c echo.Context) error
-	GetWorkoutCalendar(c echo.Context) error
-	CreateWorkout(c echo.Context) error
-	GetRecentWorkouts(c echo.Context) error
-	DeleteWorkout(c echo.Context) error
-	UpdateWorkout(c echo.Context) error
-	ToggleWorkoutLock(c echo.Context) error
-	RefreshWorkout(c echo.Context) error
-	DownloadWorkout(c echo.Context) error
-	DownloadWorkoutAttachment(c echo.Context) error
-	GetWorkoutFilterOptions(c echo.Context) error
-	DownloadWorkoutsZip(c echo.Context) error
-	AddEquipmentToWorkouts(c echo.Context) error
+	GetWorkouts(c *echo.Context) error
+	GetWorkout(c *echo.Context) error
+	GetWorkoutLikes(c *echo.Context) error
+	GetWorkoutReplies(c *echo.Context) error
+	LikeWorkout(c *echo.Context) error
+	LikeWorkoutByObject(c *echo.Context) error
+	CreateReply(c *echo.Context) error
+	GetWorkoutBreakdown(c *echo.Context) error
+	GetWorkoutRangeStats(c *echo.Context) error
+	GetWorkoutCalendar(c *echo.Context) error
+	CreateWorkout(c *echo.Context) error
+	GetRecentWorkouts(c *echo.Context) error
+	DeleteWorkout(c *echo.Context) error
+	UpdateWorkout(c *echo.Context) error
+	ToggleWorkoutLock(c *echo.Context) error
+	RefreshWorkout(c *echo.Context) error
+	DownloadWorkout(c *echo.Context) error
+	DownloadWorkoutAttachment(c *echo.Context) error
+	GetWorkoutFilterOptions(c *echo.Context) error
+	DownloadWorkoutsZip(c *echo.Context) error
+	AddEquipmentToWorkouts(c *echo.Context) error
 }
 
 type workoutController struct {
@@ -128,7 +128,7 @@ func applyReplyMetadata(results []dto.WorkoutResponse, counts map[uint64]int64) 
 	}
 }
 
-func (wc *workoutController) getOwnedWorkout(c echo.Context) (*model.Workout, error) {
+func (wc *workoutController) getOwnedWorkout(c *echo.Context) (*model.Workout, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (wc *workoutController) canReadWorkout(requester *model.User, workout *mode
 	}
 }
 
-func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool) (*model.Workout, error) {
+func (wc *workoutController) getReadableWorkout(c *echo.Context, withDetails bool) (*model.Workout, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts [get]
-func (wc *workoutController) GetWorkouts(c echo.Context) error {
+func (wc *workoutController) GetWorkouts(c *echo.Context) error {
 	user := currentUser(c)
 
 	var pagination dto.PaginationParams
@@ -290,7 +290,7 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id} [get]
-func (wc *workoutController) GetWorkout(c echo.Context) error {
+func (wc *workoutController) GetWorkout(c *echo.Context) error {
 	workout, err := wc.getReadableWorkout(c, true)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -342,7 +342,7 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/likes [get]
-func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
+func (wc *workoutController) GetWorkoutLikes(c *echo.Context) error {
 	workout, err := wc.getReadableWorkout(c, false)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -395,7 +395,7 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/replies [get]
-func (wc *workoutController) GetWorkoutReplies(c echo.Context) error { //nolint:gocyclo
+func (wc *workoutController) GetWorkoutReplies(c *echo.Context) error { //nolint:gocyclo
 	workout, err := wc.getReadableWorkout(c, false)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -471,7 +471,7 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error { //nolint:
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/like [post]
-func (wc *workoutController) LikeWorkout(c echo.Context) error {
+func (wc *workoutController) LikeWorkout(c *echo.Context) error {
 	viewer := currentUser(c)
 	if viewer == nil || viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
@@ -525,7 +525,7 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/like [post]
-func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
+func (wc *workoutController) LikeWorkoutByObject(c *echo.Context) error {
 	viewer := currentUser(c)
 	if viewer == nil || viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
@@ -589,7 +589,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
+func (wc *workoutController) likeLocalWorkout(c *echo.Context, viewer *model.User, localWorkoutID uint64) (map[string]any, int, error) {
 	workout, err := wc.workoutRepo.GetByIDForRead(localWorkoutID, false)
 	if err != nil {
 		return nil, http.StatusNotFound, err
@@ -645,7 +645,7 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/replies [post]
-func (wc *workoutController) CreateReply(c echo.Context) error {
+func (wc *workoutController) CreateReply(c *echo.Context) error {
 	viewer := currentUser(c)
 
 	workout, err := wc.getReadableWorkout(c, false)
@@ -711,7 +711,7 @@ func (wc *workoutController) CreateReply(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/breakdown [get]
-func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
+func (wc *workoutController) GetWorkoutBreakdown(c *echo.Context) error {
 	requester := currentUser(c)
 
 	params := struct {
@@ -779,7 +779,7 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/stats-range [get]
-func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
+func (wc *workoutController) GetWorkoutRangeStats(c *echo.Context) error {
 	params := struct {
 		StartIndex *int `query:"start_index"`
 		EndIndex   *int `query:"end_index"`
@@ -837,7 +837,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/calendar [get]
-func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
+func (wc *workoutController) GetWorkoutCalendar(c *echo.Context) error {
 	viewer := currentUser(c)
 	targetUser := viewer
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
@@ -917,7 +917,7 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) string {
+func (wc *workoutController) localActorIRI(c *echo.Context, user *model.User) string {
 	if user == nil {
 		return ""
 	}
@@ -943,7 +943,7 @@ func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) str
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts [post]
-func (wc *workoutController) CreateWorkout(c echo.Context) error {
+func (wc *workoutController) CreateWorkout(c *echo.Context) error {
 	user := currentUser(c)
 
 	if c.Request().Header.Get(echo.HeaderContentType) != "" &&
@@ -954,7 +954,7 @@ func (wc *workoutController) CreateWorkout(c echo.Context) error {
 	return wc.createWorkoutManual(c, user)
 }
 
-func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.User) error { //nolint:gocyclo
+func (wc *workoutController) createWorkoutFromFile(c *echo.Context, user *model.User) error { //nolint:gocyclo
 	form, err := c.MultipartForm()
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -1033,7 +1033,7 @@ func (wc *workoutController) createWorkoutFromFile(c echo.Context, user *model.U
 	return c.JSON(statusCode, resp)
 }
 
-func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.User) error {
+func (wc *workoutController) createWorkoutManual(c *echo.Context, user *model.User) error {
 	d := &dto.ManualWorkout{Units: &user.PreferredUnits}
 	if err := c.Bind(d); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -1094,7 +1094,9 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 // @Success      200  {object}  dto.Response[[]dto.WorkoutResponse]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/recent [get]
-func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
+//
+//nolint:gocyclo
+func (wc *workoutController) GetRecentWorkouts(c *echo.Context) error {
 	requester := currentUser(c)
 
 	limit := 20
@@ -1222,7 +1224,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/{id} [delete]
-func (wc *workoutController) DeleteWorkout(c echo.Context) error {
+func (wc *workoutController) DeleteWorkout(c *echo.Context) error {
 	user := currentUser(c)
 
 	workout, err := wc.getOwnedWorkout(c)
@@ -1258,7 +1260,7 @@ func (wc *workoutController) DeleteWorkout(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id} [put]
-func (wc *workoutController) UpdateWorkout(c echo.Context) error {
+func (wc *workoutController) UpdateWorkout(c *echo.Context) error {
 	user := currentUser(c)
 
 	workout, err := wc.getOwnedWorkout(c)
@@ -1317,7 +1319,7 @@ func (wc *workoutController) UpdateWorkout(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      403  {object}  dto.Response[string]
 // @Router       /workouts/{id}/toggle-lock [post]
-func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
+func (wc *workoutController) ToggleWorkoutLock(c *echo.Context) error {
 	user := currentUser(c)
 
 	workout, err := wc.getOwnedWorkout(c)
@@ -1354,7 +1356,7 @@ func (wc *workoutController) ToggleWorkoutLock(c echo.Context) error {
 // @Success      200  {object}  dto.Response[map[string]string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/refresh [post]
-func (wc *workoutController) RefreshWorkout(c echo.Context) error {
+func (wc *workoutController) RefreshWorkout(c *echo.Context) error {
 	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -1388,7 +1390,7 @@ func (wc *workoutController) RefreshWorkout(c echo.Context) error {
 // @Success      200  {string}  string  "binary workout file"
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/download [get]
-func (wc *workoutController) DownloadWorkout(c echo.Context) error {
+func (wc *workoutController) DownloadWorkout(c *echo.Context) error {
 	workout, err := wc.getOwnedWorkout(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -1420,7 +1422,7 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 // @Success      200  {string}  string  "binary attachment file"
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/attachments/{attachment_id} [get]
-func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
+func (wc *workoutController) DownloadWorkoutAttachment(c *echo.Context) error {
 	workout, err := wc.getReadableWorkout(c, false)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -1442,7 +1444,7 @@ func (wc *workoutController) DownloadWorkoutAttachment(c echo.Context) error {
 	return c.Blob(http.StatusOK, attachment.ContentType, attachment.Content)
 }
 
-func (wc *workoutController) GetWorkoutFilterOptions(c echo.Context) error {
+func (wc *workoutController) GetWorkoutFilterOptions(c *echo.Context) error {
 	user := currentUser(c)
 
 	var types []string
@@ -1497,7 +1499,7 @@ func (wc *workoutController) GetWorkoutFilterOptions(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/download-zip [get]
-func (wc *workoutController) DownloadWorkoutsZip(c echo.Context) error {
+func (wc *workoutController) DownloadWorkoutsZip(c *echo.Context) error {
 	user := currentUser(c)
 
 	var req struct {
@@ -1564,7 +1566,7 @@ func (wc *workoutController) DownloadWorkoutsZip(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/add-equipment [post]
-func (wc *workoutController) AddEquipmentToWorkouts(c echo.Context) error {
+func (wc *workoutController) AddEquipmentToWorkouts(c *echo.Context) error {
 	user := currentUser(c)
 
 	var req struct {

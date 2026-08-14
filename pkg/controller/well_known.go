@@ -11,13 +11,13 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 )
 
 type WellKnownController interface {
-	WebFinger(c echo.Context) error
-	HostMeta(c echo.Context) error
+	WebFinger(c *echo.Context) error
+	HostMeta(c *echo.Context) error
 }
 
 type wellKnownController struct {
@@ -42,7 +42,7 @@ func NewWellKnownController(injector do.Injector) WellKnownController {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /.well-known/webfinger [get]
-func (wc *wellKnownController) WebFinger(c echo.Context) error {
+func (wc *wellKnownController) WebFinger(c *echo.Context) error {
 	res := c.QueryParam("resource")
 	if res == "" {
 		return renderApiError(c, http.StatusBadRequest, errors.New("missing resource parameter"))
@@ -114,7 +114,7 @@ func (wc *wellKnownController) WebFinger(c echo.Context) error {
 // @Produce      xml
 // @Success      200  {string}  string
 // @Router       /.well-known/host-meta [get]
-func (wc *wellKnownController) HostMeta(c echo.Context) error {
+func (wc *wellKnownController) HostMeta(c *echo.Context) error {
 	host := wc.cfg.Host
 	template := fmt.Sprintf("https://%s/.well-known/webfinger?resource={uri}", host)
 

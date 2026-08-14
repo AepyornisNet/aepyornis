@@ -15,7 +15,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/datatypes"
@@ -23,15 +23,15 @@ import (
 )
 
 type ProfileController interface {
-	GetProfile(c echo.Context) error
-	UpdateProfile(c echo.Context) error
-	ChangePassword(c echo.Context) error
-	ResetAPIKey(c echo.Context) error
-	EnableActivityPub(c echo.Context) error
-	ListFollowRequests(c echo.Context) error
-	AcceptFollowRequest(c echo.Context) error
-	RefreshWorkouts(c echo.Context) error
-	UpdateVersion(c echo.Context) error
+	GetProfile(c *echo.Context) error
+	UpdateProfile(c *echo.Context) error
+	ChangePassword(c *echo.Context) error
+	ResetAPIKey(c *echo.Context) error
+	EnableActivityPub(c *echo.Context) error
+	ListFollowRequests(c *echo.Context) error
+	AcceptFollowRequest(c *echo.Context) error
+	RefreshWorkouts(c *echo.Context) error
+	UpdateVersion(c *echo.Context) error
 }
 
 var ErrCurrentPasswordIncorrect = errors.New("current password is incorrect")
@@ -67,7 +67,7 @@ func NewProfileController(injector do.Injector) ProfileController {
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.UserProfileResponse]
 // @Router       /profile [get]
-func (pc *profileController) GetProfile(c echo.Context) error {
+func (pc *profileController) GetProfile(c *echo.Context) error {
 	user := currentUser(c)
 
 	resp := dto.Response[dto.UserProfileResponse]{
@@ -97,7 +97,7 @@ func (pc *profileController) GetProfile(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /profile [put]
-func (pc *profileController) UpdateProfile(c echo.Context) error {
+func (pc *profileController) UpdateProfile(c *echo.Context) error {
 	user := currentUser(c)
 
 	var updateData dto.ProfileUpdateData
@@ -185,7 +185,7 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 // @Failure      401  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/change-password [post]
-func (pc *profileController) ChangePassword(c echo.Context) error {
+func (pc *profileController) ChangePassword(c *echo.Context) error {
 	user := currentUser(c)
 
 	var changeData dto.ProfileChangePasswordData
@@ -226,7 +226,7 @@ func (pc *profileController) ChangePassword(c echo.Context) error {
 // @Success      200  {object}  dto.Response[map[string]string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/reset-api-key [post]
-func (pc *profileController) ResetAPIKey(c echo.Context) error {
+func (pc *profileController) ResetAPIKey(c *echo.Context) error {
 	user := currentUser(c)
 
 	user.GenerateAPIKey(true)
@@ -255,7 +255,7 @@ func (pc *profileController) ResetAPIKey(c echo.Context) error {
 // @Success      200  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/enable-activity-pub [post]
-func (pc *profileController) EnableActivityPub(c echo.Context) error {
+func (pc *profileController) EnableActivityPub(c *echo.Context) error {
 	user := currentUser(c)
 
 	user.ActivityPub = !user.ActivityPub
@@ -291,7 +291,7 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 // @Success      200  {object}  dto.Response[[]dto.FollowRequestResponse]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/follow-requests [get]
-func (pc *profileController) ListFollowRequests(c echo.Context) error {
+func (pc *profileController) ListFollowRequests(c *echo.Context) error {
 	user := currentUser(c)
 
 	requests, err := pc.followerRepo.ListFollowerRequests(user.Profile.ID)
@@ -323,7 +323,7 @@ func (pc *profileController) ListFollowRequests(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[string]
 // @Failure      502  {object}  dto.Response[string]
 // @Router       /profile/follow-requests/{id}/accept [post]
-func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
+func (pc *profileController) AcceptFollowRequest(c *echo.Context) error {
 	user := currentUser(c)
 
 	rawID := c.Param("id")
@@ -356,7 +356,7 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 // @Success      200  {object}  dto.Response[map[string]string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /profile/refresh-workouts [post]
-func (pc *profileController) RefreshWorkouts(c echo.Context) error {
+func (pc *profileController) RefreshWorkouts(c *echo.Context) error {
 	user := currentUser(c)
 	db := pc.db
 
@@ -417,7 +417,7 @@ func (pc *profileController) RefreshWorkouts(c echo.Context) error {
 // @Success      200  {string}  string
 // @Failure      500  {string}  string
 // @Router       /profile/update-version [post]
-func (pc *profileController) UpdateVersion(c echo.Context) error {
+func (pc *profileController) UpdateVersion(c *echo.Context) error {
 	u := currentUser(c)
 
 	v := pc.version

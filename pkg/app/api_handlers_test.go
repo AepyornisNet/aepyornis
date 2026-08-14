@@ -43,7 +43,7 @@ func TestAPI_WhoAmI_V2(t *testing.T) { //nolint:funlen
 	a := configuredApp(t)
 	e := a.echo
 	ts := httptest.NewServer(e)
-	url := ts.URL + e.Reverse("whoami")
+	url := ts.URL + "/api/v2/whoami"
 	u := defaultAPIUser(a.db)
 
 	t.Run("with valid authorization header", func(t *testing.T) {

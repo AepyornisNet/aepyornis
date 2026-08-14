@@ -17,23 +17,23 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
 type UserController interface {
-	GetWhoami(c echo.Context) error
-	GetUserProfileByHandle(c echo.Context) error
-	SearchProfiles(c echo.Context) error
-	FollowUserByHandle(c echo.Context) error
-	UnfollowUserByHandle(c echo.Context) error
-	GetTotals(c echo.Context) error
-	GetRecords(c echo.Context) error
-	GetRecordsRanking(c echo.Context) error
-	GetClimbRecordsRanking(c echo.Context) error
-	GetUserByID(c echo.Context) error
+	GetWhoami(c *echo.Context) error
+	GetUserProfileByHandle(c *echo.Context) error
+	SearchProfiles(c *echo.Context) error
+	FollowUserByHandle(c *echo.Context) error
+	UnfollowUserByHandle(c *echo.Context) error
+	GetTotals(c *echo.Context) error
+	GetRecords(c *echo.Context) error
+	GetRecordsRanking(c *echo.Context) error
+	GetClimbRecordsRanking(c *echo.Context) error
+	GetUserByID(c *echo.Context) error
 }
 
 type userController struct {
@@ -70,7 +70,7 @@ func NewUserController(injector do.Injector) UserController {
 // @Success      200  {object}  dto.Response[dto.UserProfileResponse]
 // @Failure      401  {object}  dto.Response[string]
 // @Router       /whoami [get]
-func (uc *userController) GetWhoami(c echo.Context) error {
+func (uc *userController) GetWhoami(c *echo.Context) error {
 	user := currentUser(c)
 
 	resp := dto.Response[dto.UserProfileResponse]{
@@ -92,7 +92,7 @@ func (uc *userController) GetWhoami(c echo.Context) error {
 // @Success      200  {object}  dto.Response[dto.TotalsResponse]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /totals [get]
-func (uc *userController) GetTotals(c echo.Context) error {
+func (uc *userController) GetTotals(c *echo.Context) error {
 	viewer := currentUser(c)
 	targetUser := viewer
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
@@ -180,7 +180,7 @@ func (uc *userController) GetTotals(c echo.Context) error {
 // @Success      200  {object}  dto.Response[[]dto.WorkoutRecordResponse]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /records [get]
-func (uc *userController) GetRecords(c echo.Context) error {
+func (uc *userController) GetRecords(c *echo.Context) error {
 	viewer := currentUser(c)
 	targetUser := viewer
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
@@ -227,7 +227,7 @@ func (uc *userController) GetRecords(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /records/ranking [get]
-func (uc *userController) GetRecordsRanking(c echo.Context) error {
+func (uc *userController) GetRecordsRanking(c *echo.Context) error {
 	viewer := currentUser(c)
 	targetUser := viewer
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
@@ -292,7 +292,7 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /records/climbs/ranking [get]
-func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
+func (uc *userController) GetClimbRecordsRanking(c *echo.Context) error {
 	viewer := currentUser(c)
 	targetUser := viewer
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
@@ -354,7 +354,7 @@ func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /{id} [get]
 // TODO: Add more data. This will be used for public profiles.
-func (uc *userController) GetUserByID(c echo.Context) error {
+func (uc *userController) GetUserByID(c *echo.Context) error {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -398,7 +398,7 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 // @Failure      403  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /user-profile/search [get]
-func (uc *userController) SearchProfiles(c echo.Context) error {
+func (uc *userController) SearchProfiles(c *echo.Context) error {
 	viewer := currentUser(c)
 	if viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
@@ -469,7 +469,7 @@ func (uc *userController) SearchProfiles(c echo.Context) error {
 // @Success      200  {object}  dto.Response[dto.ActivityPubProfileSummaryResponse]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile [get]
-func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
+func (uc *userController) GetUserProfileByHandle(c *echo.Context) error {
 	handle := strings.TrimSpace(c.QueryParam("handle"))
 	if handle != "" {
 		username, host, parsedAsRemote, err := uc.parseHandleWithHost(c, handle)
@@ -522,7 +522,7 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile/follow [post]
-func (uc *userController) FollowUserByHandle(c echo.Context) error {
+func (uc *userController) FollowUserByHandle(c *echo.Context) error {
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
 		if _, _, parsedAsRemote, err := uc.parseHandleWithHost(c, handle); err == nil && parsedAsRemote {
 			return uc.followRemoteUserByHandle(c, handle)
@@ -609,7 +609,7 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile/unfollow [post]
-func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
+func (uc *userController) UnfollowUserByHandle(c *echo.Context) error {
 	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
 		if _, _, parsedAsRemote, err := uc.parseHandleWithHost(c, handle); err == nil && parsedAsRemote {
 			return uc.unfollowRemoteUserByHandle(c, handle)
@@ -666,7 +666,7 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (uc *userController) parseHandleWithHost(c echo.Context, handle string) (string, string, bool, error) {
+func (uc *userController) parseHandleWithHost(c *echo.Context, handle string) (string, string, bool, error) {
 	username, host, err := aputil.ParseActorHandle(handle)
 	if err != nil {
 		return "", "", false, gorm.ErrRecordNotFound
@@ -675,7 +675,7 @@ func (uc *userController) parseHandleWithHost(c echo.Context, handle string) (st
 	return username, host, host != "" && !uc.isLocalHost(c, host), nil
 }
 
-func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host string) error {
+func (uc *userController) getRemoteProfileSummary(c *echo.Context, username, host string) error {
 	summary, status, err := uc.buildRemoteProfileSummary(c, currentUser(c), username, host)
 	if err != nil {
 		return renderApiError(c, status, err)
@@ -689,7 +689,7 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 }
 
 func (uc *userController) buildRemoteProfileSummary(
-	c echo.Context,
+	c *echo.Context,
 	viewer *model.User,
 	username, host string,
 ) (dto.ActivityPubProfileSummaryResponse, int, error) {
@@ -757,7 +757,7 @@ func (uc *userController) buildRemoteProfileSummary(
 	}, http.StatusOK, nil
 }
 
-func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string) error {
+func (uc *userController) followRemoteUserByHandle(c *echo.Context, handle string) error {
 	viewer := currentUser(c)
 	if viewer == nil || viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
@@ -842,7 +842,7 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle string) error {
+func (uc *userController) unfollowRemoteUserByHandle(c *echo.Context, handle string) error {
 	viewer := currentUser(c)
 	if viewer == nil || viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
@@ -922,7 +922,7 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (uc *userController) isLocalHost(c echo.Context, host string) bool {
+func (uc *userController) isLocalHost(c *echo.Context, host string) bool {
 	return strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(uc.localHost(c)))
 }
 
@@ -969,7 +969,7 @@ func actorIconURL(actor *vocab.Actor) string {
 }
 
 func (uc *userController) buildLocalProfileSummary(
-	c echo.Context,
+	c *echo.Context,
 	viewer, targetUser *model.User,
 ) (dto.ActivityPubProfileSummaryResponse, error) {
 	postsQuery := model.ScopeVisibleWorkouts(
@@ -1033,7 +1033,7 @@ func appendUniqueProfileSummary(
 	return append(results, summary), seenHandles
 }
 
-func (uc *userController) localActorIRI(c echo.Context, user *model.User) string {
+func (uc *userController) localActorIRI(c *echo.Context, user *model.User) string {
 	if user == nil {
 		return ""
 	}
@@ -1046,11 +1046,11 @@ func (uc *userController) localActorIRI(c echo.Context, user *model.User) string
 	}, user.Profile.Username)
 }
 
-func (uc *userController) renderHandle(c echo.Context, username string) string {
+func (uc *userController) renderHandle(c *echo.Context, username string) string {
 	return fmt.Sprintf("@%s@%s", username, uc.localHost(c))
 }
 
-func (uc *userController) localHost(c echo.Context) string {
+func (uc *userController) localHost(c *echo.Context) string {
 	if uc.cfg.Host != "" {
 		return uc.cfg.Host
 	}
@@ -1307,7 +1307,7 @@ func (uc *userController) getVisibleClimbRanking(targetUser *model.User, viewerP
 	return records[start:end], totalCount, nil
 }
 
-func parseDateRange(c echo.Context) (*time.Time, *time.Time, error) {
+func parseDateRange(c *echo.Context) (*time.Time, *time.Time, error) {
 	const layout = "2006-01-02"
 	startStr := c.QueryParam("start")
 	endStr := c.QueryParam("end")

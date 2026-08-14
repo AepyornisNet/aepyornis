@@ -5,7 +5,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/invopop/ctxi18n"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 const (
@@ -24,7 +24,7 @@ func (a *App) ConfigureLocalizer() error {
 	return nil
 }
 
-func langFromContextString(ctx echo.Context) string {
+func langFromContextString(ctx *echo.Context) string {
 	langs := langFromContext(ctx)
 	res := []string{}
 
@@ -39,7 +39,7 @@ func langFromContextString(ctx echo.Context) string {
 	return strings.Join(res, ";")
 }
 
-func langFromContext(ctx echo.Context) []any {
+func langFromContext(ctx *echo.Context) []any {
 	return []any{
 		ctx.QueryParam("lang"),
 		ctx.Get("user_language"),

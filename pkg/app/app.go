@@ -17,7 +17,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/fsouza/slognil"
 	"github.com/invopop/ctxi18n/i18n"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
 	"github.com/samber/do/v2"
@@ -50,7 +50,12 @@ func (a *App) Serve() error {
 
 	a.logger.Info("Starting web server on " + a.Config.Bind)
 
-	return a.echo.Start(a.Config.Bind)
+	sc := echo.StartConfig{
+		Address:    a.Config.Bind,
+		HideBanner: true,
+		HidePort:   true,
+	}
+	return sc.Start(context.Background(), a.echo)
 }
 
 func (a *App) Configure() error {
@@ -136,7 +141,7 @@ func newLogger(enabled bool) *slog.Logger {
 func newLogHandler() slog.Handler {
 	w := os.Stderr
 	if isatty.IsTerminal(w.Fd()) {
-		return tint.NewHandler(os.Stderr, &tint.Options{
+		return tint.NewTextHandler(os.Stderr, &tint.Options{
 			Level:      slog.LevelDebug,
 			TimeFormat: time.Kitchen,
 		})

@@ -8,10 +8,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
-func (a *App) serveClientAppHandler(c echo.Context) error {
+func (a *App) serveClientAppHandler(c *echo.Context) error {
 	if a.Assets == nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "assets filesystem not configured")
 	}
@@ -35,11 +35,11 @@ func (a *App) serveClientAppHandler(c echo.Context) error {
 	return a.serveClientAsset(c, "client/index.html")
 }
 
-func (a *App) serveClientAsset(c echo.Context, assetPath string) error {
+func (a *App) serveClientAsset(c *echo.Context, assetPath string) error {
 	data, err := fs.ReadFile(a.Assets, assetPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return echo.NewHTTPError(http.StatusNotFound)
+			return echo.NewHTTPError(http.StatusNotFound, "not found")
 		}
 
 		return err

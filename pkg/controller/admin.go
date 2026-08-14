@@ -8,17 +8,17 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
 type AdminController interface {
-	GetUsers(c echo.Context) error
-	GetUser(c echo.Context) error
-	UpdateUser(c echo.Context) error
-	DeleteUser(c echo.Context) error
-	UpdateConfig(c echo.Context) error
+	GetUsers(c *echo.Context) error
+	GetUser(c *echo.Context) error
+	UpdateUser(c *echo.Context) error
+	DeleteUser(c *echo.Context) error
+	UpdateConfig(c *echo.Context) error
 }
 
 type adminController struct {
@@ -50,7 +50,7 @@ func NewAdminController(injector do.Injector, resetConfiguration func() error) A
 // @Failure      403  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /admin/users [get]
-func (ac *adminController) GetUsers(c echo.Context) error {
+func (ac *adminController) GetUsers(c *echo.Context) error {
 	users, err := ac.userRepo.GetAll()
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -80,7 +80,7 @@ func (ac *adminController) GetUsers(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /admin/users/{id} [get]
-func (ac *adminController) GetUser(c echo.Context) error {
+func (ac *adminController) GetUser(c *echo.Context) error {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -111,7 +111,7 @@ func (ac *adminController) GetUser(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /admin/users/{id} [put]
-func (ac *adminController) UpdateUser(c echo.Context) error {
+func (ac *adminController) UpdateUser(c *echo.Context) error {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -168,7 +168,7 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /admin/users/{id} [delete]
-func (ac *adminController) DeleteUser(c echo.Context) error {
+func (ac *adminController) DeleteUser(c *echo.Context) error {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -202,7 +202,7 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /admin/config [put]
-func (ac *adminController) UpdateConfig(c echo.Context) error {
+func (ac *adminController) UpdateConfig(c *echo.Context) error {
 	var cnf config.Config
 
 	if err := c.Bind(&cnf); err != nil {

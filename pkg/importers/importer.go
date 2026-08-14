@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 var ErrUnsupportedProgram = errors.New("unsupported program")
@@ -17,7 +17,7 @@ type Content struct {
 	Content  []byte
 }
 
-func Import(program string, c echo.Context, body io.ReadCloser) (*Content, error) {
+func Import(program string, c *echo.Context, body io.ReadCloser) (*Content, error) {
 	defer body.Close()
 
 	switch program {

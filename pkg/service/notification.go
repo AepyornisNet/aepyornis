@@ -174,15 +174,13 @@ func (s *notificationService) getEmailService(receiver *model.User) []notify.Not
 }
 
 func (s *notificationService) getWebpushService(receiver *model.User) []notify.Notifier {
-	services := []notify.Notifier{}
-
 	if s.cfg.VapidPrivateKey == "" || s.cfg.VapidPublicKey == "" {
-		return services
+		return nil
 	}
 
 	var subscriptions []model.UserWebpushSubscription
 	if err := s.db.Where("user_id = ?", receiver.ID).Find(&subscriptions).Error; err != nil || len(subscriptions) == 0 {
-		return services
+		return nil
 	}
 
 	webpushSvc := notification.NewWebPush(s.cfg.VapidPublicKey, s.cfg.VapidPrivateKey)
@@ -211,6 +209,5 @@ func (s *notificationService) getWebpushService(receiver *model.User) []notify.N
 		})
 	}
 
-	services = append(services, webpushSvc)
-	return services
+	return []notify.Notifier{webpushSvc}
 }

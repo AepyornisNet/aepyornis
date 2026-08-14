@@ -12,7 +12,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/fsouza/slognil"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,8 +71,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/ap/users/:username/inbox")
-	c.SetParamNames("username")
-	c.SetParamValues("admin")
+	c.SetPathValues(echo.PathValues{{Name: "username", Value: "admin"}})
 	c.Set(aputil.RequestingActorContextKey, &aputil.RequestActor{Actor: vocab.Actor{ID: vocab.ID(remoteActorIRI)}})
 
 	err = ctrl.Inbox(c)
@@ -130,8 +129,7 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/ap/users/:username/inbox")
-	c.SetParamNames("username")
-	c.SetParamValues("admin")
+	c.SetPathValues(echo.PathValues{{Name: "username", Value: "admin"}})
 	c.Set(aputil.RequestingActorContextKey, &aputil.RequestActor{Actor: vocab.Actor{ID: vocab.ID(remoteActorIRI)}})
 
 	err = ctrl.Inbox(c)

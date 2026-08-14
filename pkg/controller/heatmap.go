@@ -8,7 +8,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	geojson "github.com/paulmach/orb/geojson"
 	"github.com/samber/do/v2"
 	"gorm.io/gorm"
@@ -21,8 +21,8 @@ const (
 )
 
 type HeatmapController interface {
-	GetWorkoutCoordinates(c echo.Context) error
-	GetWorkoutCenters(c echo.Context) error
+	GetWorkoutCoordinates(c *echo.Context) error
+	GetWorkoutCenters(c *echo.Context) error
 }
 
 type heatmapController struct {
@@ -71,7 +71,7 @@ func NewHeatmapController(injector do.Injector) HeatmapController {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/coordinates [get]
-func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
+func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
 	hasCellSize := false
 	cellSize := defaultHeatmapCellSize
 	if rawCellSize := c.QueryParam("cell_size"); rawCellSize != "" {
@@ -147,7 +147,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func parseHeatmapBounds(c echo.Context) (*heatmapBounds, error) {
+func parseHeatmapBounds(c *echo.Context) (*heatmapBounds, error) {
 	minLatRaw := c.QueryParam("min_lat")
 	minLngRaw := c.QueryParam("min_lng")
 	maxLatRaw := c.QueryParam("max_lat")
@@ -197,7 +197,7 @@ func parseHeatmapBounds(c echo.Context) (*heatmapBounds, error) {
 // @Success      200  {object}  dto.Response[geojson.FeatureCollection]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/centers [get]
-func (hc *heatmapController) GetWorkoutCenters(c echo.Context) error {
+func (hc *heatmapController) GetWorkoutCenters(c *echo.Context) error {
 	coords := geojson.NewFeatureCollection()
 	u := currentUser(c)
 

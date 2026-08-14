@@ -5,12 +5,12 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 )
 
 type StatisticsController interface {
-	GetStatistics(c echo.Context) error
+	GetStatistics(c *echo.Context) error
 }
 
 type statisticsController struct{}
@@ -32,7 +32,7 @@ func NewStatisticsController(_ do.Injector) StatisticsController {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /statistics [get]
-func (sc *statisticsController) GetStatistics(c echo.Context) error {
+func (sc *statisticsController) GetStatistics(c *echo.Context) error {
 	user := currentUser(c)
 
 	var statConfig model.StatConfig

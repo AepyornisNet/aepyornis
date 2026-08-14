@@ -10,13 +10,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/invopop/ctxi18n"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
 )
 
 var ErrInvalidJWTToken = errors.New("invalid JWT token")
 
-func (a *App) setContext(ctx echo.Context) {
+func (a *App) setContext(ctx *echo.Context) {
 	ctx.Set("version", &a.Version)
 	ctx.Set("config", a.Config)
 	ctx.Set("echo", a.echo)
@@ -30,7 +30,7 @@ func (a *App) setContext(ctx echo.Context) {
 	ctx.SetRequest(ctx.Request().WithContext(lctx))
 }
 
-func (a *App) setUserFromContext(ctx echo.Context) error {
+func (a *App) setUserFromContext(ctx *echo.Context) error {
 	if err := a.setUser(ctx); err != nil {
 		return fmt.Errorf("error validating user: %w", err)
 	}
@@ -43,7 +43,7 @@ func (a *App) setUserFromContext(ctx echo.Context) error {
 	return nil
 }
 
-func (a *App) setUser(c echo.Context) error {
+func (a *App) setUser(c *echo.Context) error {
 	token, ok := c.Get("user").(*jwt.Token)
 	if !ok {
 		return ErrInvalidJWTToken
@@ -72,12 +72,12 @@ func (a *App) setUser(c echo.Context) error {
 	return nil
 }
 
-func (a *App) setContextUser(c echo.Context, user *model.User) {
+func (a *App) setContextUser(c *echo.Context, user *model.User) {
 	c.Set("user_language", user.Language)
 	c.Set("user_info", user)
 }
 
-func (a *App) getCurrentUser(c echo.Context) *model.User {
+func (a *App) getCurrentUser(c *echo.Context) *model.User {
 	d := c.Get("user_info")
 
 	u, ok := d.(*model.User)
