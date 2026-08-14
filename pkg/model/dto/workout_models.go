@@ -296,7 +296,7 @@ type CalendarEventResponse struct {
 }
 
 // NewWorkoutResponse converts a database workout to API response
-func NewWorkoutResponse(w *model.Workout) WorkoutResponse { //nolint:gocyclo
+func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 	wr := WorkoutResponse{
 		ID:              w.ID,
 		Date:            w.Date,

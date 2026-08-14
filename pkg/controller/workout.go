@@ -1094,6 +1094,8 @@ func (wc *workoutController) createWorkoutManual(c *echo.Context, user *model.Us
 // @Success      200  {object}  dto.Response[[]dto.WorkoutResponse]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/recent [get]
+//
+//nolint:gocyclo
 func (wc *workoutController) GetRecentWorkouts(c *echo.Context) error {
 	requester := currentUser(c)
 
