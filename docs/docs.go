@@ -6598,26 +6598,6 @@ const docTemplate = `{
                 },
                 "total_up": {
                     "type": "number"
-                },
-                "units": {
-                    "$ref": "#/definitions/dto.WorkoutRangeStatsUnitsResponse"
-                }
-            }
-        },
-        "dto.WorkoutRangeStatsUnitsResponse": {
-            "type": "object",
-            "properties": {
-                "distance": {
-                    "type": "string"
-                },
-                "elevation": {
-                    "type": "string"
-                },
-                "speed": {
-                    "type": "string"
-                },
-                "temperature": {
-                    "type": "string"
                 }
             }
         },

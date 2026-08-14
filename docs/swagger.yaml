@@ -1544,19 +1544,6 @@ definitions:
         type: number
       total_up:
         type: number
-      units:
-        $ref: '#/definitions/dto.WorkoutRangeStatsUnitsResponse'
-    type: object
-  dto.WorkoutRangeStatsUnitsResponse:
-    properties:
-      distance:
-        type: string
-      elevation:
-        type: string
-      speed:
-        type: string
-      temperature:
-        type: string
     type: object
   dto.WorkoutRecordResponse:
     properties:

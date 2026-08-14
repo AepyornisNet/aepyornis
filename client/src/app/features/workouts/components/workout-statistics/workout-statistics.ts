@@ -14,15 +14,15 @@ import { _, TranslatePipe } from '@ngx-translate/core';
 import { getMetricDef } from '../../../../core/config/metrics';
 
 import { Api } from '../../../../core/services/api';
-import {
-  WorkoutDetail,
-  WorkoutRangeStats,
-  WorkoutRangeStatsUnits,
-} from '../../../../core/types/workout';
+import { WorkoutDetail, WorkoutRangeStats } from '../../../../core/types/workout';
 import {
   IntervalSelection,
   WorkoutDetailCoordinatorService,
 } from '../../services/workout-detail-coordinator.service';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
+import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 
 type NumericRangeStatKey = {
   [K in keyof WorkoutRangeStats]: WorkoutRangeStats[K] extends number | undefined ? K : never;
@@ -31,7 +31,7 @@ type NumericRangeStatKey = {
 type RangeStatConfig = {
   key: string;
   labelKey: string;
-  unit: (units: WorkoutRangeStatsUnits) => string;
+  unit: string;
   decimals?: number;
   averageField?: NumericRangeStatKey;
   movingField?: NumericRangeStatKey;
@@ -54,20 +54,9 @@ type WorkoutStatCard = {
 
 const RANGE_CONFIGS: RangeStatConfig[] = [
   {
-    key: 'speed',
-    labelKey: _('Speed'),
-    unit: (units) => units.speed,
-    decimals: 1,
-    averageField: 'average_speed',
-    movingField: 'average_speed_no_pause',
-    minField: 'min_speed',
-    maxField: 'max_speed',
-    ignoreZero: false,
-  },
-  {
     key: 'cadence',
     labelKey: _('Cadence'),
-    unit: () => 'rpm',
+    unit: 'rpm',
     decimals: 0,
     averageField: 'average_cadence',
     minField: 'min_cadence',
@@ -77,7 +66,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'heart-rate',
     labelKey: _('Heart rate'),
-    unit: () => 'bpm',
+    unit: 'bpm',
     decimals: 0,
     averageField: 'average_heart_rate',
     minField: 'min_heart_rate',
@@ -87,7 +76,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'respiration-rate',
     labelKey: _('Respiration rate'),
-    unit: () => 'bpm',
+    unit: 'bpm',
     decimals: 0,
     averageField: 'average_respiration_rate',
     minField: 'min_respiration_rate',
@@ -97,7 +86,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'power',
     labelKey: _('Power'),
-    unit: () => 'W',
+    unit: 'W',
     decimals: 0,
     averageField: 'average_power',
     minField: 'min_power',
@@ -107,7 +96,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'slope',
     labelKey: _('Slope'),
-    unit: () => '%',
+    unit: '%',
     decimals: 1,
     averageField: 'average_slope',
     minField: 'min_slope',
@@ -117,7 +106,7 @@ const RANGE_CONFIGS: RangeStatConfig[] = [
   {
     key: 'temperature',
     labelKey: _('Temperature'),
-    unit: (units) => units.temperature,
+    unit: '°C',
     decimals: 1,
     ignoreZero: false,
     averageField: 'average_temperature',
@@ -144,6 +133,10 @@ export class WorkoutStatisticsComponent {
 
   private readonly stats = signal<WorkoutRangeStats | null>(null);
   private readonly loading = signal(false);
+  private formatDurationPipe = inject(FormatDurationPipe);
+  private formatDistancePipe = inject(FormatDistancePipe);
+  private formatElevationPipe = inject(FormatElevationPipe);
+  private formatSpeedPipe = inject(FormatSpeedPipe);
   private requestId = 0;
 
   public constructor() {
@@ -161,24 +154,28 @@ export class WorkoutStatisticsComponent {
       return [];
     }
 
-    const units = this.resolveUnits(stats);
     const selection = this.coordinator.selectedInterval();
     const availableMetrics = workout.records?.extra_metrics ?? [];
 
     const cards: WorkoutStatCard[] = [];
 
-    const distanceCard = this.buildDistanceCard(stats, units, selection, workout.laps?.length ?? 0);
+    const distanceCard = this.buildDistanceCard(stats, selection, workout.laps?.length ?? 0);
     if (distanceCard) {
       cards.push(distanceCard);
     }
 
-    const elevationCard = this.buildElevationCard(stats, units);
+    const speedCard = this.buildSpeedCard(stats, workout.type);
+    if (speedCard) {
+      cards.push(speedCard);
+    }
+
+    const elevationCard = this.buildElevationCard(stats);
     if (elevationCard) {
       cards.push(elevationCard);
     }
 
     RANGE_CONFIGS.forEach((config) => {
-      const rangeCard = this.buildRangeCard(stats, config, units, availableMetrics);
+      const rangeCard = this.buildRangeCard(stats, config, availableMetrics);
       if (rangeCard) {
         cards.push(rangeCard);
       }
@@ -235,13 +232,8 @@ export class WorkoutStatisticsComponent {
     }
   }
 
-  private resolveUnits(stats: WorkoutRangeStats | null): WorkoutRangeStatsUnits {
-    return stats?.units ?? { distance: 'km', speed: 'km/h', elevation: 'm', temperature: '°C' };
-  }
-
   private buildDistanceCard(
     stats: WorkoutRangeStats,
-    units: WorkoutRangeStatsUnits,
     selection: IntervalSelection | null,
     lapCount: number,
   ): WorkoutStatCard | null {
@@ -251,12 +243,15 @@ export class WorkoutStatisticsComponent {
     if (stats.distance > 0) {
       rows.push({
         labelKey: selectionActive ? _('Distance') : _('Total distance'),
-        value: this.formatDistance(stats.distance, units.distance),
+        value: this.formatDistancePipe.transform(stats.distance),
       });
     }
 
     if (stats.duration > 0) {
-      rows.push({ labelKey: _('Duration'), value: this.formatDurationValue(stats.duration) });
+      rows.push({
+        labelKey: _('Duration'),
+        value: this.formatDurationPipe.transform(stats.duration),
+      });
     }
 
     const pauseDuration = stats.pause_duration;
@@ -269,14 +264,14 @@ export class WorkoutStatisticsComponent {
     ) {
       rows.push({
         labelKey: _('Duration (No pause)'),
-        value: this.formatDurationValue(noPauseDuration),
+        value: this.formatDurationPipe.transform(noPauseDuration),
       });
     }
 
     if (typeof pauseDuration === 'number' && Number.isFinite(pauseDuration) && pauseDuration >= 0) {
       rows.push({
         labelKey: _('Time paused'),
-        value: this.formatDurationValue(pauseDuration),
+        value: this.formatDurationPipe.transform(pauseDuration),
       });
     }
 
@@ -319,30 +314,66 @@ export class WorkoutStatisticsComponent {
     return { startMs, endMs };
   }
 
-  private buildElevationCard(
-    stats: WorkoutRangeStats,
-    units: WorkoutRangeStatsUnits,
-  ): WorkoutStatCard | null {
+  private buildSpeedCard(stats: WorkoutRangeStats, workoutType: string): WorkoutStatCard | null {
+    const rows: WorkoutStatRow[] = [];
+
+    if (stats.average_speed) {
+      rows.push({
+        labelKey: _('Average'),
+        value: this.formatSpeedPipe.transform(stats.average_speed, workoutType),
+      });
+    }
+
+    if (stats.average_speed_no_pause) {
+      rows.push({
+        labelKey: _('Average (no pause)'),
+        value: this.formatSpeedPipe.transform(stats.average_speed_no_pause, workoutType),
+      });
+    }
+
+    if (stats.min_speed) {
+      rows.push({
+        labelKey: _('Minimum'),
+        value: this.formatSpeedPipe.transform(stats.min_speed, workoutType),
+      });
+    }
+
+    if (stats.max_speed) {
+      rows.push({
+        labelKey: _('Maximum'),
+        value: this.formatSpeedPipe.transform(stats.max_speed),
+      });
+    }
+
+    return rows.length
+      ? {
+          key: 'speed',
+          labelKey: _('Speed'),
+          rows,
+        }
+      : null;
+  }
+
+  private buildElevationCard(stats: WorkoutRangeStats): WorkoutStatCard | null {
     const rows: WorkoutStatRow[] = [];
 
     if (stats.total_up > 0) {
       rows.push({
         labelKey: _('Total up'),
-        value: this.formatElevation(stats.total_up, units.elevation),
+        value: this.formatElevationPipe.transform(stats.total_up),
       });
     }
 
     if (stats.total_down > 0) {
       rows.push({
         labelKey: _('Total down'),
-        value: this.formatElevation(stats.total_down, units.elevation),
+        value: this.formatElevationPipe.transform(stats.total_down),
       });
     }
 
     if (stats.max_elevation > stats.min_elevation) {
-      const elevationRange = `${this.formatElevation(stats.min_elevation, units.elevation)} - ${this.formatElevation(
+      const elevationRange = `${this.formatElevationPipe.transform(stats.min_elevation)} - ${this.formatElevationPipe.transform(
         stats.max_elevation,
-        units.elevation,
       )}`;
 
       rows.push({
@@ -363,7 +394,6 @@ export class WorkoutStatisticsComponent {
   private buildRangeCard(
     stats: WorkoutRangeStats,
     config: RangeStatConfig,
-    units: WorkoutRangeStatsUnits,
     availableMetrics: string[],
   ): WorkoutStatCard | null {
     if (config.metricKey && !availableMetrics.includes(config.metricKey)) {
@@ -375,33 +405,32 @@ export class WorkoutStatisticsComponent {
     const moving = this.resolveValue(stats, config.movingField, config.ignoreZero !== false);
     const min = this.resolveValue(stats, config.minField, config.ignoreZero !== false);
     const max = this.resolveValue(stats, config.maxField, config.ignoreZero !== false);
-    const unitLabel = config.unit(units);
 
     if (average !== undefined) {
       rows.push({
         labelKey: _('Average'),
-        value: this.formatRangeValue(average, unitLabel, config.decimals),
+        value: this.formatRangeValue(average, config.unit, config.decimals),
       });
     }
 
     if (moving !== undefined && config.movingField) {
       rows.push({
         labelKey: _('Average (no pause)'),
-        value: this.formatRangeValue(moving, unitLabel, config.decimals),
+        value: this.formatRangeValue(moving, config.unit, config.decimals),
       });
     }
 
     if (min !== undefined) {
       rows.push({
         labelKey: _('Minimum'),
-        value: this.formatRangeValue(min, unitLabel, config.decimals),
+        value: this.formatRangeValue(min, config.unit, config.decimals),
       });
     }
 
     if (max !== undefined) {
       rows.push({
         labelKey: _('Maximum'),
-        value: this.formatRangeValue(max, unitLabel, config.decimals),
+        value: this.formatRangeValue(max, config.unit, config.decimals),
       });
     }
 
@@ -435,16 +464,6 @@ export class WorkoutStatisticsComponent {
     return value;
   }
 
-  private formatDistance(value: number, unit: string): string {
-    const formatted = formatNumber(value, this.locale, '1.2-2');
-    return `${formatted} ${unit}`;
-  }
-
-  private formatElevation(value: number, unit: string): string {
-    const formatted = formatNumber(value, this.locale, '1.0-1');
-    return `${formatted} ${unit}`;
-  }
-
   private formatRangeValue(value: number, unit: string, decimals: number | undefined): string {
     if (value === undefined || Number.isNaN(value)) {
       return '-';
@@ -456,20 +475,5 @@ export class WorkoutStatisticsComponent {
     const digits = decimals !== undefined && decimals > 0 ? `1.${decimals}-${decimals}` : '1.0-0';
     const formatted = formatNumber(value, this.locale, digits);
     return unit ? `${formatted} ${unit}` : formatted;
-  }
-
-  private formatDurationValue(seconds: number): string {
-    const totalSeconds = Math.round(seconds);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
-    }
-    return `${secs}s`;
   }
 }
