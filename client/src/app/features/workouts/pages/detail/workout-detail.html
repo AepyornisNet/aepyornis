@@ -145,6 +145,7 @@
                         <app-workout-chart
                           [extraMetrics]="dataService.recordsExtraMetrics()"
                           [mapData]="dataService.recordsDetails()"
+                          [workout]="dataService.workout()"
                         />
                       </div>
                     </ng-template>
@@ -158,6 +159,7 @@
                         <app-workout-chart
                           [extraMetrics]="dataService.recordsExtraMetrics()"
                           [mapData]="dataService.recordsDetails()"
+                          [workout]="dataService.workout()"
                           [viewMode]="'distance'"
                         />
                       </div>

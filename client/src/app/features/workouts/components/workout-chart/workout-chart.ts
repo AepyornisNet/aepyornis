@@ -33,13 +33,15 @@ import {
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import zoomPlugin from 'chartjs-plugin-zoom';
-import { MapDataDetails } from '../../../../core/types/workout';
+import { MapDataDetails, WorkoutDetail } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { User } from '../../../../core/services/user';
 import { FTP_ZONE_COLORS, HR_ZONE_COLORS } from '../zone-colors';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { getMetricDef } from '../../../../core/config/metrics';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 
 Chart.register(
   TimeScale,
@@ -77,6 +79,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   public readonly mapData = input<MapDataDetails | undefined>();
   public readonly extraMetrics = input<string[]>([]);
   public readonly viewMode = input<'time' | 'distance'>('time');
+  public readonly workout = input<WorkoutDetail | null>(null);
 
   public readonly legendItems = signal<
     { label: string; hidden: boolean; datasetIndex: number; metricKey: string }[]
@@ -91,16 +94,14 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   }
 
   private translate = inject(TranslateService);
+  private formatSpeedPipe = inject(FormatSpeedPipe);
+  private formatElevationPipe = inject(FormatElevationPipe);
   private coordinatorService = inject(WorkoutDetailCoordinatorService);
   private userService = inject(User);
   private chart?: Chart;
   private timeLabels: number[] = [];
   private isUpdatingFromZoom = false; // Flag to prevent infinite loops
   private datasetMetricKeys: string[] = [];
-
-  private readonly speedUnit = computed(
-    () => this.userService.getUserInfo()()?.profile?.profile?.preferred_units?.speed || 'km/h',
-  );
 
   private get mapDataValue(): MapDataDetails | undefined {
     return this.mapData();
@@ -367,6 +368,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
       return [];
     }
 
+    const workout = this.workout()
     const metrics = this.extraMetricsValue;
     const metricSettings = this.getMetricSettings();
     const datasets: ChartDataset[] = [];
@@ -377,7 +379,7 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     // Add speed dataset (convert to preferred unit)
     if (hasDefaultSpeed) {
-      const speedData = mapData.speed.map((val) => this.convertSpeed(val));
+      const speedData = mapData.speed.map((val) => this.formatSpeedPipe.convert(val, workout?.type)); // TODO
       datasets.push({
         type: 'line',
         label: 'Speed',
@@ -418,31 +420,31 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
             backgroundColor: getMetricDef(metric, metricIndex).color,
             ...(metric === 'heart-rate'
               ? {
-                  segment: {
-                    borderColor: (ctx: ScriptableLineSegmentContext): string =>
-                      this.zoneColor(
-                        mapData,
-                        'hr-zone',
-                        ctx.p0DataIndex,
-                        HR_ZONE_COLORS,
-                        getMetricDef('heart-rate').color,
-                      ),
-                  },
-                }
+                segment: {
+                  borderColor: (ctx: ScriptableLineSegmentContext): string =>
+                    this.zoneColor(
+                      mapData,
+                      'hr-zone',
+                      ctx.p0DataIndex,
+                      HR_ZONE_COLORS,
+                      getMetricDef('heart-rate').color,
+                    ),
+                },
+              }
               : {}),
             ...(metric === 'power'
               ? {
-                  segment: {
-                    borderColor: (ctx: ScriptableLineSegmentContext): string =>
-                      this.zoneColor(
-                        mapData,
-                        'zone',
-                        ctx.p0DataIndex,
-                        FTP_ZONE_COLORS,
-                        getMetricDef('power').color,
-                      ),
-                  },
-                }
+                segment: {
+                  borderColor: (ctx: ScriptableLineSegmentContext): string =>
+                    this.zoneColor(
+                      mapData,
+                      'zone',
+                      ctx.p0DataIndex,
+                      FTP_ZONE_COLORS,
+                      getMetricDef('power').color,
+                    ),
+                },
+              }
               : {}),
           });
           this.datasetMetricKeys.push(metric);
@@ -462,10 +464,11 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     // Add elevation dataset with area fill
     if (this.hasMeaningfulSeries(mapData.elevation, false)) {
+      const elevationData = mapData.elevation.map((val) => this.formatElevationPipe.convert(val));
       datasets.push({
         type: 'line',
         label: 'Elevation',
-        data: mapData.elevation,
+        data: elevationData,
         yAxisID: 'elevation',
         fill: 'start',
         spanGaps: true,
@@ -630,19 +633,18 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
   }
 
   private getMetricSettings(): Record<string, MetricConfig> {
-    const speedUnit = this.speedUnit();
+    const workout = this.workout()
 
     return {
       speed: {
-        formatter: (val: number) =>
-          `${val?.toFixed(2) ?? '-'} ${speedUnit === 'mph' ? 'mph' : 'km/h'}`,
-        labelFormatter: (val: number) => `${val} ${speedUnit === 'mph' ? 'mph' : 'km/h'}`,
+        formatter: (val: number) => `${this.formatSpeedPipe.transform(val, workout?.type)}`,
+        labelFormatter: (val: number) => `${this.formatSpeedPipe.transform(val, workout?.type)}`,
         formatterYaxis: true,
         yaxis: { min: 0 },
       },
       elevation: {
-        formatter: (val: number) => `${val !== null ? val.toFixed(2) : '-'} m`,
-        labelFormatter: (val: number) => `${val} m`,
+        formatter: (val: number) => `${this.formatElevationPipe.transform(val)}`,
+        labelFormatter: (val: number) => `${this.formatElevationPipe.transform(val)}`,
         formatterYaxis: true,
         yaxis: { position: 'right' },
       },
@@ -699,21 +701,6 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     }
 
     return palette[zone] ?? fallback;
-  }
-
-  private convertSpeed(value: number | null | undefined): number | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
-
-    const unit = this.speedUnit();
-
-    if (unit === 'mph') {
-      return value * 2.23694;
-    }
-
-    // Default to km/h when unit is not mph
-    return value * 3.6;
   }
 
   private hasMeaningfulSeries(
