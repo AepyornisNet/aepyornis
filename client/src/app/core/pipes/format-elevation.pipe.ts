@@ -10,17 +10,22 @@ import { metersToFeet } from '../config/units';
 })
 export class FormatElevationPipe implements PipeTransform {
   private user = inject(User);
+  private get elevationUnit(): string {
+    return this.user.getUserInfo()()?.profile?.profile.preferred_units.elevation ?? `m`;
+  }
+
+  public convert(meters: number): number {
+    if (this.elevationUnit === 'm') {
+      return meters;
+    }
+    return meters * metersToFeet;
+  }
 
   public transform(meters: number | undefined | null): string {
     if (meters === undefined || meters === null) {
       return `-`;
     }
-    const units = this.user.getUserInfo()()?.profile?.profile.preferred_units;
 
-    if (!units || units.elevation === 'm') {
-      return `${meters.toFixed(0)} m`;
-    }
-
-    return `${(meters * metersToFeet).toFixed(0)} ft`;
+    return `${this.convert(meters).toFixed(0)} ${this.elevationUnit}`;
   }
 }
