@@ -342,16 +342,39 @@ export class Heatmap extends BaseMapComponent {
       return;
     }
 
-    const maxWeight = this.heatMapData.reduce((max, [, , weight]) => Math.max(max, weight ?? 1), 1);
+    if (this.heatMapData.length === 0) {
+      const emptyData: GeoJSON.FeatureCollection<GeoJSON.Point, { weight: number }> = {
+        type: 'FeatureCollection',
+        features: [],
+      };
+      const source = this.map.getSource(HEAT_SOURCE_ID) as GeoJSONSource | undefined;
+      if (source) {
+        source.setData(emptyData);
+      }
+      return;
+    }
+
+    // Sort weights to find 95th percentile for outlier capping (e.g. home address)
+    const sortedWeights = this.heatMapData.map(([, , weight]) => weight ?? 1).sort((a, b) => a - b);
+    const p95Index = Math.min(sortedWeights.length - 1, Math.floor(sortedWeights.length * 0.95));
+    const capWeight = Math.max(1, sortedWeights[p95Index] ?? 1);
+    const logCap = Math.log(1 + capWeight);
+
     const features: GeoJSON.Feature<GeoJSON.Point, { weight: number }>[] = this.heatMapData.map(
-      ([lat, lng, weight]) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [lng, lat],
-        },
-        properties: { weight: Math.min(1, (weight ?? 1) / maxWeight) },
-      }),
+      ([lat, lng, weight]) => {
+        const rawW = weight ?? 1;
+        const clampedW = Math.min(rawW, capWeight);
+        // Logarithmic normalization: compresses high frequencies so outliers don't drown out lesser-used routes
+        const logNorm = logCap > 0 ? Math.log(1 + clampedW) / logCap : 1;
+        return {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [lng, lat],
+          },
+          properties: { weight: Math.max(0.05, Math.min(1, logNorm)) },
+        };
+      },
     );
 
     const heatData: GeoJSON.FeatureCollection<GeoJSON.Point, { weight: number }> = {
