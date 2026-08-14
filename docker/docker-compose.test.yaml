@@ -1,0 +1,26 @@
+services:
+  pgtestdb:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    restart: unless-stopped
+    volumes:
+      # Uses a tmpfs volume to make tests extremely fast. The data in test
+      # databases is not persisted across restarts, nor does it need to be.
+      - type: tmpfs
+        target: /var/lib/postgresql/data/
+    command:
+      - "postgres"
+      - "-c"
+      - "fsync=off"
+      - "-c"
+      - "log_statement=all"
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 5

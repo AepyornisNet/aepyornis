@@ -558,35 +558,35 @@ func (w *Workout) save(db *gorm.DB) error {
 
 func persistWorkoutRelations(tx *gorm.DB, w *Workout) error {
 	if err := saveWorkoutStats(tx, w); err != nil {
-		return err
+		return fmt.Errorf("saveWorkoutStats: %w", err)
 	}
 
 	if err := saveWorkoutGeoMeta(tx, w); err != nil {
-		return err
+		return fmt.Errorf("saveWorkoutGeoMeta: %w", err)
 	}
 
 	if err := persistWorkoutRecords(tx, w); err != nil {
-		return err
+		return fmt.Errorf("persistWorkoutRecords: %w", err)
 	}
 
 	if err := persistWorkoutEvents(tx, w); err != nil {
-		return err
+		return fmt.Errorf("persistWorkoutEvents: %w", err)
 	}
 
 	if err := persistWorkoutLaps(tx, w); err != nil {
-		return err
+		return fmt.Errorf("persistWorkoutLaps: %w", err)
 	}
 
 	if err := persistWorkoutClimbs(tx, w); err != nil {
-		return err
+		return fmt.Errorf("persistWorkoutClimbs: %w", err)
 	}
 
 	if err := persistWorkoutFile(tx, w); err != nil {
-		return err
+		return fmt.Errorf("persistWorkoutFile: %w", err)
 	}
 
 	if err := persistWorkoutRouteSegmentMatches(tx, w); err != nil {
-		return err
+		return fmt.Errorf("persistWorkoutRouteSegmentMatches: %w", err)
 	}
 
 	return nil
@@ -1084,7 +1084,11 @@ func saveWorkoutStats(tx *gorm.DB, w *Workout) error {
 	if w.Stats == nil {
 		w.StatsID = nil
 
-		return tx.Model(w).Update("stats_id", nil).Error
+		if w.ID == 0 {
+			return nil
+		}
+
+		return tx.Model(&Workout{}).Where("id = ?", w.ID).Update("stats_id", nil).Error
 	}
 
 	if w.Stats.ID == 0 {

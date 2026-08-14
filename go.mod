@@ -40,6 +40,7 @@ require (
 	github.com/nikoksr/notify v1.5.0
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/paulmach/orb v0.13.0
+	github.com/peterldowns/pgtestdb v0.1.1
 	github.com/ringsaturn/tzf v1.2.1
 	github.com/samber/do/v2 v2.1.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
@@ -98,7 +99,7 @@ require (
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.10.0 // indirect
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

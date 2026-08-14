@@ -2,7 +2,6 @@ package app
 
 import (
 	"log/slog"
-	"os"
 	"testing"
 
 	appassets "github.com/AepyornisNet/aepyornis/assets"
@@ -48,11 +47,7 @@ func TestApp_Configure(t *testing.T) {
 	a := defaultApp(t)
 	assert.Nil(t, a.db)
 
-	dsn := os.Getenv("WT_DSN")
-	if dsn == "" {
-		t.Skip("PostGIS test database not configured (set WT_DSN)")
-	}
-
+	dsn := model.TestDBURL(t)
 	t.Setenv("WT_DATABASE_DRIVER", "postgres")
 	t.Setenv("WT_DSN", dsn)
 	require.NoError(t, a.Configure())
@@ -79,10 +74,7 @@ func TestApp_RandomJWTErrorIdemPotent(t *testing.T) {
 }
 
 func TestApp_Configure_CreatesActivityPubEnabledAdminWhenEnabled(t *testing.T) {
-	dsn := os.Getenv("WT_DSN")
-	if dsn == "" {
-		t.Skip("PostGIS test database not configured (set WT_DSN)")
-	}
+	dsn := model.TestDBURL(t)
 
 	a := defaultApp(t)
 
@@ -102,10 +94,7 @@ func TestApp_Configure_CreatesActivityPubEnabledAdminWhenEnabled(t *testing.T) {
 }
 
 func TestApp_Configure_CreatesPrivateAdminDefaultsWhenActivityPubDisabled(t *testing.T) {
-	dsn := os.Getenv("WT_DSN")
-	if dsn == "" {
-		t.Skip("PostGIS test database not configured (set WT_DSN)")
-	}
+	dsn := model.TestDBURL(t)
 
 	a := defaultApp(t)
 

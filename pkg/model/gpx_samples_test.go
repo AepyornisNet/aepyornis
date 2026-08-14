@@ -6,6 +6,10 @@ import (
 
 var gpxFS fstest.MapFS
 
+func init() { //nolint:gochecknoinits
+	populateGPXFS()
+}
+
 func populateGPXFS() {
 	gpxFS = fstest.MapFS{}
 

@@ -10,7 +10,7 @@ GO_TEST = go test -short -count 1 -mod vendor -covermode=atomic
 
 BRANCH_NAME_DEPS ?= update-deps
 
-.PHONY: all clean test build meta install-deps
+.PHONY: all clean test build meta install-deps test-db test-db-stop
 
 all: clean install-deps test build
 
@@ -47,6 +47,18 @@ watch/client: install-deps
 
 dev-backend:
 	$(MAKE) watch/server
+
+test-db:
+	docker compose \
+			--project-directory ./docker/ \
+			--file ./docker/docker-compose.test.yaml \
+			up -d pgtestdb
+
+test-db-stop:
+	docker compose \
+			--project-directory ./docker/ \
+			--file ./docker/docker-compose.test.yaml \
+			stop pgtestdb
 
 dev: dev-postgres
 

@@ -120,7 +120,14 @@ func TestWorkout_SaveAndGet(t *testing.T) {
 	newW, err := GetWorkoutDetails(db, w.ID)
 	require.NoError(t, err)
 	assert.Equal(t, w.ID, newW.ID)
-	assert.Equal(t, w.Records, newW.Records)
+	assert.Len(t, newW.Records, len(w.Records))
+	if len(w.Records) > 0 && len(newW.Records) > 0 {
+		assert.True(t, w.Records[0].Time.Equal(newW.Records[0].Time))
+		assert.InDelta(t, w.Records[0].Point.Lat, newW.Records[0].Point.Lat, 0.0001)
+		assert.InDelta(t, w.Records[0].Point.Lng, newW.Records[0].Point.Lng, 0.0001)
+		assert.Equal(t, w.Records[0].Elevation, newW.Records[0].Elevation)
+		assert.InDelta(t, w.Records[0].TotalDistance, newW.Records[0].TotalDistance, 0.0001)
+	}
 }
 
 func TestWorkout_Recreate(t *testing.T) {

@@ -2,7 +2,6 @@ package model
 
 import (
 	"log/slog"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,11 +9,8 @@ import (
 )
 
 func TestGorm_Connect(t *testing.T) {
-	if dsn := os.Getenv("WT_DSN"); dsn != "" {
-		db, err := Connect("postgres", dsn, false, slog.Default())
-		require.NoError(t, err)
-		assert.NotNil(t, db)
-	}
+	db := TestDB(t)
+	assert.NotNil(t, db)
 
 	db, err := Connect("invalid-driver", "some-dsn", false, slog.Default())
 	require.Error(t, err)

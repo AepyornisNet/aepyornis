@@ -299,6 +299,13 @@ github.com/pelletier/go-toml/v2/internal/characters
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
 github.com/pelletier/go-toml/v2/unstable
+# github.com/peterldowns/pgtestdb v0.1.1
+## explicit; go 1.21.0
+github.com/peterldowns/pgtestdb
+github.com/peterldowns/pgtestdb/internal/multierr
+github.com/peterldowns/pgtestdb/internal/once
+github.com/peterldowns/pgtestdb/internal/sessionlock
+github.com/peterldowns/pgtestdb/migrators/common
 # github.com/philhofer/vec v0.0.0-20140421144027-536fc796d369
 ## explicit
 github.com/philhofer/vec

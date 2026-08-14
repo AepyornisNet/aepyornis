@@ -2,10 +2,8 @@ package model
 
 import (
 	"errors"
-	"os"
 	"testing"
 
-	"github.com/fsouza/slognil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -35,15 +33,7 @@ func dummyMapData() *WorkoutGeoMeta {
 func createMemoryDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	dsn := os.Getenv("WT_DSN")
-	if dsn == "" {
-		t.Skip("PostGIS test database not configured (set WT_DSN)")
-	}
-
-	db, err := Connect("postgres", dsn, false, slognil.NewLogger())
-	require.NoError(t, err)
-
-	return db
+	return TestDB(t)
 }
 
 func createDefaultUser(t *testing.T, db *gorm.DB) {

@@ -1,11 +1,9 @@
 package repository
 
 import (
-	"os"
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
-	"github.com/fsouza/slognil"
 	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,15 +13,7 @@ import (
 func createRepositoryMemoryDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	dsn := os.Getenv("WT_DSN")
-	if dsn == "" {
-		t.Skip("PostGIS test database not configured (set WT_DSN)")
-	}
-
-	db, err := model.Connect("postgres", dsn, false, slognil.NewLogger())
-	require.NoError(t, err)
-
-	return db
+	return model.TestDB(t)
 }
 
 func createRepositoryInjector(db *gorm.DB) do.Injector {

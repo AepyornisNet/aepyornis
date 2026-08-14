@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
@@ -22,13 +21,7 @@ import (
 
 func createTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	dsn := os.Getenv("WT_DSN")
-	if dsn == "" {
-		t.Skip("PostGIS test database not configured (set WT_DSN)")
-	}
-	db, err := model.Connect("postgres", dsn, false, slognil.NewLogger())
-	require.NoError(t, err)
-	return db
+	return model.TestDB(t)
 }
 
 func TestApInbox_AcceptFollowActivity(t *testing.T) {
