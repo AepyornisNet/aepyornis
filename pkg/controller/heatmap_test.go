@@ -45,9 +45,10 @@ func TestHeatmapController_GetWorkoutCoordinates(t *testing.T) {
 		Type:      model.WorkoutTypeRunning,
 		Date:      time.Now().UTC(),
 		Records: []model.WorkoutRecord{
-			{Point: gogis.Point{Lat: 50.95786, Lng: 4.72410}, SortOrder: 0},
-			{Point: gogis.Point{Lat: 50.95816, Lng: 4.72391}, SortOrder: 1},
-			{Point: gogis.Point{Lat: 50.95900, Lng: 4.72500}, SortOrder: 2},
+			{Point: &gogis.Point{Lat: 50.95786, Lng: 4.72410}, SortOrder: 0},
+			{Point: &gogis.Point{Lat: 50.95816, Lng: 4.72391}, SortOrder: 1},
+			{Point: &gogis.Point{Lat: 50.95900, Lng: 4.72500}, SortOrder: 2},
+			{Point: nil, SortOrder: 3},
 		},
 	}
 	require.NoError(t, workout.Save(db))

@@ -162,7 +162,7 @@ func (rs *RouteSegment) MatchSegment(workout *Workout, start int, forward bool) 
 	for i := range workoutLength {
 		index := (start + i) % workoutLength
 
-		d := PointDistance(rs.Points.Points[cur], workout.Records[index].Point)
+		d := workout.Records[index].DistanceToPoint(rs.Points.Points[cur])
 		if d > MaxDeltaMeter {
 			continue
 		}
@@ -201,7 +201,7 @@ func (rs *RouteSegment) StartingPoints(points []WorkoutRecord) []int {
 	start := rs.Points.Points[0]
 
 	for i, p := range points {
-		d := PointDistance(start, p.Point)
+		d := p.DistanceToPoint(start)
 		if d < MaxDeltaMeter {
 			r = append(r, i)
 		}

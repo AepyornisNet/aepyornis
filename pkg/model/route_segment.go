@@ -92,8 +92,8 @@ func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams)
 
 	for _, p := range points {
 		gpxPoint := gpx.Point{
-			Latitude:  p.Point.Lat,
-			Longitude: p.Point.Lng,
+			Latitude:  p.Lat(),
+			Longitude: p.Lng(),
 			Elevation: *gpx.NewNullableFloat64(p.ExtraMetrics.Get("elevation")),
 		}
 
@@ -140,9 +140,11 @@ func (rs *RouteSegment) UpdateFromContent() error {
 	rs.TotalDown = stats.TotalDown
 
 	records := parsed[0].Records
-	pts := make([]gogis.Point, len(records))
-	for i, r := range records {
-		pts[i] = r.Point
+	pts := make([]gogis.Point, 0, len(records))
+	for _, r := range records {
+		if r.Point != nil && (r.Point.Lat != 0 || r.Point.Lng != 0) {
+			pts = append(pts, *r.Point)
+		}
 	}
 	rs.Points = gogis.LineString{Points: pts}
 

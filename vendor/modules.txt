@@ -288,6 +288,7 @@ github.com/orandin/slog-gorm
 # github.com/paulmach/orb v0.13.0
 ## explicit; go 1.18
 github.com/paulmach/orb
+github.com/paulmach/orb/geo
 github.com/paulmach/orb/geojson
 github.com/paulmach/orb/internal/length
 github.com/paulmach/orb/planar

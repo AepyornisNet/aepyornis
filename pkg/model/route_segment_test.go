@@ -37,9 +37,9 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, w1, 1)
 	rp, wp := rs.Points.Points[0], w1[0].Records[0]
-	minStart := model.PointDistance(rp, wp.Point)
+	minStart := wp.DistanceToPoint(rp)
 	for i := range w1[0].Records {
-		d := model.PointDistance(rp, w1[0].Records[i].Point)
+		d := w1[0].Records[i].DistanceToPoint(rp)
 		if d < minStart {
 			minStart = d
 		}
@@ -52,8 +52,8 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 		w1[0].HasTracks(),
 		rp.Lat,
 		rp.Lng,
-		wp.Point.Lat,
-		wp.Point.Lng,
+		wp.Lat(),
+		wp.Lng(),
 		minStart,
 	)
 
@@ -105,7 +105,7 @@ func TestRouteSegment_StartingPoints_Match(t *testing.T) {
 	assert.NotEmpty(t, sp)
 
 	for _, p := range sp {
-		assert.Less(t, model.PointDistance(rs.Points.Points[0], w1.Records[p].Point), model.MaxDeltaMeter)
+		assert.Less(t, w1.Records[p].DistanceToPoint(rs.Points.Points[0]), model.MaxDeltaMeter)
 	}
 }
 

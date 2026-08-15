@@ -92,9 +92,10 @@ func postRouteSegmentsLineStringMigrate(db *gorm.DB) error { //nolint:gocyclo
 		// 1. Try parsing from content (GPX) if available and WorkoutParser is registered
 		if len(row.Content) > 0 && model.WorkoutParser != nil {
 			if parsed, err := model.WorkoutParser(row.Filename, row.Content); err == nil && len(parsed) > 0 && parsed[0] != nil {
-				points = make([]gogis.Point, len(parsed[0].Records))
-				for i, r := range parsed[0].Records {
-					points[i] = r.Point
+				for _, r := range parsed[0].Records {
+					if r.Point != nil && (r.Point.Lat != 0 || r.Point.Lng != 0) {
+						points = append(points, *r.Point)
+					}
 				}
 			}
 		}

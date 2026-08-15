@@ -29,7 +29,7 @@ func preWorkoutRecordsPointMigrate(db *gorm.DB) error {
 		}
 
 		if db.Migrator().HasColumn("workout_records", "lat") && db.Migrator().HasColumn("workout_records", "lng") {
-			if err := db.Exec("UPDATE workout_records SET point = ST_SetSRID(ST_MakePoint(lng, lat), 4326) WHERE point IS NULL").Error; err != nil {
+			if err := db.Exec("UPDATE workout_records SET point = ST_SetSRID(ST_MakePoint(lng, lat), 4326) WHERE point IS NULL AND (lat != 0 OR lng != 0)").Error; err != nil {
 				return err
 			}
 			if err := db.Exec("ALTER TABLE workout_records DROP COLUMN IF EXISTS lat").Error; err != nil {

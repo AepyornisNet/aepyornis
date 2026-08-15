@@ -155,7 +155,7 @@ func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mes
 		}
 
 		rec := mesgdef.NewRecord(nil).SetTimestamp(ts)
-		if !math.IsNaN(p.Point.Lat) && !math.IsNaN(p.Point.Lng) && (p.Point.Lat != 0 || p.Point.Lng != 0) {
+		if p.Point != nil && !math.IsNaN(p.Point.Lat) && !math.IsNaN(p.Point.Lng) && (p.Point.Lat != 0 || p.Point.Lng != 0) {
 			rec.SetPositionLatDegrees(p.Point.Lat).SetPositionLongDegrees(p.Point.Lng)
 		}
 

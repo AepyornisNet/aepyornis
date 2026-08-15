@@ -1,8 +1,8 @@
 package model
 
 import (
+	"math"
 	"testing"
-	"time"
 
 	"github.com/restayway/gogis"
 	"github.com/stretchr/testify/assert"
@@ -10,16 +10,26 @@ import (
 )
 
 func TestWorkoutRecord_Point(t *testing.T) {
-	t.Run("Getters and Orb Point conversion", func(t *testing.T) {
+	t.Run("Getters and Orb Point conversion with valid point", func(t *testing.T) {
 		wr := &WorkoutRecord{
-			Point: gogis.Point{Lat: 50.123, Lng: 8.456},
+			Point: &gogis.Point{Lat: 50.123, Lng: 8.456},
 		}
 		assert.Equal(t, 50.123, wr.Lat())
 		assert.Equal(t, 8.456, wr.Lng())
 
 		orbPt := wr.ToOrbPoint()
+		require.NotNil(t, orbPt)
 		assert.Equal(t, 8.456, orbPt[0])
 		assert.Equal(t, 50.123, orbPt[1])
+	})
+
+	t.Run("Getters and Orb Point conversion with nil point", func(t *testing.T) {
+		wr := &WorkoutRecord{
+			Point: nil,
+		}
+		assert.Equal(t, 0.0, wr.Lat())
+		assert.Equal(t, 0.0, wr.Lng())
+		assert.Nil(t, wr.ToOrbPoint())
 	})
 
 	t.Run("Point Value returns WKT", func(t *testing.T) {
@@ -28,18 +38,25 @@ func TestWorkoutRecord_Point(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "SRID=4326;POINT(8.456 50.123)", val)
 	})
-}
+	t.Run("PointDistance calculates distance correctly using orb", func(t *testing.T) {
+		p1 := gogis.Point{Lat: 50.0, Lng: 8.0}
+		p2 := gogis.Point{Lat: 50.001, Lng: 8.0}
+		d := PointDistance(p1, p2)
+		assert.InDelta(t, 111.19, d, 0.5)
+	})
 
-func TestWorkoutRecord_GPXPoint(t *testing.T) {
-	wr := WorkoutRecord{
-		Point:     gogis.Point{Lat: 52.52, Lng: 13.405},
-		Elevation: 35.5,
-		Time:      time.Now(),
-	}
+	t.Run("DistanceTo and DistanceToPoint with valid points", func(t *testing.T) {
+		wr1 := &WorkoutRecord{Point: &gogis.Point{Lat: 50.0, Lng: 8.0}}
+		wr2 := &WorkoutRecord{Point: &gogis.Point{Lat: 50.001, Lng: 8.0}}
+		assert.InDelta(t, 111.19, wr1.DistanceTo(wr2), 0.5)
+		assert.InDelta(t, 111.19, wr1.DistanceToPoint(*wr2.Point), 0.5)
+	})
 
-	gpxPt := wr.AsGPXPoint()
-	require.NotNil(t, gpxPt)
-	assert.Equal(t, 52.52, gpxPt.Latitude)
-	assert.Equal(t, 13.405, gpxPt.Longitude)
-	assert.Equal(t, 35.5, gpxPt.Elevation.Value())
+	t.Run("DistanceTo and DistanceToPoint with nil points", func(t *testing.T) {
+		wr1 := &WorkoutRecord{Point: nil}
+		wr2 := &WorkoutRecord{Point: &gogis.Point{Lat: 50.0, Lng: 8.0}}
+		assert.True(t, math.IsInf(wr1.DistanceTo(wr2), 1))
+		assert.True(t, math.IsInf(wr2.DistanceTo(wr1), 1))
+		assert.True(t, math.IsInf(wr1.DistanceToPoint(*wr2.Point), 1))
+	})
 }

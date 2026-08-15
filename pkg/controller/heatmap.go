@@ -97,7 +97,8 @@ func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
 
 	query := hc.db.Table("workout_records AS wr").
 		Joins("JOIN workouts ON workouts.id = wr.workout_id").
-		Where("workouts.profile_id = ?", u.Profile.ID)
+		Where("workouts.profile_id = ?", u.Profile.ID).
+		Where("wr.point IS NOT NULL")
 
 	query = filters.ToQueryWithoutOrder(query)
 
