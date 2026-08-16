@@ -16,7 +16,9 @@
           <th class="text-end d-none d-md-table-cell">{{ 'Elevation Gain' | translate }}</th>
           <th class="text-end d-none d-sm-table-cell">{{ 'Efforts' | translate }}</th>
           <th class="text-end d-none d-lg-table-cell">{{ 'Created' | translate }}</th>
-          <th class="text-end d-none d-sm-table-cell" style="width: 80px">{{ 'Actions' | translate }}</th>
+          <th class="text-end d-none d-sm-table-cell" style="width: 80px">
+            {{ 'Actions' | translate }}
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -24,11 +26,15 @@
           <tr>
             <td style="cursor: pointer" [routerLink]="['/route-segments', segment.id]">
               <div class="d-flex align-items-center gap-3">
-                <div class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center flex-shrink-0">
+                <div
+                  class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center flex-shrink-0"
+                >
                   <app-icon class="text-primary" name="route-segment" size="20" />
                 </div>
                 <div>
-                  <div class="fw-semibold text-body">{{ segment.name || ('(no name)' | translate) }}</div>
+                  <div class="fw-semibold text-body">
+                    {{ segment.name || ('(no name)' | translate) }}
+                  </div>
                   <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
                     @if (segment.category) {
                       <span
@@ -40,19 +46,27 @@
                       </span>
                     }
                     @if (segment.bidirectional) {
-                      <span class="badge bg-secondary-subtle text-secondary-emphasis border d-inline-flex align-items-center gap-1 font-monospace" style="font-size: 0.7rem">
+                      <span
+                        class="badge bg-secondary-subtle text-secondary-emphasis border d-inline-flex align-items-center gap-1 font-monospace"
+                        style="font-size: 0.7rem"
+                      >
                         <app-icon name="bidirectional" size="10" />
                         <span>{{ 'Bidirectional' | translate }}</span>
                       </span>
                     }
                     @if (segment.circular) {
-                      <span class="badge bg-secondary-subtle text-secondary-emphasis border d-inline-flex align-items-center gap-1 font-monospace" style="font-size: 0.7rem">
+                      <span
+                        class="badge bg-secondary-subtle text-secondary-emphasis border d-inline-flex align-items-center gap-1 font-monospace"
+                        style="font-size: 0.7rem"
+                      >
                         <app-icon name="circular" size="10" />
                         <span>{{ 'Circular' | translate }}</span>
                       </span>
                     }
                     @if (segment.notes) {
-                      <small class="text-body-secondary text-truncate" style="max-width: 250px">{{ segment.notes }}</small>
+                      <small class="text-body-secondary text-truncate" style="max-width: 250px">{{
+                        segment.notes
+                      }}</small>
                     }
                   </div>
                 </div>
@@ -70,7 +84,8 @@
               style="cursor: pointer"
               [routerLink]="['/route-segments', segment.id]"
             >
-              <span class="text-body-secondary small">+</span>{{ segment.total_up | formatElevation }}
+              <span class="text-body-secondary small">+</span
+              >{{ segment.total_up | formatElevation }}
             </td>
             <td
               class="text-end d-none d-sm-table-cell"

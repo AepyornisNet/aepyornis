@@ -1,12 +1,8 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../core/services/api';
-import {
-  MapDataDetails,
-  WorkoutDetail,
-  WorkoutLike,
-  WorkoutRecords,
-} from '../../../core/types/workout';
+import { MapDataDetails, WorkoutDetail, WorkoutRecords } from '../../../core/types/workout';
+import { Like } from '../../../core/types/like';
 
 /**
  * Service responsible for managing workout data and providing common formatting utilities.
@@ -18,7 +14,7 @@ export class WorkoutDetailDataService {
   private api = inject(Api);
 
   public readonly workout = signal<WorkoutDetail | null>(null);
-  public readonly likes = signal<WorkoutLike[]>([]);
+  public readonly likes = signal<Like[]>([]);
   public readonly likesLoading = signal(false);
   public readonly loading = signal(false);
   public readonly error = signal<string | null>(null);

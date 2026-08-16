@@ -24,7 +24,6 @@ import {
   Workout,
   WorkoutBreakdown,
   WorkoutDetail,
-  WorkoutLike,
   WorkoutListParams,
   WorkoutRangeStats,
   WorkoutRecord,
@@ -50,6 +49,7 @@ import {
   UserNotificationSettings,
   UserNotificationSettingsUpdate,
 } from '../types/notification';
+import { Like } from '../types/like';
 
 @Injectable({
   providedIn: 'root',
@@ -343,8 +343,8 @@ export class Api {
     );
   }
 
-  public getWorkoutLikes(workoutId: number): Observable<APIResponse<WorkoutLike[]>> {
-    return this.http.get<APIResponse<WorkoutLike[]>>(`${this.baseUrl}/workouts/${workoutId}/likes`);
+  public getWorkoutLikes(workoutId: number): Observable<APIResponse<Like[]>> {
+    return this.http.get<APIResponse<Like[]>>(`${this.baseUrl}/workouts/${workoutId}/likes`);
   }
 
   public createReply(workoutId: number, content: string): Observable<APIResponse<WorkoutReply>> {
@@ -566,10 +566,8 @@ export class Api {
     );
   }
 
-  public getRouteSegmentLikers(id: number): Observable<APIResponse<WorkoutLike[]>> {
-    return this.http.get<APIResponse<WorkoutLike[]>>(
-      `${this.baseUrl}/route-segments/${id}/likes`,
-    );
+  public getRouteSegmentLikes(id: number): Observable<APIResponse<Like[]>> {
+    return this.http.get<APIResponse<Like[]>>(`${this.baseUrl}/route-segments/${id}/likes`);
   }
 
   // Dashboard endpoints

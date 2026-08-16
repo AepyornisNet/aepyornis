@@ -13,7 +13,6 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { RouteSegmentDetail, RouteSegmentMatch } from '../../../../core/types/route-segment';
-import { WorkoutLike } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { LikesList } from '../../../../core/components/likes-list/likes-list';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
@@ -27,6 +26,7 @@ import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe'
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { saveBlob } from '../../../../core/utils/file-saver';
+import { Like } from '../../../../core/types/like';
 
 @Component({
   selector: 'app-route-segment-detail',
@@ -65,7 +65,7 @@ export class RouteSegmentDetailPage implements OnInit {
   public readonly hasLiked = signal(false);
   public readonly isLiking = signal(false);
   public readonly loadingLikes = signal(false);
-  public readonly likersList = signal<WorkoutLike[]>([]);
+  public readonly likersList = signal<Like[]>([]);
 
   // Matches state
   public readonly matches = signal<RouteSegmentMatch[]>([]);
@@ -185,7 +185,7 @@ export class RouteSegmentDetailPage implements OnInit {
       return;
     }
     this.loadingLikes.set(true);
-    this.api.getRouteSegmentLikers(seg.id).subscribe({
+    this.api.getRouteSegmentLikes(seg.id).subscribe({
       next: (res) => {
         this.likersList.set(res.results || []);
         this.loadingLikes.set(false);

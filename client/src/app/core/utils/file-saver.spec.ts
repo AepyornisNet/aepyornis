@@ -1,9 +1,5 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
-import {
-  getFilenameFromContentDisposition,
-  saveBlob,
-  saveHttpResponse,
-} from './file-saver';
+import { getFilenameFromContentDisposition, saveBlob, saveHttpResponse } from './file-saver';
 
 describe('file-saver', () => {
   describe('getFilenameFromContentDisposition', () => {
@@ -14,19 +10,17 @@ describe('file-saver', () => {
     });
 
     it('should extract filename from standard header', () => {
-      expect(
-        getFilenameFromContentDisposition('attachment; filename="workout_123.gpx"'),
-      ).toBe('workout_123.gpx');
-      expect(
-        getFilenameFromContentDisposition('attachment; filename=workout_123.gpx'),
-      ).toBe('workout_123.gpx');
+      expect(getFilenameFromContentDisposition('attachment; filename="workout_123.gpx"')).toBe(
+        'workout_123.gpx',
+      );
+      expect(getFilenameFromContentDisposition('attachment; filename=workout_123.gpx')).toBe(
+        'workout_123.gpx',
+      );
     });
 
     it('should extract filename from RFC 5987 filename* header', () => {
       expect(
-        getFilenameFromContentDisposition(
-          "attachment; filename*=UTF-8''my%20route%20segment.gpx",
-        ),
+        getFilenameFromContentDisposition("attachment; filename*=UTF-8''my%20route%20segment.gpx"),
       ).toBe('my route segment.gpx');
     });
   });

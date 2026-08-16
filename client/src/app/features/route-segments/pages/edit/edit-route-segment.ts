@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -20,13 +14,7 @@ import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pip
 
 @Component({
   selector: 'app-edit-route-segment',
-  imports: [
-    ReactiveFormsModule,
-    AppIcon,
-    TranslatePipe,
-    FormatDistancePipe,
-    FormatElevationPipe,
-  ],
+  imports: [ReactiveFormsModule, AppIcon, TranslatePipe, FormatDistancePipe, FormatElevationPipe],
   templateUrl: './edit-route-segment.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

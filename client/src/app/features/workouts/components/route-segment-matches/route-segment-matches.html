@@ -8,7 +8,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (match of matches(); track match.id || ($index + '-' + match.route_segment_id)) {
+      @for (match of matches(); track match.id || $index + '-' + match.route_segment_id) {
         <tr
           class="interval-row"
           [class.table-active]="isSelected(match)"

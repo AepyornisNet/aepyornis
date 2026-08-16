@@ -21,13 +21,7 @@ import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 
 @Component({
   selector: 'app-create-workout-route-segment',
-  imports: [
-    FormsModule,
-    AppIcon,
-    TranslatePipe,
-    RouteSegmentMapComponent,
-    FormatDistancePipe,
-  ],
+  imports: [FormsModule, AppIcon, TranslatePipe, RouteSegmentMapComponent, FormatDistancePipe],
   templateUrl: './create-workout-route-segment.html',
   styleUrl: './create-workout-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
