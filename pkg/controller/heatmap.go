@@ -38,9 +38,9 @@ type heatmapBounds struct {
 }
 
 type aggregatedCoordinateRow struct {
-	LatCell float64 `gorm:"column:lat_cell"`
-	LngCell float64 `gorm:"column:lng_cell"`
-	Weight  int64   `gorm:"column:weight"`
+	Lat    float64 `gorm:"column:lat"`
+	Lng    float64 `gorm:"column:lng"`
+	Weight int64   `gorm:"column:weight"`
 }
 
 type rawCoordinateRow struct {
@@ -97,20 +97,21 @@ func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
 
 	query := hc.db.Table("workout_records AS wr").
 		Joins("JOIN workouts ON workouts.id = wr.workout_id").
-		Where("workouts.profile_id = ?", u.Profile.ID)
+		Where("workouts.profile_id = ?", u.Profile.ID).
+		Where("wr.point IS NOT NULL")
 
 	query = filters.ToQueryWithoutOrder(query)
 
 	if bounds != nil {
 		query = query.Where(
-			"wr.lat >= ? AND wr.lat <= ? AND wr.lng >= ? AND wr.lng <= ?",
-			bounds.minLat, bounds.maxLat, bounds.minLng, bounds.maxLng,
+			"ST_Intersects(wr.point, ST_MakeEnvelope(?, ?, ?, ?, 4326))",
+			bounds.minLng, bounds.minLat, bounds.maxLng, bounds.maxLat,
 		)
 	}
 
 	if !hasCellSize {
 		rows := make([]rawCoordinateRow, 0)
-		if err := query.Select("wr.lat AS lat, wr.lng AS lng").Find(&rows).Error; err != nil {
+		if err := query.Select("ST_Y(wr.point) AS lat, ST_X(wr.point) AS lng").Find(&rows).Error; err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
 
@@ -127,17 +128,15 @@ func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
 
 	rows := make([]aggregatedCoordinateRow, 0)
 	if err := query.
-		Select("floor(wr.lat / ?) AS lat_cell, floor(wr.lng / ?) AS lng_cell, count(*) AS weight", cellSize, cellSize).
-		Group("lat_cell, lng_cell").
+		Select("ST_Y(ST_SnapToGrid(wr.point, ?)) AS lat, ST_X(ST_SnapToGrid(wr.point, ?)) AS lng, count(*) AS weight", cellSize, cellSize).
+		Group("1, 2").
 		Find(&rows).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	coords := make([][]float64, 0, len(rows))
 	for _, row := range rows {
-		lat := (row.LatCell + 0.5) * cellSize
-		lng := (row.LngCell + 0.5) * cellSize
-		coords = append(coords, []float64{lat, lng, float64(row.Weight)})
+		coords = append(coords, []float64{row.Lat, row.Lng, float64(row.Weight)})
 	}
 
 	resp := dto.Response[[][]float64]{

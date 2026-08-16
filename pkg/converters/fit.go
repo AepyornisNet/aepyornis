@@ -15,6 +15,7 @@ import (
 	"github.com/muktihari/fit/profile/filedef"
 	"github.com/muktihari/fit/profile/mesgdef"
 	"github.com/muktihari/fit/profile/typedef"
+	"github.com/restayway/gogis"
 	"gorm.io/datatypes"
 )
 
@@ -546,15 +547,14 @@ func mapDataFromActivity(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.
 
 		lat := semicircles.ToDegrees(r.PositionLat)
 		lng := semicircles.ToDegrees(r.PositionLong)
-		if math.IsNaN(lat) || math.IsNaN(lng) {
-			lat = 0
-			lng = 0
+		var point *gogis.Point
+		if !math.IsNaN(lat) && !math.IsNaN(lng) && (lat != 0 || lng != 0) {
+			point = &gogis.Point{Lat: lat, Lng: lng}
 		}
 
 		points = append(points, model.WorkoutRecord{
 			Time:          ts,
-			Lat:           lat,
-			Lng:           lng,
+			Point:         point,
 			Elevation:     elevationValue,
 			Distance:      deltaDist,
 			TotalDistance: dist,

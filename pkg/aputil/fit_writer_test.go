@@ -6,6 +6,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/converters"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/restayway/gogis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,16 +19,14 @@ func TestGenerateWorkoutFIT_PreservesPerRecordSpeedMetrics(t *testing.T) {
 		Records: []model.WorkoutRecord{
 			{
 				Time:          time.Date(2026, 4, 26, 18, 0, 0, 0, time.UTC),
-				Lat:           50.0,
-				Lng:           8.0,
+				Point:         &gogis.Point{Lat: 50.0, Lng: 8.0},
 				Elevation:     100,
 				TotalDuration: 0,
 				ExtraMetrics:  model.ExtraMetrics{"speed": 0.0},
 			},
 			{
 				Time:          time.Date(2026, 4, 26, 18, 0, 5, 0, time.UTC),
-				Lat:           50.0,
-				Lng:           8.0,
+				Point:         &gogis.Point{Lat: 50.0, Lng: 8.0},
 				Elevation:     100,
 				Duration:      5 * time.Second,
 				TotalDuration: 5 * time.Second,
@@ -35,8 +34,7 @@ func TestGenerateWorkoutFIT_PreservesPerRecordSpeedMetrics(t *testing.T) {
 			},
 			{
 				Time:          time.Date(2026, 4, 26, 18, 0, 10, 0, time.UTC),
-				Lat:           50.0,
-				Lng:           8.0,
+				Point:         &gogis.Point{Lat: 50.0, Lng: 8.0},
 				Elevation:     100,
 				Duration:      5 * time.Second,
 				TotalDuration: 10 * time.Second,

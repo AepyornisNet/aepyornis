@@ -10,7 +10,10 @@ import (
 
 func configuredApp(t *testing.T) *App {
 	t.Helper()
-	t.Setenv("WT_DATABASE_DRIVER", "memory")
+	dsn := model.TestDBURL(t)
+
+	t.Setenv("WT_DATABASE_DRIVER", "postgres")
+	t.Setenv("WT_DSN", dsn)
 
 	a := defaultApp(t)
 

@@ -6,9 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/glebarez/sqlite"
 	slogGorm "github.com/orandin/slog-gorm"
-	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -49,6 +47,10 @@ func Connect(driver, dsn string, debug bool, logger *slog.Logger) (*gorm.DB, err
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error; err != nil {
+		return nil, fmt.Errorf("enable postgis extension: %w", err)
 	}
 
 	if err := RunMigrations(db, func(db *gorm.DB) error {
@@ -100,15 +102,9 @@ func setUserAPIKeys(db *gorm.DB) error {
 
 func dialectorFor(driver, dsn string) (gorm.Dialector, error) {
 	switch driver {
-	case "sqlite":
-		return sqlite.Open(dsn), nil
-	case "memory":
-		return sqlite.Open(":memory:"), nil
-	case "mysql":
-		return mysql.Open(dsn), nil
-	case "postgres":
+	case "postgres", "postgis", "postgresql":
 		return postgres.Open(dsn), nil
 	default:
-		return nil, fmt.Errorf("%w: %s", ErrUnsuportedDriver, driver)
+		return nil, fmt.Errorf("%w: %s (postgis is the only supported database)", ErrUnsuportedDriver, driver)
 	}
 }

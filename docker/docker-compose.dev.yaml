@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgis/postgis:17-3.5-alpine
     restart: unless-stopped
     shm_size: 128mb
     env_file: ./postgres.env

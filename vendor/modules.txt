@@ -288,6 +288,7 @@ github.com/orandin/slog-gorm
 # github.com/paulmach/orb v0.13.0
 ## explicit; go 1.18
 github.com/paulmach/orb
+github.com/paulmach/orb/geo
 github.com/paulmach/orb/geojson
 github.com/paulmach/orb/internal/length
 github.com/paulmach/orb/planar
@@ -299,6 +300,13 @@ github.com/pelletier/go-toml/v2/internal/characters
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
 github.com/pelletier/go-toml/v2/unstable
+# github.com/peterldowns/pgtestdb v0.1.1
+## explicit; go 1.21.0
+github.com/peterldowns/pgtestdb
+github.com/peterldowns/pgtestdb/internal/multierr
+github.com/peterldowns/pgtestdb/internal/once
+github.com/peterldowns/pgtestdb/internal/sessionlock
+github.com/peterldowns/pgtestdb/migrators/common
 # github.com/philhofer/vec v0.0.0-20140421144027-536fc796d369
 ## explicit
 github.com/philhofer/vec
@@ -309,6 +317,9 @@ github.com/pmezard/go-difflib/difflib
 # github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec
 ## explicit; go 1.12
 github.com/remyoudompheng/bigfft
+# github.com/restayway/gogis v1.0.1
+## explicit; go 1.19
+github.com/restayway/gogis
 # github.com/ringsaturn/tzf v1.2.1
 ## explicit; go 1.25.0
 github.com/ringsaturn/tzf

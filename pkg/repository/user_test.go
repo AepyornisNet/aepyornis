@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
-	"github.com/fsouza/slognil"
 	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,10 +13,7 @@ import (
 func createRepositoryMemoryDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	db, err := model.Connect("memory", "", false, slognil.NewLogger())
-	require.NoError(t, err)
-
-	return db
+	return model.TestDB(t)
 }
 
 func createRepositoryInjector(db *gorm.DB) do.Injector {

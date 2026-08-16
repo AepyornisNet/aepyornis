@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/codingsince1985/geo-golang"
+	"github.com/restayway/gogis"
 	"github.com/tkrajina/gpxgo/gpx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -38,7 +39,7 @@ type RouteSegment struct {
 	AddressString string       `json:"addressString"`                     // The generic location of the workout
 	Filename      string       `json:"filename"`                          // The filename of the file
 
-	Points []WorkoutRecord `gorm:"serializer:json" json:"points"` // The GPS points of the workout
+	Points gogis.LineString `gorm:"type:geometry(LineString,4326)" json:"points"` // The GPS points of the route segment
 
 	Content             []byte               `gorm:"type:bytes" json:"content"`            // The file content
 	Checksum            []byte               `gorm:"not null;uniqueIndex" json:"checksum"` // The checksum of the content
@@ -91,8 +92,8 @@ func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams)
 
 	for _, p := range points {
 		gpxPoint := gpx.Point{
-			Latitude:  p.Lat,
-			Longitude: p.Lng,
+			Latitude:  p.Lat(),
+			Longitude: p.Lng(),
 			Elevation: *gpx.NewNullableFloat64(p.ExtraMetrics.Get("elevation")),
 		}
 
@@ -137,13 +138,21 @@ func (rs *RouteSegment) UpdateFromContent() error {
 	rs.MaxElevation = stats.MaxElevation
 	rs.TotalUp = stats.TotalUp
 	rs.TotalDown = stats.TotalDown
-	rs.Points = parsed[0].Records
+
+	records := parsed[0].Records
+	pts := make([]gogis.Point, 0, len(records))
+	for _, r := range records {
+		if r.Point != nil && (r.Point.Lat != 0 || r.Point.Lng != 0) {
+			pts = append(pts, *r.Point)
+		}
+	}
+	rs.Points = gogis.LineString{Points: pts}
 
 	// Detect whether the route is circular so matching can wrap around the end of the track.
-	if len(rs.Points) > 1 {
-		first := rs.Points[0]
-		last := rs.Points[len(rs.Points)-1]
-		rs.Circular = first.DistanceTo(&last) <= MaxDeltaMeter
+	if len(rs.Points.Points) > 1 {
+		first := rs.Points.Points[0]
+		last := rs.Points.Points[len(rs.Points.Points)-1]
+		rs.Circular = PointDistance(first, last) <= MaxDeltaMeter
 	}
 
 	return nil

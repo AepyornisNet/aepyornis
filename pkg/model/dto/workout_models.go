@@ -778,7 +778,7 @@ func workoutResponseRecords(w *model.Workout) *WorkoutRecordsResponse {
 	zoneMetrics.ensureBuffers(series.Details.ExtraMetrics, len(points))
 
 	for i, point := range points {
-		series.Details.Position[i] = []float64{point.Lat, point.Lng}
+		series.Details.Position[i] = []float64{point.Lat(), point.Lng()}
 		series.Details.Time[i] = point.Time
 		series.Details.Distance[i] = point.TotalDistance / 1000 // Convert to km
 		series.Details.Duration[i] = point.TotalDuration.Seconds()

@@ -98,22 +98,23 @@ func routePointsFromWorkout(workout *Workout) []routePoint {
 
 	points := make([]routePoint, 0, len(workout.Records))
 	for _, p := range workout.Records {
-		if math.IsNaN(p.Lat) || math.IsNaN(p.Lng) || (p.Lat == 0 && p.Lng == 0) {
+		lat, lng := p.Lat(), p.Lng()
+		if math.IsNaN(lat) || math.IsNaN(lng) || (lat == 0 && lng == 0) {
 			continue
 		}
 
-		if p.Lat < -90 || p.Lat > 90 || p.Lng < -180 || p.Lng > 180 {
+		if lat < -90 || lat > 90 || lng < -180 || lng > 180 {
 			continue
 		}
 
 		if len(points) > 0 {
 			last := points[len(points)-1]
-			if last.Lat == p.Lat && last.Lng == p.Lng {
+			if last.Lat == lat && last.Lng == lng {
 				continue
 			}
 		}
 
-		points = append(points, routePoint{Lat: p.Lat, Lng: p.Lng})
+		points = append(points, routePoint{Lat: lat, Lng: lng})
 	}
 
 	return points

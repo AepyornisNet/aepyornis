@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/fsouza/slognil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -34,10 +33,7 @@ func dummyMapData() *WorkoutGeoMeta {
 func createMemoryDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	db, err := Connect("memory", "", false, slognil.NewLogger())
-	require.NoError(t, err)
-
-	return db
+	return TestDB(t)
 }
 
 func createDefaultUser(t *testing.T, db *gorm.DB) {

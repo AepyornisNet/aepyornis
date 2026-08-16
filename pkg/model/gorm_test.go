@@ -9,11 +9,14 @@ import (
 )
 
 func TestGorm_Connect(t *testing.T) {
-	db, err := Connect("memory", "", false, slog.Default())
-	require.NoError(t, err)
+	db := TestDB(t)
 	assert.NotNil(t, db)
 
-	db, err = Connect("invalid-driver", "some-dsn", false, slog.Default())
+	db, err := Connect("invalid-driver", "some-dsn", false, slog.Default())
+	require.Error(t, err)
+	assert.Nil(t, db)
+
+	db, err = Connect("sqlite", "some-dsn", false, slog.Default())
 	require.Error(t, err)
 	assert.Nil(t, db)
 }

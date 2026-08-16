@@ -1,6 +1,6 @@
 services:
   ap-db:
-    image: postgres:16-alpine
+    image: postgis/postgis:17-3.5-alpine
     restart: unless-stopped
     shm_size: 128mb
     ports:
@@ -21,7 +21,7 @@ services:
       - ./init/activitypub-shared-db.sql:/docker-entrypoint-initdb.d/01-activitypub-shared-db.sql:ro
 
   ap-db-init:
-    image: postgres:16-alpine
+    image: postgis/postgis:17-3.5-alpine
     restart: "no"
     depends_on:
       ap-db:

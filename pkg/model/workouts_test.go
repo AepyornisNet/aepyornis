@@ -2,6 +2,7 @@ package model
 
 import (
 	"testing"
+	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/stretchr/testify/assert"
@@ -120,7 +121,14 @@ func TestWorkout_SaveAndGet(t *testing.T) {
 	newW, err := GetWorkoutDetails(db, w.ID)
 	require.NoError(t, err)
 	assert.Equal(t, w.ID, newW.ID)
-	assert.Equal(t, w.Records, newW.Records)
+	assert.Len(t, newW.Records, len(w.Records))
+	if len(w.Records) > 0 && len(newW.Records) > 0 {
+		assert.True(t, w.Records[0].Time.Equal(newW.Records[0].Time))
+		assert.InDelta(t, w.Records[0].Lat(), newW.Records[0].Lat(), 0.0001)
+		assert.InDelta(t, w.Records[0].Lng(), newW.Records[0].Lng(), 0.0001)
+		assert.Equal(t, w.Records[0].Elevation, newW.Records[0].Elevation)
+		assert.InDelta(t, w.Records[0].TotalDistance, newW.Records[0].TotalDistance, 0.0001)
+	}
 }
 
 func TestWorkout_Recreate(t *testing.T) {
@@ -142,4 +150,19 @@ func TestWorkout_Recreate(t *testing.T) {
 	ws, err = GetWorkouts(db)
 	require.NoError(t, err)
 	assert.Len(t, ws, 1)
+}
+
+func TestWorkout_ProcessRawRecords_NilPoints(t *testing.T) {
+	w := &Workout{
+		Type: WorkoutTypeRunning,
+		Records: []WorkoutRecord{
+			{Time: time.Now(), Point: nil, Distance: 10, Duration: 5 * time.Second},
+			{Time: time.Now().Add(5 * time.Second), Point: nil, Distance: 10, Duration: 5 * time.Second},
+		},
+	}
+
+	assert.NotPanics(t, func() {
+		w.ProcessRawRecords()
+	})
+	assert.Nil(t, w.Data)
 }

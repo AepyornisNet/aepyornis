@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/restayway/gogis"
 	"github.com/tkrajina/gpxgo/gpx"
 	"github.com/westphae/geomag/pkg/egm96"
 )
@@ -54,9 +55,13 @@ func MapDataAndRecordsFromGPX(gpxContent *gpx.GPX) (*model.WorkoutGeoMeta, []mod
 		extraMetrics.Set("elevation", correctAltitude(gpxContent.Creator, pt.Point.Latitude, pt.Point.Longitude, pt.Elevation.Value()))
 		extraMetrics.ParseGPXExtensions(pt.Extensions)
 
+		var point *gogis.Point
+		if pt.Point.Latitude != 0 || pt.Point.Longitude != 0 {
+			point = &gogis.Point{Lat: pt.Point.Latitude, Lng: pt.Point.Longitude}
+		}
+
 		records = append(records, model.WorkoutRecord{
-			Lat:             pt.Point.Latitude,
-			Lng:             pt.Point.Longitude,
+			Point:           point,
 			Elevation:       pt.Elevation.Value(),
 			Time:            pt.Timestamp,
 			Distance:        dist,
