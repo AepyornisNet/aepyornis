@@ -173,7 +173,11 @@ func (a *App) registerRouteSegmentController(apiGroup *echo.Group) {
 	routeSegmentsGroup.PUT("/:id", rsc.UpdateRouteSegment)
 	routeSegmentsGroup.DELETE("/:id", rsc.DeleteRouteSegment)
 	routeSegmentsGroup.POST("/:id/refresh", rsc.RefreshRouteSegment)
+	routeSegmentsGroup.GET("/:id/matches", rsc.GetRouteSegmentMatches)
 	routeSegmentsGroup.POST("/:id/matches", rsc.FindRouteSegmentMatches)
+	routeSegmentsGroup.POST("/:id/like", rsc.LikeRouteSegment)
+	routeSegmentsGroup.DELETE("/:id/like", rsc.UnlikeRouteSegment)
+	routeSegmentsGroup.GET("/:id/likes", rsc.GetRouteSegmentLikers)
 	routeSegmentsGroup.GET("/:id/download", rsc.DownloadRouteSegment)
 	apiGroup.POST("/workouts/:id/route-segment", rsc.CreateRouteSegmentFromWorkout)
 }

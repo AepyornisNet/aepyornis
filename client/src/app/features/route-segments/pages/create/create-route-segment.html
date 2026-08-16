@@ -65,6 +65,21 @@
             }
 
             <div class="mb-3">
+              <label class="form-label" for="category">{{ 'Category' | translate }}</label>
+              <select
+                class="form-select"
+                formControlName="category"
+                id="category"
+                [disabled]="creating()"
+              >
+                <option value="">{{ 'Not specified' | translate }}</option>
+                @for (t of availableTypes(); track t) {
+                  <option [value]="t">{{ sportLabel(t) | translate }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="mb-3">
               <label class="form-label" for="notes">{{ 'Notes' | translate }}</label>
               <textarea
                 class="form-control"

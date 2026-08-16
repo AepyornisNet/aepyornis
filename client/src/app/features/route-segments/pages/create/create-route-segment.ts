@@ -15,6 +15,9 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouteSegment } from '../../../../core/types/route-segment';
 
+import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
+
 @Component({
   selector: 'app-create-route-segment',
   imports: [ReactiveFormsModule, AppIcon, TranslatePipe],
@@ -23,6 +26,7 @@ import { RouteSegment } from '../../../../core/types/route-segment';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateRouteSegmentPage implements OnInit {
+  public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private router = inject(Router);
   private fb = inject(FormBuilder);
@@ -33,6 +37,8 @@ export class CreateRouteSegmentPage implements OnInit {
   public readonly bidirectional = signal(false);
   public readonly circular = signal(false);
 
+  public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
+
   public routeSegmentForm!: FormGroup;
 
   public readonly hasFiles = computed(() => this.selectedFiles().length > 0);
@@ -40,6 +46,7 @@ export class CreateRouteSegmentPage implements OnInit {
 
   public ngOnInit(): void {
     this.routeSegmentForm = this.fb.group({
+      category: [''],
       notes: [''],
     });
   }
@@ -74,6 +81,11 @@ export class CreateRouteSegmentPage implements OnInit {
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append('file', file));
+
+      const categoryValue = String(this.routeSegmentForm.value.category || '').trim();
+      if (categoryValue.length > 0) {
+        formData.append('category', categoryValue);
+      }
 
       const notesValue = String(this.routeSegmentForm.value.notes || '').trim();
       if (notesValue.length > 0) {

@@ -22,11 +22,11 @@ import { User } from '../../../../core/services/user';
 import { UserSummary } from '../../../../core/types/user';
 import { Workout, WorkoutLike, WorkoutReply } from '../../../../core/types/workout';
 
-import { WorkoutLikesList } from '../../../workouts/components/workout-likes-list/workout-likes-list';
+import { LikesList } from '../../../../core/components/likes-list/likes-list';
 
 @Component({
   selector: 'app-feed-post',
-  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe, WorkoutLikesList],
+  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe, LikesList],
   templateUrl: './feed-post.html',
   styleUrl: './feed-post.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

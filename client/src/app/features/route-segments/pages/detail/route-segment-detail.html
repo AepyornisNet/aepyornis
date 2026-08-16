@@ -1,6 +1,6 @@
-<div class="container my-5">
+<div class="container my-4">
   @if (loading()) {
-    <div class="text-center py-5">
+    <div class="d-flex justify-content-center align-items-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">{{ 'Loading' | translate }}</span>
       </div>
@@ -8,206 +8,522 @@
   }
 
   @if (error()) {
-    <div class="alert alert-danger" role="alert">
+    <div class="alert alert-danger shadow-sm rounded-3" role="alert">
       {{ error() }}
     </div>
   }
 
   @if (!loading() && routeSegment()) {
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Header Section -->
+    <div
+      class="d-flex justify-content-between align-items-start align-items-md-center flex-wrap gap-3 mb-4"
+    >
       <div>
-        <h1 class="display-4 mb-0">
-          <app-icon name="route-segment" size="48" />
-          {{ routeSegment()!.name || ('(no name)' | translate) }}
-        </h1>
-        <div class="d-flex gap-2 mt-2">
-          @if (routeSegment()!.bidirectional) {
-            <span class="badge bg-secondary">
-              <app-icon name="bidirectional" size="14" />
-              {{ 'Bidirectional' | translate }}
+        <div class="d-flex align-items-center flex-wrap gap-3">
+          <h1 class="h2 fw-bold mb-0 d-flex align-items-center gap-2">
+            <app-icon class="text-primary" name="route-segment" size="32" />
+            {{ routeSegment()!.name || ('(no name)' | translate) }}
+          </h1>
+
+          <div class="d-flex gap-2 flex-wrap align-items-center mt-2 mt-sm-0">
+            <!-- Like Button -->
+            <div class="btn-group btn-group-sm" role="group">
+              <button
+                class="btn d-inline-flex align-items-center gap-1"
+                type="button"
+                [class.btn-danger]="hasLiked()"
+                [class.btn-outline-danger]="!hasLiked()"
+                [disabled]="isLiking()"
+                (click)="toggleLike()"
+              >
+                <app-icon size="16" [name]="hasLiked() ? 'heart-solid' : 'heart'" />
+                <span>{{ hasLiked() ? ('Liked' | translate) : ('Like' | translate) }}</span>
+              </button>
+              <button
+                class="btn btn-outline-danger px-2 fw-semibold"
+                type="button"
+                [title]="'View Likers' | translate"
+                (click)="openLikersModal()"
+              >
+                {{ likeCount() }}
+              </button>
+            </div>
+
+            @if (routeSegment()!.category) {
+              <span
+                class="badge text-bg-primary-subtle text-primary border border-primary-subtle rounded-pill d-inline-flex align-items-center gap-1 px-3 py-2"
+              >
+                <app-icon name="route-segment" size="14" />
+                {{ sportLabel(routeSegment()!.category) | translate }}
+              </span>
+            }
+            @if (routeSegment()!.bidirectional) {
+              <span
+                class="badge text-bg-info-subtle text-info border border-info-subtle rounded-pill d-inline-flex align-items-center gap-1 px-3 py-2"
+              >
+                <app-icon name="bidirectional" size="14" />
+                {{ 'Bidirectional' | translate }}
+              </span>
+            }
+            @if (routeSegment()!.circular) {
+              <span
+                class="badge text-bg-primary-subtle text-primary border border-primary-subtle rounded-pill d-inline-flex align-items-center gap-1 px-3 py-2"
+              >
+                <app-icon name="circular" size="14" />
+                {{ 'Circular' | translate }}
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center flex-wrap gap-3 mt-2">
+          @if (routeSegment()!.profile_name) {
+            <span class="text-body-secondary small d-flex align-items-center gap-1">
+              <app-icon name="user" size="14" />
+              {{ 'Owner' | translate }}:
+              <strong class="text-body">{{ routeSegment()!.profile_name }}</strong>
             </span>
           }
-          @if (routeSegment()!.circular) {
-            <span class="badge bg-secondary">
-              <app-icon name="circular" size="14" />
-              {{ 'Circular' | translate }}
+          @if (routeSegment()!.address_string) {
+            <span class="text-body-secondary small d-flex align-items-center gap-1">
+              <app-icon name="location" size="14" />
+              {{ routeSegment()!.address_string }}
             </span>
           }
         </div>
       </div>
-      <div>
-        <app-route-segment-actions
-          [routeSegment]="routeSegment()!"
-          (routeSegmentDeleted)="onRouteSegmentDeleted()"
-          (routeSegmentUpdated)="onRouteSegmentUpdated()"
-        />
+
+      <app-route-segment-actions
+        [routeSegment]="routeSegment()!"
+        (routeSegmentDeleted)="onRouteSegmentDeleted()"
+        (routeSegmentUpdated)="onRouteSegmentUpdated()"
+      />
+    </div>
+
+    <!-- Metric Summary Grid -->
+    <div class="d-flex flex-wrap gap-3 mb-4">
+      <div class="card border-0 shadow-sm rounded-3 flex-fill">
+        <div class="card-body d-flex align-items-center gap-3 p-3">
+          <div
+            class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+          >
+            <app-icon
+              size="24"
+              [class]="getMetricDef('distance').colorClass"
+              [name]="getMetricDef('distance').icon"
+            />
+          </div>
+          <div>
+            <div class="fs-4 fw-bold text-body lh-1">
+              {{ routeSegment()!.total_distance | formatDistance }}
+            </div>
+            <div class="small text-body-secondary mt-1">{{ 'Total distance' | translate }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-3 flex-fill">
+        <div class="card-body d-flex align-items-center gap-3 p-3">
+          <div
+            class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+          >
+            <app-icon
+              size="24"
+              [class]="getMetricDef('elevation').colorClass"
+              [name]="getMetricDef('elevation').icon"
+            />
+          </div>
+          <div>
+            <div class="fs-4 fw-bold text-body lh-1">
+              +{{ routeSegment()!.total_up | formatElevation }} / -{{
+                routeSegment()!.total_down | formatElevation
+              }}
+            </div>
+            <div class="small text-body-secondary mt-1">
+              {{ 'Total up' | translate }} / {{ 'Total down' | translate }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-3 flex-fill">
+        <div class="card-body d-flex align-items-center gap-3 p-3">
+          <div
+            class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+          >
+            <app-icon name="up" size="24" [class]="getMetricDef('slope').colorClass" />
+          </div>
+          <div>
+            <div class="fs-4 fw-bold text-body lh-1">
+              {{ routeSegment()!.min_elevation | formatElevation }} –
+              {{ routeSegment()!.max_elevation | formatElevation }}
+            </div>
+            <div class="small text-body-secondary mt-1">
+              {{ 'Min elevation' | translate }} / {{ 'Max elevation' | translate }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-3 flex-fill">
+        <div class="card-body d-flex align-items-center gap-3 p-3">
+          <div
+            class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+          >
+            <app-icon name="route-segment" size="24" [class]="getMetricDef('speed').colorClass" />
+          </div>
+          <div>
+            <div class="fs-4 fw-bold text-body lh-1">
+              {{ matchesTotalCount() }}
+            </div>
+            <div class="small text-body-secondary mt-1">{{ 'Workout Matches' | translate }}</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="row">
-      <!-- Map Section -->
-      <div class="col-lg-6 mb-4">
-        <div class="map-container shadow-sm">
-          <app-route-segment-map
-            [center]="routeSegment()!.center"
-            [points]="routeSegment()!.points"
-          />
+    <!-- Detailed Statistics Card -->
+    @if (routeSegment()!.stats) {
+      <div class="card border-0 shadow-sm rounded-3 mb-4 bg-primary-subtle text-primary-emphasis">
+        <div class="card-header bg-transparent border-0 pt-3 px-3 pb-0">
+          <h5 class="mb-0 fw-bold d-flex align-items-center gap-2">
+            <app-icon name="trophy" size="20" />
+            {{ 'Segment Statistics & Records' | translate }}
+          </h5>
         </div>
-      </div>
+        <div class="card-body p-3">
+          <div class="row g-3 text-center">
+            @if (routeSegment()!.stats?.course_record) {
+              <div class="col-6 col-md-3">
+                <div class="p-2 bg-body rounded-3 shadow-xs">
+                  <div class="small text-muted mb-1">{{ 'Course Record (CR)' | translate }}</div>
+                  <div class="fw-bold fs-5 text-primary">
+                    {{ routeSegment()!.stats!.course_record!.duration | formatDuration }}
+                  </div>
+                  <div class="small text-truncate mt-1">
+                    <a
+                      class="text-decoration-none fw-medium"
+                      [routerLink]="['/workouts', routeSegment()!.stats!.course_record!.workout_id]"
+                    >
+                      {{ routeSegment()!.stats!.course_record!.profile_name || 'Athlete' }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            }
 
-      <!-- Details Section -->
-      <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-header">
-            <h5 class="mb-0">{{ 'Details' | translate }}</h5>
-          </div>
-          <div class="card-body">
-            <table class="table table-sm">
-              <tbody>
-                @if (routeSegment()!.filename) {
-                  <tr>
-                    <th style="width: 40%">
-                      <app-icon name="file" size="16" />
-                      {{ 'File' | translate }}
-                    </th>
-                    <td>{{ routeSegment()!.filename }}</td>
-                  </tr>
-                }
-                <tr>
-                  <th>
-                    <app-icon name="date" size="16" />
-                    {{ 'Created' | translate }}
-                  </th>
-                  <td>{{ formatDate(routeSegment()!.created_at) }}</td>
-                </tr>
-                <tr>
-                  <th>
-                    <app-icon name="date" size="16" />
-                    {{ 'Updated' | translate }}
-                  </th>
-                  <td>{{ formatDate(routeSegment()!.updated_at) }}</td>
-                </tr>
-                @if (routeSegment()!.address_string) {
-                  <tr>
-                    <th>
-                      <app-icon name="location" size="16" />
-                      {{ 'Location' | translate }}
-                    </th>
-                    <td>{{ routeSegment()!.address_string }}</td>
-                  </tr>
-                }
-                <tr>
-                  <th>
-                    <app-icon name="distance" size="16" />
-                    {{ 'Total distance' | translate }}
-                  </th>
-                  <td>
-                    <strong>{{ formatDistance(routeSegment()!.total_distance) }}</strong> km
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    <app-icon name="elevation" size="16" />
-                    {{ 'Min elevation' | translate }}
-                  </th>
-                  <td>{{ routeSegment()!.min_elevation.toFixed(0) }} m</td>
-                </tr>
-                <tr>
-                  <th>
-                    <app-icon name="elevation" size="16" />
-                    {{ 'Max elevation' | translate }}
-                  </th>
-                  <td>{{ routeSegment()!.max_elevation.toFixed(0) }} m</td>
-                </tr>
-                <tr>
-                  <th>
-                    <app-icon name="up" size="16" />
-                    {{ 'Total up' | translate }}
-                  </th>
-                  <td>{{ routeSegment()!.total_up.toFixed(0) }} m</td>
-                </tr>
-                <tr>
-                  <th>
-                    <app-icon name="down" size="16" />
-                    {{ 'Total down' | translate }}
-                  </th>
-                  <td>{{ routeSegment()!.total_down.toFixed(0) }} m</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 bg-body rounded-3 shadow-xs">
+                <div class="small text-muted mb-1">{{ 'Total Efforts' | translate }}</div>
+                <div class="fw-bold fs-5 text-body">
+                  {{ routeSegment()!.stats!.total_efforts }}
+                </div>
+                <div class="small text-muted mt-1">{{ 'Times completed' | translate }}</div>
+              </div>
+            </div>
 
-    <!-- Notes Section -->
-    @if (routeSegment()!.notes) {
-      <div class="row">
-        <div class="col-12 mb-4">
-          <div class="card shadow-sm">
-            <div class="card-header">
-              <h5 class="mb-0">
-                <app-icon name="note" size="20" />
-                {{ 'Notes' | translate }}
-              </h5>
+            <div class="col-6 col-md-3">
+              <div class="p-2 bg-body rounded-3 shadow-xs">
+                <div class="small text-muted mb-1">{{ 'Unique Athletes' | translate }}</div>
+                <div class="fw-bold fs-5 text-body">
+                  {{ routeSegment()!.stats!.unique_athletes }}
+                </div>
+                <div class="small text-muted mt-1">{{ 'People' | translate }}</div>
+              </div>
             </div>
-            <div class="card-body">
-              <div style="white-space: pre-wrap">{{ routeSegment()!.notes }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    }
 
-    <!-- Matches Section -->
-    @if (routeSegment()!.matches && routeSegment()!.matches.length > 0) {
-      <div class="row">
-        <div class="col-12 mb-4">
-          <div class="card shadow-sm">
-            <div class="card-header">
-              <h5 class="mb-0">
-                {{ 'Workout Matches' | translate }}
-              </h5>
-            </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                  <thead>
-                    <tr>
-                      <th>{{ 'User' | translate }}</th>
-                      <th>{{ 'Workout' | translate }}</th>
-                      <th class="text-end">{{ 'Distance' | translate }}</th>
-                      <th class="text-end">{{ 'Duration' | translate }}</th>
-                      <th class="text-end d-none d-md-table-cell">
-                        {{ 'Average speed' | translate }}
-                      </th>
-                      <th class="text-end d-none d-lg-table-cell">
-                        {{ 'Tempo' | translate }}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (match of routeSegment()!.matches; track match.workout_id) {
-                      <tr style="cursor: pointer" [routerLink]="['/workouts', match.workout_id]">
-                        <td>{{ match.user_name }}</td>
-                        <td>{{ match.workout_name }}</td>
-                        <td class="text-end">{{ formatDistance(match.distance) }} km</td>
-                        <td class="text-end">{{ formatDuration(match.duration) }}</td>
-                        <td class="text-end d-none d-md-table-cell">
-                          {{ formatSpeed(match.average_speed) }} km/h
-                        </td>
-                        <td class="text-end d-none d-lg-table-cell">
-                          {{ formatTempo(match.average_speed) }} min/km
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+            <div class="col-6 col-md-3">
+              <div class="p-2 bg-body rounded-3 shadow-xs">
+                <div class="small text-muted mb-1">{{ 'Average speed' | translate }}</div>
+                <div class="fw-bold fs-5 text-body">
+                  @if (routeSegment()!.stats!.avg_speed > 0) {
+                    {{ routeSegment()!.stats!.avg_speed | formatSpeed: routeSegment()!.category }}
+                  } @else {
+                    -
+                  }
+                </div>
+                <div class="small text-muted mt-1">{{ 'Overall average' | translate }}</div>
               </div>
             </div>
           </div>
         </div>
       </div>
     }
+
+    <!-- Main Content Section: Map + Details -->
+    <div class="row g-4 mb-4">
+      <!-- Map Column -->
+      <div class="col-lg-7">
+        <app-route-segment-map
+          [center]="routeSegment()!.center"
+          [points]="routeSegment()!.points"
+        />
+      </div>
+
+      <!-- Segment Info Column -->
+      <div class="col-lg-5 d-flex flex-column gap-4">
+        <div class="card border-0 shadow-sm rounded-3">
+          <div class="card-header">
+            <h5 class="mb-0">{{ 'Details' | translate }}</h5>
+          </div>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush rounded-bottom-3">
+              @if (routeSegment()!.profile_name) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="user" size="16" />
+                    {{ 'Owner' | translate }}
+                  </span>
+                  <span class="fw-medium text-body">{{ routeSegment()!.profile_name }}</span>
+                </li>
+              }
+              @if (routeSegment()!.category) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="route-segment" size="16" />
+                    {{ 'Category' | translate }}
+                  </span>
+                  <span class="fw-medium text-body">
+                    {{ sportLabel(routeSegment()!.category) | translate }}
+                  </span>
+                </li>
+              }
+              @if (routeSegment()!.visibility) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="user" size="16" />
+                    {{ 'Visibility' | translate }}
+                  </span>
+                  <span class="fw-medium text-body text-capitalize">{{
+                    routeSegment()!.visibility | translate
+                  }}</span>
+                </li>
+              }
+              @if (routeSegment()!.difficulty) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="up" size="16" />
+                    {{ 'Difficulty' | translate }}
+                  </span>
+                  <span class="fw-medium text-body text-capitalize">{{
+                    routeSegment()!.difficulty | translate
+                  }}</span>
+                </li>
+              }
+              @if (routeSegment()!.filename) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="file" size="16" />
+                    {{ 'File' | translate }}
+                  </span>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="fw-medium text-body text-break text-end">{{
+                      routeSegment()!.filename
+                    }}</span>
+                    <button
+                      class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2"
+                      type="button"
+                      [title]="'Download GPX' | translate"
+                      (click)="onDownloadFile()"
+                    >
+                      <app-icon name="download" size="14" />
+                    </button>
+                  </div>
+                </li>
+              }
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+              >
+                <span class="text-body-secondary d-flex align-items-center gap-2">
+                  <app-icon name="date" size="16" />
+                  {{ 'Created' | translate }}
+                </span>
+                <span class="fw-medium text-body">{{
+                  routeSegment()!.created_at | formatDate
+                }}</span>
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+              >
+                <span class="text-body-secondary d-flex align-items-center gap-2">
+                  <app-icon name="date" size="16" />
+                  {{ 'Updated' | translate }}
+                </span>
+                <span class="fw-medium text-body">{{
+                  routeSegment()!.updated_at | formatDate
+                }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        @if (routeSegment()!.description) {
+          <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'Description' | translate }}</h5>
+            </div>
+            <div class="card-body">
+              <p class="card-text text-body text-break mb-0">{{ routeSegment()!.description }}</p>
+            </div>
+          </div>
+        }
+
+        @if (routeSegment()!.notes) {
+          <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'Notes' | translate }}</h5>
+            </div>
+            <div class="card-body">
+              <p class="card-text text-body text-break mb-0">{{ routeSegment()!.notes }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Paginated Workout Matches Table Section -->
+    <div class="card border-0 shadow-sm rounded-3">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="mb-0">{{ 'Workout Matches' | translate }}</h5>
+          <span class="badge bg-secondary rounded-pill">
+            {{ matchesTotalCount() }}
+          </span>
+        </div>
+
+        <!-- Sort Toggle Controls -->
+        <div class="btn-group btn-group-sm" role="group">
+          <button
+            class="btn"
+            type="button"
+            [class.btn-outline-primary]="matchesSort() !== 'best'"
+            [class.btn-primary]="matchesSort() === 'best'"
+            (click)="changeMatchesSort('best')"
+          >
+            {{ 'Fastest (Best)' | translate }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            [class.btn-outline-primary]="matchesSort() !== 'newest'"
+            [class.btn-primary]="matchesSort() === 'newest'"
+            (click)="changeMatchesSort('newest')"
+          >
+            {{ 'Newest' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        @if (matchesLoading()) {
+          <div class="d-flex justify-content-center align-items-center py-4">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          </div>
+        } @else if (matches().length === 0) {
+          <div class="text-center text-muted py-4">
+            {{ 'No workout matches found.' | translate }}
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="text-body-secondary small text-uppercase">
+                <tr>
+                  <th class="ps-3 py-3" scope="col">{{ 'User' | translate }}</th>
+                  <th class="py-3" scope="col">{{ 'Workout' | translate }}</th>
+                  <th class="py-3 d-none d-sm-table-cell" scope="col">{{ 'Date' | translate }}</th>
+                  <th class="text-end py-3" scope="col">{{ 'Distance' | translate }}</th>
+                  <th class="text-end py-3" scope="col">{{ 'Duration' | translate }}</th>
+                  <th class="text-end pe-3 py-3 d-none d-md-table-cell" scope="col">
+                    {{ 'Average speed' | translate }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (match of matches(); track match.id || match.workout_id) {
+                  <tr>
+                    <td class="ps-3 py-3 font-medium">
+                      <span class="d-inline-flex align-items-center gap-2">
+                        {{ match.profile_name || match.user_name || 'Athlete' }}
+                      </span>
+                    </td>
+                    <td class="py-3">
+                      <a
+                        class="text-decoration-none fw-semibold text-primary"
+                        [routerLink]="['/workouts', match.workout_id]"
+                      >
+                        {{ match.workout_name }}
+                      </a>
+                    </td>
+                    <td class="py-3 text-muted small d-none d-sm-table-cell text-nowrap">
+                      {{ match.workout_date | formatDate }}
+                    </td>
+                    <td class="text-end py-3 text-nowrap">
+                      {{ match.distance | formatDistance }}
+                    </td>
+                    <td class="text-end py-3 text-nowrap font-monospace fw-bold">
+                      {{ match.duration | formatDuration }}
+                    </td>
+                    <td class="text-end pe-3 py-3 text-nowrap d-none d-md-table-cell">
+                      {{ match.average_speed | formatSpeed: routeSegment()!.category }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          @if (matchesTotalPages() > 1) {
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+              <span class="small text-muted">
+                {{ 'Page' | translate }} {{ matchesPage() }} {{ 'of' | translate }}
+                {{ matchesTotalPages() }}
+              </span>
+              <div class="btn-group btn-group-sm">
+                <button
+                  class="btn btn-outline-secondary"
+                  [disabled]="matchesPage() <= 1"
+                  (click)="changeMatchesPage(matchesPage() - 1)"
+                >
+                  {{ 'Previous' | translate }}
+                </button>
+                <button
+                  class="btn btn-outline-secondary"
+                  [disabled]="matchesPage() >= matchesTotalPages()"
+                  (click)="changeMatchesPage(matchesPage() + 1)"
+                >
+                  {{ 'Next' | translate }}
+                </button>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
   }
+
+  <!-- Likers Modal -->
+  <ng-template #likesModal let-modal>
+    <div class="modal-header">
+      <h5 class="modal-title h6 mb-0">{{ 'Liked by' | translate }}</h5>
+      <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body p-0">
+      <app-likes-list
+        [likes]="likersList()"
+        [loading]="loadingLikes()"
+        (itemClick)="modal.close()"
+      />
+    </div>
+  </ng-template>
 </div>

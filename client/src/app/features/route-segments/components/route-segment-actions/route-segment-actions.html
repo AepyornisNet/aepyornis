@@ -13,71 +13,84 @@
   }
 
   <!-- Actions -->
-  <div class="btn-group" role="group">
-    <!-- Download -->
-    <button
-      class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'Download' | translate"
-      [disabled]="isProcessing"
-      (click)="download()"
-    >
-      <app-icon name="download" size="16" />
-      @if (!compact()) {
-        <span class="ms-1">{{ 'Download' | translate }}</span>
+  <div container="body" ngbDropdown>
+    <div class="btn-group" role="group">
+      @if (routeSegment().can_edit !== false) {
+        <button
+          class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+          type="button"
+          [disabled]="isProcessing"
+          [title]="'Edit' | translate"
+          (click)="edit()"
+        >
+          <app-icon name="edit" size="16" />
+          @if (!compact()) {
+            <span>{{ 'Edit' | translate }}</span>
+          }
+        </button>
+      } @else {
+        <button
+          class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+          type="button"
+          [disabled]="isProcessing"
+          [title]="'Download GPX' | translate"
+          (click)="download()"
+        >
+          <app-icon name="download" size="16" />
+          @if (!compact()) {
+            <span>{{ 'Download GPX' | translate }}</span>
+          }
+        </button>
       }
-    </button>
 
-    <!-- Edit -->
-    <button
-      class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'Edit' | translate"
-      [disabled]="isProcessing"
-      (click)="edit()"
-    >
-      <app-icon name="edit" size="16" />
-      @if (!compact()) {
-        <span class="ms-1">{{ 'Edit' | translate }}</span>
-      }
-    </button>
+      <button
+        class="btn btn-sm btn-outline-secondary dropdown-toggle"
+        ngbDropdownToggle
+        type="button"
+        [disabled]="isProcessing"
+        [title]="'Actions' | translate"
+      ></button>
+    </div>
 
-    <!-- Refresh -->
-    <button
-      class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'Refresh' | translate"
-      [disabled]="isProcessing"
-      (click)="refresh()"
-    >
-      <app-icon name="refresh" size="16" />
-      @if (!compact()) {
-        <span class="ms-1">{{ 'Refresh' | translate }}</span>
+    <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+      @if (routeSegment().can_edit !== false) {
+        <button
+          class="dropdown-item d-flex align-items-center gap-2"
+          type="button"
+          (click)="download()"
+        >
+          <app-icon name="download" size="16" />
+          <span>{{ 'Download GPX' | translate }}</span>
+        </button>
+        <button
+          class="dropdown-item d-flex align-items-center gap-2"
+          type="button"
+          (click)="refresh()"
+        >
+          <app-icon name="refresh" size="16" />
+          <span>{{ 'Refresh' | translate }}</span>
+        </button>
       }
-    </button>
-
-    <!-- Find Matches -->
-    <button
-      class="btn btn-sm btn-outline-secondary"
-      [attr.title]="'find matches' | translate"
-      [disabled]="isProcessing"
-      (click)="findMatches()"
-    >
-      <app-icon name="route-segment" size="16" />
-      @if (!compact()) {
-        <span class="ms-1">{{ 'find matches' | translate }}</span>
+      <button
+        class="dropdown-item d-flex align-items-center gap-2"
+        type="button"
+        (click)="findMatches()"
+      >
+        <app-icon name="route-segment" size="16" />
+        <span>{{ 'Find matches' | translate }}</span>
+      </button>
+      @if (routeSegment().can_delete !== false) {
+        <div class="dropdown-divider"></div>
+        <button
+          class="dropdown-item text-danger d-flex align-items-center gap-2"
+          type="button"
+          (click)="confirmDelete()"
+        >
+          <app-icon name="delete" size="16" />
+          <span>{{ 'Delete' | translate }}</span>
+        </button>
       }
-    </button>
-
-    <!-- Delete -->
-    <button
-      class="btn btn-sm btn-outline-danger"
-      [attr.title]="'Delete' | translate"
-      [disabled]="isProcessing"
-      (click)="confirmDelete()"
-    >
-      <app-icon name="delete" size="16" />
-      @if (!compact()) {
-        <span class="ms-1">{{ 'Delete' | translate }}</span>
-      }
-    </button>
+    </div>
   </div>
 
   <!-- Delete Confirmation Modal -->

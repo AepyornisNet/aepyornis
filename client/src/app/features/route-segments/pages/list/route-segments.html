@@ -8,77 +8,87 @@
   (addClicked)="onAddRouteSegment()"
 >
   <div table>
-    <table class="table table-hover mb-0">
+    <table class="table table-hover align-middle mb-0">
       <thead>
         <tr>
           <th>{{ 'Name' | translate }}</th>
           <th class="text-end">{{ 'Distance' | translate }}</th>
-          <th class="text-end d-none d-md-table-cell">
-            {{ 'Max elevation' | translate }}
-          </th>
-          <th class="text-end d-none d-lg-table-cell">{{ 'Matches' | translate }}</th>
+          <th class="text-end d-none d-md-table-cell">{{ 'Elevation Gain' | translate }}</th>
+          <th class="text-end d-none d-sm-table-cell">{{ 'Efforts' | translate }}</th>
           <th class="text-end d-none d-lg-table-cell">{{ 'Created' | translate }}</th>
-          <th class="text-end d-none d-xl-table-cell">{{ 'Actions' | translate }}</th>
+          <th class="text-end d-none d-sm-table-cell" style="width: 80px">{{ 'Actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
         @for (segment of routeSegments(); track segment.id) {
           <tr>
             <td style="cursor: pointer" [routerLink]="['/route-segments', segment.id]">
-              <div class="d-flex align-items-center gap-2">
-                <app-icon name="route-segment" size="24" />
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center flex-shrink-0">
+                  <app-icon class="text-primary" name="route-segment" size="20" />
+                </div>
                 <div>
-                  <strong>{{ segment.name || '(no name)' }}</strong>
-                  @if (segment.notes) {
-                    <br />
-                    <small class="text-muted">{{ segment.notes.substring(0, 50) }}...</small>
-                  }
-                  @if (segment.bidirectional) {
-                    <br />
-                    <small class="text-muted">
-                      <app-icon name="bidirectional" size="14" />
-                      <span>{{ 'Bidirectional' | translate }}</span>
-                    </small>
-                  }
-                  @if (segment.circular) {
-                    <br />
-                    <small class="text-muted">
-                      <app-icon name="circular" size="14" />
-                      <span>{{ 'Circular' | translate }}</span>
-                    </small>
-                  }
+                  <div class="fw-semibold text-body">{{ segment.name || ('(no name)' | translate) }}</div>
+                  <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                    @if (segment.category) {
+                      <span
+                        class="badge bg-primary-subtle text-primary border d-inline-flex align-items-center gap-1 font-monospace"
+                        style="font-size: 0.7rem"
+                      >
+                        <app-icon name="route-segment" size="10" />
+                        <span>{{ sportLabel(segment.category) | translate }}</span>
+                      </span>
+                    }
+                    @if (segment.bidirectional) {
+                      <span class="badge bg-secondary-subtle text-secondary-emphasis border d-inline-flex align-items-center gap-1 font-monospace" style="font-size: 0.7rem">
+                        <app-icon name="bidirectional" size="10" />
+                        <span>{{ 'Bidirectional' | translate }}</span>
+                      </span>
+                    }
+                    @if (segment.circular) {
+                      <span class="badge bg-secondary-subtle text-secondary-emphasis border d-inline-flex align-items-center gap-1 font-monospace" style="font-size: 0.7rem">
+                        <app-icon name="circular" size="10" />
+                        <span>{{ 'Circular' | translate }}</span>
+                      </span>
+                    }
+                    @if (segment.notes) {
+                      <small class="text-body-secondary text-truncate" style="max-width: 250px">{{ segment.notes }}</small>
+                    }
+                  </div>
                 </div>
               </div>
             </td>
             <td
-              class="text-end"
+              class="text-end text-nowrap"
               style="cursor: pointer"
               [routerLink]="['/route-segments', segment.id]"
             >
-              <strong>{{ formatDistance(segment.total_distance) }}</strong> km
+              <strong class="font-monospace">{{ segment.total_distance | formatDistance }}</strong>
             </td>
             <td
-              class="text-end d-none d-md-table-cell"
+              class="text-end text-nowrap d-none d-md-table-cell"
               style="cursor: pointer"
               [routerLink]="['/route-segments', segment.id]"
             >
-              {{ segment.total_up.toFixed(0) }} m
+              <span class="text-body-secondary small">+</span>{{ segment.total_up | formatElevation }}
             </td>
             <td
-              class="text-end d-none d-lg-table-cell"
+              class="text-end d-none d-sm-table-cell"
               style="cursor: pointer"
               [routerLink]="['/route-segments', segment.id]"
             >
-              {{ segment.match_count }}
+              <span class="badge bg-primary-subtle text-primary border rounded-pill px-2">
+                {{ segment.match_count }}
+              </span>
             </td>
             <td
-              class="text-end d-none d-lg-table-cell"
+              class="text-end text-nowrap d-none d-lg-table-cell text-body-secondary small"
               style="cursor: pointer"
               [routerLink]="['/route-segments', segment.id]"
             >
-              {{ formatDate(segment.created_at) }}
+              {{ segment.created_at | formatDate }}
             </td>
-            <td class="text-end d-none d-xl-table-cell" (click)="$event.stopPropagation()">
+            <td class="text-end d-none d-sm-table-cell" (click)="$event.stopPropagation()">
               <app-route-segment-actions
                 [compact]="true"
                 [routeSegment]="segment"

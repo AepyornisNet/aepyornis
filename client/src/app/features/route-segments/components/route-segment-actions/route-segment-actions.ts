@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 
 import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { RouteSegment, RouteSegmentDetail } from '../../../../core/types/route-segment';
 
 @Component({
   selector: 'app-route-segment-actions',
-  imports: [AppIcon, TranslatePipe],
+  imports: [AppIcon, TranslatePipe, NgbDropdownModule],
   templateUrl: './route-segment-actions.html',
   styleUrl: './route-segment-actions.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

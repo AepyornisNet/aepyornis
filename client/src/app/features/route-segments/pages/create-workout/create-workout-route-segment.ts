@@ -15,15 +15,25 @@ import { WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
+import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 
 @Component({
   selector: 'app-create-workout-route-segment',
-  imports: [FormsModule, AppIcon, TranslatePipe, RouteSegmentMapComponent],
+  imports: [
+    FormsModule,
+    AppIcon,
+    TranslatePipe,
+    RouteSegmentMapComponent,
+    FormatDistancePipe,
+  ],
   templateUrl: './create-workout-route-segment.html',
   styleUrl: './create-workout-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateWorkoutRouteSegmentPage implements OnInit {
+  public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -33,8 +43,11 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   public readonly error = signal<string | null>(null);
   public readonly creating = signal(false);
 
+  public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
+
   // Form fields
   public readonly name = signal('');
+  public readonly category = signal('');
   public readonly start = signal(1); // 1-based for UI
   public readonly end = signal(1); // 1-based for UI
   public readonly bidirectional = signal(false);
@@ -104,6 +117,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
         const workout = response.results;
         this.workout.set(workout);
         this.name.set(workout.name);
+        this.category.set(workout.type || '');
 
         // Set end to the last point
         const points = workout.records?.details?.position?.length || 1;
@@ -149,6 +163,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
           name: this.name(),
           start: this.start(),
           end: this.end(),
+          category: this.category() || undefined,
         }),
       );
       const created = response?.results;

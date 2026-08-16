@@ -32,7 +32,12 @@ import {
 } from '../../core/types/workout';
 import { Measurement } from '../../core/types/measurement';
 import { Equipment } from '../../core/types/equipment';
-import { RouteSegment, RouteSegmentDetail } from '../../core/types/route-segment';
+import {
+  RouteSegment,
+  RouteSegmentDetail,
+  RouteSegmentDifficulty,
+  RouteSegmentMatch,
+} from '../../core/types/route-segment';
 import {
   GeoJsonFeatureCollection,
   HeatmapCoordinateList,
@@ -467,6 +472,10 @@ export class Api {
       name: string;
       start: number;
       end: number;
+      category?: string;
+      visibility?: 'public' | 'followers' | '' | 'private';
+      description?: string;
+      difficulty?: RouteSegmentDifficulty;
     },
   ): Observable<APIResponse<RouteSegmentDetail>> {
     return this.http.post<APIResponse<RouteSegmentDetail>>(
@@ -479,9 +488,13 @@ export class Api {
     id: number,
     params: {
       name: string;
-      notes: string;
-      bidirectional: boolean;
-      circular: boolean;
+      notes?: string;
+      category?: string;
+      visibility?: 'public' | 'followers' | '' | 'private';
+      description?: string;
+      difficulty?: RouteSegmentDifficulty;
+      bidirectional?: boolean;
+      circular?: boolean;
     },
   ): Observable<APIResponse<RouteSegmentDetail>> {
     return this.http.put<APIResponse<RouteSegmentDetail>>(
@@ -514,6 +527,49 @@ export class Api {
     return this.http.get(`${this.baseUrl}/route-segments/${id}/download`, {
       responseType: 'blob',
     });
+  }
+
+  public getRouteSegmentMatches(
+    id: number,
+    params?: { page?: number; per_page?: number; sort?: string },
+  ): Observable<PaginatedAPIResponse<RouteSegmentMatch>> {
+    let httpParams = new HttpParams();
+    if (params?.page) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.per_page) {
+      httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+    if (params?.sort) {
+      httpParams = httpParams.set('sort', params.sort);
+    }
+    return this.http.get<PaginatedAPIResponse<RouteSegmentMatch>>(
+      `${this.baseUrl}/route-segments/${id}/matches`,
+      { params: httpParams },
+    );
+  }
+
+  public likeRouteSegment(
+    id: number,
+  ): Observable<APIResponse<{ liked: boolean; like_count: number }>> {
+    return this.http.post<APIResponse<{ liked: boolean; like_count: number }>>(
+      `${this.baseUrl}/route-segments/${id}/like`,
+      {},
+    );
+  }
+
+  public unlikeRouteSegment(
+    id: number,
+  ): Observable<APIResponse<{ liked: boolean; like_count: number }>> {
+    return this.http.delete<APIResponse<{ liked: boolean; like_count: number }>>(
+      `${this.baseUrl}/route-segments/${id}/like`,
+    );
+  }
+
+  public getRouteSegmentLikers(id: number): Observable<APIResponse<WorkoutLike[]>> {
+    return this.http.get<APIResponse<WorkoutLike[]>>(
+      `${this.baseUrl}/route-segments/${id}/likes`,
+    );
   }
 
   // Dashboard endpoints

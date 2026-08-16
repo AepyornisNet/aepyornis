@@ -7,7 +7,10 @@ import { Injectable, Pipe, PipeTransform } from '@angular/core';
   name: 'formatDate',
 })
 export class FormatDatePipe implements PipeTransform {
-  public transform(value: string): string {
+  public transform(value: string | undefined | null): string {
+    if (!value) {
+      return '';
+    }
     return new Date(value).toLocaleDateString();
   }
 }

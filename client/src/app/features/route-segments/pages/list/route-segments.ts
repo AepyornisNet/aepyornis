@@ -11,14 +11,28 @@ import { BaseList, BaseListConfig } from '../../../../core/components/base-list/
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
 import { TranslatePipe } from '@ngx-translate/core';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
+import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-route-segments',
-  imports: [RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe, BaseList],
+  imports: [
+    RouterLink,
+    AppIcon,
+    RouteSegmentActionsComponent,
+    TranslatePipe,
+    BaseList,
+    FormatDistancePipe,
+    FormatElevationPipe,
+    FormatDatePipe,
+  ],
   templateUrl: './route-segments.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteSegments extends PaginatedListView<RouteSegment> {
+  public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private router = inject(Router);
 
@@ -56,14 +70,6 @@ export class RouteSegments extends PaginatedListView<RouteSegment> {
     } finally {
       this.loading.set(false);
     }
-  }
-
-  public formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
-  }
-
-  public formatDistance(distance: number): string {
-    return (distance / 1000).toFixed(2);
   }
 
   public onAddRouteSegment(): void {

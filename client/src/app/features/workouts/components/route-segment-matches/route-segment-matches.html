@@ -8,7 +8,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (match of matches(); track match.route_segment_id) {
+      @for (match of matches(); track match.id || ($index + '-' + match.route_segment_id)) {
         <tr
           class="interval-row"
           [class.table-active]="isSelected(match)"
@@ -26,10 +26,18 @@
                 {{ match.route_segment.name }}
               </a>
             }
+            @if (match.route_segment.category) {
+              <span
+                class="badge bg-secondary-subtle text-secondary-emphasis border ms-1"
+                style="font-size: 0.65rem"
+              >
+                {{ sportLabel(match.route_segment.category) | translate }}
+              </span>
+            }
           </td>
-          <td class="text-end font-monospace">{{ formatDistance(match.distance) }} km</td>
+          <td class="text-end font-monospace">{{ match.distance | formatDistance }}</td>
           <td class="text-end font-monospace">
-            {{ formatDuration(match.duration) }}
+            {{ match.duration | formatDuration }}
           </td>
         </tr>
       }

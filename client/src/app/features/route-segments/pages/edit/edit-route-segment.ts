@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,14 +13,25 @@ import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { RouteSegmentDetail } from '../../../../core/types/route-segment';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 
 @Component({
   selector: 'app-edit-route-segment',
-  imports: [ReactiveFormsModule, AppIcon, TranslatePipe],
+  imports: [
+    ReactiveFormsModule,
+    AppIcon,
+    TranslatePipe,
+    FormatDistancePipe,
+    FormatElevationPipe,
+  ],
   templateUrl: './edit-route-segment.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditRouteSegment implements OnInit {
+  public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -25,6 +42,9 @@ export class EditRouteSegment implements OnInit {
   public readonly saving = signal(false);
   public readonly error = signal<string | null>(null);
 
+  public readonly availableTypes = signal<string[]>([]);
+  public readonly selectedCategory = signal<string>('');
+
   // Reactive form
   public routeSegmentForm!: FormGroup;
 
@@ -33,14 +53,44 @@ export class EditRouteSegment implements OnInit {
     this.routeSegmentForm = this.fb.group({
       name: ['', Validators.required],
       notes: [''],
+      category: [''],
+      visibility: ['public', Validators.required],
+      difficulty: [''],
+      description: [''],
       bidirectional: [false],
       circular: [false],
+    });
+
+    this.loadFilterOptions();
+
+    this.routeSegmentForm.get('category')?.valueChanges.subscribe((val) => {
+      this.selectedCategory.set(val || '');
     });
 
     const id = this.route.snapshot.params['id'];
     if (id) {
       this.loadRouteSegment(parseInt(id));
     }
+  }
+
+  private async loadFilterOptions(): Promise<void> {
+    const typesSet = new Set<string>();
+    WORKOUT_TYPES.forEach((t) => {
+      if (t.value !== 'all' && t.value !== 'auto') {
+        typesSet.add(t.value);
+      }
+    });
+
+    try {
+      const res = await firstValueFrom(this.api.getWorkoutFilterOptions());
+      if (res?.results?.types?.length) {
+        res.results.types.forEach((t) => typesSet.add(t));
+      }
+    } catch (err) {
+      console.error('Failed to load filter options:', err);
+    }
+
+    this.availableTypes.set(Array.from(typesSet));
   }
 
   public async loadRouteSegment(id: number): Promise<void> {
@@ -53,11 +103,16 @@ export class EditRouteSegment implements OnInit {
       if (response) {
         const segment = response.results;
         this.routeSegment.set(segment);
+        this.selectedCategory.set(segment.category || '');
 
         // Populate form with loaded data
         this.routeSegmentForm.patchValue({
           name: segment.name,
           notes: segment.notes || '',
+          category: segment.category || '',
+          visibility: segment.visibility || 'public',
+          difficulty: segment.difficulty || '',
+          description: segment.description || '',
           bidirectional: segment.bidirectional,
           circular: segment.circular,
         });
@@ -85,6 +140,10 @@ export class EditRouteSegment implements OnInit {
         this.api.updateRouteSegment(segment.id, {
           name: formValue.name,
           notes: formValue.notes,
+          category: formValue.category,
+          visibility: formValue.visibility,
+          difficulty: formValue.difficulty,
+          description: formValue.description,
           bidirectional: formValue.bidirectional,
           circular: formValue.circular,
         }),
@@ -114,6 +173,10 @@ export class EditRouteSegment implements OnInit {
       this.routeSegmentForm.patchValue({
         name: segment.name,
         notes: segment.notes || '',
+        category: segment.category || '',
+        visibility: segment.visibility || 'public',
+        difficulty: segment.difficulty || '',
+        description: segment.description || '',
         bidirectional: segment.bidirectional,
         circular: segment.circular,
       });

@@ -3,6 +3,7 @@
  */
 
 import { PaginationParams } from './api-response';
+import { Like } from './like';
 import { UserSummary } from './user';
 
 export type Workout = {
@@ -220,6 +221,7 @@ export type ClimbSegment = {
 };
 
 export type RouteSegmentMatch = {
+  id?: number;
   route_segment_id: number;
   workout_id: number;
   distance: number;
@@ -233,6 +235,7 @@ export type RouteSegmentInfo = {
   id: number;
   name: string;
   notes?: string;
+  category?: string;
   filename: string;
   total_distance: number;
   min_elevation: number;
@@ -357,12 +360,5 @@ export type WorkoutReply = {
   published_at?: string;
 };
 
-export type WorkoutLike = {
-  id: number;
-  user_id?: number;
-  user?: UserSummary;
-  actor_iri?: string;
-  actor_name?: string;
-  avatar_url?: string;
-  created_at: string;
-};
+export type WorkoutLike = Like;
+export type { Like };

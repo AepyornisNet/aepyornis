@@ -35,7 +35,7 @@ import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
 import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
-import { WorkoutLikesList } from '../../components/workout-likes-list/workout-likes-list';
+import { LikesList } from '../../../../core/components/likes-list/likes-list';
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
@@ -64,7 +64,7 @@ import { getMetricDef } from '../../../../core/config/metrics';
     NgbNavContent,
     WorkoutPerformanceCurveComponent,
     WorkoutCommentsComponent,
-    WorkoutLikesList,
+    LikesList,
     TranslatePipe,
     FormatSpeedPipe,
     FormatDatePipe,
