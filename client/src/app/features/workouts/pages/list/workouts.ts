@@ -28,6 +28,7 @@ import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe'
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
 import { FormsModule } from '@angular/forms';
+import { saveBlob } from '../../../../core/utils/file-saver';
 import { Equipment } from '../../../../core/types/equipment';
 
 type WorkoutListFilterState = {
@@ -322,14 +323,7 @@ export class Workouts extends PaginatedListView<Workout> {
 
     this.api.downloadWorkoutsZip(selectedIds).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'workouts.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+        saveBlob(blob, 'workouts.zip');
       },
       error: (err) => {
         console.error('Failed to download ZIP:', err);

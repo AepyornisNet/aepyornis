@@ -5,6 +5,7 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { Workout, WorkoutDetail } from '../../../../core/types/workout';
 import { TranslatePipe } from '@ngx-translate/core';
+import { saveHttpResponse } from '../../../../core/utils/file-saver';
 
 @Component({
   selector: 'app-workout-actions',
@@ -63,22 +64,7 @@ export class WorkoutActions {
     this.api.downloadWorkout(this.workout().id).subscribe({
       next: (response) => {
         this.isProcessing.set(false);
-
-        // Create download link
-        if (response.body) {
-          const url = window.URL.createObjectURL(response.body);
-          const a = document.createElement('a');
-          a.href = url;
-          const contentDisposition = response.headers.get('content-disposition');
-          a.download = contentDisposition
-            ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
-            : 'workout.gpx';
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        }
-
+        saveHttpResponse(response, 'workout.gpx');
         this.successMessage.set('Download started');
         setTimeout(() => this.successMessage.set(null), 3000);
       },

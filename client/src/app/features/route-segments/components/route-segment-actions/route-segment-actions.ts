@@ -6,6 +6,7 @@ import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { Api } from '../../../../core/services/api';
 import { RouteSegment, RouteSegmentDetail } from '../../../../core/types/route-segment';
+import { saveBlob } from '../../../../core/utils/file-saver';
 
 @Component({
   selector: 'app-route-segment-actions',
@@ -41,20 +42,10 @@ export class RouteSegmentActionsComponent {
       next: (blob) => {
         this.isProcessing = false;
 
-        // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-
-        // Try to get filename from route segment
         const filename =
           (this.routeSegment() as RouteSegmentDetail).filename ||
           `route_segment_${this.routeSegment().id}.gpx`;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        saveBlob(blob, filename);
 
         this.successMessage = 'Download started';
         setTimeout(() => (this.successMessage = null), 3000);

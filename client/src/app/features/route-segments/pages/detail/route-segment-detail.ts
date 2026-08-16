@@ -26,6 +26,7 @@ import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pip
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
+import { saveBlob } from '../../../../core/utils/file-saver';
 
 @Component({
   selector: 'app-route-segment-detail',
@@ -220,14 +221,7 @@ export class RouteSegmentDetailPage implements OnInit {
 
     this.api.downloadRouteSegment(segment.id).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = segment.filename || `route_segment_${segment.id}.gpx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        saveBlob(blob, segment.filename || `route_segment_${segment.id}.gpx`);
       },
       error: (err) => {
         console.error('Failed to download route segment file:', err);
