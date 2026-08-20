@@ -113,3 +113,54 @@ func TestDeriveFitSessionDurations_FallsBackToRecordsWhenNoSessionOrLaps(t *test
 	assert.Equal(t, 60*time.Second, moving)
 	assert.Equal(t, 60*time.Second, pause)
 }
+
+func TestParseFit_Swimming_SynthesizeRecordsFromLengths(t *testing.T) {
+	startTime := time.Date(2026, 8, 19, 8, 0, 0, 0, time.UTC)
+	poolLength := 25.0
+
+	lengths := []fitSwimLength{
+		{
+			start:    startTime,
+			end:      startTime.Add(50 * time.Second),
+			elapsed:  50,
+			timer:    50,
+			speed:    0.5,
+			cadence:  30,
+			strokes:  25,
+			isActive: true,
+			cumDist:  25,
+		},
+		{
+			start:    startTime.Add(50 * time.Second),
+			end:      startTime.Add(80 * time.Second),
+			elapsed:  30,
+			timer:    30,
+			speed:    0,
+			cadence:  0,
+			isActive: false,
+			cumDist:  25,
+		},
+		{
+			start:    startTime.Add(80 * time.Second),
+			end:      startTime.Add(130 * time.Second),
+			elapsed:  50,
+			timer:    50,
+			speed:    0.5,
+			cadence:  30,
+			strokes:  25,
+			isActive: true,
+			cumDist:  50,
+		},
+	}
+
+	meta, records := synthesizeRecordsFromSwimLengths(lengths, poolLength)
+	assert.NotNil(t, meta)
+	assert.NotEmpty(t, records)
+
+	assert.Equal(t, 50.0, records[len(records)-1].TotalDistance)
+
+	laps := parseFitSwimLaps(&filedef.Activity{}, lengths, poolLength)
+	assert.Len(t, laps, 2)
+	assert.Equal(t, 25.0, laps[0].TotalDistance)
+	assert.Equal(t, 25.0, laps[1].TotalDistance)
+}

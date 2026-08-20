@@ -2,6 +2,7 @@ package converters
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,10 +35,28 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 
 	activityTime := fitActivityStartTime(act)
 
-	data, records := mapDataFromActivity(act)
-	events := parseWorkoutEvents(act)
-	laps := parseLaps(act)
-	stats := parseWorkoutStats(act)
+	var (
+		data    *model.WorkoutGeoMeta
+		records []model.WorkoutRecord
+		events  []model.WorkoutEvent
+		laps    []model.WorkoutLap
+		stats   model.WorkoutStats
+	)
+
+	if isSwimActivity(act) {
+		poolLength := getPoolLength(act)
+		lengths := extractSwimLengths(act, poolLength)
+		data, records = mapDataFromSwimActivity(act, lengths, poolLength)
+		events = parseWorkoutEvents(act, lengths)
+		laps = parseFitSwimLaps(act, lengths, poolLength)
+		stats = parseWorkoutStats(act, lengths)
+	} else {
+		data, records = mapDataFromActivity(act)
+		events = parseWorkoutEvents(act, nil)
+		laps = parseLaps(act)
+		stats = parseWorkoutStats(act, nil)
+	}
+
 	_, totalDistance2D, _ := model.WorkoutTotalsFromRecords(records)
 
 	workouts := make([]*model.Workout, 0, len(act.Sessions))
@@ -71,8 +90,14 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 		}
 
 		totalDistance := 0.0
-		if !math.IsNaN(session.TotalDistanceScaled()) {
+		if !math.IsNaN(session.TotalDistanceScaled()) && session.TotalDistanceScaled() > 0 {
 			totalDistance = session.TotalDistanceScaled()
+		} else if len(records) > 0 {
+			totalDistance = records[len(records)-1].TotalDistance
+		}
+
+		if totalDistance2D == 0 && totalDistance > 0 {
+			totalDistance2D = totalDistance
 		}
 
 		w := &model.Workout{
@@ -104,31 +129,47 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	return workouts, nil
 }
 
-func parseWorkoutEvents(act *filedef.Activity) []model.WorkoutEvent {
-	if act == nil || len(act.Events) == 0 {
-		return nil
+func parseWorkoutEvents(act *filedef.Activity, lengths []fitSwimLength) []model.WorkoutEvent {
+	var events []model.WorkoutEvent
+
+	if act != nil && len(act.Events) > 0 {
+		events = make([]model.WorkoutEvent, 0, len(act.Events)+len(lengths)*2)
+		for _, e := range act.Events {
+			if e == nil {
+				continue
+			}
+
+			ts := e.Timestamp.Local()
+			if !fitTimeIsValid(ts) {
+				continue
+			}
+
+			events = append(events, model.WorkoutEvent{
+				Timestamp:      ts,
+				StartTimestamp: e.StartTimestamp.Local(),
+				Event:          e.Event.String(),
+				EventType:      e.EventType.String(),
+				EventGroup:     e.EventGroup,
+				Payload:        buildFitEventPayload(e),
+			})
+		}
 	}
 
-	events := make([]model.WorkoutEvent, 0, len(act.Events))
-
-	for _, e := range act.Events {
-		if e == nil {
-			continue
+	for _, l := range lengths {
+		if !l.isActive && l.elapsed > 0 {
+			events = append(events,
+				model.WorkoutEvent{
+					Timestamp: l.start,
+					Event:     "timer",
+					EventType: "stop_all",
+				},
+				model.WorkoutEvent{
+					Timestamp: l.end,
+					Event:     "timer",
+					EventType: "start",
+				},
+			)
 		}
-
-		ts := e.Timestamp.Local()
-		if !fitTimeIsValid(ts) {
-			continue
-		}
-
-		events = append(events, model.WorkoutEvent{
-			Timestamp:      ts,
-			StartTimestamp: e.StartTimestamp.Local(),
-			Event:          e.Event.String(),
-			EventType:      e.EventType.String(),
-			EventGroup:     e.EventGroup,
-			Payload:        buildFitEventPayload(e),
-		})
 	}
 
 	return events
@@ -310,7 +351,11 @@ func parseLaps(act *filedef.Activity) []model.WorkoutLap {
 	return laps
 }
 
-func parseWorkoutStats(act *filedef.Activity) model.WorkoutStats {
+func parseWorkoutStats(act *filedef.Activity, lengths []fitSwimLength) model.WorkoutStats {
+	if act == nil || len(act.Sessions) == 0 {
+		return model.WorkoutStats{}
+	}
+
 	session := act.Sessions[0]
 	stats := model.WorkoutStats{}
 
@@ -366,6 +411,41 @@ func parseWorkoutStats(act *filedef.Activity) model.WorkoutStats {
 
 	if session.TotalDescent != math.MaxUint16 {
 		stats.TotalDown = float64(session.TotalDescent)
+	}
+
+	if len(lengths) > 0 {
+		sumSpeed := 0.0
+		sumCadence := 0.0
+		activeCount := 0
+		maxCadence := stats.MaxCadence
+		maxSpeed := stats.MaxSpeed
+
+		for _, l := range lengths {
+			if l.isActive {
+				activeCount++
+				sumSpeed += l.speed
+				sumCadence += l.cadence
+				maxCadence = max(maxCadence, l.cadence)
+				maxSpeed = max(maxSpeed, l.speed)
+			}
+		}
+
+		if stats.AverageCadence == 0 && activeCount > 0 {
+			stats.AverageCadence = sumCadence / float64(activeCount)
+		}
+		if stats.MaxCadence == 0 {
+			stats.MaxCadence = maxCadence
+		}
+		if (stats.AverageSpeed == 0 || math.IsNaN(stats.AverageSpeed)) && activeCount > 0 {
+			if session.TotalElapsedTimeScaled() > 0 && session.TotalDistanceScaled() > 0 {
+				stats.AverageSpeed = session.TotalDistanceScaled() / session.TotalElapsedTimeScaled()
+			} else {
+				stats.AverageSpeed = sumSpeed / float64(activeCount)
+			}
+		}
+		if stats.MaxSpeed == 0 || math.IsNaN(stats.MaxSpeed) {
+			stats.MaxSpeed = maxSpeed
+		}
 	}
 
 	return stats
@@ -455,6 +535,471 @@ func deriveFitSessionDurations(
 	pause := maxDuration(elapsed-moving, 0)
 
 	return elapsed, moving, pause
+}
+
+func isSwimActivity(act *filedef.Activity) bool {
+	if act == nil {
+		return false
+	}
+
+	if len(act.Lengths) > 0 {
+		return true
+	}
+
+	for _, s := range act.Sessions {
+		if s.Sport == typedef.SportSwimming {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getPoolLength(act *filedef.Activity) float64 {
+	if act == nil {
+		return 25.0
+	}
+
+	for _, s := range act.Sessions {
+		if !math.IsNaN(s.PoolLengthScaled()) && s.PoolLengthScaled() > 0 {
+			return s.PoolLengthScaled()
+		}
+	}
+
+	for _, l := range act.Lengths {
+		if l.LengthType == typedef.LengthTypeActive {
+			sp := l.AvgSpeedScaled()
+			tm := l.TotalTimerTimeScaled()
+			if !math.IsNaN(sp) && sp > 0 && !math.IsNaN(tm) && tm > 0 {
+				calcDist := math.Round(sp * tm)
+				if calcDist > 0 {
+					return calcDist
+				}
+			}
+		}
+	}
+
+	return 25.0
+}
+
+type fitSwimLength struct {
+	start    time.Time
+	end      time.Time
+	elapsed  float64
+	timer    float64
+	speed    float64
+	cadence  float64
+	strokes  uint16
+	stroke   typedef.SwimStroke
+	isActive bool
+	cumDist  float64
+}
+
+func extractSwimLengths(act *filedef.Activity, poolLength float64) []fitSwimLength {
+	if act == nil || len(act.Lengths) == 0 {
+		return nil
+	}
+
+	lengths := make([]fitSwimLength, 0, len(act.Lengths))
+	cumDist := 0.0
+
+	for _, l := range act.Lengths {
+		start := l.StartTime.Local()
+		elapsed := l.TotalElapsedTimeScaled()
+		if math.IsNaN(elapsed) || elapsed < 0 {
+			elapsed = 0
+		}
+		timer := l.TotalTimerTimeScaled()
+		if math.IsNaN(timer) || timer < 0 {
+			timer = elapsed
+		}
+
+		isActive := l.LengthType == typedef.LengthTypeActive
+		speed := 0.0
+		cadence := 0.0
+		strokes := l.TotalStrokes
+
+		if isActive {
+			cumDist += poolLength
+
+			if l.AvgSpeed != math.MaxUint16 && !math.IsNaN(l.AvgSpeedScaled()) && l.AvgSpeedScaled() > 0 {
+				speed = l.AvgSpeedScaled()
+			} else if timer > 0 {
+				speed = poolLength / timer
+			}
+
+			if l.AvgSwimmingCadence != math.MaxUint8 && l.AvgSwimmingCadence > 0 {
+				cadence = float64(l.AvgSwimmingCadence)
+			} else if strokes != math.MaxUint16 && timer > 0 {
+				cadence = (float64(strokes) / timer) * 60.0
+			}
+		}
+
+		end := start.Add(time.Duration(elapsed * float64(time.Second)))
+		if end.Before(start) {
+			end = start
+		}
+
+		lengths = append(lengths, fitSwimLength{
+			start:    start,
+			end:      end,
+			elapsed:  elapsed,
+			timer:    timer,
+			speed:    speed,
+			cadence:  cadence,
+			strokes:  strokes,
+			stroke:   l.SwimStroke,
+			isActive: isActive,
+			cumDist:  cumDist,
+		})
+	}
+
+	return lengths
+}
+
+// mapDataFromSwimActivity maps swim records and lengths into WorkoutRecords with distance,
+// speed, cadence and pause states.
+//
+//nolint:gocyclo
+func mapDataFromSwimActivity(act *filedef.Activity, lengths []fitSwimLength, poolLength float64) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
+	if act == nil || len(lengths) == 0 {
+		return mapDataFromActivity(act)
+	}
+
+	if len(act.Records) == 0 {
+		return synthesizeRecordsFromSwimLengths(lengths, poolLength)
+	}
+
+	points := make([]model.WorkoutRecord, 0, len(act.Records))
+	var (
+		totalDuration   time.Duration
+		prevDist        float64
+		lenIdx          int
+		priorActiveDist float64
+	)
+
+	for i, r := range act.Records {
+		ts := r.Timestamp.Local()
+		if ts.IsZero() {
+			continue
+		}
+
+		for lenIdx+1 < len(lengths) && ts.After(lengths[lenIdx].end) {
+			if lengths[lenIdx].isActive {
+				priorActiveDist += poolLength
+			}
+			lenIdx++
+		}
+
+		currLen := lengths[lenIdx]
+		totalD := priorActiveDist
+		sp := 0.0
+		cad := 0.0
+		isPause := false
+
+		if ts.Before(currLen.start) {
+			isPause = true
+		} else if ts.After(currLen.end) {
+			if currLen.isActive {
+				totalD += poolLength
+			}
+			isPause = true
+		} else if currLen.isActive {
+			frac := 1.0
+			if currLen.timer > 0 {
+				frac = math.Min(math.Max(ts.Sub(currLen.start).Seconds()/currLen.timer, 0.0), 1.0)
+			}
+			totalD = priorActiveDist + frac*poolLength
+			sp = currLen.speed
+			cad = currLen.cadence
+			isPause = false
+		} else {
+			isPause = true
+		}
+
+		deltaD := 0.0
+		if i == 0 {
+			prevDist = totalD
+		} else if totalD >= prevDist {
+			deltaD = totalD - prevDist
+			prevDist = totalD
+		}
+
+		dt := time.Duration(0)
+		if i+1 < len(act.Records) {
+			dt = max(act.Records[i+1].Timestamp.Sub(ts), 0)
+		}
+		totalDuration += dt
+
+		elevation := math.NaN()
+		if r.EnhancedAltitude != math.MaxUint32 {
+			elevation = r.EnhancedAltitudeScaled()
+		} else if r.Altitude != math.MaxUint16 {
+			elevation = r.AltitudeScaled()
+		}
+
+		extra := model.ExtraMetrics{}
+		if !math.IsNaN(elevation) {
+			extra.Set("elevation", elevation)
+		}
+		if r.HeartRate != math.MaxUint8 {
+			extra.Set("heart-rate", float64(r.HeartRate))
+		}
+		if sp > 0 {
+			extra.Set("speed", sp)
+		}
+		if cad > 0 {
+			extra.Set("cadence", cad)
+		}
+		if r.EnhancedRespirationRate != math.MaxUint16 {
+			extra.Set("respiration-rate", float64(r.EnhancedRespirationRateScaled()))
+		} else if r.RespirationRate != math.MaxUint8 {
+			extra.Set("respiration-rate", float64(r.RespirationRate))
+		}
+		if r.Power != math.MaxUint16 {
+			extra.Set("power", float64(r.Power))
+		}
+		if r.Temperature != math.MaxInt8 {
+			extra.Set("temperature", float64(r.Temperature))
+		}
+
+		elevationValue := elevation
+		if math.IsNaN(elevationValue) {
+			elevationValue = 0
+		}
+
+		lat := semicircles.ToDegrees(r.PositionLat)
+		lng := semicircles.ToDegrees(r.PositionLong)
+		var point *gogis.Point
+		if !math.IsNaN(lat) && !math.IsNaN(lng) && (lat != 0 || lng != 0) {
+			point = &gogis.Point{Lat: lat, Lng: lng}
+		}
+
+		points = append(points, model.WorkoutRecord{
+			Time:            ts,
+			Point:           point,
+			Elevation:       elevationValue,
+			Distance:        deltaD,
+			Distance2D:      deltaD,
+			TotalDistance:   totalD,
+			TotalDistance2D: totalD,
+			Duration:        dt,
+			TotalDuration:   totalDuration,
+			ExtraMetrics:    extra,
+			Pause:           sql.NullBool{Valid: true, Bool: isPause},
+		})
+	}
+
+	if len(points) == 0 {
+		return nil, nil
+	}
+
+	data := &model.WorkoutGeoMeta{Center: model.MapCenter{}}
+	data.UpdateExtraMetrics(points)
+
+	return data, points
+}
+
+// synthesizeRecordsFromSwimLengths synthesizes workout records from swim lengths when
+// no 1Hz records are present in the FIT file.
+//
+//nolint:gocyclo
+func synthesizeRecordsFromSwimLengths(lengths []fitSwimLength, poolLength float64) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
+	if len(lengths) == 0 {
+		return nil, nil
+	}
+
+	points := make([]model.WorkoutRecord, 0, len(lengths)*10)
+	var (
+		totalDuration   time.Duration
+		priorActiveDist float64
+		prevDist        float64
+	)
+
+	for _, l := range lengths {
+		if l.elapsed <= 0 {
+			continue
+		}
+
+		seconds := int(math.Ceil(l.elapsed))
+		if seconds < 1 {
+			seconds = 1
+		}
+
+		for s := 0; s <= seconds; s++ {
+			tOffset := float64(s)
+			if tOffset > l.elapsed {
+				tOffset = l.elapsed
+			}
+
+			ts := l.start.Add(time.Duration(tOffset * float64(time.Second)))
+			if ts.After(l.end) {
+				ts = l.end
+			}
+
+			// Avoid duplicate timestamp at boundary if identical to previous point
+			if len(points) > 0 && points[len(points)-1].Time.Equal(ts) {
+				continue
+			}
+
+			totalD := priorActiveDist
+			sp := 0.0
+			cad := 0.0
+			isPause := false
+
+			if l.isActive {
+				frac := 1.0
+				if l.timer > 0 {
+					frac = math.Min(math.Max(tOffset/l.timer, 0.0), 1.0)
+				}
+				totalD = priorActiveDist + frac*poolLength
+				sp = l.speed
+				cad = l.cadence
+			} else {
+				isPause = true
+			}
+
+			deltaD := 0.0
+			if len(points) == 0 {
+				prevDist = totalD
+			} else if totalD >= prevDist {
+				deltaD = totalD - prevDist
+				prevDist = totalD
+			}
+
+			dt := time.Duration(0)
+			if len(points) > 0 {
+				dt = ts.Sub(points[len(points)-1].Time)
+				points[len(points)-1].Duration = dt
+			}
+			totalDuration += dt
+
+			extra := model.ExtraMetrics{}
+			if sp > 0 {
+				extra.Set("speed", sp)
+			}
+			if cad > 0 {
+				extra.Set("cadence", cad)
+			}
+
+			points = append(points, model.WorkoutRecord{
+				Time:            ts,
+				Distance:        deltaD,
+				Distance2D:      deltaD,
+				TotalDistance:   totalD,
+				TotalDistance2D: totalD,
+				Duration:        0,
+				TotalDuration:   totalDuration,
+				ExtraMetrics:    extra,
+				Pause:           sql.NullBool{Valid: true, Bool: isPause},
+			})
+		}
+
+		if l.isActive {
+			priorActiveDist += poolLength
+		}
+	}
+
+	if len(points) == 0 {
+		return nil, nil
+	}
+
+	data := &model.WorkoutGeoMeta{Center: model.MapCenter{}}
+	data.UpdateExtraMetrics(points)
+
+	return data, points
+}
+
+// parseFitSwimLaps generates workout laps for swimming workouts.
+// When session has only 1 global lap, it groups active lengths into intervals separated by rest lengths.
+func parseFitSwimLaps(act *filedef.Activity, lengths []fitSwimLength, poolLength float64) []model.WorkoutLap {
+	if len(act.Laps) > 1 {
+		return parseLaps(act)
+	}
+
+	if len(lengths) == 0 {
+		return parseLaps(act)
+	}
+
+	var (
+		laps       []model.WorkoutLap
+		currentSet []fitSwimLength
+	)
+
+	flushSet := func() {
+		if len(currentSet) == 0 {
+			return
+		}
+
+		firstLen := currentSet[0]
+		lastLen := currentSet[len(currentSet)-1]
+		setDist := float64(len(currentSet)) * poolLength
+		setDuration := lastLen.end.Sub(firstLen.start)
+		if setDuration < 0 {
+			setDuration = 0
+		}
+
+		timerDuration := time.Duration(0)
+		sumSpeed := 0.0
+		sumCadence := 0.0
+		maxCadence := 0.0
+		maxSpeed := 0.0
+
+		for _, l := range currentSet {
+			timerDuration += time.Duration(l.timer * float64(time.Second))
+			sumSpeed += l.speed
+			sumCadence += l.cadence
+			maxCadence = max(maxCadence, l.cadence)
+			maxSpeed = max(maxSpeed, l.speed)
+		}
+
+		avgSpeed := 0.0
+		if len(currentSet) > 0 {
+			avgSpeed = sumSpeed / float64(len(currentSet))
+		}
+		if timerDuration.Seconds() > 0 {
+			avgSpeed = setDist / timerDuration.Seconds()
+		}
+
+		avgCadence := 0.0
+		if len(currentSet) > 0 {
+			avgCadence = sumCadence / float64(len(currentSet))
+		}
+
+		pauseDuration := maxDuration(setDuration-timerDuration, 0)
+
+		laps = append(laps, model.WorkoutLap{
+			Start:         firstLen.start,
+			Stop:          lastLen.end,
+			TotalDistance: setDist,
+			TotalDuration: setDuration,
+			PauseDuration: pauseDuration,
+			Stats: &model.WorkoutStats{
+				AverageSpeed:        avgSpeed,
+				AverageSpeedNoPause: avgSpeed,
+				MaxSpeed:            maxSpeed,
+				AverageCadence:      avgCadence,
+				MaxCadence:          maxCadence,
+			},
+		})
+
+		currentSet = nil
+	}
+
+	for _, l := range lengths {
+		if l.isActive {
+			currentSet = append(currentSet, l)
+		} else {
+			flushSet()
+		}
+	}
+	flushSet()
+
+	if len(laps) == 0 {
+		return parseLaps(act)
+	}
+
+	return laps
 }
 
 // mapDataFromActivity converts a FIT activity into MapData, falling back to
