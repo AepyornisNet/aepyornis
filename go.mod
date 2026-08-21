@@ -36,7 +36,7 @@ require (
 	github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
 	github.com/mattn/go-isatty v0.0.24
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/muktihari/fit v0.28.2
+	github.com/muktihari/fit v0.28.3
 	github.com/nikoksr/notify v1.5.0
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/paulmach/orb v0.13.0
