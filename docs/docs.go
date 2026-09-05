@@ -2532,6 +2532,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/route-segments/{id}/likes": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyQuery": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route-segments"
+                ],
+                "summary": "Get route segment likers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Route Segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-array_dto_WorkoutLikeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response-string"
+                        }
+                    }
+                }
+            }
+        },
         "/route-segments/{id}/matches": {
             "post": {
                 "security": [
@@ -4419,6 +4470,29 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CourseRecordInfo": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "profile_id": {
+                    "type": "integer"
+                },
+                "profile_name": {
+                    "type": "string"
+                },
+                "speed": {
+                    "type": "number"
+                },
+                "workout_id": {
+                    "type": "integer"
+                },
+                "workout_name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.DistanceRecordResponse": {
             "type": "object",
             "properties": {
@@ -4620,16 +4694,10 @@ const docTemplate = `{
         "dto.MapPoint": {
             "type": "object",
             "properties": {
-                "elevation": {
-                    "type": "number"
-                },
                 "lat": {
                     "type": "number"
                 },
                 "lng": {
-                    "type": "number"
-                },
-                "total_distance": {
                     "type": "number"
                 }
             }
@@ -5703,6 +5771,15 @@ const docTemplate = `{
                 "bidirectional": {
                     "type": "boolean"
                 },
+                "can_delete": {
+                    "type": "boolean"
+                },
+                "can_edit": {
+                    "type": "boolean"
+                },
+                "category": {
+                    "type": "string"
+                },
                 "center": {
                     "type": "object",
                     "properties": {
@@ -5720,10 +5797,22 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
+                "difficulty": {
+                    "$ref": "#/definitions/model.RouteSegmentDifficulty"
+                },
                 "filename": {
                     "type": "string"
                 },
+                "has_liked": {
+                    "type": "boolean"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "like_count": {
                     "type": "integer"
                 },
                 "match_count": {
@@ -5753,6 +5842,15 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.MapPoint"
                     }
                 },
+                "profile_id": {
+                    "type": "integer"
+                },
+                "profile_name": {
+                    "type": "string"
+                },
+                "stats": {
+                    "$ref": "#/definitions/dto.RouteSegmentStatsResponse"
+                },
                 "total_distance": {
                     "type": "number"
                 },
@@ -5764,6 +5862,9 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "visibility": {
+                    "$ref": "#/definitions/model.WorkoutVisibility"
                 }
             }
         },
@@ -5779,10 +5880,22 @@ const docTemplate = `{
                 "duration": {
                     "type": "integer"
                 },
+                "id": {
+                    "type": "integer"
+                },
+                "profile_id": {
+                    "type": "integer"
+                },
+                "profile_name": {
+                    "type": "string"
+                },
                 "user_id": {
                     "type": "integer"
                 },
                 "user_name": {
+                    "type": "string"
+                },
+                "workout_date": {
                     "type": "string"
                 },
                 "workout_id": {
@@ -5805,6 +5918,9 @@ const docTemplate = `{
                 "end_index": {
                     "type": "integer"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "route_segment": {
                     "$ref": "#/definitions/dto.RouteSegmentResponse"
                 },
@@ -5825,16 +5941,37 @@ const docTemplate = `{
                 "bidirectional": {
                     "type": "boolean"
                 },
+                "can_delete": {
+                    "type": "boolean"
+                },
+                "can_edit": {
+                    "type": "boolean"
+                },
+                "category": {
+                    "type": "string"
+                },
                 "circular": {
                     "type": "boolean"
                 },
                 "created_at": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
+                "difficulty": {
+                    "$ref": "#/definitions/model.RouteSegmentDifficulty"
+                },
                 "filename": {
                     "type": "string"
                 },
+                "has_liked": {
+                    "type": "boolean"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "like_count": {
                     "type": "integer"
                 },
                 "match_count": {
@@ -5852,6 +5989,12 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
+                "profile_id": {
+                    "type": "integer"
+                },
+                "profile_name": {
+                    "type": "string"
+                },
                 "total_distance": {
                     "type": "number"
                 },
@@ -5863,6 +6006,29 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "visibility": {
+                    "$ref": "#/definitions/model.WorkoutVisibility"
+                }
+            }
+        },
+        "dto.RouteSegmentStatsResponse": {
+            "type": "object",
+            "properties": {
+                "avg_duration": {
+                    "type": "number"
+                },
+                "avg_speed": {
+                    "type": "number"
+                },
+                "course_record": {
+                    "$ref": "#/definitions/dto.CourseRecordInfo"
+                },
+                "total_efforts": {
+                    "type": "integer"
+                },
+                "unique_athletes": {
+                    "type": "integer"
                 }
             }
         },
@@ -6959,6 +7125,19 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "model.RouteSegmentDifficulty": {
+            "type": "string",
+            "enum": [
+                "easy",
+                "moderate",
+                "difficult"
+            ],
+            "x-enum-varnames": [
+                "RouteSegmentDifficultyEasy",
+                "RouteSegmentDifficultyModerate",
+                "RouteSegmentDifficultyDifficult"
+            ]
         },
         "model.SlopeKind": {
             "type": "string",
