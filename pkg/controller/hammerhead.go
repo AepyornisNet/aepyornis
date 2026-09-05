@@ -280,7 +280,7 @@ func (hc *hammerheadController) Webhook(c *echo.Context) error {
 	}
 
 	user.Profile.User = user
-	workouts, addErr := user.Profile.AddWorkout(hc.db, model.WorkoutTypeAutoDetect, "Imported from Hammerhead", payload.ActivityID+".fit", fitData)
+	workouts, addErr := user.Profile.AddWorkout(hc.db, model.WorkoutTypeAutoDetect, "", payload.ActivityID+".fit", fitData)
 	if len(addErr) > 0 {
 		allDuplicates := true
 		for _, itemErr := range addErr {
