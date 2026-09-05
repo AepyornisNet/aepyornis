@@ -128,20 +128,29 @@ func (m *ManualWorkout) Update(w *model.Workout) error {
 	setIfNotNil(&w.Type, m.Type)
 	setIfNotNil(&w.CustomType, m.CustomType)
 
-	setIfNotNil(&w.Data.AddressString, m.Location)
+	if m.Location != nil {
+		if *m.Location == "" || *m.Location == model.UnknownLocation {
+			w.Data.AddressString = ""
+			if w.Data.Center.IsZero() {
+				w.Data.Address = nil
+			}
+		} else {
+			w.Data.AddressString = *m.Location
+			if !w.HasAddress() {
+				a, err := geocoder.Find(*m.Location)
+				if err != nil {
+					w.Data.Address = nil
+				} else {
+					w.Data.Address = a
+				}
+			}
+		}
+	}
+
 	setIfNotNil(&w.TotalDistance, m.ToDistance())
 	setIfNotNil(&w.TotalDuration, m.ToDuration())
 	setIfNotNil(&w.TotalRepetitions, m.Repetitions)
 	setIfNotNil(&w.TotalWeight, m.ToWeight())
-
-	if m.Location != nil && w.FullAddress() != *m.Location {
-		a, err := geocoder.Find(*m.Location)
-		if err != nil {
-			w.Data.Address = nil
-		} else {
-			w.Data.Address = a
-		}
-	}
 
 	w.UpdateExtraMetrics()
 

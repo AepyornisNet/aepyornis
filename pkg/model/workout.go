@@ -195,6 +195,10 @@ func (w *Workout) FullAddress() string {
 		return w.Data.Address.FormattedAddress
 	}
 
+	if w.Data.AddressString == UnknownLocation {
+		return ""
+	}
+
 	return w.Data.AddressString
 }
 
@@ -286,12 +290,20 @@ func (w *Workout) Timezone() string {
 	return w.Data.Center.TZ
 }
 
-func (w *Workout) Address() string {
-	if w.Data == nil {
-		return UnknownLocation
+func (w *Workout) HasAddress() bool {
+	if w == nil || w.Data == nil {
+		return false
 	}
 
-	if w.Data.AddressString != "" {
+	return w.Data.HasAddress()
+}
+
+func (w *Workout) Address() string {
+	if w.Data == nil {
+		return ""
+	}
+
+	if w.Data.AddressString != "" && w.Data.AddressString != UnknownLocation {
 		return w.Data.AddressString
 	}
 

@@ -77,5 +77,5 @@ export type RouteSegmentDetail = {
     lat: number;
     lng: number;
   };
-  address_string: string;
+  address_string?: string | null;
 } & RouteSegment;

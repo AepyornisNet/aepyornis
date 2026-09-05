@@ -40,7 +40,7 @@ type WorkoutResponse struct {
 	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
 	// MapData fields (when available)
-	AddressString       string   `json:"address_string,omitempty"`
+	AddressString       *string  `json:"address_string,omitempty"`
 	TotalDistance       *float64 `json:"total_distance,omitempty"`
 	TotalDuration       *int64   `json:"total_duration,omitempty"` // Duration in seconds
 	TotalWeight         *float64 `json:"total_weight,omitempty"`
@@ -325,7 +325,9 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 
 	// Add map data if available
 	if w.Data != nil {
-		wr.AddressString = w.Data.AddressString
+		if addr := w.Address(); addr != "" && addr != model.UnknownLocation {
+			wr.AddressString = &addr
+		}
 	}
 
 	if w.Stats != nil {

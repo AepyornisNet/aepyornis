@@ -271,7 +271,7 @@ func replaceRouteSegmentMatches(tx *gorm.DB, routeSegmentID uint64, matches []*R
 }
 
 func (rs *RouteSegment) Address() string {
-	if rs.AddressString != "" {
+	if rs.AddressString != "" && rs.AddressString != UnknownLocation {
 		return rs.AddressString
 	}
 
@@ -279,5 +279,5 @@ func (rs *RouteSegment) Address() string {
 		return rs.GeoAddress.FormattedAddress
 	}
 
-	return UnknownLocation
+	return ""
 }

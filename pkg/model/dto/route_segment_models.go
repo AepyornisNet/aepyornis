@@ -129,16 +129,21 @@ type RouteSegmentDetailResponse struct {
 		Lat float64 `json:"lat"`
 		Lng float64 `json:"lng"`
 	} `json:"center"`
-	AddressString string `json:"address_string"`
+	AddressString *string `json:"address_string"`
 }
 
 type RouteSegmentsDetailResponse []*RouteSegmentResponse
 
 // NewRouteSegmentDetailResponse converts a database route segment to detailed API response
 func NewRouteSegmentDetailResponse(rs *model.RouteSegment) RouteSegmentDetailResponse {
+	var addressString *string
+	if addr := rs.Address(); addr != "" && addr != model.UnknownLocation {
+		addressString = &addr
+	}
+
 	response := RouteSegmentDetailResponse{
 		RouteSegmentResponse: NewRouteSegmentResponse(rs),
-		AddressString:        rs.Address(),
+		AddressString:        addressString,
 	}
 
 	// Convert points

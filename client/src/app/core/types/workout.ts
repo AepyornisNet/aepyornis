@@ -33,7 +33,7 @@ export type Workout = {
   attachments?: WorkoutAttachment[];
 
   // Optional map data
-  address_string?: string;
+  address_string?: string | null;
   total_distance?: number;
   total_duration?: number;
   total_weight?: number;
