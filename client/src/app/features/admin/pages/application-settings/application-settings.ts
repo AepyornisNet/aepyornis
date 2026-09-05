@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { disabled, form, FormField, FormRoot } from '@angular/forms/signals';
+import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -25,18 +25,11 @@ export class AdminApplicationSettings implements OnInit {
     socials_disabled: false,
   });
 
-  public readonly configForm = form(
-    this.configModel,
-    (s) => {
-      disabled(s.registration_disabled, { when: () => this.savingConfig() });
-      disabled(s.socials_disabled, { when: () => this.savingConfig() });
+  public readonly configForm = form(this.configModel, {
+    submission: {
+      action: () => this.saveConfig(),
     },
-    {
-      submission: {
-        action: () => this.saveConfig(),
-      },
-    },
-  );
+  });
 
   public ngOnInit(): void {
     this.loadConfig();

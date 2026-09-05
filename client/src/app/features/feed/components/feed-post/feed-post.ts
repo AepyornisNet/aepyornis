@@ -9,7 +9,7 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import { disabled, form, FormField, FormRoot, required } from '@angular/forms/signals';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -54,7 +54,6 @@ export class FeedPost {
     this.replyModel,
     (s) => {
       required(s.content);
-      disabled(s.content, { when: () => this.isReplying() });
     },
     {
       submission: {

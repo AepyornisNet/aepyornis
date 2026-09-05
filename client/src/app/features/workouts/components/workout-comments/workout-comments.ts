@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { disabled, form, FormField, FormRoot, required } from '@angular/forms/signals';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { WorkoutReply } from '../../../../core/types/workout';
@@ -39,7 +39,6 @@ export class WorkoutCommentsComponent {
     this.commentModel,
     (s) => {
       required(s.content);
-      disabled(s.content, { when: () => this.isSubmitting() });
     },
     {
       submission: {

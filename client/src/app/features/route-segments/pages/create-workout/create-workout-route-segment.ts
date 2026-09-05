@@ -6,14 +6,13 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-
 import { ActivatedRoute, Router } from '@angular/router';
-import { disabled, form, FormField, FormRoot, min, required } from '@angular/forms/signals';
+import { form, FormField, FormRoot, min, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
@@ -38,6 +37,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private translate = inject(TranslateService);
 
   public readonly workout = signal<WorkoutDetail | null>(null);
   public readonly loading = signal(true);
@@ -62,12 +62,6 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       required(s.name);
       min(s.start, 1);
       min(s.end, 1);
-      disabled(s.name, { when: () => this.creating() });
-      disabled(s.category, { when: () => this.creating() });
-      disabled(s.start, { when: () => this.creating() });
-      disabled(s.end, { when: () => this.creating() });
-      disabled(s.bidirectional, { when: () => this.creating() });
-      disabled(s.circular, { when: () => this.creating() });
     },
     {
       submission: {
@@ -124,7 +118,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
 
   public ngOnInit(): void {
     this.route.params.subscribe((params) => {
-      const id = parseInt(params['id']);
+      const id = parseInt(params['id'], 10);
       if (id) {
         this.loadWorkout(id);
       }
@@ -155,7 +149,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       }
     } catch (err) {
       console.error('Failed to load workout:', err);
-      this.error.set('Failed to load workout. Please try again.');
+      this.error.set(this.translate.instant('Failed to load workout. Please try again.'));
     } finally {
       this.loading.set(false);
     }
@@ -202,7 +196,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       const created = response?.results;
 
       if (!created) {
-        this.error.set('Failed to create route segment. Please try again.');
+        this.error.set(this.translate.instant('Failed to create route segment. Please try again.'));
         return;
       }
 
@@ -220,7 +214,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       this.router.navigate(['/route-segments', created.id]);
     } catch (err) {
       console.error('Failed to create route segment:', err);
-      this.error.set('Failed to create route segment. Please try again.');
+      this.error.set(this.translate.instant('Failed to create route segment. Please try again.'));
     } finally {
       this.creating.set(false);
     }

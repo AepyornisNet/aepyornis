@@ -6,9 +6,9 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { disabled, form, FormField, FormRoot, required } from '@angular/forms/signals';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { RouteSegmentDetail, RouteSegmentDifficulty } from '../../../../core/types/route-segment';
@@ -29,6 +29,7 @@ export class EditRouteSegment implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private translate = inject(TranslateService);
 
   public readonly routeSegment = signal<RouteSegmentDetail | null>(null);
   public readonly loading = signal(true);
@@ -55,14 +56,6 @@ export class EditRouteSegment implements OnInit {
     (s) => {
       required(s.name);
       required(s.visibility);
-      disabled(s.name, { when: () => this.saving() });
-      disabled(s.notes, { when: () => this.saving() });
-      disabled(s.category, { when: () => this.saving() });
-      disabled(s.visibility, { when: () => this.saving() });
-      disabled(s.difficulty, { when: () => this.saving() });
-      disabled(s.description, { when: () => this.saving() });
-      disabled(s.bidirectional, { when: () => this.saving() });
-      disabled(s.circular, { when: () => this.saving() });
     },
     {
       submission: {
@@ -125,7 +118,7 @@ export class EditRouteSegment implements OnInit {
       }
     } catch (err) {
       console.error('Failed to load route segment:', err);
-      this.error.set('Failed to load route segment. Please try again.');
+      this.error.set(this.translate.instant('Failed to load route segment. Please try again.'));
     } finally {
       this.loading.set(false);
     }
@@ -159,7 +152,7 @@ export class EditRouteSegment implements OnInit {
       this.router.navigate(['/route-segments', segment.id]);
     } catch (err) {
       console.error('Failed to update route segment:', err);
-      this.error.set('Failed to update route segment. Please try again.');
+      this.error.set(this.translate.instant('Failed to update route segment. Please try again.'));
       this.saving.set(false);
     }
   }

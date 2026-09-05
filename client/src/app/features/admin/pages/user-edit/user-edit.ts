@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
-import { disabled, email, form, FormField, FormRoot, required } from '@angular/forms/signals';
+import { email, form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { Api } from '../../../../core/services/api';
 import { UserProfile } from '../../../../core/types/user';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -41,12 +41,6 @@ export class UserEdit implements OnInit {
       required(s.email);
       email(s.email);
       required(s.name);
-      disabled(s.email, { when: () => this.saving() });
-      disabled(s.username, { when: () => this.saving() });
-      disabled(s.name, { when: () => this.saving() });
-      disabled(s.password, { when: () => this.saving() });
-      disabled(s.active, { when: () => this.saving() });
-      disabled(s.admin, { when: () => this.saving() });
     },
     {
       submission: {

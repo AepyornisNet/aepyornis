@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { disabled, form, FormField, FormRoot } from '@angular/forms/signals';
+import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -35,20 +35,11 @@ export class CreateRouteSegmentPage {
     circular: false,
   });
 
-  public readonly routeSegmentForm = form(
-    this.routeSegmentModel,
-    (s) => {
-      disabled(s.category, { when: () => this.creating() });
-      disabled(s.notes, { when: () => this.creating() });
-      disabled(s.bidirectional, { when: () => this.creating() });
-      disabled(s.circular, { when: () => this.creating() });
+  public readonly routeSegmentForm = form(this.routeSegmentModel, {
+    submission: {
+      action: () => this.createRouteSegment(),
     },
-    {
-      submission: {
-        action: () => this.createRouteSegment(),
-      },
-    },
-  );
+  });
 
   public readonly hasFiles = computed(() => this.selectedFiles().length > 0);
   public readonly fileCount = computed(() => this.selectedFiles().length);

@@ -7,16 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  disabled,
-  form,
-  FormField,
-  FormRoot,
-  max,
-  min,
-  required,
-  validate,
-} from '@angular/forms/signals';
+import { form, FormField, FormRoot, max, min, required, validate } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -60,20 +51,13 @@ export class WorkoutCreate implements OnInit {
     notes: '',
   });
 
-  public readonly fileUploadSignalForm = form(
-    this.fileUploadModel,
-    (s) => {
-      disabled(s.type, { when: () => this.loading() });
-      disabled(s.notes, { when: () => this.loading() });
-    },
-    {
-      submission: {
-        action: async () => {
-          this.submitFileUpload();
-        },
+  public readonly fileUploadSignalForm = form(this.fileUploadModel, {
+    submission: {
+      action: async () => {
+        this.submitFileUpload();
       },
     },
-  );
+  });
 
   // Manual form
   private readonly _manualWorkoutType = signal<string>('');
@@ -140,19 +124,6 @@ export class WorkoutCreate implements OnInit {
         }
         return null;
       });
-
-      disabled(s.name, { when: () => this.loading() });
-      disabled(s.date, { when: () => this.loading() });
-      disabled(s.visibility, { when: () => this.loading() });
-      disabled(s.location, { when: () => this.loading() });
-      disabled(s.duration_hours, { when: () => this.loading() });
-      disabled(s.duration_minutes, { when: () => this.loading() });
-      disabled(s.duration_seconds, { when: () => this.loading() });
-      disabled(s.distance, { when: () => this.loading() });
-      disabled(s.repetitions, { when: () => this.loading() });
-      disabled(s.weight, { when: () => this.loading() });
-      disabled(s.notes, { when: () => this.loading() });
-      disabled(s.custom_type, { when: () => this.loading() });
     },
     {
       submission: {
