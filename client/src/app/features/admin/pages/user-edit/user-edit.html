@@ -23,23 +23,23 @@
   } @else if (user()) {
     <div class="card shadow-sm">
       <div class="card-body">
-        <form [formGroup]="userForm" (ngSubmit)="saveUser()">
-          <!-- Username -->
+        <form [formRoot]="userForm" (ngSubmit)="saveUser()">
+          <!-- Email -->
           <div class="mb-3">
             <label class="form-label" for="email"> {{ 'Email' | translate }} </label>
-            <input class="form-control" formControlName="email" id="email" required type="email" />
+            <input class="form-control" id="email" type="email" [formField]="userForm.email" />
           </div>
 
           <!-- Username -->
           <div class="mb-3">
             <label class="form-label" for="username"> {{ 'Username' | translate }} </label>
-            <input class="form-control" formControlName="username" id="username" type="text" />
+            <input class="form-control" id="username" type="text" [formField]="userForm.username" />
           </div>
 
           <!-- Name -->
           <div class="mb-3">
             <label class="form-label" for="name"> {{ 'Name' | translate }} </label>
-            <input class="form-control" formControlName="name" id="name" required type="text" />
+            <input class="form-control" id="name" type="text" [formField]="userForm.name" />
           </div>
 
           <!-- Password -->
@@ -47,28 +47,42 @@
             <label class="form-label" for="password"> {{ 'Password' | translate }} </label>
             <input
               class="form-control"
-              formControlName="password"
               id="password"
               type="password"
+              [formField]="userForm.password"
               [placeholder]="'Leave blank to keep current password' | translate"
             />
           </div>
 
           <!-- Active -->
           <div class="mb-3 form-check">
-            <input class="form-check-input" formControlName="active" id="active" type="checkbox" />
+            <input
+              class="form-check-input"
+              id="active"
+              type="checkbox"
+              [formField]="userForm.active"
+            />
             <label class="form-check-label" for="active"> {{ 'Active' | translate }} </label>
           </div>
 
           <!-- Admin -->
           <div class="mb-3 form-check">
-            <input class="form-check-input" formControlName="admin" id="admin" type="checkbox" />
+            <input
+              class="form-check-input"
+              id="admin"
+              type="checkbox"
+              [formField]="userForm.admin"
+            />
             <label class="form-check-label" for="admin"> {{ 'Admin' | translate }} </label>
           </div>
 
           <!-- Actions -->
           <div class="d-flex gap-2 pt-3">
-            <button class="btn btn-primary" type="submit" [disabled]="saving() || userForm.invalid">
+            <button
+              class="btn btn-primary"
+              type="submit"
+              [disabled]="saving() || userForm().invalid()"
+            >
               @if (saving()) {
                 <span
                   aria-hidden="true"

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -10,20 +10,26 @@ import { Avatar } from '../../../../core/components/avatar/avatar';
 
 @Component({
   selector: 'app-profile-search-page',
-  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, AppIcon, Avatar],
+  imports: [FormField, FormRoot, RouterLink, TranslatePipe, AppIcon, Avatar],
   templateUrl: './search.html',
   styleUrl: './search.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileSearchPage implements OnInit {
   private api = inject(Api);
-  private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private translate = inject(TranslateService);
 
-  public readonly searchForm = this.fb.group({
-    q: [''],
+  public readonly searchModel = signal({
+    q: '',
+  });
+  public readonly searchSignalForm = form(this.searchModel, () => undefined, {
+    submission: {
+      action: async () => {
+        this.onSearch();
+      },
+    },
   });
   public readonly results = signal<ActivityPubProfileSummary[]>([]);
   public readonly loading = signal(false);
@@ -35,7 +41,7 @@ export class ProfileSearchPage implements OnInit {
   public ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       const query = params.get('q')?.trim() ?? '';
-      this.searchForm.patchValue({ q: query }, { emitEvent: false });
+      this.searchModel.set({ q: query });
       this.error.set(null);
       this.successMessage.set(null);
 
@@ -51,7 +57,7 @@ export class ProfileSearchPage implements OnInit {
   }
 
   public onSearch(): void {
-    const query = String(this.searchForm.value.q ?? '').trim();
+    const query = this.searchModel().q.trim();
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { q: query || null },

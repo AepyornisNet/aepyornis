@@ -44,6 +44,10 @@ msgstr ""
 msgid "Accept"
 msgstr ""
 
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Action"
+msgstr ""
+
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "Actions"
 msgstr "Actions"
@@ -68,6 +72,11 @@ msgstr ""
 msgid "ActivityPub is enabled for this account"
 msgstr ""
 
+#: client/src/app/features/workouts/pages/list/workouts.html
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Add Equipment"
+msgstr ""
+
 #: client/src/app/features/measurements/pages/measurements/measurements.html
 msgid "Add Measurement"
 msgstr "Add Measurement"
@@ -83,6 +92,10 @@ msgstr "Add a workout"
 #: client/src/app/features/equipment/pages/list/equipment.html
 msgid "Add equipment"
 msgstr "Add equipment"
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Add equipment to selected workouts"
+msgstr ""
 
 #: client/src/app/features/measurements/pages/measurements/measurements.ts
 msgid "Add measurement"
@@ -118,6 +131,10 @@ msgstr "All"
 
 #: client/src/app/core/types/workout-types.ts
 msgid "All Sports"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Allow browser push notifications for the enabled push types."
 msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
@@ -200,12 +217,20 @@ msgstr "Average (no pause)"
 msgid "Average Slope"
 msgstr "Average Slope"
 
+#: client/src/app/core/i18n/statistics-labels.ts
+msgid "Average pace (no pause)"
+msgstr ""
+
 #: client/src/app/features/dashboard/components/records/records.html
 msgid "Average speed"
 msgstr "Average speed"
 
 #: client/src/app/features/workouts/pages/detail/workout-detail.html
 msgid "Average speed (no pause)"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Average speed/pace (no pause)"
 msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
@@ -366,6 +391,10 @@ msgstr ""
 msgid "Commuting"
 msgstr ""
 
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Confirm"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-actions/workout-actions.html
 msgid "Confirm Delete"
 msgstr "Confirm Delete"
@@ -395,9 +424,9 @@ msgstr "Copied to clipboard"
 msgid "Copy to clipboard"
 msgstr "Copy to clipboard"
 
-#: client/src/app/features/statistics/pages/records/records.html
-msgid "Covered"
-msgstr "Covered"
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Course Record (CR)"
+msgstr ""
 
 #: client/src/app/features/equipment/pages/list/equipment.html
 msgid "Create"
@@ -432,6 +461,10 @@ msgstr ""
 msgid "Current password"
 msgstr ""
 
+#: client/src/app/features/workouts/pages/create/workout-create.ts
+msgid "Custom type is required"
+msgstr ""
+
 #: client/src/app/core/types/workout-types.ts
 msgid "Cycling"
 msgstr ""
@@ -456,9 +489,17 @@ msgstr "Date"
 msgid "Day"
 msgstr "Day"
 
+#: client/src/app/features/profile/pages/general/general.html
+msgid "Default"
+msgstr ""
+
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Default For Workout Types"
 msgstr "Default For Workout Types"
+
+#: client/src/app/features/profile/pages/general/general.html
+msgid "Default map style"
+msgstr ""
 
 #: client/src/app/features/profile/pages/privacy/privacy.html
 msgid "Default workout visibility"
@@ -498,9 +539,25 @@ msgstr "Descending"
 msgid "Description"
 msgstr "Description"
 
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Detailed description of the route segment"
+msgstr ""
+
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Details"
 msgstr "Details"
+
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Difficult"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Difficulty"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Disable"
+msgstr ""
 
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "Disable account registration"
@@ -547,9 +604,23 @@ msgstr ""
 msgid "Download"
 msgstr "Download"
 
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+msgid "Download GPX"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-actions/workout-actions.html
 msgid "Download Original File"
 msgstr "Download Original File"
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Download ZIP"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Download selected workouts as ZIP"
+msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
 msgid "Driving"
@@ -591,6 +662,10 @@ msgstr ""
 msgid "EMOM"
 msgstr ""
 
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Easy"
+msgstr ""
+
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Edit"
 msgstr "Edit"
@@ -615,6 +690,10 @@ msgstr ""
 msgid "Edit user"
 msgstr "Edit user"
 
+#: client/src/app/features/route-segments/pages/list/route-segments.html
+msgid "Efforts"
+msgstr ""
+
 #: client/src/app/features/workouts/pages/list/workouts.ts
 msgid "Elev Down"
 msgstr "Elev Down"
@@ -626,6 +705,10 @@ msgstr "Elev Up"
 #: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
 msgid "Elevation"
 msgstr "Elevation"
+
+#: client/src/app/features/route-segments/pages/list/route-segments.html
+msgid "Elevation Gain"
+msgstr ""
 
 #: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
 msgid "Elevation gain"
@@ -659,9 +742,25 @@ msgstr ""
 msgid "Enable ActivityPub in Privacy settings to receive follow requests."
 msgstr ""
 
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Enable on this device"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Enabled on this device"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Enabling..."
+msgstr ""
+
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "End Point"
 msgstr "End Point"
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Endpoint service"
+msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
 msgid "Enduro"
@@ -705,6 +804,10 @@ msgstr ""
 msgid "Failed to copy to clipboard"
 msgstr "Failed to copy to clipboard"
 
+#: client/src/app/features/route-segments/pages/create/create-route-segment.ts
+msgid "Failed to create route segment. Please try again."
+msgstr ""
+
 #: client/src/app/features/workouts/pages/create/workout-create.ts
 msgid "Failed to create workout. Please try again."
 msgstr ""
@@ -717,6 +820,10 @@ msgstr ""
 msgid "Failed to enable ActivityPub: {{message}}"
 msgstr ""
 
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Failed to enable push notifications: {{message}}"
+msgstr ""
+
 #: client/src/app/features/profile/services/profile-store.ts
 msgid "Failed to load Hammerhead connection: {{message}}"
 msgstr ""
@@ -725,9 +832,21 @@ msgstr ""
 msgid "Failed to load follow requests: {{message}}"
 msgstr ""
 
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Failed to load notification settings: {{message}}"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.ts
 msgid "Failed to load profile: {{message}}"
 msgstr "Failed to load profile: {{message}}"
+
+#: client/src/app/features/admin/pages/application-settings/application-settings.ts
+msgid "Failed to load settings: {{message}}"
+msgstr ""
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.ts
+msgid "Failed to load user: {{message}}"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/create/workout-create.ts
 msgid "Failed to load workout. Please try again."
@@ -745,13 +864,29 @@ msgstr "Failed to load {{page}} data. Please try again."
 msgid "Failed to refresh workouts: {{message}}"
 msgstr "Failed to refresh workouts: {{message}}"
 
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Failed to remove push notification endpoint: {{message}}"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.ts
 msgid "Failed to reset API key: {{message}}"
 msgstr "Failed to reset API key: {{message}}"
 
+#: client/src/app/features/admin/pages/application-settings/application-settings.ts
+msgid "Failed to save config: {{message}}"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Failed to save notification settings: {{message}}"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.ts
 msgid "Failed to save profile: {{message}}"
 msgstr "Failed to save profile: {{message}}"
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.ts
+msgid "Failed to save user: {{message}}"
+msgstr ""
 
 #: client/src/app/features/profile/services/profile-store.ts
 msgid "Failed to start Hammerhead connection: {{message}}"
@@ -767,6 +902,10 @@ msgstr ""
 
 #: client/src/app/features/workouts/pages/create/workout-create.ts
 msgid "Failed to upload workouts. Please try again."
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Fastest (Best)"
 msgstr ""
 
 #: client/src/app/features/statistics/pages/records-ranking/records-ranking.html
@@ -788,6 +927,10 @@ msgstr "File"
 #: client/src/app/core/components/base-list/base-list.html
 msgid "Filters"
 msgstr "Filters"
+
+#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
+msgid "Find matches"
+msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
 msgid "Fishing"
@@ -1035,6 +1178,10 @@ msgstr ""
 msgid "Inline Skating"
 msgstr ""
 
+#: client/src/app/features/admin/pages/user-edit/user-edit.ts
+msgid "Invalid user ID"
+msgstr ""
+
 #: client/src/app/features/profile/pages/privacy/privacy.html
 msgid "It cannot be disabled afterwards."
 msgstr ""
@@ -1087,9 +1234,25 @@ msgstr ""
 msgid "Leave blank to keep current password"
 msgstr "Leave blank to keep current password"
 
+#: client/src/app/core/components/footer/footer.html
+msgid "Legal Notice"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Light"
 msgstr "Light"
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "Like"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Liked"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "Liked by"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/detail/workout-detail.html
 msgid "Likes"
@@ -1151,6 +1314,15 @@ msgstr "Manage users ({{count}})"
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Manual"
 msgstr "Manual"
+
+#: client/src/app/core/components/header/header.html
+msgid "Mark all as read"
+msgstr ""
+
+#: client/src/app/core/components/header/header.html
+#: client/src/app/core/components/header/header.html
+msgid "Mark as read"
+msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
 msgid "Match"
@@ -1214,6 +1386,10 @@ msgstr ""
 msgid "Mobility"
 msgstr ""
 
+#: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
+msgid "Moderate"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/statistics/statistics.ts
 msgid "Month"
 msgstr "Month"
@@ -1262,6 +1438,10 @@ msgstr "Name"
 msgid "New password"
 msgstr ""
 
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Newest"
+msgstr ""
+
 #: client/src/app/core/components/pagination/pagination.html
 msgid "Next"
 msgstr "Next"
@@ -1302,6 +1482,18 @@ msgstr "No efforts recorded yet for this distance."
 msgid "No items found"
 msgstr "No items found"
 
+#: client/src/app/core/components/likes-list/likes-list.html
+msgid "No likes yet"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "No notification channels are configured on this server."
+msgstr ""
+
+#: client/src/app/core/components/header/header.html
+msgid "No notifications"
+msgstr ""
+
 #: client/src/app/features/profile/pages/followers/followers.html
 msgid "No pending follow requests"
 msgstr ""
@@ -1318,6 +1510,10 @@ msgstr "No records found yet. Start logging workouts to see your records."
 msgid "No usage data yet."
 msgstr ""
 
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "No workout matches found."
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-zone-distribution/workout-zone-distribution.html
 msgid "No zone data available"
 msgstr "No zone data available"
@@ -1330,10 +1526,27 @@ msgstr ""
 msgid "Not connected"
 msgstr ""
 
+#: client/src/app/features/route-segments/pages/create/create-route-segment.html
+msgid "Not specified"
+msgstr ""
+
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Notes"
 msgstr "Notes"
+
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Notification settings updated"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Notification type"
+msgstr ""
+
+#: client/src/app/core/components/header/header.html
+#: client/src/app/core/components/header/header.html
+msgid "Notifications"
+msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
 msgid "Obstacle Course"
@@ -1351,8 +1564,17 @@ msgstr ""
 msgid "Optional notes about this route segment"
 msgstr ""
 
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Overall average"
+msgstr ""
+
 #: client/src/app/core/types/workout-types.ts
 msgid "Overland"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Owner"
 msgstr ""
 
 #: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
@@ -1365,6 +1587,10 @@ msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
 msgid "Padel"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Page"
 msgstr ""
 
 #: client/src/app/core/components/pagination/pagination.html
@@ -1386,6 +1612,10 @@ msgstr ""
 #: client/src/app/features/auth/pages/login/login.html
 msgid "Passwords do not match"
 msgstr "Passwords do not match"
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "People"
+msgstr ""
 
 #: client/src/app/features/statistics/pages/statistics/statistics.html
 msgid "Per"
@@ -1411,9 +1641,21 @@ msgstr ""
 msgid "Platform"
 msgstr ""
 
+#: client/src/app/features/workouts/pages/create/workout-create.ts
+msgid "Please fill in all required fields"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Please help translate via Weblate"
 msgstr "Please help translate via Weblate"
+
+#: client/src/app/features/workouts/pages/create/workout-create.ts
+msgid "Please select a workout type"
+msgstr ""
+
+#: client/src/app/features/route-segments/pages/create/create-route-segment.ts
+msgid "Please select at least one file"
+msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
 msgid "Pool Apnea"
@@ -1451,6 +1693,10 @@ msgstr ""
 msgid "Privacy"
 msgstr ""
 
+#: client/src/app/core/components/footer/footer.html
+msgid "Privacy Policy"
+msgstr ""
+
 #: client/src/app/features/profile/pages/privacy/privacy.html
 msgid "Private"
 msgstr ""
@@ -1465,6 +1711,18 @@ msgstr "Profile updated successfully"
 
 #: client/src/app/features/profile/pages/privacy/privacy.html
 msgid "Public"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Push notification endpoint removed"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Push notifications"
+msgstr ""
+
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Push notifications enabled"
 msgstr ""
 
 #: client/src/app/core/types/workout-types.ts
@@ -1523,6 +1781,14 @@ msgstr "Refresh all your workouts"
 #: client/src/app/features/auth/pages/login/login.html
 msgid "Register"
 msgstr "Register"
+
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Registered push endpoints"
+msgstr ""
+
+#: client/src/app/features/auth/pages/login/login.ts
+msgid "Registration failed"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "Remove"
@@ -1606,6 +1872,10 @@ msgstr ""
 msgid "Save changes"
 msgstr "Save changes"
 
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "Save notification settings"
+msgstr ""
+
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "Saving..."
 msgstr "Saving..."
@@ -1629,9 +1899,17 @@ msgstr ""
 msgid "Segment Details"
 msgstr "Segment Details"
 
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Segment Statistics & Records"
+msgstr ""
+
 #: client/src/app/core/components/base-list/base-list.html
 msgid "Select"
 msgstr "Select"
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Select equipment..."
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "Select one or more GPX files"
@@ -1639,6 +1917,10 @@ msgstr ""
 
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "Select the ending point of your route segment"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/list/workouts.html
+msgid "Select the equipment you want to add to the selected workouts."
 msgstr ""
 
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
@@ -1727,6 +2009,10 @@ msgstr ""
 msgid "Split Files With Multiple Tracks"
 msgstr "Split Files With Multiple Tracks"
 
+#: client/src/app/features/statistics/pages/heatmap/heatmap.html
+msgid "Sport"
+msgstr ""
+
 #: client/src/app/core/types/workout-types.ts
 msgid "Sport Shooting"
 msgstr ""
@@ -1781,6 +2067,14 @@ msgstr ""
 msgid "Sub type"
 msgstr "Sub type"
 
+#: client/src/app/features/statistics/pages/heatmap/heatmap.html
+msgid "Subtype"
+msgstr ""
+
+#: client/src/app/features/workouts/pages/create/workout-create.ts
+msgid "Successfully created {{count}} workout(s)"
+msgstr ""
+
 #: client/src/app/core/types/workout-types.ts
 msgid "Surfing"
 msgstr ""
@@ -1821,10 +2115,6 @@ msgstr ""
 msgid "Temperature"
 msgstr "Temperature"
 
-#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
-msgid "Tempo"
-msgstr "Tempo"
-
 #: client/src/app/core/types/workout-types.ts
 msgid "Tennis"
 msgstr ""
@@ -1849,6 +2139,10 @@ msgstr "This Action Cannot Be Undone"
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
 
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "This device"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "This will recalculate statistics for all your workouts"
 msgstr "This will recalculate statistics for all your workouts"
@@ -1869,6 +2163,10 @@ msgstr ""
 msgid "Time zone"
 msgstr "Time zone"
 
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Times completed"
+msgstr ""
+
 #: client/src/app/features/profile/components/workout-calendar/workout-calendar.html
 msgid "Today"
 msgstr ""
@@ -1880,6 +2178,10 @@ msgstr "Toggle filters"
 #: client/src/app/core/components/base-list/base-list.html
 msgid "Toggle multi-select"
 msgstr "Toggle multi-select"
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Total Efforts"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Total distance"
@@ -1961,6 +2263,14 @@ msgstr ""
 msgid "Unfollowed user"
 msgstr ""
 
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "Unique Athletes"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "Unlike"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-actions/workout-actions.html
 msgid "Unlock"
 msgstr "Unlock"
@@ -1993,10 +2303,6 @@ msgstr "Update settings"
 msgid "Update user"
 msgstr "Update user"
 
-#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
-msgid "Updated"
-msgstr "Updated"
-
 #: client/src/app/features/workouts/pages/detail/workout-detail.html
 msgid "Updating"
 msgstr "Updating"
@@ -2017,6 +2323,10 @@ msgstr "Use a file"
 msgid "User"
 msgstr "User"
 
+#: client/src/app/features/profile/pages/notifications/notifications.html
+msgid "User Agent"
+msgstr ""
+
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "Username"
 msgstr "Username"
@@ -2028,6 +2338,14 @@ msgstr ""
 #: client/src/app/features/workouts/components/workout-list-actions/workout-list-actions.html
 msgid "View"
 msgstr "View"
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "View Likers"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "View likes"
+msgstr ""
 
 #: client/src/app/features/profile/pages/search/search.html
 msgid "View profile"
@@ -2077,6 +2395,10 @@ msgstr ""
 msgid "Water Tubing"
 msgstr ""
 
+#: client/src/app/features/profile/pages/notifications/notifications.ts
+msgid "Web push is not configured on this server"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/statistics/statistics.ts
 msgid "Week"
 msgstr "Week"
@@ -2123,9 +2445,17 @@ msgstr "Workout"
 msgid "Workout Matches"
 msgstr "Workout Matches"
 
+#: client/src/app/features/workouts/pages/create/workout-create.ts
+msgid "Workout created successfully"
+msgstr ""
+
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Workout type"
 msgstr "Workout type"
+
+#: client/src/app/features/workouts/pages/create/workout-create.ts
+msgid "Workout updated successfully"
+msgstr ""
 
 #: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
 msgid "Workouts"
@@ -2151,6 +2481,10 @@ msgstr ""
 msgid "You can edit your GPX files before uploading them here:"
 msgstr "You can edit your GPX files before uploading them here:"
 
+#: client/src/app/features/auth/pages/login/login.ts
+msgid "Your account has been created"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-zone-distribution/workout-zone-distribution.html
 msgid "Zone {{value}}"
 msgstr "Zone {{value}}"
@@ -2167,6 +2501,14 @@ msgstr "calendar event"
 msgid "cm"
 msgstr "cm"
 
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "comment"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "comments"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "cycling"
 msgstr "cycling"
@@ -2178,11 +2520,6 @@ msgstr "environment variables"
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "file(s) selected"
 msgstr ""
-
-#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
-#: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
-msgid "find matches"
-msgstr "find matches"
 
 #: client/src/app/features/statistics/pages/statistics/statistics.ts
 msgid "forever"
@@ -2220,6 +2557,14 @@ msgstr "km/h"
 msgid "lbs"
 msgstr "lbs"
 
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "like"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "likes"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "m"
 msgstr "m"
@@ -2231,6 +2576,10 @@ msgstr "mi"
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "mph"
 msgstr "mph"
+
+#: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
+msgid "of"
+msgstr ""
 
 #: client/src/app/features/profile/pages/user-profile/user-profile.ts
 msgid "profile"

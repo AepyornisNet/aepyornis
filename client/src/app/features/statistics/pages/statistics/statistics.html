@@ -8,13 +8,13 @@
 
   <div class="card mb-4">
     <div class="card-body">
-      <form class="row g-3" [formGroup]="filterForm" (ngSubmit)="onFilterChange()">
+      <form class="row g-3" [formRoot]="filterSignalForm" (ngSubmit)="onFilterChange()">
         <div class="col-md-4">
           <label class="form-label" for="since">{{ 'Since' | translate }}</label>
           <select
             class="form-select"
-            formControlName="since"
             id="since"
+            [formField]="filterSignalForm.since"
             (change)="onFilterChange()"
           >
             @for (option of sinceOptions; track option.key) {
@@ -24,14 +24,19 @@
         </div>
         <div class="col-md-4">
           <label class="form-label" for="per">{{ 'Per' | translate }}</label>
-          <select class="form-select" formControlName="per" id="per" (change)="onFilterChange()">
+          <select
+            class="form-select"
+            id="per"
+            [formField]="filterSignalForm.per"
+            (change)="onFilterChange()"
+          >
             @for (option of perOptions; track option.key) {
               <option [value]="option.key">{{ option.label | async }}</option>
             }
           </select>
         </div>
         <div class="col-md-4 d-flex align-items-end">
-          <button class="btn btn-primary" type="submit" [disabled]="filterForm.invalid">
+          <button class="btn btn-primary" type="submit" [disabled]="filterSignalForm().invalid()">
             {{ 'Refresh' | translate }}
           </button>
         </div>

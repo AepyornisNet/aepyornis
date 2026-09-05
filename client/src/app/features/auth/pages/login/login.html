@@ -19,17 +19,16 @@
                   </div>
                 }
 
-                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+                <form [formRoot]="loginSignalForm" (ngSubmit)="onSubmit()">
                   <!-- Email input -->
                   <div class="form-floating mb-3">
                     <input
                       autocomplete="username"
                       class="form-control"
-                      formControlName="email"
                       id="email"
                       placeholder="Email"
-                      required
                       type="email"
+                      [formField]="loginSignalForm.email"
                     />
                     <label for="email">{{ 'Email' | translate }}</label>
                   </div>
@@ -39,11 +38,10 @@
                     <input
                       autocomplete="current-password"
                       class="form-control"
-                      formControlName="password"
                       id="password"
                       placeholder="Password"
-                      required
                       type="password"
+                      [formField]="loginSignalForm.password"
                     />
                     <label for="password">{{ 'Password' | translate }}</label>
                   </div>
@@ -51,7 +49,7 @@
                   <button
                     class="btn btn-primary w-100"
                     type="submit"
-                    [disabled]="loginForm.invalid || loginSubmitting()"
+                    [disabled]="loginSignalForm().invalid() || loginSubmitting()"
                   >
                     {{ 'Sign in' | translate }}
                   </button>
@@ -81,16 +79,15 @@
                     </div>
                   }
 
-                  <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
+                  <form [formRoot]="registerSignalForm" (ngSubmit)="onRegister()">
                     <div class="form-floating mb-3">
                       <input
                         autocomplete="username"
                         class="form-control"
-                        formControlName="username"
                         id="registerUsername"
                         placeholder="Username"
-                        required
                         type="text"
+                        [formField]="registerSignalForm.username"
                       />
                       <label for="registerUsername">{{ 'Username' | translate }}</label>
                     </div>
@@ -100,11 +97,10 @@
                       <input
                         autocomplete="email"
                         class="form-control"
-                        formControlName="email"
                         id="registerEmail"
                         placeholder="Email"
-                        required
                         type="email"
+                        [formField]="registerSignalForm.email"
                       />
                       <label for="registerEmail">{{ 'Email' | translate }}</label>
                     </div>
@@ -114,12 +110,10 @@
                       <input
                         autocomplete="new-password"
                         class="form-control"
-                        formControlName="password"
                         id="registerPassword"
-                        minlength="6"
                         placeholder="Password"
-                        required
                         type="password"
+                        [formField]="registerSignalForm.password"
                       />
                       <label for="registerPassword">{{ 'Password' | translate }}</label>
                     </div>
@@ -129,20 +123,19 @@
                       <input
                         autocomplete="new-password"
                         class="form-control"
-                        formControlName="confirmPassword"
                         id="confirmPassword"
-                        required
                         type="password"
                         [class.is-invalid]="
-                          registerForm.get('confirmPassword')?.touched &&
-                          registerForm.hasError('passwordMismatch')
+                          registerSignalForm.confirmPassword().touched() &&
+                          registerSignalForm.confirmPassword().errors().length > 0
                         "
+                        [formField]="registerSignalForm.confirmPassword"
                         [placeholder]="'Confirm password' | translate"
                       />
                       <label for="confirmPassword">{{ 'Confirm password' | translate }}</label>
                       @if (
-                        registerForm.get('confirmPassword')?.touched &&
-                        registerForm.hasError('passwordMismatch')
+                        registerSignalForm.confirmPassword().touched() &&
+                        registerSignalForm.confirmPassword().errors().length > 0
                       ) {
                         <div class="invalid-feedback d-block">
                           {{ 'Passwords do not match' | translate }}
@@ -153,7 +146,7 @@
                     <button
                       class="btn btn-success w-100 mb-3"
                       type="submit"
-                      [disabled]="registerForm.invalid || registerSubmitting()"
+                      [disabled]="registerSignalForm().invalid() || registerSubmitting()"
                     >
                       {{ 'Register' | translate }}
                     </button>

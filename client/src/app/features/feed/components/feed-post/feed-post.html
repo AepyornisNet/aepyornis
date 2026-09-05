@@ -185,16 +185,13 @@
           }
         </div>
 
-        <form class="mt-3" (ngSubmit)="submitReply()">
+        <form class="mt-3" [formRoot]="replySignalForm" (ngSubmit)="submitReply()">
           <div class="input-group input-group-sm">
             <input
               class="form-control"
               type="text"
-              [disabled]="isReplying()"
-              [name]="'comment-' + workout.id"
-              [ngModel]="replyDraft()"
+              [formField]="replySignalForm.content"
               [placeholder]="('Add a comment' | translate) + '...'"
-              (ngModelChange)="replyDraft.set($event)"
             />
             <button class="btn btn-primary" type="submit" [disabled]="!canSubmitReply()">
               {{ 'Post Comment' | translate }}

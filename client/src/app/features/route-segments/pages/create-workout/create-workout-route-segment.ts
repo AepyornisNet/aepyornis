@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { disabled, form, FormField, FormRoot, min, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { WorkoutDetail } from '../../../../core/types/workout';
@@ -21,7 +21,14 @@ import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 
 @Component({
   selector: 'app-create-workout-route-segment',
-  imports: [FormsModule, AppIcon, TranslatePipe, RouteSegmentMapComponent, FormatDistancePipe],
+  imports: [
+    FormField,
+    FormRoot,
+    AppIcon,
+    TranslatePipe,
+    RouteSegmentMapComponent,
+    FormatDistancePipe,
+  ],
   templateUrl: './create-workout-route-segment.html',
   styleUrl: './create-workout-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,13 +46,35 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
 
   public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
 
-  // Form fields
-  public readonly name = signal('');
-  public readonly category = signal('');
-  public readonly start = signal(1); // 1-based for UI
-  public readonly end = signal(1); // 1-based for UI
-  public readonly bidirectional = signal(false);
-  public readonly circular = signal(false);
+  // Form model & form
+  public readonly routeSegmentModel = signal({
+    name: '',
+    category: '',
+    start: 1,
+    end: 1,
+    bidirectional: false,
+    circular: false,
+  });
+
+  public readonly routeSegmentForm = form(
+    this.routeSegmentModel,
+    (s) => {
+      required(s.name);
+      min(s.start, 1);
+      min(s.end, 1);
+      disabled(s.name, { when: () => this.creating() });
+      disabled(s.category, { when: () => this.creating() });
+      disabled(s.start, { when: () => this.creating() });
+      disabled(s.end, { when: () => this.creating() });
+      disabled(s.bidirectional, { when: () => this.creating() });
+      disabled(s.circular, { when: () => this.creating() });
+    },
+    {
+      submission: {
+        action: () => this.createRouteSegment(),
+      },
+    },
+  );
 
   // Computed values
   public readonly totalPoints = computed(() => {
@@ -55,8 +84,9 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
 
   public readonly selectedDistance = computed(() => {
     const w = this.workout();
-    const startIdx = this.start() - 1;
-    const endIdx = this.end() - 1;
+    const model = this.routeSegmentModel();
+    const startIdx = model.start - 1;
+    const endIdx = model.end - 1;
 
     if (!w?.records?.details?.distance || startIdx < 0 || endIdx < 0) {
       return 0;
@@ -86,8 +116,9 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
     if (total < 2) {
       return null;
     }
-    const startIdx = Math.max(0, Math.min(this.start() - 1, total - 2));
-    const endIdx = Math.max(startIdx + 1, Math.min(this.end() - 1, total - 1));
+    const model = this.routeSegmentModel();
+    const startIdx = Math.max(0, Math.min(model.start - 1, total - 2));
+    const endIdx = Math.max(startIdx + 1, Math.min(model.end - 1, total - 1));
     return { startIndex: startIdx, endIndex: endIdx };
   });
 
@@ -110,12 +141,17 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       if (response) {
         const workout = response.results;
         this.workout.set(workout);
-        this.name.set(workout.name);
-        this.category.set(workout.type || '');
 
         // Set end to the last point
         const points = workout.records?.details?.position?.length || 1;
-        this.end.set(points);
+        this.routeSegmentModel.set({
+          name: workout.name || '',
+          category: workout.type || '',
+          start: 1,
+          end: points,
+          bidirectional: false,
+          circular: false,
+        });
       }
     } catch (err) {
       console.error('Failed to load workout:', err);
@@ -126,21 +162,23 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   }
 
   public updateStart(value: number): void {
-    this.start.set(value);
-    if (value > this.end()) {
-      this.end.set(value);
-    }
+    this.routeSegmentModel.update((m) => ({
+      ...m,
+      start: value,
+      end: value > m.end ? value : m.end,
+    }));
   }
 
   public updateEnd(value: number): void {
-    this.end.set(value);
-    if (value < this.start()) {
-      this.start.set(value);
-    }
+    this.routeSegmentModel.update((m) => ({
+      ...m,
+      end: value,
+      start: value < m.start ? value : m.start,
+    }));
   }
 
   public async createRouteSegment(): Promise<void> {
-    if (this.creating()) {
+    if (this.creating() || this.routeSegmentForm().invalid()) {
       return;
     }
     const w = this.workout();
@@ -152,12 +190,13 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
     this.error.set(null);
 
     try {
+      const formValue = this.routeSegmentModel();
       const response = await firstValueFrom(
         this.api.createRouteSegmentFromWorkout(w.id, {
-          name: this.name(),
-          start: this.start(),
-          end: this.end(),
-          category: this.category() || undefined,
+          name: formValue.name,
+          start: formValue.start,
+          end: formValue.end,
+          category: formValue.category || undefined,
         }),
       );
       const created = response?.results;
@@ -167,13 +206,13 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
         return;
       }
 
-      if (this.bidirectional() || this.circular()) {
+      if (formValue.bidirectional || formValue.circular) {
         await firstValueFrom(
           this.api.updateRouteSegment(created.id, {
-            name: created.name ?? this.name(),
+            name: created.name ?? formValue.name,
             notes: created.notes ?? '',
-            bidirectional: this.bidirectional(),
-            circular: this.circular(),
+            bidirectional: formValue.bidirectional,
+            circular: formValue.circular,
           }),
         );
       }

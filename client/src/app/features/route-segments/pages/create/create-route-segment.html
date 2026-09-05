@@ -19,7 +19,7 @@
     <div class="col-lg-8">
       <div class="card shadow-sm">
         <div class="card-body">
-          <form [formGroup]="routeSegmentForm" (ngSubmit)="createRouteSegment()">
+          <form [formRoot]="routeSegmentForm" (ngSubmit)="createRouteSegment()">
             <div class="mb-3">
               <label class="form-label" for="route-segment-file">{{
                 'GPX file' | translate
@@ -66,12 +66,7 @@
 
             <div class="mb-3">
               <label class="form-label" for="category">{{ 'Category' | translate }}</label>
-              <select
-                class="form-select"
-                formControlName="category"
-                id="category"
-                [disabled]="creating()"
-              >
+              <select class="form-select" id="category" [formField]="routeSegmentForm.category">
                 <option value="">{{ 'Not specified' | translate }}</option>
                 @for (t of availableTypes(); track t) {
                   <option [value]="t">{{ sportLabel(t) | translate }}</option>
@@ -83,9 +78,9 @@
               <label class="form-label" for="notes">{{ 'Notes' | translate }}</label>
               <textarea
                 class="form-control"
-                formControlName="notes"
                 id="notes"
                 rows="3"
+                [formField]="routeSegmentForm.notes"
                 [placeholder]="'Optional notes about this route segment' | translate"
               ></textarea>
             </div>
@@ -96,8 +91,7 @@
                   class="form-check-input"
                   id="bidirectional"
                   type="checkbox"
-                  [checked]="bidirectional()"
-                  (change)="bidirectional.set($any($event.target).checked)"
+                  [formField]="routeSegmentForm.bidirectional"
                 />
                 <label class="form-check-label" for="bidirectional">
                   {{ 'Bidirectional' | translate }}
@@ -108,8 +102,7 @@
                   class="form-check-input"
                   id="circular"
                   type="checkbox"
-                  [checked]="circular()"
-                  (change)="circular.set($any($event.target).checked)"
+                  [formField]="routeSegmentForm.circular"
                 />
                 <label class="form-check-label" for="circular">
                   {{ 'Roundtour' | translate }}
@@ -121,7 +114,7 @@
               <button
                 class="btn btn-primary btn-lg"
                 type="submit"
-                [disabled]="creating() || !hasFiles()"
+                [disabled]="creating() || !hasFiles() || routeSegmentForm().invalid()"
               >
                 @if (creating()) {
                   <span

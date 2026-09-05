@@ -15,12 +15,12 @@
             }}
           </p>
 
-          <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
+          <form [formRoot]="searchSignalForm" (ngSubmit)="onSearch()">
             <div class="input-group">
               <input
                 class="form-control"
-                formControlName="q"
                 type="text"
+                [formField]="searchSignalForm.q"
                 [placeholder]="'Search profiles' | translate"
               />
               <button class="btn btn-primary" type="submit">

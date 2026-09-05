@@ -1,55 +1,57 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
-
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { disabled, form, FormField, FormRoot } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { RouteSegment } from '../../../../core/types/route-segment';
-
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-create-route-segment',
-  imports: [ReactiveFormsModule, AppIcon, TranslatePipe],
+  imports: [FormField, FormRoot, AppIcon, TranslatePipe],
   templateUrl: './create-route-segment.html',
   styleUrl: './create-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateRouteSegmentPage implements OnInit {
+export class CreateRouteSegmentPage {
   public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private router = inject(Router);
-  private fb = inject(FormBuilder);
+  private translate = inject(TranslateService);
 
   public readonly selectedFiles = signal<File[]>([]);
   public readonly creating = signal(false);
   public readonly error = signal<string | null>(null);
-  public readonly bidirectional = signal(false);
-  public readonly circular = signal(false);
 
   public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
 
-  public routeSegmentForm!: FormGroup;
+  public readonly routeSegmentModel = signal({
+    category: '',
+    notes: '',
+    bidirectional: false,
+    circular: false,
+  });
+
+  public readonly routeSegmentForm = form(
+    this.routeSegmentModel,
+    (s) => {
+      disabled(s.category, { when: () => this.creating() });
+      disabled(s.notes, { when: () => this.creating() });
+      disabled(s.bidirectional, { when: () => this.creating() });
+      disabled(s.circular, { when: () => this.creating() });
+    },
+    {
+      submission: {
+        action: () => this.createRouteSegment(),
+      },
+    },
+  );
 
   public readonly hasFiles = computed(() => this.selectedFiles().length > 0);
   public readonly fileCount = computed(() => this.selectedFiles().length);
-
-  public ngOnInit(): void {
-    this.routeSegmentForm = this.fb.group({
-      category: [''],
-      notes: [''],
-    });
-  }
 
   public onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -71,7 +73,7 @@ export class CreateRouteSegmentPage implements OnInit {
 
     const files = this.selectedFiles();
     if (files.length === 0) {
-      this.error.set('Please select at least one file.');
+      this.error.set(this.translate.instant('Please select at least one file'));
       return;
     }
 
@@ -82,12 +84,13 @@ export class CreateRouteSegmentPage implements OnInit {
       const formData = new FormData();
       files.forEach((file) => formData.append('file', file));
 
-      const categoryValue = String(this.routeSegmentForm.value.category || '').trim();
+      const formValue = this.routeSegmentModel();
+      const categoryValue = String(formValue.category || '').trim();
       if (categoryValue.length > 0) {
         formData.append('category', categoryValue);
       }
 
-      const notesValue = String(this.routeSegmentForm.value.notes || '').trim();
+      const notesValue = String(formValue.notes || '').trim();
       if (notesValue.length > 0) {
         formData.append('notes', notesValue);
       }
@@ -99,19 +102,21 @@ export class CreateRouteSegmentPage implements OnInit {
         if (response?.errors?.length) {
           this.error.set(response.errors.join(' '));
         } else {
-          this.error.set('Failed to create route segment. Please try again.');
+          this.error.set(
+            this.translate.instant('Failed to create route segment. Please try again.'),
+          );
         }
         return;
       }
 
-      if (this.bidirectional() || this.circular()) {
+      if (formValue.bidirectional || formValue.circular) {
         for (const segment of results) {
           await firstValueFrom(
             this.api.updateRouteSegment(segment.id, {
               name: segment.name,
               notes: segment.notes ?? notesValue,
-              bidirectional: this.bidirectional(),
-              circular: this.circular(),
+              bidirectional: formValue.bidirectional,
+              circular: formValue.circular,
             }),
           );
         }
@@ -124,7 +129,7 @@ export class CreateRouteSegmentPage implements OnInit {
       }
     } catch (err) {
       console.error('Failed to create route segment:', err);
-      this.error.set('Failed to create route segment. Please try again.');
+      this.error.set(this.translate.instant('Failed to create route segment. Please try again.'));
     } finally {
       this.creating.set(false);
     }
