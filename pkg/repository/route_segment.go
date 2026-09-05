@@ -21,8 +21,8 @@ type RouteSegmentStats struct {
 
 type RouteSegment interface {
 	GetByID(id uint64) (*model.RouteSegment, error)
-	Count() (int64, error)
-	List(limit int, offset int) ([]*model.RouteSegment, error)
+	Count(viewer *model.User) (int64, error)
+	List(viewer *model.User, limit int, offset int) ([]*model.RouteSegment, error)
 	CreateFromContent(notes string, filename string, content []byte) (*model.RouteSegment, error)
 	Save(routeSegment *model.RouteSegment) error
 	Delete(routeSegment *model.RouteSegment) error
@@ -32,8 +32,8 @@ type RouteSegment interface {
 	CountLikes(routeSegmentID uint64) (int64, error)
 	GetLikers(routeSegmentID uint64) ([]*model.Profile, error)
 	GetLikes(routeSegmentID uint64) ([]model.APStatusLike, error)
-	GetMatches(routeSegmentID uint64, sort string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error)
-	GetStats(routeSegmentID uint64) (*RouteSegmentStats, error)
+	GetMatches(routeSegmentID uint64, viewer *model.User, sort string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error)
+	GetStats(routeSegmentID uint64, viewer *model.User) (*RouteSegmentStats, error)
 }
 
 type routeSegmentRepository struct {
@@ -46,29 +46,40 @@ func NewRouteSegment(injector do.Injector) (RouteSegment, error) {
 
 func (r *routeSegmentRepository) GetByID(id uint64) (*model.RouteSegment, error) {
 	var routeSegment model.RouteSegment
-	if err := r.db.Preload("RouteSegmentMatches.Workout.Profile").First(&routeSegment, id).Error; err != nil {
+	if err := r.db.Preload("Profile").Preload("RouteSegmentMatches.Workout.Profile").First(&routeSegment, id).Error; err != nil {
 		return nil, err
 	}
 
 	sort.Slice(routeSegment.RouteSegmentMatches, func(i, j int) bool {
+		if routeSegment.RouteSegmentMatches[i].Workout == nil || routeSegment.RouteSegmentMatches[j].Workout == nil {
+			return false
+		}
 		return routeSegment.RouteSegmentMatches[i].Workout.GetDate().Before(routeSegment.RouteSegmentMatches[j].Workout.GetDate())
 	})
 
 	return &routeSegment, nil
 }
 
-func (r *routeSegmentRepository) Count() (int64, error) {
+func (r *routeSegmentRepository) Count(viewer *model.User) (int64, error) {
 	var total int64
-	if err := r.db.Model(&model.RouteSegment{}).Count(&total).Error; err != nil {
+	q := r.db.Model(&model.RouteSegment{})
+	q = model.ScopeVisibleRouteSegments(q, viewer)
+	if err := q.Count(&total).Error; err != nil {
 		return 0, err
 	}
 
 	return total, nil
 }
 
-func (r *routeSegmentRepository) List(limit int, offset int) ([]*model.RouteSegment, error) {
+func (r *routeSegmentRepository) List(viewer *model.User, limit int, offset int) ([]*model.RouteSegment, error) {
 	var routeSegments []*model.RouteSegment
-	q := r.db.Preload("RouteSegmentMatches").Order("created_at DESC")
+	q := r.db.Model(&model.RouteSegment{})
+	q = model.ScopeVisibleRouteSegments(q, viewer)
+	q = q.Preload("Profile").
+		Preload("RouteSegmentMatches", func(db *gorm.DB) *gorm.DB {
+			return model.ScopeVisibleJoinedWorkouts(db.Select("route_segment_matches.*").Joins("JOIN workouts ON workouts.id = route_segment_matches.workout_id"), viewer)
+		}).
+		Order("route_segments.created_at DESC")
 	if limit > 0 {
 		q = q.Limit(limit)
 	}
@@ -204,11 +215,14 @@ func (r *routeSegmentRepository) GetLikes(routeSegmentID uint64) ([]model.APStat
 	return likes, nil
 }
 
-func (r *routeSegmentRepository) GetMatches(routeSegmentID uint64, sort string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error) {
+func (r *routeSegmentRepository) GetMatches(routeSegmentID uint64, viewer *model.User, sort string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error) {
 	var matches []*model.RouteSegmentMatch
 	var total int64
 
-	base := r.db.Model(&model.RouteSegmentMatch{}).Where("route_segment_id = ?", routeSegmentID)
+	base := r.db.Model(&model.RouteSegmentMatch{}).
+		Joins("JOIN workouts ON workouts.id = route_segment_matches.workout_id").
+		Where("route_segment_matches.route_segment_id = ?", routeSegmentID)
+	base = model.ScopeVisibleJoinedWorkouts(base, viewer)
 	if err := base.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -216,6 +230,7 @@ func (r *routeSegmentRepository) GetMatches(routeSegmentID uint64, sort string, 
 	q := r.db.Preload("Workout.Profile").
 		Joins("JOIN workouts ON workouts.id = route_segment_matches.workout_id").
 		Where("route_segment_matches.route_segment_id = ?", routeSegmentID)
+	q = model.ScopeVisibleJoinedWorkouts(q, viewer)
 
 	switch sort {
 	case "newest", "recent":
@@ -242,25 +257,31 @@ func (r *routeSegmentRepository) GetMatches(routeSegmentID uint64, sort string, 
 	return matches, total, nil
 }
 
-func (r *routeSegmentRepository) GetStats(routeSegmentID uint64) (*RouteSegmentStats, error) {
+func (r *routeSegmentRepository) GetStats(routeSegmentID uint64, viewer *model.User) (*RouteSegmentStats, error) {
 	var totalEfforts int64
-	if err := r.db.Model(&model.RouteSegmentMatch{}).Where("route_segment_id = ?", routeSegmentID).Count(&totalEfforts).Error; err != nil {
+	base := r.db.Model(&model.RouteSegmentMatch{}).
+		Joins("JOIN workouts ON workouts.id = route_segment_matches.workout_id").
+		Where("route_segment_matches.route_segment_id = ?", routeSegmentID)
+	base = model.ScopeVisibleJoinedWorkouts(base, viewer)
+	if err := base.Count(&totalEfforts).Error; err != nil {
 		return nil, err
 	}
 
 	var uniqueAthletes int64
-	if err := r.db.Model(&model.RouteSegmentMatch{}).
+	qAthletes := r.db.Model(&model.RouteSegmentMatch{}).
 		Joins("JOIN workouts ON workouts.id = route_segment_matches.workout_id").
-		Where("route_segment_matches.route_segment_id = ?", routeSegmentID).
-		Select("COUNT(DISTINCT workouts.profile_id)").Scan(&uniqueAthletes).Error; err != nil {
+		Where("route_segment_matches.route_segment_id = ?", routeSegmentID)
+	qAthletes = model.ScopeVisibleJoinedWorkouts(qAthletes, viewer)
+	if err := qAthletes.Select("COUNT(DISTINCT workouts.profile_id)").Scan(&uniqueAthletes).Error; err != nil {
 		return nil, err
 	}
 
 	var bestMatch model.RouteSegmentMatch
-	err := r.db.Preload("Workout.Profile").
-		Where("route_segment_id = ?", routeSegmentID).
-		Order("duration ASC").
-		First(&bestMatch).Error
+	qBest := r.db.Preload("Workout.Profile").
+		Joins("JOIN workouts ON workouts.id = route_segment_matches.workout_id").
+		Where("route_segment_matches.route_segment_id = ?", routeSegmentID)
+	qBest = model.ScopeVisibleJoinedWorkouts(qBest, viewer)
+	err := qBest.Order("route_segment_matches.duration ASC").First(&bestMatch).Error
 	var courseRecord *model.RouteSegmentMatch
 	if err == nil {
 		courseRecord = &bestMatch
@@ -273,9 +294,11 @@ func (r *routeSegmentRepository) GetStats(routeSegmentID uint64) (*RouteSegmentS
 			AvgDuration float64
 			AvgDistance float64
 		}
-		_ = r.db.Model(&model.RouteSegmentMatch{}).
-			Where("route_segment_id = ?", routeSegmentID).
-			Select("AVG(duration) as avg_duration, AVG(distance) as avg_distance").
+		qAvg := r.db.Model(&model.RouteSegmentMatch{}).
+			Joins("JOIN workouts ON workouts.id = route_segment_matches.workout_id").
+			Where("route_segment_matches.route_segment_id = ?", routeSegmentID)
+		qAvg = model.ScopeVisibleJoinedWorkouts(qAvg, viewer)
+		_ = qAvg.Select("AVG(route_segment_matches.duration) as avg_duration, AVG(route_segment_matches.distance) as avg_distance").
 			Scan(&result).Error
 
 		if result.AvgDuration > 0 {

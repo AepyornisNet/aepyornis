@@ -318,29 +318,6 @@
                   }}</span>
                 </li>
               }
-              @if (routeSegment()!.filename) {
-                <li
-                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
-                >
-                  <span class="text-body-secondary d-flex align-items-center gap-2">
-                    <app-icon name="file" size="16" />
-                    {{ 'File' | translate }}
-                  </span>
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="fw-medium text-body text-break text-end">{{
-                      routeSegment()!.filename
-                    }}</span>
-                    <button
-                      class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2"
-                      type="button"
-                      [title]="'Download GPX' | translate"
-                      (click)="onDownloadFile()"
-                    >
-                      <app-icon name="download" size="14" />
-                    </button>
-                  </div>
-                </li>
-              }
               <li
                 class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
               >
@@ -350,17 +327,6 @@
                 </span>
                 <span class="fw-medium text-body">{{
                   routeSegment()!.created_at | formatDate
-                }}</span>
-              </li>
-              <li
-                class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
-              >
-                <span class="text-body-secondary d-flex align-items-center gap-2">
-                  <app-icon name="date" size="16" />
-                  {{ 'Updated' | translate }}
-                </span>
-                <span class="fw-medium text-body">{{
-                  routeSegment()!.updated_at | formatDate
                 }}</span>
               </li>
             </ul>

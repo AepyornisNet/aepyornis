@@ -122,10 +122,10 @@ type RouteSegmentMatch struct {
 // RouteSegmentDetailResponse represents a detailed route segment with map data and matches
 type RouteSegmentDetailResponse struct {
 	RouteSegmentResponse
-	Points        []MapPoint                 `json:"points"`
-	Matches       []RouteSegmentMatch        `json:"matches"`
-	Stats         *RouteSegmentStatsResponse `json:"stats,omitempty"`
-	Center        struct {
+	Points  []MapPoint                 `json:"points"`
+	Matches []RouteSegmentMatch        `json:"matches"`
+	Stats   *RouteSegmentStatsResponse `json:"stats,omitempty"`
+	Center  struct {
 		Lat float64 `json:"lat"`
 		Lng float64 `json:"lng"`
 	} `json:"center"`

@@ -59,6 +59,76 @@ func ScopeVisibleWorkouts(query *gorm.DB, ownerProfileID uint64, viewerProfileID
 	)
 }
 
+func CanReadWorkout(db *gorm.DB, requester *User, workout *Workout) (bool, error) {
+	if workout == nil {
+		return false, nil
+	}
+
+	if requester != nil && requester.Admin {
+		return true, nil
+	}
+
+	if requester != nil {
+		if workout.Profile != nil && workout.Profile.UserID != nil && requester.ID == *workout.Profile.UserID {
+			return true, nil
+		}
+		if requester.Profile.ID != 0 && workout.ProfileID != 0 && requester.Profile.ID == workout.ProfileID {
+			return true, nil
+		}
+	}
+
+	switch workout.Visibility {
+	case WorkoutVisibilityPublic:
+		return true, nil
+	case WorkoutVisibilityFollowers:
+		if requester == nil || requester.Profile.ID == 0 || workout.ProfileID == 0 {
+			return false, nil
+		}
+
+		var count int64
+		if err := db.
+			Model(&Follower{}).
+			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, workout.ProfileID, true).
+			Count(&count).Error; err != nil {
+			return false, err
+		}
+
+		return count > 0, nil
+	case WorkoutVisibilityPrivate, "private":
+		return false, nil
+	default:
+		return false, nil
+	}
+}
+
+func ScopeVisibleJoinedWorkouts(query *gorm.DB, viewer *User) *gorm.DB {
+	if viewer != nil && viewer.Admin {
+		return query
+	}
+
+	if viewer == nil || viewer.Profile.ID == 0 {
+		return query.Where("workouts.visibility = ?", WorkoutVisibilityPublic)
+	}
+
+	return query.Where(
+		`workouts.profile_id = ? OR workouts.visibility = ? OR (
+			workouts.visibility = ? AND
+			EXISTS (
+				SELECT 1
+				FROM followers f
+				WHERE f.profile_id = ?
+					AND f.following_profile_id = workouts.profile_id
+					AND f.approved = ?
+			)
+		)`,
+		viewer.Profile.ID,
+		WorkoutVisibilityPublic,
+		WorkoutVisibilityFollowers,
+		viewer.Profile.ID,
+		true,
+	)
+}
+
 type Workout struct {
 	Model
 

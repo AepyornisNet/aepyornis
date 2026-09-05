@@ -156,35 +156,7 @@ func workoutOwnerUserID(workout *model.Workout) uint64 {
 }
 
 func (wc *workoutController) canReadWorkout(requester *model.User, workout *model.Workout) (bool, error) {
-	if requester == nil || workout == nil {
-		return false, nil
-	}
-
-	ownerUserID := workoutOwnerUserID(workout)
-	if ownerUserID != 0 && requester.ID == ownerUserID {
-		return true, nil
-	}
-
-	switch workout.Visibility {
-	case model.WorkoutVisibilityPublic:
-		return true, nil
-	case model.WorkoutVisibilityFollowers:
-		if requester.Profile.ID == 0 {
-			return false, nil
-		}
-
-		var count int64
-		if err := wc.db.
-			Model(&model.Follower{}).
-			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, workout.ProfileID, true).
-			Count(&count).Error; err != nil {
-			return false, err
-		}
-
-		return count > 0, nil
-	default:
-		return false, nil
-	}
+	return model.CanReadWorkout(wc.db, requester, workout)
 }
 
 func (wc *workoutController) getReadableWorkout(c *echo.Context, withDetails bool) (*model.Workout, error) {
@@ -299,6 +271,20 @@ func (wc *workoutController) GetWorkout(c *echo.Context) error {
 	records, err := model.GetWorkoutIntervalRecordsWithRank(wc.db, workout.ProfileID, workout.Type, workout.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	user := currentUser(c)
+	if len(workout.RouteSegmentMatches) > 0 {
+		visibleMatches := make([]*model.RouteSegmentMatch, 0, len(workout.RouteSegmentMatches))
+		for _, m := range workout.RouteSegmentMatches {
+			if m != nil && m.RouteSegment != nil {
+				canRead, _ := model.CanReadRouteSegment(wc.db, user, m.RouteSegment)
+				if canRead {
+					visibleMatches = append(visibleMatches, m)
+				}
+			}
+		}
+		workout.RouteSegmentMatches = visibleMatches
 	}
 
 	result := dto.NewWorkoutDetailResponse(workout, records)

@@ -30,13 +30,15 @@ func (d RouteSegmentDifficulty) IsValid() bool {
 }
 
 type RoutSegmentCreationParams struct {
-	Name        string                 `form:"name" json:"name"`
-	Start       int                    `form:"start" json:"start"`
-	End         int                    `form:"end" json:"end"`
-	Category    string                 `form:"category" json:"category"`
-	Visibility  WorkoutVisibility      `form:"visibility" json:"visibility"`
-	Description string                 `form:"description" json:"description"`
-	Difficulty  RouteSegmentDifficulty `form:"difficulty" json:"difficulty"`
+	Name          string                 `form:"name" json:"name"`
+	Start         int                    `form:"start" json:"start"`
+	End           int                    `form:"end" json:"end"`
+	Category      string                 `form:"category" json:"category"`
+	Visibility    WorkoutVisibility      `form:"visibility" json:"visibility"`
+	Description   string                 `form:"description" json:"description"`
+	Difficulty    RouteSegmentDifficulty `form:"difficulty" json:"difficulty"`
+	Bidirectional bool                   `form:"bidirectional" json:"bidirectional"`
+	Circular      bool                   `form:"circular" json:"circular"`
 }
 
 func (rscp *RoutSegmentCreationParams) Filename() string {
@@ -82,6 +84,71 @@ type RouteSegment struct {
 	Circular      bool    `json:"circular"`      // Whether the route segment is circular
 
 	Dirty bool `json:"dirty"` // Whether the route segment should be recalculated
+}
+
+func CanReadRouteSegment(db *gorm.DB, requester *User, rs *RouteSegment) (bool, error) {
+	if rs == nil {
+		return false, nil
+	}
+
+	if requester != nil && requester.Admin {
+		return true, nil
+	}
+
+	if requester != nil && rs.ProfileID != 0 && requester.Profile.ID == rs.ProfileID {
+		return true, nil
+	}
+
+	switch rs.Visibility {
+	case WorkoutVisibilityPublic:
+		return true, nil
+	case WorkoutVisibilityFollowers:
+		if requester == nil || requester.Profile.ID == 0 || rs.ProfileID == 0 {
+			return false, nil
+		}
+
+		var count int64
+		if err := db.
+			Model(&Follower{}).
+			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, rs.ProfileID, true).
+			Count(&count).Error; err != nil {
+			return false, err
+		}
+
+		return count > 0, nil
+	case WorkoutVisibilityPrivate, "private":
+		return false, nil
+	default:
+		return false, nil
+	}
+}
+
+func ScopeVisibleRouteSegments(query *gorm.DB, viewer *User) *gorm.DB {
+	if viewer != nil && viewer.Admin {
+		return query
+	}
+
+	if viewer == nil || viewer.Profile.ID == 0 {
+		return query.Where("route_segments.visibility = ?", WorkoutVisibilityPublic)
+	}
+
+	return query.Where(
+		`route_segments.profile_id = ? OR route_segments.visibility = ? OR (
+			route_segments.visibility = ? AND
+			EXISTS (
+				SELECT 1
+				FROM followers f
+				WHERE f.profile_id = ?
+					AND f.following_profile_id = route_segments.profile_id
+					AND f.approved = ?
+			)
+		)`,
+		viewer.Profile.ID,
+		WorkoutVisibilityPublic,
+		WorkoutVisibilityFollowers,
+		viewer.Profile.ID,
+		true,
+	)
 }
 
 func (rs *RouteSegment) HasFile() bool {

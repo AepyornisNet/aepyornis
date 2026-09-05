@@ -25,10 +25,10 @@ type RouteSegmentMatch struct {
 
 	RouteSegmentID uint64        `gorm:"not null;index" json:"routeSegmentID"` // The ID of the route segment
 	WorkoutID      uint64        `gorm:"not null;index" json:"workoutID"`      // The ID of the workout
-	FirstID        int           `json:"firstID"`                          // The index of the first point of the route
-	LastID         int           `json:"lastID"`                           // The index of the last point of the route
-	Distance       float64       `json:"distance"`                         // The total distance of the route segment for this workout
-	Duration       time.Duration `json:"duration"`                         // The total duration of the route segment for this workout
+	FirstID        int           `json:"firstID"`                              // The index of the first point of the route
+	LastID         int           `json:"lastID"`                               // The index of the last point of the route
+	Distance       float64       `json:"distance"`                             // The total distance of the route segment for this workout
+	Duration       time.Duration `json:"duration"`                             // The total duration of the route segment for this workout
 }
 
 func (rsm *RouteSegmentMatch) AverageSpeed() float64 {

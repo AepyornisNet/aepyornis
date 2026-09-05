@@ -55,6 +55,16 @@ func NewRouteSegmentController(injector do.Injector) RouteSegmentController {
 	}
 }
 
+func canEditRouteSegment(user *model.User, rs *model.RouteSegment) bool {
+	if user == nil || rs == nil {
+		return false
+	}
+	if user.Admin {
+		return true
+	}
+	return rs.ProfileID != 0 && rs.ProfileID == user.Profile.ID
+}
+
 func (rc *routeSegmentController) getRouteSegment(c *echo.Context) (*model.RouteSegment, error) {
 	id, err := cast.ToUint64E(c.Param("id"))
 	if err != nil {
@@ -64,6 +74,15 @@ func (rc *routeSegmentController) getRouteSegment(c *echo.Context) (*model.Route
 	rs, err := rc.routeSegmentRepo.GetByID(id)
 	if err != nil {
 		return nil, err
+	}
+
+	user := currentUser(c)
+	allowed, err := model.CanReadRouteSegment(rc.db, user, rs)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	return rs, nil
@@ -83,23 +102,36 @@ func (rc *routeSegmentController) getRouteSegment(c *echo.Context) (*model.Route
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments [get]
 func (rc *routeSegmentController) GetRouteSegments(c *echo.Context) error {
+	user := currentUser(c)
+
 	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	pagination.SetDefaults()
 
-	totalCount, err := rc.routeSegmentRepo.Count()
+	totalCount, err := rc.routeSegmentRepo.Count(user)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	routeSegments, err := rc.routeSegmentRepo.List(pagination.PerPage, pagination.GetOffset())
+	routeSegments, err := rc.routeSegmentRepo.List(user, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	results := dto.NewRouteSegmentsResponse(routeSegments)
+
+	var currentProfileID uint64
+	var isAdmin bool
+	if user != nil {
+		currentProfileID = user.Profile.ID
+		isAdmin = user.Admin
+	}
+	for i := range results {
+		results[i].CanEdit = isAdmin || (results[i].ProfileID != 0 && results[i].ProfileID == currentProfileID)
+		results[i].CanDelete = isAdmin || (results[i].ProfileID != 0 && results[i].ProfileID == currentProfileID)
+	}
 
 	resp := dto.PaginatedResponse[dto.RouteSegmentResponse]{
 		Results:    results,
@@ -137,6 +169,18 @@ func (rc *routeSegmentController) GetRouteSegment(c *echo.Context) error {
 		isAdmin = user.Admin
 	}
 
+	// Filter matches to only workouts visible to the current user
+	visibleMatches := make([]*model.RouteSegmentMatch, 0, len(rs.RouteSegmentMatches))
+	for _, m := range rs.RouteSegmentMatches {
+		if m != nil && m.Workout != nil {
+			canRead, _ := model.CanReadWorkout(rc.db, user, m.Workout)
+			if canRead {
+				visibleMatches = append(visibleMatches, m)
+			}
+		}
+	}
+	rs.RouteSegmentMatches = visibleMatches
+
 	detailResp := dto.NewRouteSegmentDetailResponse(rs)
 	detailResp.CanEdit = isAdmin || (rs.ProfileID != 0 && rs.ProfileID == currentProfileID)
 	detailResp.CanDelete = isAdmin || (rs.ProfileID != 0 && rs.ProfileID == currentProfileID)
@@ -148,7 +192,7 @@ func (rc *routeSegmentController) GetRouteSegment(c *echo.Context) error {
 		detailResp.HasLiked = hasLiked
 	}
 
-	statsData, err := rc.routeSegmentRepo.GetStats(rs.ID)
+	statsData, err := rc.routeSegmentRepo.GetStats(rs.ID, user)
 	if err == nil && statsData != nil {
 		statsResp := &dto.RouteSegmentStatsResponse{
 			TotalEfforts:   statsData.TotalEfforts,
@@ -237,6 +281,12 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 		if desc := c.FormValue("description"); desc != "" {
 			w.Description = desc
 		}
+		if b := c.FormValue("bidirectional"); b != "" {
+			w.Bidirectional = cast.ToBool(b)
+		}
+		if circ := c.FormValue("circular"); circ != "" {
+			w.Circular = cast.ToBool(circ)
+		}
 		_ = w.Save(rc.db)
 
 		resp := dto.NewRouteSegmentResponse(w)
@@ -279,6 +329,15 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c *echo.Context)
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	user := currentUser(c)
+	canRead, err := model.CanReadWorkout(rc.db, user, workout)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+	if !canRead {
+		return renderApiError(c, http.StatusNotFound, gorm.ErrRecordNotFound)
+	}
+
 	var params model.RoutSegmentCreationParams
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -294,9 +353,9 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c *echo.Context)
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if params.Category != "" {
+	if params.Category != "" && isValidRouteSegmentCategory(params.Category) {
 		rs.Category = params.Category
-	} else if workout.Type.String() != "" {
+	} else if workout.Type.String() != "" && isValidRouteSegmentCategory(workout.Type.String()) {
 		rs.Category = workout.Type.String()
 	}
 	if params.Visibility != "" {
@@ -304,12 +363,16 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c *echo.Context)
 	}
 	rs.Description = params.Description
 	rs.Difficulty = params.Difficulty
-	if user := currentUser(c); user != nil {
+	rs.Bidirectional = params.Bidirectional
+	rs.Circular = params.Circular
+	if user != nil {
 		rs.ProfileID = user.Profile.ID
 	} else if workout.ProfileID != 0 {
 		rs.ProfileID = workout.ProfileID
 	}
-	_ = rs.Save(rc.db)
+	if err := rs.Save(rc.db); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
 
 	if err := worker.EnqueueRouteSegmentUpdate(c.Request().Context(), rc.client, rs.ID); err != nil {
 		rc.logger.Error("Failed to enqueue route segment update", "route_segment_id", rs.ID, "error", err)
@@ -340,6 +403,11 @@ func (rc *routeSegmentController) DeleteRouteSegment(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	user := currentUser(c)
+	if !canEditRouteSegment(user, rs) {
+		return renderApiError(c, http.StatusForbidden, errors.New("forbidden"))
+	}
+
 	if err := rc.routeSegmentRepo.Delete(rs); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -367,6 +435,11 @@ func (rc *routeSegmentController) RefreshRouteSegment(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	user := currentUser(c)
+	if !canEditRouteSegment(user, rs) {
+		return renderApiError(c, http.StatusForbidden, errors.New("forbidden"))
 	}
 
 	if err := rs.UpdateFromContent(); err != nil {
@@ -402,6 +475,11 @@ func (rc *routeSegmentController) UpdateRouteSegment(c *echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	user := currentUser(c)
+	if !canEditRouteSegment(user, rs) {
+		return renderApiError(c, http.StatusForbidden, errors.New("forbidden"))
 	}
 
 	type updateParams struct {
@@ -501,6 +579,11 @@ func (rc *routeSegmentController) FindRouteSegmentMatches(c *echo.Context) error
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	user := currentUser(c)
+	if !canEditRouteSegment(user, rs) {
+		return renderApiError(c, http.StatusForbidden, errors.New("forbidden"))
+	}
+
 	rs.Dirty = true
 	if err := rs.Save(rc.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -523,6 +606,7 @@ func (rc *routeSegmentController) GetRouteSegmentMatches(c *echo.Context) error 
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	user := currentUser(c)
 	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
@@ -530,7 +614,7 @@ func (rc *routeSegmentController) GetRouteSegmentMatches(c *echo.Context) error 
 	pagination.SetDefaults()
 
 	sort := c.QueryParam("sort")
-	matches, totalCount, err := rc.routeSegmentRepo.GetMatches(rs.ID, sort, pagination.PerPage, pagination.GetOffset())
+	matches, totalCount, err := rc.routeSegmentRepo.GetMatches(rs.ID, user, sort, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
