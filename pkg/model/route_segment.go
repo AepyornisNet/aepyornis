@@ -13,10 +13,32 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+type RouteSegmentDifficulty string
+
+const (
+	RouteSegmentDifficultyEasy      RouteSegmentDifficulty = "easy"
+	RouteSegmentDifficultyModerate  RouteSegmentDifficulty = "moderate"
+	RouteSegmentDifficultyDifficult RouteSegmentDifficulty = "difficult"
+)
+
+func (d RouteSegmentDifficulty) IsValid() bool {
+	switch d {
+	case "", RouteSegmentDifficultyEasy, RouteSegmentDifficultyModerate, RouteSegmentDifficultyDifficult:
+		return true
+	}
+	return false
+}
+
 type RoutSegmentCreationParams struct {
-	Name  string `form:"name"`
-	Start int    `form:"start"`
-	End   int    `form:"end"`
+	Name          string                 `form:"name" json:"name"`
+	Start         int                    `form:"start" json:"start"`
+	End           int                    `form:"end" json:"end"`
+	Category      string                 `form:"category" json:"category"`
+	Visibility    WorkoutVisibility      `form:"visibility" json:"visibility"`
+	Description   string                 `form:"description" json:"description"`
+	Difficulty    RouteSegmentDifficulty `form:"difficulty" json:"difficulty"`
+	Bidirectional bool                   `form:"bidirectional" json:"bidirectional"`
+	Circular      bool                   `form:"circular" json:"circular"`
 }
 
 func (rscp *RoutSegmentCreationParams) Filename() string {
@@ -33,6 +55,13 @@ func (rscp *RoutSegmentCreationParams) Filename() string {
 
 type RouteSegment struct {
 	Model
+	ProfileID   uint64                 `gorm:"not null;index" json:"profile_id"` // Owner of the route segment
+	Profile     *Profile               `json:"profile,omitempty"`
+	Category    string                 `json:"category"`                                    // Workout type this is intended for
+	Visibility  WorkoutVisibility      `gorm:"not null;default:'public'" json:"visibility"` // Public, followers, private
+	Description string                 `json:"description"`                                 // Description of the route segment
+	Difficulty  RouteSegmentDifficulty `json:"difficulty"`                                  // easy, moderate, difficult
+
 	GeoAddress    *geo.Address `gorm:"serializer:json" json:"geoAddress"` // The address of the workout
 	Name          string       `gorm:"not null" json:"name"`              // The name of the workout
 	Notes         string       `json:"notes"`                             // The notes associated with the workout, in markdown
@@ -57,6 +86,62 @@ type RouteSegment struct {
 	Dirty bool `json:"dirty"` // Whether the route segment should be recalculated
 }
 
+func CanReadRouteSegment(db *gorm.DB, requester *User, rs *RouteSegment) (bool, error) {
+	if rs == nil {
+		return false, nil
+	}
+
+	if requester != nil && (requester.Admin || (rs.ProfileID != 0 && requester.Profile.ID == rs.ProfileID)) {
+		return true, nil
+	}
+
+	switch rs.Visibility {
+	case WorkoutVisibilityPublic:
+		return true, nil
+	case WorkoutVisibilityFollowers:
+		if requester == nil || requester.Profile.ID == 0 || rs.ProfileID == 0 {
+			return false, nil
+		}
+
+		var count int64
+		err := db.
+			Model(&Follower{}).
+			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, rs.ProfileID, true).
+			Count(&count).Error
+		return count > 0, err
+	default:
+		return false, nil
+	}
+}
+
+func ScopeVisibleRouteSegments(query *gorm.DB, viewer *User) *gorm.DB {
+	if viewer != nil && viewer.Admin {
+		return query
+	}
+
+	if viewer == nil || viewer.Profile.ID == 0 {
+		return query.Where("route_segments.visibility = ?", WorkoutVisibilityPublic)
+	}
+
+	return query.Where(
+		`route_segments.profile_id = ? OR route_segments.visibility = ? OR (
+			route_segments.visibility = ? AND
+			EXISTS (
+				SELECT 1
+				FROM followers f
+				WHERE f.profile_id = ?
+					AND f.following_profile_id = route_segments.profile_id
+					AND f.approved = ?
+			)
+		)`,
+		viewer.Profile.ID,
+		WorkoutVisibilityPublic,
+		WorkoutVisibilityFollowers,
+		viewer.Profile.ID,
+		true,
+	)
+}
+
 func (rs *RouteSegment) HasFile() bool {
 	return rs.Filename != "" && rs.Content != nil
 }
@@ -69,9 +154,10 @@ func NewRouteSegment(notes string, filename string, content []byte) (*RouteSegme
 	h.Write(content)
 
 	rs := &RouteSegment{
-		Name:  name,
-		Notes: notes,
-		Dirty: true,
+		Name:       name,
+		Notes:      notes,
+		Visibility: WorkoutVisibilityPublic,
+		Dirty:      true,
 
 		Content:  content,
 		Checksum: h.Sum(nil),
@@ -167,6 +253,18 @@ func (rs *RouteSegment) Create(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
+	if rs.ProfileID == 0 {
+		var firstProfile Profile
+		if err := db.Order("id ASC").First(&firstProfile).Error; err == nil {
+			rs.ProfileID = firstProfile.ID
+		} else {
+			defaultProfile := Profile{Username: "default", DisplayName: "Default"}
+			if err := db.Create(&defaultProfile).Error; err == nil {
+				rs.ProfileID = defaultProfile.ID
+			}
+		}
+	}
+
 	return db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit("RouteSegmentMatches").Create(rs).Error; err != nil {
 			return err
@@ -231,7 +329,7 @@ func replaceRouteSegmentMatches(tx *gorm.DB, routeSegmentID uint64, matches []*R
 }
 
 func (rs *RouteSegment) Address() string {
-	if rs.AddressString != "" {
+	if rs.AddressString != "" && rs.AddressString != UnknownLocation {
 		return rs.AddressString
 	}
 
@@ -239,5 +337,5 @@ func (rs *RouteSegment) Address() string {
 		return rs.GeoAddress.FormattedAddress
 	}
 
-	return UnknownLocation
+	return ""
 }

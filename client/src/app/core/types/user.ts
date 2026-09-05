@@ -2,6 +2,13 @@
  * User domain models
  */
 
+export type Profile = {
+  id: number;
+  username: string;
+  display_name?: string;
+  user_id?: number;
+};
+
 export type UserProfile = {
   id: number;
   email: string;

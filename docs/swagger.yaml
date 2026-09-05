@@ -109,6 +109,21 @@ definitions:
       type:
         $ref: '#/definitions/model.SlopeKind'
     type: object
+  dto.CourseRecordInfo:
+    properties:
+      duration:
+        type: integer
+      profile_id:
+        type: integer
+      profile_name:
+        type: string
+      speed:
+        type: number
+      workout_id:
+        type: integer
+      workout_name:
+        type: string
+    type: object
   dto.DistanceRecordResponse:
     properties:
       average_speed:
@@ -243,13 +258,9 @@ definitions:
     type: object
   dto.MapPoint:
     properties:
-      elevation:
-        type: number
       lat:
         type: number
       lng:
-        type: number
-      total_distance:
         type: number
     type: object
   dto.MeasurementResponse:
@@ -951,6 +962,12 @@ definitions:
         type: string
       bidirectional:
         type: boolean
+      can_delete:
+        type: boolean
+      can_edit:
+        type: boolean
+      category:
+        type: string
       center:
         properties:
           lat:
@@ -962,9 +979,17 @@ definitions:
         type: boolean
       created_at:
         type: string
+      description:
+        type: string
+      difficulty:
+        $ref: '#/definitions/model.RouteSegmentDifficulty'
       filename:
         type: string
+      has_liked:
+        type: boolean
       id:
+        type: integer
+      like_count:
         type: integer
       match_count:
         type: integer
@@ -984,6 +1009,12 @@ definitions:
         items:
           $ref: '#/definitions/dto.MapPoint'
         type: array
+      profile_id:
+        type: integer
+      profile_name:
+        type: string
+      stats:
+        $ref: '#/definitions/dto.RouteSegmentStatsResponse'
       total_distance:
         type: number
       total_down:
@@ -992,6 +1023,8 @@ definitions:
         type: number
       updated_at:
         type: string
+      visibility:
+        $ref: '#/definitions/model.WorkoutVisibility'
     type: object
   dto.RouteSegmentMatch:
     properties:
@@ -1001,9 +1034,17 @@ definitions:
         type: number
       duration:
         type: integer
+      id:
+        type: integer
+      profile_id:
+        type: integer
+      profile_name:
+        type: string
       user_id:
         type: integer
       user_name:
+        type: string
+      workout_date:
         type: string
       workout_id:
         type: integer
@@ -1018,6 +1059,8 @@ definitions:
         type: number
       end_index:
         type: integer
+      id:
+        type: integer
       route_segment:
         $ref: '#/definitions/dto.RouteSegmentResponse'
       route_segment_id:
@@ -1031,13 +1074,27 @@ definitions:
     properties:
       bidirectional:
         type: boolean
+      can_delete:
+        type: boolean
+      can_edit:
+        type: boolean
+      category:
+        type: string
       circular:
         type: boolean
       created_at:
         type: string
+      description:
+        type: string
+      difficulty:
+        $ref: '#/definitions/model.RouteSegmentDifficulty'
       filename:
         type: string
+      has_liked:
+        type: boolean
       id:
+        type: integer
+      like_count:
         type: integer
       match_count:
         type: integer
@@ -1049,6 +1106,10 @@ definitions:
         type: string
       notes:
         type: string
+      profile_id:
+        type: integer
+      profile_name:
+        type: string
       total_distance:
         type: number
       total_down:
@@ -1057,6 +1118,21 @@ definitions:
         type: number
       updated_at:
         type: string
+      visibility:
+        $ref: '#/definitions/model.WorkoutVisibility'
+    type: object
+  dto.RouteSegmentStatsResponse:
+    properties:
+      avg_duration:
+        type: number
+      avg_speed:
+        type: number
+      course_record:
+        $ref: '#/definitions/dto.CourseRecordInfo'
+      total_efforts:
+        type: integer
+      unique_athletes:
+        type: integer
     type: object
   dto.StatisticBuckets:
     properties:
@@ -1790,6 +1866,16 @@ definitions:
       update_at:
         type: string
     type: object
+  model.RouteSegmentDifficulty:
+    enum:
+    - easy
+    - moderate
+    - difficult
+    type: string
+    x-enum-varnames:
+    - RouteSegmentDifficultyEasy
+    - RouteSegmentDifficultyModerate
+    - RouteSegmentDifficultyDifficult
   model.SlopeKind:
     enum:
     - climb
@@ -3420,6 +3506,36 @@ paths:
       - ApiKeyQuery: []
       - CookieAuth: []
       summary: Download route segment file
+      tags:
+      - route-segments
+  /route-segments/{id}/likes:
+    get:
+      parameters:
+      - description: Route Segment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response-array_dto_WorkoutLikeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response-string'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      - CookieAuth: []
+      summary: Get route segment likers
       tags:
       - route-segments
   /route-segments/{id}/matches:

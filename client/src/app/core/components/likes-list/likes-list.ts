@@ -2,23 +2,23 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { Avatar } from '../../../../core/components/avatar/avatar';
-import { WorkoutLike } from '../../../../core/types/workout';
+import { Avatar } from '../avatar/avatar';
+import { Like } from '../../types/like';
 
 @Component({
-  selector: 'app-workout-likes-list',
+  selector: 'app-likes-list',
   imports: [RouterLink, Avatar, TranslatePipe],
-  templateUrl: './workout-likes-list.html',
-  styleUrl: './workout-likes-list.scss',
+  templateUrl: './likes-list.html',
+  styleUrl: './likes-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkoutLikesList {
-  public readonly likes = input.required<WorkoutLike[]>();
+export class LikesList {
+  public readonly likes = input.required<Like[]>();
   public readonly loading = input<boolean>(false);
 
   public readonly itemClick = output<void>();
 
-  public getLikeAuthorName(like: WorkoutLike): string {
+  public getLikeAuthorName(like: Like): string {
     const name = like.user?.name?.trim();
     if (name) {
       return name;
@@ -37,7 +37,7 @@ export class WorkoutLikesList {
     return 'User';
   }
 
-  public getLikeAuthorHandle(like: WorkoutLike): string | null {
+  public getLikeAuthorHandle(like: Like): string | null {
     if (like.user?.handle) {
       return like.user.handle.replace(/^@/, '');
     }
@@ -51,7 +51,7 @@ export class WorkoutLikesList {
     return null;
   }
 
-  public getLikeDisplayHandle(like: WorkoutLike): string | null {
+  public getLikeDisplayHandle(like: Like): string | null {
     if (like.user?.handle) {
       return like.user.handle.startsWith('@') ? like.user.handle : `@${like.user.handle}`;
     }

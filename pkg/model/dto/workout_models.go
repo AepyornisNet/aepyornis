@@ -40,7 +40,7 @@ type WorkoutResponse struct {
 	Attachments          []WorkoutAttachmentItem `json:"attachments,omitempty"`
 
 	// MapData fields (when available)
-	AddressString       string   `json:"address_string,omitempty"`
+	AddressString       *string  `json:"address_string,omitempty"`
 	TotalDistance       *float64 `json:"total_distance,omitempty"`
 	TotalDuration       *int64   `json:"total_duration,omitempty"` // Duration in seconds
 	TotalWeight         *float64 `json:"total_weight,omitempty"`
@@ -248,6 +248,7 @@ type ClimbSegmentResponse struct {
 
 // RouteSegmentMatchResponse represents a matched route segment
 type RouteSegmentMatchResponse struct {
+	ID             uint64               `json:"id"`
 	RouteSegmentID uint64               `json:"route_segment_id"`
 	WorkoutID      uint64               `json:"workout_id"`
 	Distance       float64              `json:"distance"`
@@ -324,7 +325,9 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 
 	// Add map data if available
 	if w.Data != nil {
-		wr.AddressString = w.Data.AddressString
+		if addr := w.Address(); addr != "" && addr != model.UnknownLocation {
+			wr.AddressString = &addr
+		}
 	}
 
 	if w.Stats != nil {
@@ -483,14 +486,19 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 	if len(w.RouteSegmentMatches) > 0 {
 		wr.RouteSegmentMatches = make([]RouteSegmentMatchResponse, len(w.RouteSegmentMatches))
 		for i, match := range w.RouteSegmentMatches {
+			var rsResp RouteSegmentResponse
+			if match.RouteSegment != nil {
+				rsResp = NewRouteSegmentResponse(match.RouteSegment)
+			}
 			wr.RouteSegmentMatches[i] = RouteSegmentMatchResponse{
+				ID:             match.ID,
 				RouteSegmentID: match.RouteSegmentID,
 				WorkoutID:      match.WorkoutID,
 				Distance:       match.Distance,
 				Duration:       match.Duration.Seconds(),
 				StartIndex:     match.FirstID,
 				EndIndex:       match.LastID,
-				RouteSegment:   NewRouteSegmentResponse(match.RouteSegment),
+				RouteSegment:   rsResp,
 			}
 		}
 	}

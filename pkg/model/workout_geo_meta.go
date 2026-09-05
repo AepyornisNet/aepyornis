@@ -107,12 +107,20 @@ func (m *WorkoutGeoMeta) addressString() string {
 	return r
 }
 
+func (m *WorkoutGeoMeta) HasAddress() bool {
+	if m == nil {
+		return false
+	}
+
+	return !addressIsUnset(m.Address)
+}
+
 func (m *WorkoutGeoMeta) shouldPersist() bool {
 	if m == nil {
 		return false
 	}
 
-	return !m.Center.IsZero() || !addressIsUnset(m.Address) || m.AddressString != ""
+	return !m.Center.IsZero() || !addressIsUnset(m.Address) || (m.AddressString != "" && m.AddressString != UnknownLocation)
 }
 
 func shouldAddState(address *geo.Address) bool {

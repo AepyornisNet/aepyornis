@@ -4,39 +4,22 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { RouteSegmentMatch } from '../../../../core/types/workout';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { RouterLink } from '@angular/router';
+import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-route-segment-matches',
-  imports: [TranslatePipe, RouterLink],
+  imports: [TranslatePipe, RouterLink, FormatDistancePipe, FormatDurationPipe],
   templateUrl: './route-segment-matches.html',
   styleUrl: './route-segment-matches.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteSegmentMatchesComponent {
+  public readonly sportLabel = getSportLabel;
   private readonly coordinatorService = inject(WorkoutDetailCoordinatorService);
   public readonly matches = input.required<RouteSegmentMatch[]>();
   public readonly viewMode = input(false);
-
-  public formatDistance(meters: number): string {
-    return (meters / 1000).toFixed(2);
-  }
-
-  public formatDuration(seconds?: number): string {
-    if (!seconds || Number.isNaN(seconds)) {
-      return '0:00';
-    }
-
-    const totalSeconds = Math.round(seconds);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  }
 
   public selectMatch(match: RouteSegmentMatch): void {
     if (!this.hasIntervalIndexes(match)) {

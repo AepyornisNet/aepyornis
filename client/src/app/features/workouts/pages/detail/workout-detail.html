@@ -343,10 +343,7 @@
                 }}</span>
               </h5>
             </div>
-            <app-workout-likes-list
-              [likes]="dataService.likes()"
-              [loading]="dataService.likesLoading()"
-            />
+            <app-likes-list [likes]="dataService.likes()" [loading]="dataService.likesLoading()" />
           </div>
         }
 

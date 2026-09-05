@@ -20,13 +20,14 @@ import { Avatar } from '../../../../core/components/avatar/avatar';
 import { Api } from '../../../../core/services/api';
 import { User } from '../../../../core/services/user';
 import { UserSummary } from '../../../../core/types/user';
-import { Workout, WorkoutLike, WorkoutReply } from '../../../../core/types/workout';
+import { Workout, WorkoutReply } from '../../../../core/types/workout';
 
-import { WorkoutLikesList } from '../../../workouts/components/workout-likes-list/workout-likes-list';
+import { LikesList } from '../../../../core/components/likes-list/likes-list';
+import { Like } from '../../../../core/types/like';
 
 @Component({
   selector: 'app-feed-post',
-  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe, WorkoutLikesList],
+  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe, LikesList],
   templateUrl: './feed-post.html',
   styleUrl: './feed-post.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,9 +51,7 @@ export class FeedPost {
   public readonly isReplying = signal(false);
   public readonly isLiking = signal(false);
   public readonly replies = signal<WorkoutReply[]>([]);
-  public readonly workoutLikes = linkedSignal<WorkoutLike[]>(
-    () => this.workout().recent_likes || [],
-  );
+  public readonly workoutLikes = linkedSignal<Like[]>(() => this.workout().recent_likes || []);
   public readonly loadingLikes = signal(false);
 
   public formatDate(dateString: string): string {
@@ -192,7 +191,7 @@ export class FeedPost {
     }
   }
 
-  public getLikeAuthorName(like: WorkoutLike): string {
+  public getLikeAuthorName(like: Like): string {
     const name = like.user?.name?.trim();
     if (name) {
       return name;
@@ -207,7 +206,7 @@ export class FeedPost {
     return 'User';
   }
 
-  public getLikeAuthorHandle(like: WorkoutLike): string | null {
+  public getLikeAuthorHandle(like: Like): string | null {
     return like.user?.username?.trim() || null;
   }
 
@@ -222,7 +221,7 @@ export class FeedPost {
     const nextCount = previousCount + 1;
 
     const currentUser = this.user.getUserInfo()();
-    const myLike: WorkoutLike = {
+    const myLike: Like = {
       id: Date.now(),
       user_id: currentUser?.profile?.id,
       user: currentUser?.profile

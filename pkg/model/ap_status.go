@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	APStatusTypeWorkout = "workout"
-	APStatusTypeReply   = "reply"
+	APStatusTypeWorkout      = "workout"
+	APStatusTypeReply        = "reply"
+	APStatusTypeRouteSegment = "route_segment"
 )
 
 type APStatus struct {
@@ -24,6 +25,10 @@ type APStatus struct {
 	// Link to local outbox workout attachment row for local workout posts.
 	APStatusWorkoutID *uint64          `gorm:"index" json:"ap_status_workout_id,omitempty"`
 	APStatusWorkout   *APStatusWorkout `gorm:"constraint:OnDelete:SET NULL" json:"-"`
+
+	// Link to local route segment for route segment AP objects.
+	RouteSegmentID *uint64       `gorm:"index" json:"route_segment_id,omitempty"`
+	RouteSegment   *RouteSegment `gorm:"constraint:OnDelete:SET NULL" json:"-"`
 
 	StatusType string `gorm:"type:varchar(64);index;not null" json:"status_type"`
 	Origin     string `gorm:"type:varchar(16);index;not null;default:local" json:"origin"`

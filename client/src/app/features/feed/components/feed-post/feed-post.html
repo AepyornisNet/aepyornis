@@ -212,7 +212,7 @@
     <button aria-label="Close" class="btn-close" type="button" (click)="modal.dismiss()"></button>
   </div>
   <div class="modal-body p-0">
-    <app-workout-likes-list
+    <app-likes-list
       [likes]="workoutLikes()"
       [loading]="loadingLikes()"
       (itemClick)="modal.close()"

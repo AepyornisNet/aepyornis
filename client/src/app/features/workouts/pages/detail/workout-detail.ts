@@ -20,7 +20,6 @@ import { WorkoutZoneDistributionComponent } from '../../components/workout-zone-
 import { WorkoutDetailDataService } from '../../services/workout-detail-data.service';
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
-import { WorkoutLike } from '../../../../core/types/workout';
 import { WorkoutRecordsComponent } from '../../components/workout-records/workout-records';
 import {
   NgbNav,
@@ -35,13 +34,14 @@ import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
 import { WorkoutCommentsComponent } from '../../components/workout-comments/workout-comments';
-import { WorkoutLikesList } from '../../components/workout-likes-list/workout-likes-list';
+import { LikesList } from '../../../../core/components/likes-list/likes-list';
 import { FormatSpeedPipe } from '../../../../core/pipes/format-speed.pipe';
 import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
 import { FormatDurationPipe } from '../../../../core/pipes/format-duration.pipe';
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
 
 import { getMetricDef } from '../../../../core/config/metrics';
+import { Like } from '../../../../core/types/like';
 
 @Component({
   selector: 'app-workout-detail',
@@ -64,7 +64,7 @@ import { getMetricDef } from '../../../../core/config/metrics';
     NgbNavContent,
     WorkoutPerformanceCurveComponent,
     WorkoutCommentsComponent,
-    WorkoutLikesList,
+    LikesList,
     TranslatePipe,
     FormatSpeedPipe,
     FormatDatePipe,
@@ -140,7 +140,7 @@ export class WorkoutDetailPage implements OnInit {
     // Navigation is handled by the actions component
   }
 
-  public likeAuthorName(like: WorkoutLike): string {
+  public likeAuthorName(like: Like): string {
     const userName = like.user?.name?.trim();
     if (userName) {
       return userName;
@@ -167,15 +167,15 @@ export class WorkoutDetailPage implements OnInit {
     return 'Unknown';
   }
 
-  public likeInitial(like: WorkoutLike): string {
+  public likeInitial(like: Like): string {
     return (this.likeAuthorName(like).charAt(0) || '?').toUpperCase();
   }
 
-  public hasLikeAvatar(like: WorkoutLike): boolean {
+  public hasLikeAvatar(like: Like): boolean {
     return !!(like.avatar_url && like.avatar_url.trim());
   }
 
-  public likeHandle(like: WorkoutLike): string {
+  public likeHandle(like: Like): string {
     const userHandle = this.formatUserHandle(like);
     if (userHandle) {
       return `@${userHandle}`;
@@ -193,7 +193,7 @@ export class WorkoutDetailPage implements OnInit {
     return like.actor_iri || '';
   }
 
-  private formatUserHandle(like: WorkoutLike): string {
+  private formatUserHandle(like: Like): string {
     if (like.user?.handle) {
       return like.user.handle.replace(/^@/, '');
     }
