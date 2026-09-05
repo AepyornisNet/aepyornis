@@ -59,22 +59,26 @@ func ScopeVisibleWorkouts(query *gorm.DB, ownerProfileID uint64, viewerProfileID
 	)
 }
 
+func isWorkoutOwnerOrAdmin(requester *User, workout *Workout) bool {
+	if requester == nil || workout == nil {
+		return false
+	}
+	if requester.Admin {
+		return true
+	}
+	if workout.Profile != nil && workout.Profile.UserID != nil && requester.ID == *workout.Profile.UserID {
+		return true
+	}
+	return requester.Profile.ID != 0 && workout.ProfileID != 0 && requester.Profile.ID == workout.ProfileID
+}
+
 func CanReadWorkout(db *gorm.DB, requester *User, workout *Workout) (bool, error) {
 	if workout == nil {
 		return false, nil
 	}
 
-	if requester != nil && requester.Admin {
+	if isWorkoutOwnerOrAdmin(requester, workout) {
 		return true, nil
-	}
-
-	if requester != nil {
-		if workout.Profile != nil && workout.Profile.UserID != nil && requester.ID == *workout.Profile.UserID {
-			return true, nil
-		}
-		if requester.Profile.ID != 0 && workout.ProfileID != 0 && requester.Profile.ID == workout.ProfileID {
-			return true, nil
-		}
 	}
 
 	switch workout.Visibility {
@@ -86,16 +90,11 @@ func CanReadWorkout(db *gorm.DB, requester *User, workout *Workout) (bool, error
 		}
 
 		var count int64
-		if err := db.
+		err := db.
 			Model(&Follower{}).
 			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, workout.ProfileID, true).
-			Count(&count).Error; err != nil {
-			return false, err
-		}
-
-		return count > 0, nil
-	case WorkoutVisibilityPrivate, "private":
-		return false, nil
+			Count(&count).Error
+		return count > 0, err
 	default:
 		return false, nil
 	}

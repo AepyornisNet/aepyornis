@@ -91,11 +91,7 @@ func CanReadRouteSegment(db *gorm.DB, requester *User, rs *RouteSegment) (bool, 
 		return false, nil
 	}
 
-	if requester != nil && requester.Admin {
-		return true, nil
-	}
-
-	if requester != nil && rs.ProfileID != 0 && requester.Profile.ID == rs.ProfileID {
+	if requester != nil && (requester.Admin || (rs.ProfileID != 0 && requester.Profile.ID == rs.ProfileID)) {
 		return true, nil
 	}
 
@@ -108,16 +104,11 @@ func CanReadRouteSegment(db *gorm.DB, requester *User, rs *RouteSegment) (bool, 
 		}
 
 		var count int64
-		if err := db.
+		err := db.
 			Model(&Follower{}).
 			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, rs.ProfileID, true).
-			Count(&count).Error; err != nil {
-			return false, err
-		}
-
-		return count > 0, nil
-	case WorkoutVisibilityPrivate, "private":
-		return false, nil
+			Count(&count).Error
+		return count > 0, err
 	default:
 		return false, nil
 	}

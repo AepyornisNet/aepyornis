@@ -32,7 +32,7 @@ type RouteSegment interface {
 	CountLikes(routeSegmentID uint64) (int64, error)
 	GetLikers(routeSegmentID uint64) ([]*model.Profile, error)
 	GetLikes(routeSegmentID uint64) ([]model.APStatusLike, error)
-	GetMatches(routeSegmentID uint64, viewer *model.User, sort string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error)
+	GetMatches(routeSegmentID uint64, viewer *model.User, sortBy string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error)
 	GetStats(routeSegmentID uint64, viewer *model.User) (*RouteSegmentStats, error)
 }
 
@@ -215,7 +215,7 @@ func (r *routeSegmentRepository) GetLikes(routeSegmentID uint64) ([]model.APStat
 	return likes, nil
 }
 
-func (r *routeSegmentRepository) GetMatches(routeSegmentID uint64, viewer *model.User, sort string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error) {
+func (r *routeSegmentRepository) GetMatches(routeSegmentID uint64, viewer *model.User, sortBy string, limit int, offset int) ([]*model.RouteSegmentMatch, int64, error) {
 	var matches []*model.RouteSegmentMatch
 	var total int64
 
@@ -232,7 +232,7 @@ func (r *routeSegmentRepository) GetMatches(routeSegmentID uint64, viewer *model
 		Where("route_segment_matches.route_segment_id = ?", routeSegmentID)
 	q = model.ScopeVisibleJoinedWorkouts(q, viewer)
 
-	switch sort {
+	switch sortBy {
 	case "newest", "recent":
 		q = q.Order("workouts.date DESC, route_segment_matches.duration ASC")
 	case "oldest":

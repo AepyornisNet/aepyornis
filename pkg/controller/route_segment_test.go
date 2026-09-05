@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ const sampleRouteSegmentGPX = `<?xml version="1.0" encoding="UTF-8"?>
   </trk>
 </gpx>`
 
-func setupRouteSegmentTestController(t *testing.T) (*routeSegmentController, *model.User, do.Injector) {
+func setupRouteSegmentTestController(t *testing.T) (*routeSegmentController, *model.User) {
 	t.Helper()
 	db := createTestDB(t)
 	sqlDB, err := db.DB()
@@ -61,11 +62,11 @@ func setupRouteSegmentTestController(t *testing.T) (*routeSegmentController, *mo
 	user.SetDB(db)
 	require.NoError(t, user.Create(db))
 
-	return ctrl, user, injector
+	return ctrl, user
 }
 
 func TestRouteSegmentController_CreateWithCategory(t *testing.T) {
-	ctrl, user, _ := setupRouteSegmentTestController(t)
+	ctrl, user := setupRouteSegmentTestController(t)
 
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -98,7 +99,7 @@ func TestRouteSegmentController_CreateWithCategory(t *testing.T) {
 }
 
 func TestRouteSegmentController_CreateFromWorkout_PrefillCategory(t *testing.T) {
-	ctrl, user, _ := setupRouteSegmentTestController(t)
+	ctrl, user := setupRouteSegmentTestController(t)
 
 	workout := &model.Workout{
 		ProfileID:  user.Profile.ID,
@@ -115,7 +116,7 @@ func TestRouteSegmentController_CreateFromWorkout_PrefillCategory(t *testing.T) 
 	require.NoError(t, workout.Save(ctrl.db))
 
 	e := echo.New()
-	workoutIDStr := fmt.Sprint(workout.ID)
+	workoutIDStr := strconv.FormatUint(workout.ID, 10)
 
 	// 1. With explicitly specified category
 	{
@@ -158,7 +159,7 @@ func TestRouteSegmentController_CreateFromWorkout_PrefillCategory(t *testing.T) 
 }
 
 func TestRouteSegmentController_Visibility_GetRouteSegment(t *testing.T) {
-	ctrl, userOwner, _ := setupRouteSegmentTestController(t)
+	ctrl, userOwner := setupRouteSegmentTestController(t)
 
 	// Create userViewer
 	userViewer := &model.User{
@@ -222,7 +223,7 @@ func TestRouteSegmentController_Visibility_GetRouteSegment(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/route-segments/:id")
-		c.SetPathValues(echo.PathValues{{Name: "id", Value: fmt.Sprint(rsID)}})
+		c.SetPathValues(echo.PathValues{{Name: "id", Value: strconv.FormatUint(rsID, 10)}})
 		if viewer != nil {
 			c.Set("user_info", viewer)
 		}
@@ -258,7 +259,7 @@ func TestRouteSegmentController_Visibility_GetRouteSegment(t *testing.T) {
 }
 
 func TestRouteSegmentController_Visibility_ListRouteSegments(t *testing.T) {
-	ctrl, userOwner, _ := setupRouteSegmentTestController(t)
+	ctrl, userOwner := setupRouteSegmentTestController(t)
 
 	userViewer := &model.User{
 		UserData: model.UserData{Active: true},
@@ -330,7 +331,7 @@ func TestRouteSegmentController_Visibility_ListRouteSegments(t *testing.T) {
 }
 
 func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkouts(t *testing.T) {
-	ctrl, userOwner, _ := setupRouteSegmentTestController(t)
+	ctrl, userOwner := setupRouteSegmentTestController(t)
 
 	userAthlete := &model.User{
 		UserData: model.UserData{Active: true},
@@ -393,7 +394,7 @@ func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkou
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/route-segments/:id/matches")
-		c.SetPathValues(echo.PathValues{{Name: "id", Value: fmt.Sprint(rsPublic.ID)}})
+		c.SetPathValues(echo.PathValues{{Name: "id", Value: strconv.FormatUint(rsPublic.ID, 10)}})
 		c.Set("user_info", userAthlete)
 
 		require.NoError(t, ctrl.GetRouteSegmentMatches(c))
@@ -411,7 +412,7 @@ func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkou
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/route-segments/:id/matches")
-		c.SetPathValues(echo.PathValues{{Name: "id", Value: fmt.Sprint(rsPublic.ID)}})
+		c.SetPathValues(echo.PathValues{{Name: "id", Value: strconv.FormatUint(rsPublic.ID, 10)}})
 		c.Set("user_info", userViewer)
 
 		require.NoError(t, ctrl.GetRouteSegmentMatches(c))
@@ -428,7 +429,7 @@ func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkou
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/route-segments/:id")
-		c.SetPathValues(echo.PathValues{{Name: "id", Value: fmt.Sprint(rsPublic.ID)}})
+		c.SetPathValues(echo.PathValues{{Name: "id", Value: strconv.FormatUint(rsPublic.ID, 10)}})
 		c.Set("user_info", userViewer)
 
 		require.NoError(t, ctrl.GetRouteSegment(c))
