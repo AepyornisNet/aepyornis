@@ -10,6 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { form, FormField, FormRoot, min, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
+import { RouteSegmentDifficulty } from '../../../../core/types/route-segment';
 import { WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -44,7 +45,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   public readonly error = signal<string | null>(null);
   public readonly creating = signal(false);
 
-  public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
+  public readonly availableTypes = signal<string[]>([]);
 
   // Form model & form
   public readonly routeSegmentModel = signal({
@@ -52,15 +53,21 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
     category: '',
     start: 1,
     end: 1,
+    difficulty: '' as RouteSegmentDifficulty,
+    visibility: 'public' as 'public' | 'followers' | '' | 'private',
+    description: '',
     bidirectional: false,
     circular: false,
+    notes: '',
   });
 
   public readonly routeSegmentForm = form(
     this.routeSegmentModel,
     (s) => {
       required(s.name);
+      required(s.start);
       min(s.start, 1);
+      required(s.end);
       min(s.end, 1);
     },
     {
@@ -117,12 +124,34 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   });
 
   public ngOnInit(): void {
+    this.loadFilterOptions();
+
     this.route.params.subscribe((params) => {
       const id = parseInt(params['id'], 10);
       if (id) {
         this.loadWorkout(id);
       }
     });
+  }
+
+  private async loadFilterOptions(): Promise<void> {
+    const typesSet = new Set<string>();
+    WORKOUT_TYPES.forEach((t) => {
+      if (t.value !== 'all' && t.value !== 'auto') {
+        typesSet.add(t.value);
+      }
+    });
+
+    try {
+      const res = await firstValueFrom(this.api.getWorkoutFilterOptions());
+      if (res?.results?.types?.length) {
+        res.results.types.forEach((t) => typesSet.add(t));
+      }
+    } catch (err) {
+      console.error('Failed to load filter options:', err);
+    }
+
+    this.availableTypes.set(Array.from(typesSet));
   }
 
   public async loadWorkout(id: number): Promise<void> {
@@ -143,8 +172,12 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
           category: workout.type || '',
           start: 1,
           end: points,
+          difficulty: '',
+          visibility: (workout.visibility || 'public') as 'public' | 'followers' | '' | 'private',
+          description: '',
           bidirectional: false,
           circular: false,
+          notes: '',
         });
       }
     } catch (err) {
@@ -191,6 +224,12 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
           start: formValue.start,
           end: formValue.end,
           category: formValue.category || undefined,
+          difficulty: formValue.difficulty || undefined,
+          visibility: formValue.visibility || undefined,
+          description: formValue.description || undefined,
+          notes: formValue.notes || undefined,
+          bidirectional: formValue.bidirectional,
+          circular: formValue.circular,
         }),
       );
       const created = response?.results;
@@ -198,17 +237,6 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       if (!created) {
         this.error.set(this.translate.instant('Failed to create route segment. Please try again.'));
         return;
-      }
-
-      if (formValue.bidirectional || formValue.circular) {
-        await firstValueFrom(
-          this.api.updateRouteSegment(created.id, {
-            name: created.name ?? formValue.name,
-            notes: created.notes ?? '',
-            bidirectional: formValue.bidirectional,
-            circular: formValue.circular,
-          }),
-        );
       }
 
       this.router.navigate(['/route-segments', created.id]);

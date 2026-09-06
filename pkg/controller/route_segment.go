@@ -258,6 +258,18 @@ func applyRouteSegmentCreationParams(rs *model.RouteSegment, params *dto.RouteSe
 	rs.Category = resolveRouteSegmentCategory(params.Category, workout.Type.String())
 	rs.Bidirectional = params.Bidirectional
 	rs.Circular = params.Circular
+	if params.Difficulty.IsValid() {
+		rs.Difficulty = params.Difficulty
+	}
+	if params.Visibility.IsValid() && params.Visibility != "" {
+		rs.Visibility = params.Visibility
+	}
+	if params.Description != "" {
+		rs.Description = params.Description
+	}
+	if params.Notes != "" {
+		rs.Notes = params.Notes
+	}
 	if user != nil {
 		rs.ProfileID = user.Profile.ID
 	} else if workout.ProfileID != 0 {

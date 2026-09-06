@@ -30,19 +30,23 @@ type RouteSegmentUpdateRequest struct {
 	Category      string                       `json:"category"`
 	Visibility    model.WorkoutVisibility      `json:"visibility" validate:"omitempty,oneof=public followers private"`
 	Description   string                       `json:"description"`
-	Difficulty    model.RouteSegmentDifficulty `json:"difficulty" validate:"omitempty,oneof=easy moderate hard expert"`
+	Difficulty    model.RouteSegmentDifficulty `json:"difficulty" validate:"omitempty,oneof=easy moderate difficult"`
 	Bidirectional bool                         `json:"bidirectional"`
 	Circular      bool                         `json:"circular"`
 }
 
 // RouteSegmentFromWorkoutRequest represents parameters to create a route segment from a workout
 type RouteSegmentFromWorkoutRequest struct {
-	Name          string `json:"name" validate:"required"`
-	Start         int    `json:"start" validate:"required,min=1"`
-	End           int    `json:"end" validate:"required,gtfield=Start"`
-	Category      string `json:"category"`
-	Bidirectional bool   `json:"bidirectional"`
-	Circular      bool   `json:"circular"`
+	Name          string                       `json:"name" validate:"required"`
+	Start         int                          `json:"start" validate:"required,min=1"`
+	End           int                          `json:"end" validate:"required,gtfield=Start"`
+	Category      string                       `json:"category"`
+	Visibility    model.WorkoutVisibility      `json:"visibility" validate:"omitempty,oneof=public followers private"`
+	Description   string                       `json:"description"`
+	Difficulty    model.RouteSegmentDifficulty `json:"difficulty" validate:"omitempty,oneof=easy moderate difficult"`
+	Notes         string                       `json:"notes"`
+	Bidirectional bool                         `json:"bidirectional"`
+	Circular      bool                         `json:"circular"`
 }
 
 func (r *RouteSegmentFromWorkoutRequest) Filename() string {

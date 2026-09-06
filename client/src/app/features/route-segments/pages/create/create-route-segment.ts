@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -9,7 +16,7 @@ import {
   UploadFileItem,
 } from '../../../../core/components/file-upload-list/file-upload-list';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { RouteSegment } from '../../../../core/types/route-segment';
+import { RouteSegment, RouteSegmentDifficulty } from '../../../../core/types/route-segment';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
@@ -20,7 +27,7 @@ import { getSportLabel } from '../../../../core/i18n/sport-labels';
   styleUrl: './create-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateRouteSegmentPage {
+export class CreateRouteSegmentPage implements OnInit {
   public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private router = inject(Router);
@@ -30,13 +37,16 @@ export class CreateRouteSegmentPage {
   public readonly creating = signal(false);
   public readonly error = signal<string | null>(null);
 
-  public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
+  public readonly availableTypes = signal<string[]>([]);
 
   public readonly routeSegmentModel = signal({
     category: '',
-    notes: '',
+    difficulty: '' as RouteSegmentDifficulty,
+    visibility: 'public' as 'public' | 'followers' | '' | 'private',
+    description: '',
     bidirectional: false,
     circular: false,
+    notes: '',
   });
 
   public readonly routeSegmentForm = form(this.routeSegmentModel, {
@@ -47,6 +57,30 @@ export class CreateRouteSegmentPage {
 
   public readonly hasFiles = computed(() => this.uploadFiles().length > 0);
   public readonly fileCount = computed(() => this.uploadFiles().length);
+
+  public ngOnInit(): void {
+    this.loadFilterOptions();
+  }
+
+  private async loadFilterOptions(): Promise<void> {
+    const typesSet = new Set<string>();
+    WORKOUT_TYPES.forEach((t) => {
+      if (t.value !== 'all' && t.value !== 'auto') {
+        typesSet.add(t.value);
+      }
+    });
+
+    try {
+      const res = await firstValueFrom(this.api.getWorkoutFilterOptions());
+      if (res?.results?.types?.length) {
+        res.results.types.forEach((t) => typesSet.add(t));
+      }
+    } catch (err) {
+      console.error('Failed to load filter options:', err);
+    }
+
+    this.availableTypes.set(Array.from(typesSet));
+  }
 
   public async createRouteSegment(): Promise<void> {
     if (this.creating()) {
@@ -79,6 +113,19 @@ export class CreateRouteSegmentPage {
         formData.append('category', categoryValue);
       }
 
+      if (formValue.difficulty) {
+        formData.append('difficulty', formValue.difficulty);
+      }
+
+      if (formValue.visibility) {
+        formData.append('visibility', formValue.visibility);
+      }
+
+      const descriptionValue = String(formValue.description || '').trim();
+      if (descriptionValue.length > 0) {
+        formData.append('description', descriptionValue);
+      }
+
       const notesValue = String(formValue.notes || '').trim();
       if (notesValue.length > 0) {
         formData.append('notes', notesValue);
@@ -103,19 +150,6 @@ export class CreateRouteSegmentPage {
           );
         }
         return;
-      }
-
-      if (formValue.bidirectional || formValue.circular) {
-        for (const segment of results) {
-          await firstValueFrom(
-            this.api.updateRouteSegment(segment.id, {
-              name: segment.name,
-              notes: segment.notes ?? notesValue,
-              bidirectional: formValue.bidirectional,
-              circular: formValue.circular,
-            }),
-          );
-        }
       }
 
       if (results.length === 1) {

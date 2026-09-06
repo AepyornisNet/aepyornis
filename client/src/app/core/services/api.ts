@@ -476,6 +476,9 @@ export class Api {
       visibility?: 'public' | 'followers' | '' | 'private';
       description?: string;
       difficulty?: RouteSegmentDifficulty;
+      notes?: string;
+      bidirectional?: boolean;
+      circular?: boolean;
     },
   ): Observable<APIResponse<RouteSegmentDetail>> {
     return this.http.post<APIResponse<RouteSegmentDetail>>(
