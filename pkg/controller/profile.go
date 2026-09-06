@@ -104,6 +104,9 @@ func (pc *profileController) UpdateProfile(c *echo.Context) error {
 	if err := c.Bind(&updateData); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	if err := c.Validate(&updateData); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
 
 	if updateData.Birthdate != nil && *updateData.Birthdate != "" {
 		t, err := time.Parse("2006-01-02", *updateData.Birthdate)
@@ -131,9 +134,6 @@ func (pc *profileController) UpdateProfile(c *echo.Context) error {
 	}
 	user.TotalsShow = model.WorkoutType(updateData.TotalsShow)
 	user.TZ = updateData.Timezone
-	if !updateData.DefaultWorkoutVisibility.IsValid() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("invalid default workout visibility"))
-	}
 	user.DefaultWorkoutVisibility = updateData.DefaultWorkoutVisibility
 	if !pc.cfg.AutoImportEnabled {
 		if updateData.AutoImportDirectory != "" {
@@ -192,9 +192,8 @@ func (pc *profileController) ChangePassword(c *echo.Context) error {
 	if err := c.Bind(&changeData); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	if changeData.CurrentPassword == "" || changeData.NewPassword == "" {
-		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
+	if err := c.Validate(&changeData); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	if !user.ValidLogin(changeData.CurrentPassword) {

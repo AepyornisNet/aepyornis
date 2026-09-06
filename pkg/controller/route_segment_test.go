@@ -16,6 +16,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
+	"github.com/AepyornisNet/aepyornis/pkg/validator"
 	"github.com/fsouza/slognil"
 	"github.com/labstack/echo/v5"
 	"github.com/restayway/gogis"
@@ -81,6 +82,7 @@ func TestRouteSegmentController_CreateWithCategory(t *testing.T) {
 	require.NoError(t, w.Close())
 
 	e := echo.New()
+	e.Validator = validator.New()
 	req := httptest.NewRequest(http.MethodPost, "/route-segments", &b)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	rec := httptest.NewRecorder()
@@ -116,6 +118,7 @@ func TestRouteSegmentController_CreateFromWorkout_PrefillCategory(t *testing.T) 
 	require.NoError(t, workout.Save(ctrl.db))
 
 	e := echo.New()
+	e.Validator = validator.New()
 	workoutIDStr := strconv.FormatUint(workout.ID, 10)
 
 	// 1. With explicitly specified category
@@ -217,6 +220,7 @@ func TestRouteSegmentController_Visibility_GetRouteSegment(t *testing.T) {
 	require.NoError(t, rsPublic.Save(ctrl.db))
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	testAccess := func(rsID uint64, viewer *model.User, expectedStatus int) {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/route-segments/%d", rsID), nil)
@@ -288,6 +292,7 @@ func TestRouteSegmentController_Visibility_ListRouteSegments(t *testing.T) {
 	require.NoError(t, rsPublic.Save(ctrl.db))
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	// Owner list includes both
 	{
@@ -387,6 +392,7 @@ func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkou
 	require.NoError(t, ctrl.db.Create(match).Error)
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	// userAthlete (owner of private workout) can see the match
 	{
@@ -443,4 +449,36 @@ func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkou
 			assert.Nil(t, resp.Results.Stats.CourseRecord)
 		}
 	}
+}
+
+func TestRouteSegmentController_CreateWithCustomName(t *testing.T) {
+	ctrl, user := setupRouteSegmentTestController(t)
+
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	part, err := w.CreateFormFile("file", "test_track.gpx")
+	require.NoError(t, err)
+	_, err = part.Write([]byte(sampleRouteSegmentGPX))
+	require.NoError(t, err)
+
+	require.NoError(t, w.WriteField("name", "My Custom Segment Name"))
+	require.NoError(t, w.Close())
+
+	req := httptest.NewRequest(http.MethodPost, "/route-segments", &b)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	rec := httptest.NewRecorder()
+
+	e := echo.New()
+	e.Validator = validator.New()
+	c := e.NewContext(req, rec)
+	c.Set("user_info", user)
+
+	err = ctrl.CreateRouteSegment(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, rec.Code)
+
+	var resp dto.Response[dto.RouteSegmentsDetailResponse]
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, "My Custom Segment Name", resp.Results[0].Name)
 }

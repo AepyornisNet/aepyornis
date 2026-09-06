@@ -1,38 +1,52 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import {
+  FileUploadList,
+  UploadFileItem,
+} from '../../../../core/components/file-upload-list/file-upload-list';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { RouteSegment } from '../../../../core/types/route-segment';
+import { RouteSegment, RouteSegmentDifficulty } from '../../../../core/types/route-segment';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-create-route-segment',
-  imports: [FormField, FormRoot, AppIcon, TranslatePipe],
+  imports: [FormField, FormRoot, AppIcon, FileUploadList, TranslatePipe],
   templateUrl: './create-route-segment.html',
   styleUrl: './create-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateRouteSegmentPage {
+export class CreateRouteSegmentPage implements OnInit {
   public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private router = inject(Router);
   private translate = inject(TranslateService);
 
-  public readonly selectedFiles = signal<File[]>([]);
+  public readonly uploadFiles = signal<UploadFileItem[]>([]);
   public readonly creating = signal(false);
   public readonly error = signal<string | null>(null);
 
-  public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
+  public readonly availableTypes = signal<string[]>([]);
 
   public readonly routeSegmentModel = signal({
     category: '',
-    notes: '',
+    difficulty: '' as RouteSegmentDifficulty,
+    visibility: 'public' as 'public' | 'followers' | '' | 'private',
+    description: '',
     bidirectional: false,
     circular: false,
+    notes: '',
   });
 
   public readonly routeSegmentForm = form(this.routeSegmentModel, {
@@ -41,20 +55,31 @@ export class CreateRouteSegmentPage {
     },
   });
 
-  public readonly hasFiles = computed(() => this.selectedFiles().length > 0);
-  public readonly fileCount = computed(() => this.selectedFiles().length);
+  public readonly hasFiles = computed(() => this.uploadFiles().length > 0);
+  public readonly fileCount = computed(() => this.uploadFiles().length);
 
-  public onFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files) {
-      this.selectedFiles.set(Array.from(input.files));
-    }
+  public ngOnInit(): void {
+    this.loadFilterOptions();
   }
 
-  public removeFile(index: number): void {
-    const files = this.selectedFiles();
-    files.splice(index, 1);
-    this.selectedFiles.set([...files]);
+  private async loadFilterOptions(): Promise<void> {
+    const typesSet = new Set<string>();
+    WORKOUT_TYPES.forEach((t) => {
+      if (t.value !== 'all' && t.value !== 'auto') {
+        typesSet.add(t.value);
+      }
+    });
+
+    try {
+      const res = await firstValueFrom(this.api.getWorkoutFilterOptions());
+      if (res?.results?.types?.length) {
+        res.results.types.forEach((t) => typesSet.add(t));
+      }
+    } catch (err) {
+      console.error('Failed to load filter options:', err);
+    }
+
+    this.availableTypes.set(Array.from(typesSet));
   }
 
   public async createRouteSegment(): Promise<void> {
@@ -62,7 +87,7 @@ export class CreateRouteSegmentPage {
       return;
     }
 
-    const files = this.selectedFiles();
+    const files = this.uploadFiles();
     if (files.length === 0) {
       this.error.set(this.translate.instant('Please select at least one file'));
       return;
@@ -73,7 +98,14 @@ export class CreateRouteSegmentPage {
 
     try {
       const formData = new FormData();
-      files.forEach((file) => formData.append('file', file));
+      files.forEach((item) => {
+        formData.append('file', item.file);
+        if (item.name.trim()) {
+          formData.append('name', item.name.trim());
+        } else {
+          formData.append('name', '');
+        }
+      });
 
       const formValue = this.routeSegmentModel();
       const categoryValue = String(formValue.category || '').trim();
@@ -81,9 +113,29 @@ export class CreateRouteSegmentPage {
         formData.append('category', categoryValue);
       }
 
+      if (formValue.difficulty) {
+        formData.append('difficulty', formValue.difficulty);
+      }
+
+      if (formValue.visibility) {
+        formData.append('visibility', formValue.visibility);
+      }
+
+      const descriptionValue = String(formValue.description || '').trim();
+      if (descriptionValue.length > 0) {
+        formData.append('description', descriptionValue);
+      }
+
       const notesValue = String(formValue.notes || '').trim();
       if (notesValue.length > 0) {
         formData.append('notes', notesValue);
+      }
+
+      if (formValue.bidirectional) {
+        formData.append('bidirectional', 'true');
+      }
+      if (formValue.circular) {
+        formData.append('circular', 'true');
       }
 
       const response = await firstValueFrom(this.api.createRouteSegment(formData));
@@ -98,19 +150,6 @@ export class CreateRouteSegmentPage {
           );
         }
         return;
-      }
-
-      if (formValue.bidirectional || formValue.circular) {
-        for (const segment of results) {
-          await firstValueFrom(
-            this.api.updateRouteSegment(segment.id, {
-              name: segment.name,
-              notes: segment.notes ?? notesValue,
-              bidirectional: formValue.bidirectional,
-              circular: formValue.circular,
-            }),
-          );
-        }
       }
 
       if (results.length === 1) {

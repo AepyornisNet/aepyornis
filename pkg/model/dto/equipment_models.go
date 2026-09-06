@@ -6,6 +6,27 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
+// EquipmentRequest represents equipment create/update payload
+type EquipmentRequest struct {
+	Name        string   `json:"name" form:"name" validate:"required"`
+	Description string   `json:"description" form:"description"`
+	Notes       string   `json:"notes" form:"notes"`
+	Active      bool     `json:"active" form:"active"`
+	DefaultFor  []string `json:"default_for" form:"default_for"`
+}
+
+func (r *EquipmentRequest) Update(e *model.Equipment) {
+	e.Name = r.Name
+	e.Description = r.Description
+	e.Notes = r.Notes
+	e.Active = r.Active
+	defaultFor := make([]model.WorkoutType, len(r.DefaultFor))
+	for i, wt := range r.DefaultFor {
+		defaultFor[i] = model.WorkoutType(wt)
+	}
+	e.DefaultFor = defaultFor
+}
+
 // EquipmentResponse represents equipment in API v2 responses
 type EquipmentResponse struct {
 	ID          uint64               `json:"id"`

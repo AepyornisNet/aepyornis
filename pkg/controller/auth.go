@@ -63,9 +63,8 @@ func (ac *authController) SignIn(c *echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	if req.Email == "" || req.Password == "" {
-		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	storedUser, err := ac.userRepo.GetByEmail(req.Email)
@@ -130,14 +129,13 @@ func (ac *authController) Register(c *echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
 
 	email := strings.TrimSpace(req.Email)
 	username := strings.TrimSpace(req.Username)
 	displayName := strings.TrimSpace(req.Name)
-
-	if email == "" || username == "" || req.Password == "" {
-		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
-	}
 
 	if displayName == "" {
 		displayName = username

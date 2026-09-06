@@ -5,6 +5,7 @@ import (
 
 	_ "github.com/AepyornisNet/aepyornis/pkg/converters"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/restayway/gogis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -168,4 +169,29 @@ func TestRouteSegment_DatabaseSaveAndGet(t *testing.T) {
 		assert.InDelta(t, rs.Points.Points[0].Lat, loaded.Points.Points[0].Lat, 0.0001)
 		assert.InDelta(t, rs.Points.Points[0].Lng, loaded.Points.Points[0].Lng, 0.0001)
 	}
+}
+
+func TestRouteSegment_RouteSegmentFromPoints_FiltersInvalidCoordinates(t *testing.T) {
+	workout := &model.Workout{
+		Records: []model.WorkoutRecord{
+			{Point: nil},
+			{Point: &gogis.Point{Lat: 0, Lng: 0}},
+			{Point: &gogis.Point{Lat: 50.95786, Lng: 4.72410}},
+			{Point: &gogis.Point{Lat: 0, Lng: 0}},
+			{Point: &gogis.Point{Lat: 50.95816, Lng: 4.72391}},
+			{Point: &gogis.Point{Lat: 50.95900, Lng: 4.72500}},
+			{Point: nil},
+		},
+	}
+
+	content, err := model.RouteSegmentFromPoints(workout, 1, 3)
+	require.NoError(t, err)
+	require.NotEmpty(t, content)
+
+	rs, err := model.NewRouteSegment("", "test.gpx", content)
+	require.NoError(t, err)
+	assert.Len(t, rs.Points.Points, 3)
+	assert.InDelta(t, 50.95786, rs.Points.Points[0].Lat, 0.0001)
+	assert.InDelta(t, 50.95816, rs.Points.Points[1].Lat, 0.0001)
+	assert.InDelta(t, 50.95900, rs.Points.Points[2].Lat, 0.0001)
 }

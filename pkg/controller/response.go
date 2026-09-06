@@ -23,7 +23,7 @@ func apiErrorCode(err error) string {
 
 func renderApiError(c *echo.Context, status int, err error) error {
 	resp := dto.Response[any]{}
-	resp.AddError(err)
+	resp.AddContextError(c.Request().Context(), err)
 
 	if code := apiErrorCode(err); code != "" {
 		resp.ErrorCodes = append(resp.ErrorCodes, code)

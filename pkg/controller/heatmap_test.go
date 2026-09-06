@@ -11,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
+	"github.com/AepyornisNet/aepyornis/pkg/validator"
 	"github.com/fsouza/slognil"
 	"github.com/labstack/echo/v5"
 	"github.com/restayway/gogis"
@@ -54,6 +55,7 @@ func TestHeatmapController_GetWorkoutCoordinates(t *testing.T) {
 	require.NoError(t, workout.Save(db))
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	// 1. Without cell_size (raw coordinates)
 	{

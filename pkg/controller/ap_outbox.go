@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
@@ -72,7 +72,7 @@ func (ac *apOutboxController) targetActivityPubUser(c *echo.Context) (*model.Use
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox [get]
-func (ac *apOutboxController) Outbox(c *echo.Context) error { //nolint:gocyclo
+func (ac *apOutboxController) Outbox(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -80,13 +80,14 @@ func (ac *apOutboxController) Outbox(c *echo.Context) error { //nolint:gocyclo
 
 	actor, _ := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
 
-	page := 0
-	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
-		page, err = strconv.Atoi(rawPage)
-		if err != nil || page < 1 {
-			return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
-		}
+	var query dto.ActivityPubPageQuery
+	if err := c.Bind(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
 	}
+	if err := c.Validate(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
+	}
+	page := query.Page
 
 	actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
 		Host:           ac.cfg.Host,
@@ -412,13 +413,14 @@ func (ac *apOutboxController) OutboxReplies(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("this outbox entry does not support replies"))
 	}
 
-	page := 0
-	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
-		page, err = strconv.Atoi(rawPage)
-		if err != nil || page < 1 {
-			return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
-		}
+	var query dto.ActivityPubPageQuery
+	if err := c.Bind(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
 	}
+	if err := c.Validate(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
+	}
+	page := query.Page
 
 	// Get replies for this workout
 	replies, err := ac.workoutReplyRepo.ListByWorkoutID(entry.APStatusWorkout.WorkoutID, 10000, 0)

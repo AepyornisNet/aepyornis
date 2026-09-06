@@ -7,9 +7,10 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { form, FormField, FormRoot, min, required } from '@angular/forms/signals';
+import { form, FormField, FormRoot, max, min, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
+import { RouteSegmentDifficulty } from '../../../../core/types/route-segment';
 import { WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -44,7 +45,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   public readonly error = signal<string | null>(null);
   public readonly creating = signal(false);
 
-  public readonly availableTypes = signal<string[]>(WORKOUT_TYPES.map((t) => t.value));
+  public readonly availableTypes = signal<string[]>([]);
 
   // Form model & form
   public readonly routeSegmentModel = signal({
@@ -52,16 +53,24 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
     category: '',
     start: 1,
     end: 1,
+    difficulty: '' as RouteSegmentDifficulty,
+    visibility: 'public' as 'public' | 'followers' | '' | 'private',
+    description: '',
     bidirectional: false,
     circular: false,
+    notes: '',
   });
 
   public readonly routeSegmentForm = form(
     this.routeSegmentModel,
     (s) => {
       required(s.name);
+      required(s.start);
       min(s.start, 1);
+      max(s.start, () => this.totalPoints() || 1);
+      required(s.end);
       min(s.end, 1);
+      max(s.end, () => this.totalPoints() || 1);
     },
     {
       submission: {
@@ -71,37 +80,58 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   );
 
   // Computed values
-  public readonly totalPoints = computed(() => {
+  public readonly validPoints = computed(() => {
     const w = this.workout();
-    return w?.records?.details?.position?.length || 0;
+    const positions = w?.records?.details?.position;
+    const distances = w?.records?.details?.distance;
+    if (!positions || positions.length === 0) {
+      return [];
+    }
+
+    const valid: { lat: number; lng: number; distance: number; originalIndex: number }[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      const pos = positions[i];
+      if (
+        pos &&
+        (pos[0] !== 0 || pos[1] !== 0) &&
+        Number.isFinite(pos[0]) &&
+        Number.isFinite(pos[1])
+      ) {
+        valid.push({
+          lat: pos[0],
+          lng: pos[1],
+          distance: distances?.[i] ?? 0,
+          originalIndex: i,
+        });
+      }
+    }
+    return valid;
+  });
+
+  public readonly totalPoints = computed(() => {
+    return this.validPoints().length;
   });
 
   public readonly selectedDistance = computed(() => {
-    const w = this.workout();
+    const pts = this.validPoints();
+    if (pts.length < 2) {
+      return 0;
+    }
     const model = this.routeSegmentModel();
     const startIdx = model.start - 1;
     const endIdx = model.end - 1;
 
-    if (!w?.records?.details?.distance || startIdx < 0 || endIdx < 0) {
+    if (startIdx < 0 || endIdx < 0 || startIdx >= pts.length || endIdx >= pts.length) {
       return 0;
     }
 
-    const distances = w.records?.details.distance;
-    if (endIdx >= distances.length || startIdx >= distances.length) {
-      return 0;
-    }
-
-    return Math.abs(distances[endIdx] - distances[startIdx]); // convert to km
+    return Math.abs(pts[endIdx].distance - pts[startIdx].distance) * 1000;
   });
 
   public readonly workoutPoints = computed(() => {
-    const w = this.workout();
-    if (!w?.records?.details?.position) {
-      return [];
-    }
-    return w.records.details.position.map((p: [number, number]) => ({
-      lat: p[0],
-      lng: p[1],
+    return this.validPoints().map((p) => ({
+      lat: p.lat,
+      lng: p.lng,
     }));
   });
 
@@ -117,12 +147,34 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   });
 
   public ngOnInit(): void {
+    this.loadFilterOptions();
+
     this.route.params.subscribe((params) => {
       const id = parseInt(params['id'], 10);
       if (id) {
         this.loadWorkout(id);
       }
     });
+  }
+
+  private async loadFilterOptions(): Promise<void> {
+    const typesSet = new Set<string>();
+    WORKOUT_TYPES.forEach((t) => {
+      if (t.value !== 'all' && t.value !== 'auto') {
+        typesSet.add(t.value);
+      }
+    });
+
+    try {
+      const res = await firstValueFrom(this.api.getWorkoutFilterOptions());
+      if (res?.results?.types?.length) {
+        res.results.types.forEach((t) => typesSet.add(t));
+      }
+    } catch (err) {
+      console.error('Failed to load filter options:', err);
+    }
+
+    this.availableTypes.set(Array.from(typesSet));
   }
 
   public async loadWorkout(id: number): Promise<void> {
@@ -136,15 +188,19 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
         const workout = response.results;
         this.workout.set(workout);
 
-        // Set end to the last point
-        const points = workout.records?.details?.position?.length || 1;
+        // Set end to the last valid point
+        const points = this.validPoints().length || 1;
         this.routeSegmentModel.set({
           name: workout.name || '',
           category: workout.type || '',
           start: 1,
           end: points,
+          difficulty: '',
+          visibility: (workout.visibility || 'public') as 'public' | 'followers' | '' | 'private',
+          description: '',
           bidirectional: false,
           circular: false,
+          notes: '',
         });
       }
     } catch (err) {
@@ -156,18 +212,22 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   }
 
   public updateStart(value: number): void {
+    const total = this.totalPoints();
+    const clamped = Math.max(1, Math.min(value, total || 1));
     this.routeSegmentModel.update((m) => ({
       ...m,
-      start: value,
-      end: value > m.end ? value : m.end,
+      start: clamped,
+      end: clamped > m.end ? clamped : m.end,
     }));
   }
 
   public updateEnd(value: number): void {
+    const total = this.totalPoints();
+    const clamped = Math.max(1, Math.min(value, total || 1));
     this.routeSegmentModel.update((m) => ({
       ...m,
-      end: value,
-      start: value < m.start ? value : m.start,
+      end: clamped,
+      start: clamped < m.start ? clamped : m.start,
     }));
   }
 
@@ -191,6 +251,12 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
           start: formValue.start,
           end: formValue.end,
           category: formValue.category || undefined,
+          difficulty: formValue.difficulty || undefined,
+          visibility: formValue.visibility || undefined,
+          description: formValue.description || undefined,
+          notes: formValue.notes || undefined,
+          bidirectional: formValue.bidirectional,
+          circular: formValue.circular,
         }),
       );
       const created = response?.results;
@@ -198,17 +264,6 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       if (!created) {
         this.error.set(this.translate.instant('Failed to create route segment. Please try again.'));
         return;
-      }
-
-      if (formValue.bidirectional || formValue.circular) {
-        await firstValueFrom(
-          this.api.updateRouteSegment(created.id, {
-            name: created.name ?? formValue.name,
-            notes: created.notes ?? '',
-            bidirectional: formValue.bidirectional,
-            circular: formValue.circular,
-          }),
-        );
       }
 
       this.router.navigate(['/route-segments', created.id]);

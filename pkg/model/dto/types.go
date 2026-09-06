@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"context"
 	"errors"
 )
 
@@ -34,14 +35,68 @@ type Response[T any] struct {
 // AddError adds an error message to the response
 func (r *Response[T]) AddError(err ...error) {
 	for _, e := range err {
-		r.Errors = append(r.Errors, e.Error())
+		if e == nil {
+			continue
+		}
+		if em, ok := e.(interface{ ErrorMessages() []string }); ok {
+			r.Errors = append(r.Errors, em.ErrorMessages()...)
+		} else {
+			r.Errors = append(r.Errors, e.Error())
+		}
+	}
+}
+
+// AddContextError adds an error message to the response localized with context
+func (r *Response[T]) AddContextError(ctx context.Context, err ...error) {
+	for _, e := range err {
+		if e == nil {
+			continue
+		}
+		if le, ok := e.(interface {
+			Localize(context.Context) []string
+		}); ok && ctx != nil {
+			r.Errors = append(r.Errors, le.Localize(ctx)...)
+		} else if le, ok := e.(interface{ Localize(context.Context) string }); ok && ctx != nil {
+			r.Errors = append(r.Errors, le.Localize(ctx))
+		} else if em, ok := e.(interface{ ErrorMessages() []string }); ok {
+			r.Errors = append(r.Errors, em.ErrorMessages()...)
+		} else {
+			r.Errors = append(r.Errors, e.Error())
+		}
 	}
 }
 
 // AddError adds an error message to the paginated response
 func (pr *PaginatedResponse[T]) AddError(err ...error) {
 	for _, e := range err {
-		pr.Errors = append(pr.Errors, e.Error())
+		if e == nil {
+			continue
+		}
+		if em, ok := e.(interface{ ErrorMessages() []string }); ok {
+			pr.Errors = append(pr.Errors, em.ErrorMessages()...)
+		} else {
+			pr.Errors = append(pr.Errors, e.Error())
+		}
+	}
+}
+
+// AddContextError adds an error message to the paginated response localized with context
+func (pr *PaginatedResponse[T]) AddContextError(ctx context.Context, err ...error) {
+	for _, e := range err {
+		if e == nil {
+			continue
+		}
+		if le, ok := e.(interface {
+			Localize(context.Context) []string
+		}); ok && ctx != nil {
+			pr.Errors = append(pr.Errors, le.Localize(ctx)...)
+		} else if le, ok := e.(interface{ Localize(context.Context) string }); ok && ctx != nil {
+			pr.Errors = append(pr.Errors, le.Localize(ctx))
+		} else if em, ok := e.(interface{ ErrorMessages() []string }); ok {
+			pr.Errors = append(pr.Errors, em.ErrorMessages()...)
+		} else {
+			pr.Errors = append(pr.Errors, e.Error())
+		}
 	}
 }
 

@@ -3101,6 +3101,38 @@ const docTemplate = `{
                     "workouts"
                 ],
                 "summary": "Create workout",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Workout file(s)",
+                        "name": "file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Notes",
+                        "name": "notes",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Workout type",
+                        "name": "type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Visibility (public, followers, private)",
+                        "name": "visibility",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Workout name",
+                        "name": "name",
+                        "in": "formData"
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",

@@ -131,11 +131,16 @@ func (ec *equipmentController) GetEquipment(c *echo.Context) error {
 func (ec *equipmentController) CreateEquipment(c *echo.Context) error {
 	user := currentUser(c)
 
-	var e model.Equipment
-	if err := c.Bind(&e); err != nil {
+	var req dto.EquipmentRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
+	var e model.Equipment
+	req.Update(&e)
 	e.ProfileID = user.Profile.ID
 
 	if err := ec.equipmentRepo.Save(&e); err != nil {
@@ -171,16 +176,19 @@ func (ec *equipmentController) UpdateEquipment(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	e.DefaultFor = nil
-
 	if e.ProfileID != user.Profile.ID {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
-	if err := c.Bind(e); err != nil {
+	var req dto.EquipmentRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
+	req.Update(e)
 	e.ProfileID = user.Profile.ID
 
 	if err := ec.equipmentRepo.Save(e); err != nil {

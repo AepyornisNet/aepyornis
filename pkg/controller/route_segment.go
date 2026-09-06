@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
@@ -253,15 +254,22 @@ func resolveRouteSegmentCategory(category string, workoutType string) string {
 	return ""
 }
 
-func applyRouteSegmentCreationParams(rs *model.RouteSegment, params *model.RoutSegmentCreationParams, workout *model.Workout, user *model.User) {
+func applyRouteSegmentCreationParams(rs *model.RouteSegment, params *dto.RouteSegmentFromWorkoutRequest, workout *model.Workout, user *model.User) {
 	rs.Category = resolveRouteSegmentCategory(params.Category, workout.Type.String())
-	if params.Visibility != "" {
-		rs.Visibility = params.Visibility
-	}
-	rs.Description = params.Description
-	rs.Difficulty = params.Difficulty
 	rs.Bidirectional = params.Bidirectional
 	rs.Circular = params.Circular
+	if params.Difficulty.IsValid() {
+		rs.Difficulty = params.Difficulty
+	}
+	if params.Visibility.IsValid() && params.Visibility != "" {
+		rs.Visibility = params.Visibility
+	}
+	if params.Description != "" {
+		rs.Description = params.Description
+	}
+	if params.Notes != "" {
+		rs.Notes = params.Notes
+	}
 	if user != nil {
 		rs.ProfileID = user.Profile.ID
 	} else if workout.ProfileID != 0 {
@@ -283,6 +291,81 @@ func applyRouteSegmentCreationParams(rs *model.RouteSegment, params *model.RoutS
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments [post]
+type routeSegmentUploadParams struct {
+	profileID     uint64
+	notes         string
+	category      string
+	visibility    string
+	difficulty    string
+	description   string
+	bidirectional string
+	circular      string
+	names         []string
+}
+
+func (p *routeSegmentUploadParams) applyToSegment(w *model.RouteSegment, customName string) {
+	if p.profileID != 0 {
+		w.ProfileID = p.profileID
+	}
+	if customName != "" {
+		w.Name = customName
+	}
+	if p.category != "" && isValidRouteSegmentCategory(p.category) {
+		w.Category = p.category
+	}
+	if vis := model.WorkoutVisibility(p.visibility); vis.IsValid() && vis != "" {
+		w.Visibility = vis
+	}
+	if diff := model.RouteSegmentDifficulty(p.difficulty); diff.IsValid() {
+		w.Difficulty = diff
+	}
+	if p.description != "" {
+		w.Description = p.description
+	}
+	if p.bidirectional != "" {
+		w.Bidirectional = cast.ToBool(p.bidirectional)
+	}
+	if p.circular != "" {
+		w.Circular = cast.ToBool(p.circular)
+	}
+}
+
+func extractRouteSegmentUploadParams(form *multipart.Form, c *echo.Context) routeSegmentUploadParams {
+	var profileID uint64
+	if user := currentUser(c); user != nil {
+		profileID = user.Profile.ID
+	}
+
+	names := form.Value["name"]
+	if len(names) == 0 {
+		names = form.Value["names"]
+	}
+
+	return routeSegmentUploadParams{
+		profileID:     profileID,
+		notes:         multipartFormValue(form, c, "notes"),
+		category:      multipartFormValue(form, c, "category"),
+		visibility:    multipartFormValue(form, c, "visibility"),
+		difficulty:    multipartFormValue(form, c, "difficulty"),
+		description:   multipartFormValue(form, c, "description"),
+		bidirectional: multipartFormValue(form, c, "bidirectional"),
+		circular:      multipartFormValue(form, c, "circular"),
+		names:         names,
+	}
+}
+
+func resolveCustomName(names []string, fileIndex int, totalFiles int) string {
+	if fileIndex < len(names) {
+		if name := strings.TrimSpace(names[fileIndex]); name != "" {
+			return name
+		}
+	}
+	if len(names) == 1 && totalFiles == 1 {
+		return strings.TrimSpace(names[0])
+	}
+	return ""
+}
+
 func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -291,49 +374,25 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 
 	files := form.File["file"]
 	errMsg := []string{}
-
-	var profileID uint64
-	if user := currentUser(c); user != nil {
-		profileID = user.Profile.ID
-	}
+	params := extractRouteSegmentUploadParams(form, c)
 
 	segments := []*dto.RouteSegmentResponse{}
-	for _, file := range files {
+	for i, file := range files {
 		content, parseErr := uploadedRouteSegmentFile(file)
 		if parseErr != nil {
 			errMsg = append(errMsg, parseErr.Error())
 			continue
 		}
 
-		notes := c.FormValue("notes")
+		customName := resolveCustomName(params.names, i, len(files))
 
-		w, addErr := rc.routeSegmentRepo.CreateFromContent(notes, file.Filename, content)
+		w, addErr := rc.routeSegmentRepo.CreateFromContent(params.notes, file.Filename, content)
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
 		}
 
-		if profileID != 0 {
-			w.ProfileID = profileID
-		}
-		if cat := c.FormValue("category"); cat != "" && isValidRouteSegmentCategory(cat) {
-			w.Category = cat
-		}
-		if vis := model.WorkoutVisibility(c.FormValue("visibility")); vis.IsValid() && vis != "" {
-			w.Visibility = vis
-		}
-		if diff := model.RouteSegmentDifficulty(c.FormValue("difficulty")); diff.IsValid() {
-			w.Difficulty = diff
-		}
-		if desc := c.FormValue("description"); desc != "" {
-			w.Description = desc
-		}
-		if b := c.FormValue("bidirectional"); b != "" {
-			w.Bidirectional = cast.ToBool(b)
-		}
-		if circ := c.FormValue("circular"); circ != "" {
-			w.Circular = cast.ToBool(circ)
-		}
+		params.applyToSegment(w, customName)
 		_ = w.Save(rc.db)
 
 		resp := dto.NewRouteSegmentResponse(w)
@@ -385,12 +444,18 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c *echo.Context)
 		return renderApiError(c, http.StatusNotFound, gorm.ErrRecordNotFound)
 	}
 
-	var params model.RoutSegmentCreationParams
+	var params dto.RouteSegmentFromWorkoutRequest
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	if err := c.Validate(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if !isValidRouteSegmentCategory(params.Category) {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment category: %s", params.Category))
+	}
 
-	content, err := model.RouteSegmentFromPoints(workout, &params)
+	content, err := model.RouteSegmentFromPoints(workout, params.Start, params.End)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -513,30 +578,12 @@ func (rc *routeSegmentController) UpdateRouteSegment(c *echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, errors.New("forbidden"))
 	}
 
-	type updateParams struct {
-		Name          string                       `json:"name"`
-		Notes         string                       `json:"notes"`
-		Category      string                       `json:"category"`
-		Visibility    model.WorkoutVisibility      `json:"visibility"`
-		Description   string                       `json:"description"`
-		Difficulty    model.RouteSegmentDifficulty `json:"difficulty"`
-		Bidirectional bool                         `json:"bidirectional"`
-		Circular      bool                         `json:"circular"`
-	}
-
-	var params updateParams
+	var params dto.RouteSegmentUpdateRequest
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	if len(params.Name) == 0 {
-		return renderApiError(c, http.StatusBadRequest, errors.New("route segment name is required"))
-	}
-	if params.Visibility != "" && !params.Visibility.IsValid() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("invalid route segment visibility"))
-	}
-	if params.Difficulty != "" && !params.Difficulty.IsValid() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("invalid route segment difficulty"))
+	if err := c.Validate(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	if !isValidRouteSegmentCategory(params.Category) {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment category: %s", params.Category))
@@ -638,14 +685,13 @@ func (rc *routeSegmentController) GetRouteSegmentMatches(c *echo.Context) error 
 	}
 
 	user := currentUser(c)
-	var pagination dto.PaginationParams
-	if err := c.Bind(&pagination); err != nil {
+	var query dto.RouteSegmentMatchesQuery
+	if err := c.Bind(&query); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-	pagination.SetDefaults()
+	query.SetDefaults()
 
-	sort := c.QueryParam("sort")
-	matches, totalCount, err := rc.routeSegmentRepo.GetMatches(rs.ID, user, sort, pagination.PerPage, pagination.GetOffset())
+	matches, totalCount, err := rc.routeSegmentRepo.GetMatches(rs.ID, user, query.Sort, query.PerPage, query.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -657,9 +703,9 @@ func (rc *routeSegmentController) GetRouteSegmentMatches(c *echo.Context) error 
 
 	resp := dto.PaginatedResponse[dto.RouteSegmentMatch]{
 		Results:    results,
-		Page:       pagination.Page,
-		PerPage:    pagination.PerPage,
-		TotalPages: pagination.CalculateTotalPages(totalCount),
+		Page:       query.Page,
+		PerPage:    query.PerPage,
+		TotalPages: query.CalculateTotalPages(totalCount),
 		TotalCount: totalCount,
 	}
 

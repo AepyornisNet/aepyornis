@@ -194,10 +194,6 @@ func (nc *notificationController) UpdateConfig(c *echo.Context) error {
 	return c.JSON(http.StatusOK, currentSettings)
 }
 
-type MarkAsReadPayload struct {
-	IDs []uint64 `json:"ids"`
-}
-
 // MarkAsRead marks specified or all notifications as read for the user
 // @Summary      Mark notifications as read
 // @Tags         notification
@@ -211,7 +207,7 @@ type MarkAsReadPayload struct {
 // @Router       /notifications/read [post]
 func (nc *notificationController) MarkAsRead(c *echo.Context) error {
 	user := currentUser(c)
-	var payload MarkAsReadPayload
+	var payload dto.MarkNotificationsAsReadRequest
 	_ = c.Bind(&payload)
 
 	if err := nc.notificationRepo.MarkAsRead(c.Request().Context(), user, payload.IDs); err != nil {
@@ -221,19 +217,6 @@ func (nc *notificationController) MarkAsRead(c *echo.Context) error {
 	return c.JSON(http.StatusOK, dto.Response[map[string]bool]{
 		Results: map[string]bool{"success": true},
 	})
-}
-
-type SubscribeWebpushPayload struct {
-	Endpoint string `json:"endpoint"`
-	Keys     struct {
-		Auth   string `json:"auth"`
-		P256dh string `json:"p256dh"`
-	} `json:"keys"`
-	UserAgent string `json:"user_agent"`
-}
-
-type UnsubscribeWebpushPayload struct {
-	Endpoint string `json:"endpoint"`
 }
 
 // GetWebpushSubscriptions returns current user's registered WebPush subscriptions
@@ -273,18 +256,17 @@ func (nc *notificationController) GetWebpushSubscriptions(c *echo.Context) error
 func (nc *notificationController) SubscribeWebpush(c *echo.Context) error {
 	user := currentUser(c)
 
-	var payload SubscribeWebpushPayload
+	var payload dto.WebpushSubscriptionRequest
 	if err := c.Bind(&payload); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&payload); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	endpoint := strings.TrimSpace(payload.Endpoint)
 	auth := strings.TrimSpace(payload.Keys.Auth)
 	p256dh := strings.TrimSpace(payload.Keys.P256dh)
-
-	if endpoint == "" || auth == "" || p256dh == "" {
-		return renderApiError(c, http.StatusBadRequest, errors.New("webpush subscription must contain endpoint, auth, and p256dh keys"))
-	}
 
 	userAgent := strings.TrimSpace(payload.UserAgent)
 	if userAgent == "" {
@@ -336,14 +318,10 @@ func (nc *notificationController) SubscribeWebpush(c *echo.Context) error {
 func (nc *notificationController) UnsubscribeWebpush(c *echo.Context) error {
 	user := currentUser(c)
 
-	var payload UnsubscribeWebpushPayload
+	var payload dto.WebpushUnsubscribeRequest
 	_ = c.Bind(&payload)
 
 	endpoint := strings.TrimSpace(payload.Endpoint)
-	if endpoint == "" {
-		endpoint = strings.TrimSpace(c.QueryParam("endpoint"))
-	}
-
 	query := nc.db.WithContext(c.Request().Context()).Where("user_id = ?", user.ID)
 	if endpoint != "" {
 		query = query.Where("endpoint = ?", endpoint)

@@ -3,7 +3,6 @@ package controller
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
@@ -72,18 +71,22 @@ func NewHeatmapController(injector do.Injector) HeatmapController {
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/coordinates [get]
 func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
-	hasCellSize := false
+	var req dto.HeatmapCoordinatesRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
 	cellSize := defaultHeatmapCellSize
-	if rawCellSize := c.QueryParam("cell_size"); rawCellSize != "" {
-		parsedCellSize, err := strconv.ParseFloat(rawCellSize, 64)
-		if err != nil || parsedCellSize < minHeatmapCellSize || parsedCellSize > maxHeatmapCellSize {
-			return renderApiError(c, http.StatusBadRequest, errors.New("invalid cell_size"))
-		}
-		cellSize = parsedCellSize
+	hasCellSize := false
+	if req.CellSize != nil {
+		cellSize = *req.CellSize
 		hasCellSize = true
 	}
 
-	bounds, err := parseHeatmapBounds(c)
+	bounds, err := parseHeatmapBoundsFromRequest(&req)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -146,33 +149,15 @@ func (hc *heatmapController) GetWorkoutCoordinates(c *echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func parseHeatmapBounds(c *echo.Context) (*heatmapBounds, error) {
-	minLatRaw := c.QueryParam("min_lat")
-	minLngRaw := c.QueryParam("min_lng")
-	maxLatRaw := c.QueryParam("max_lat")
-	maxLngRaw := c.QueryParam("max_lng")
-
-	if minLatRaw == "" && minLngRaw == "" && maxLatRaw == "" && maxLngRaw == "" {
+func parseHeatmapBoundsFromRequest(req *dto.HeatmapCoordinatesRequest) (*heatmapBounds, error) {
+	if req.MinLat == nil && req.MinLng == nil && req.MaxLat == nil && req.MaxLng == nil {
 		return nil, nil
 	}
-
-	minLat, err := strconv.ParseFloat(minLatRaw, 64)
-	if err != nil {
-		return nil, errors.New("invalid min_lat")
-	}
-	minLng, err := strconv.ParseFloat(minLngRaw, 64)
-	if err != nil {
-		return nil, errors.New("invalid min_lng")
-	}
-	maxLat, err := strconv.ParseFloat(maxLatRaw, 64)
-	if err != nil {
-		return nil, errors.New("invalid max_lat")
-	}
-	maxLng, err := strconv.ParseFloat(maxLngRaw, 64)
-	if err != nil {
-		return nil, errors.New("invalid max_lng")
+	if req.MinLat == nil || req.MinLng == nil || req.MaxLat == nil || req.MaxLng == nil {
+		return nil, errors.New("invalid viewport bounds")
 	}
 
+	minLat, minLng, maxLat, maxLng := *req.MinLat, *req.MinLng, *req.MaxLat, *req.MaxLng
 	withingBounds := minLat < -90 || maxLat > 90 || minLng < -180 || maxLng > 180
 	if withingBounds || minLat > maxLat || minLng > maxLng {
 		return nil, errors.New("invalid viewport bounds")

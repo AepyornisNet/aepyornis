@@ -13,6 +13,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/validator"
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
 	echojwt "github.com/labstack/echo-jwt/v5"
@@ -31,6 +32,7 @@ func (a *App) WebRoot() string {
 
 func newEcho(logger *slog.Logger) *echo.Echo {
 	e := echo.New()
+	e.Validator = validator.New()
 
 	webLogger := logger.With("module", "webserver")
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
@@ -182,8 +184,8 @@ func (a *App) apiV2Routes(e *echo.Group) {
 			log.Warn(err.Error())
 
 			r := dto.Response[any]{}
-			r.AddError(err)
-			r.AddError(dto.ErrNotAuthorized)
+			r.AddContextError(c.Request().Context(), err)
+			r.AddContextError(c.Request().Context(), dto.ErrNotAuthorized)
 
 			return c.JSON(http.StatusUnauthorized, r)
 		},
@@ -292,7 +294,7 @@ func (a *App) apiV2AppInfoHandler(c *echo.Context) error {
 // renderAPIV2Error renders an API v2 error response
 func (a *App) renderAPIV2Error(c *echo.Context, status int, err error) error {
 	resp := dto.Response[any]{}
-	resp.AddError(err)
+	resp.AddContextError(c.Request().Context(), err)
 	return c.JSON(status, resp)
 }
 

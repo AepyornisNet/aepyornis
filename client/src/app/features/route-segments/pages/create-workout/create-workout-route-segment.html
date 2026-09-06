@@ -29,7 +29,16 @@
     <div class="row">
       <!-- Map Section -->
       <div class="col-lg-6 mb-4">
-        <app-route-segment-map [points]="workoutPoints()" [selection]="selection()" />
+        @if (totalPoints() >= 2) {
+          <app-route-segment-map [points]="workoutPoints()" [selection]="selection()" />
+        } @else {
+          <div class="alert alert-warning" role="alert">
+            {{
+              'This workout does not have sufficient GPS track points to create a route segment.'
+                | translate
+            }}
+          </div>
+        }
       </div>
 
       <!-- Form Section -->
@@ -83,14 +92,53 @@
                 </small>
               </div>
 
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label" for="category">{{ 'Category' | translate }}</label>
+                  <select class="form-select" id="category" [formField]="routeSegmentForm.category">
+                    <option value="">{{ 'Not specified' | translate }}</option>
+                    @for (t of availableTypes(); track t) {
+                      <option [value]="t">{{ sportLabel(t) | translate }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label" for="difficulty">{{ 'Difficulty' | translate }}</label>
+                  <select
+                    class="form-select"
+                    id="difficulty"
+                    [formField]="routeSegmentForm.difficulty"
+                  >
+                    <option value="">{{ 'Not specified' | translate }}</option>
+                    <option value="easy">{{ 'Easy' | translate }}</option>
+                    <option value="moderate">{{ 'Moderate' | translate }}</option>
+                    <option value="difficult">{{ 'Difficult' | translate }}</option>
+                  </select>
+                </div>
+              </div>
+
               <div class="mb-3">
-                <label class="form-label" for="category">{{ 'Category' | translate }}</label>
-                <select class="form-select" id="category" [formField]="routeSegmentForm.category">
-                  <option value="">{{ 'Not specified' | translate }}</option>
-                  @for (t of availableTypes(); track t) {
-                    <option [value]="t">{{ sportLabel(t) | translate }}</option>
-                  }
+                <label class="form-label" for="visibility">{{ 'Visibility' | translate }}</label>
+                <select
+                  class="form-select"
+                  id="visibility"
+                  [formField]="routeSegmentForm.visibility"
+                >
+                  <option value="public">{{ 'Public' | translate }}</option>
+                  <option value="followers">{{ 'Followers' | translate }}</option>
+                  <option value="private">{{ 'Private' | translate }}</option>
                 </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="description">{{ 'Description' | translate }}</label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  rows="3"
+                  [formField]="routeSegmentForm.description"
+                  [placeholder]="'Detailed description of the route segment' | translate"
+                ></textarea>
               </div>
 
               <div class="mb-3">
@@ -102,9 +150,16 @@
                     [formField]="routeSegmentForm.bidirectional"
                   />
                   <label class="form-check-label" for="bidirectional">
+                    <app-icon name="bidirectional" size="16" />
                     {{ 'Bidirectional' | translate }}
                   </label>
+                  <div class="form-text">
+                    {{ 'Check if the route can be traversed in both directions' | translate }}
+                  </div>
                 </div>
+              </div>
+
+              <div class="mb-3">
                 <div class="form-check">
                   <input
                     class="form-check-input"
@@ -113,9 +168,24 @@
                     [formField]="routeSegmentForm.circular"
                   />
                   <label class="form-check-label" for="circular">
-                    {{ 'Roundtour' | translate }}
+                    <app-icon name="circular" size="16" />
+                    {{ 'Circular' | translate }}
                   </label>
+                  <div class="form-text">
+                    {{ 'Check if the route is a loop circuit' | translate }}
+                  </div>
                 </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="notes">{{ 'Notes' | translate }}</label>
+                <textarea
+                  class="form-control"
+                  id="notes"
+                  rows="4"
+                  [formField]="routeSegmentForm.notes"
+                  [placeholder]="'Optional notes about this route segment' | translate"
+                ></textarea>
               </div>
 
               <div class="mb-4">
@@ -134,7 +204,10 @@
                   class="btn btn-primary btn-lg"
                   type="submit"
                   [disabled]="
-                    creating() || routeSegmentForm().invalid() || selectedDistance() === 0
+                    creating() ||
+                    routeSegmentForm().invalid() ||
+                    selectedDistance() === 0 ||
+                    totalPoints() < 2
                   "
                 >
                   @if (creating()) {

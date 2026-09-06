@@ -171,8 +171,18 @@ func NewRouteSegment(notes string, filename string, content []byte) (*RouteSegme
 	return rs, nil
 }
 
-func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams) ([]byte, error) {
-	points := workout.Records[params.Start-1 : params.End-1]
+func RouteSegmentFromPoints(workout *Workout, start int, end int) ([]byte, error) {
+	validRecords := make([]WorkoutRecord, 0, len(workout.Records))
+	for _, p := range workout.Records {
+		if p.HasValidCoordinates() {
+			validRecords = append(validRecords, p)
+		}
+	}
+
+	if start < 1 || end > len(validRecords) || start >= end {
+		return nil, ErrInvalidData
+	}
+	points := validRecords[start-1 : end]
 
 	s := gpx.GPXTrackSegment{}
 

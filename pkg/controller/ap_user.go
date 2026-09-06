@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
@@ -127,13 +126,14 @@ func (ac *apUserController) Following(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	page := 0
-	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
-		page, err = strconv.Atoi(rawPage)
-		if err != nil || page < 1 {
-			return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
-		}
+	var query dto.ActivityPubPageQuery
+	if err := c.Bind(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
 	}
+	if err := c.Validate(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
+	}
+	page := query.Page
 
 	following, err := ac.followerRepo.ListApprovedFollowing(targetUser.Profile.ID)
 	if err != nil {
@@ -220,13 +220,14 @@ func (ac *apUserController) Followers(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	page := 0
-	if rawPage := strings.TrimSpace(c.QueryParam("page")); rawPage != "" {
-		page, err = strconv.Atoi(rawPage)
-		if err != nil || page < 1 {
-			return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
-		}
+	var query dto.ActivityPubPageQuery
+	if err := c.Bind(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
 	}
+	if err := c.Validate(&query); err != nil {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid page"))
+	}
+	page := query.Page
 
 	followers, err := ac.followerRepo.ListApprovedFollowers(targetUser.Profile.ID)
 	if err != nil {
