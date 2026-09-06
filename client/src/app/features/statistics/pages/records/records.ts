@@ -71,4 +71,3 @@ export class StatisticsRecords implements OnInit {
     return Boolean(record.power_records && record.power_records.length > 0);
   }
 }
-
