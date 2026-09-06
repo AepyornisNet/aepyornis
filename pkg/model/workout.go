@@ -965,12 +965,12 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 }
 
 func (w *Workout) UpdateRouteSegmentMatches(db *gorm.DB) error {
-	var routeSegments []*RouteSegment
-	if err := db.Preload("RouteSegmentMatches.Workout").Order("created_at DESC").Find(&routeSegments).Error; err != nil {
+	matches, err := FindWorkoutRouteSegmentMatches(db, w.ID)
+	if err != nil {
 		return err
 	}
 
-	w.RouteSegmentMatches = w.FindMatches(routeSegments)
+	w.RouteSegmentMatches = matches
 
 	return nil
 }

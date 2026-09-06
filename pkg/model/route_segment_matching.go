@@ -1,27 +1,44 @@
 package model
 
 import (
-	"math"
+	"errors"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-// MaxDeltaMeter is the maximum distance in meters that a point can be away from
-// the route segment
-const MaxDeltaMeter = 20.0
+// Route segment matching thresholds and constants
+const (
+	// MaxDeltaMeter is the maximum distance in meters that a point can be away from
+	// the route segment for slope calculations and legacy fallbacks.
+	MaxDeltaMeter = 20.0
 
-// MaxTotalDistanceFraction is the maximum percentage of the total distance of
-// the route segment that can be exceeded by the total distance matching part of
-// the route (1.0 = 100%)
-const MaxTotalDistanceFraction = 0.9
+	// RouteSegmentBoundingBoxExpansionDegrees is the bounding box buffer in degrees
+	// used for the spatial index pre-filter (~1.1 km at the equator).
+	RouteSegmentBoundingBoxExpansionDegrees = 0.01
+
+	// RouteSegmentZoneBufferMeters is the buffer radius in meters around the start
+	// and end points to detect entry and exit zones on the WGS84 ellipsoid.
+	RouteSegmentZoneBufferMeters = 25.0
+
+	// RouteSegmentMinPointInterval is the minimum number of points between start and
+	// exit points required for a valid segment effort.
+	RouteSegmentMinPointInterval = 5
+
+	// RouteSegmentMinLengthFraction is the minimum fraction of the route's total length
+	// an effort track must cover to be considered a match (0.85 = 85%).
+	RouteSegmentMinLengthFraction = 0.85
+
+	// RouteSegmentMaxHausdorffDistance is the maximum Hausdorff distance threshold in
+	// projected units (EPSG:3857) to ensure overall shape similarity.
+	RouteSegmentMaxHausdorffDistance = 50.0
+)
 
 // RouteSegmentMatch is a match between a route segment and a workout
 type RouteSegmentMatch struct {
 	ID           uint64        `gorm:"primaryKey;autoIncrement" json:"id"`
 	Workout      *Workout      `json:"workout"`
 	RouteSegment *RouteSegment `json:"routeSegment"`
-
-	first, last WorkoutRecord // The first and last point of the route
-	end         WorkoutRecord // The last point of the workout
 
 	RouteSegmentID uint64        `gorm:"not null;index" json:"routeSegmentID"` // The ID of the route segment
 	WorkoutID      uint64        `gorm:"not null;index" json:"workoutID"`      // The ID of the workout
@@ -38,198 +55,405 @@ func (rsm *RouteSegmentMatch) AverageSpeed() float64 {
 	return rsm.Distance / rsm.Duration.Seconds()
 }
 
-// NewRouteSegmentMatch will create a new route segment match from a workout and
-// the first and last point of the route along the route segment
-func (rs *RouteSegment) NewRouteSegmentMatch(workout *Workout, p, last int) *RouteSegmentMatch {
-	rsm := &RouteSegmentMatch{
-		Workout:      workout,
-		RouteSegment: rs,
-		FirstID:      p,
-		LastID:       last,
-	}
-
-	rsm.calculate()
-
-	return rsm
+type matchQueryResult struct {
+	WorkoutID   uint64    `gorm:"column:workout_id"`
+	StartSort   int       `gorm:"column:start_sort"`
+	EndSort     int       `gorm:"column:end_sort"`
+	StartTime   time.Time `gorm:"column:start_time"`
+	EndTime     time.Time `gorm:"column:end_time"`
+	TrackLength float64   `gorm:"column:track_length"`
 }
 
-// IsBetterThan returns true if the new route segment match is better than the
-// current one
-func (rsm *RouteSegmentMatch) IsBetterThan(current *RouteSegmentMatch) bool {
-	return current == nil || rsm.Distance < current.Distance
+const matchRouteSegmentQuery = `
+WITH route AS (
+    SELECT 
+        id,
+        ST_Transform(ST_SetSRID(points, 4326), 3857) AS geom,
+        ST_StartPoint(ST_SetSRID(points, 4326)) AS start_geom,
+        ST_EndPoint(ST_SetSRID(points, 4326)) AS end_geom,
+        ST_Length(points::geography) AS length_m,
+        COALESCE(circular, false) AS is_circular,
+        COALESCE(bidirectional, false) AS is_bidirectional
+    FROM route_segments 
+    WHERE id = ?
+),
+-- 1. Index-powered Bounding Box (Discards irrelevant points)
+local_points AS (
+    SELECT 
+        w.workout_id, w.sort_order, w.time, w.point,
+        ST_Transform(ST_SetSRID(w.point, 4326), 3857) AS pt
+    FROM workout_records w
+    JOIN route_segments rs ON rs.id = ?
+    WHERE w.point IS NOT NULL 
+      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
+),
+-- 2. Tag zone entries
+tagged_zones AS (
+    SELECT 
+        p.workout_id, p.sort_order, p.time, p.pt, p.point,
+        ST_DWithin(p.point::geography, r.start_geom::geography, ?) AS in_start,
+        ST_DWithin(p.point::geography, r.end_geom::geography, ?) AS in_end,
+        r.is_circular,
+        r.is_bidirectional
+    FROM local_points p CROSS JOIN route r
+),
+-- 3. The Core Logic: Pairing valid entries and exits using a tripwire
+valid_segments AS (
+    SELECT 
+        s.workout_id,
+        s.sort_order AS start_sort,
+        (
+            SELECT MIN(e.sort_order) 
+            FROM tagged_zones e 
+            WHERE e.workout_id = s.workout_id 
+              AND e.sort_order > s.sort_order + ?
+              AND (
+                  -- Standard: Start -> End
+                  (NOT e.is_circular AND NOT e.is_bidirectional AND s.in_start AND e.in_end)
+                  OR
+                  -- Bidirectional: Start -> End OR End -> Start
+                  (NOT e.is_circular AND e.is_bidirectional AND ((s.in_start AND e.in_end) OR (s.in_end AND e.in_start)))
+                  OR 
+                  -- Circular: Start -> Start (Direction doesn't matter)
+                  (e.is_circular AND s.in_start AND e.in_start)
+              )
+              -- THE TRIPWIRE: They must have left both zones at least once during this interval
+              AND EXISTS (
+                  SELECT 1 FROM tagged_zones m 
+                  WHERE m.workout_id = s.workout_id 
+                    AND m.sort_order > s.sort_order 
+                    AND m.sort_order < e.sort_order
+                    AND NOT m.in_start AND NOT m.in_end
+              )
+              -- NO RE-ENTRY INTO START ZONE: Cannot re-enter departure zone after leaving it
+              AND NOT EXISTS (
+                  SELECT 1 FROM tagged_zones r_reentry
+                  WHERE r_reentry.workout_id = s.workout_id
+                    AND r_reentry.sort_order > s.sort_order
+                    AND r_reentry.sort_order < e.sort_order
+                    AND (
+                        (s.in_start AND r_reentry.in_start) OR
+                        (s.in_end AND r_reentry.in_end)
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM tagged_zones left_zone
+                        WHERE left_zone.workout_id = s.workout_id
+                          AND left_zone.sort_order > s.sort_order
+                          AND left_zone.sort_order < r_reentry.sort_order
+                          AND NOT left_zone.in_start AND NOT left_zone.in_end
+                    )
+              )
+        ) AS end_sort
+    FROM tagged_zones s
+    WHERE s.in_start OR (s.is_bidirectional AND s.in_end)
+),
+-- 4. Deduplicate multiple stationary points grouping to the same exit
+distinct_efforts AS (
+    SELECT 
+        workout_id,
+        MIN(start_sort) AS start_sort,
+        end_sort
+    FROM valid_segments
+    WHERE end_sort IS NOT NULL
+    GROUP BY workout_id, end_sort
+),
+-- 5. Reconstruct the geometry strictly for the isolated match
+effort_tracks AS (
+    SELECT 
+        de.workout_id,
+        de.start_sort,
+        de.end_sort,
+        MIN(lp.time) AS start_time,
+        MAX(lp.time) AS end_time,
+        ST_MakeLine(lp.pt ORDER BY lp.sort_order) AS track_geom,
+        ST_Length(ST_MakeLine(lp.point ORDER BY lp.sort_order)::geography) AS track_length
+    FROM distinct_efforts de
+    JOIN local_points lp 
+      ON lp.workout_id = de.workout_id 
+     AND lp.sort_order BETWEEN de.start_sort AND de.end_sort
+    GROUP BY de.workout_id, de.start_sort, de.end_sort
+)
+-- 6. Validate Distance and Shape
+SELECT 
+    e.workout_id,
+    e.start_sort,
+    e.end_sort,
+    e.start_time,
+    e.end_time,
+    e.track_length
+FROM effort_tracks e
+CROSS JOIN route r
+WHERE 
+    e.track_length >= (r.length_m * ?) 
+    -- Hausdorff ignores direction, making it universally valid for bidirectional and circular shape checks
+    AND ST_HausdorffDistance(e.track_geom, r.geom) < ? 
+ORDER BY e.workout_id, e.start_time;
+`
+
+const matchRouteSegmentWorkoutQuery = `
+WITH route AS (
+    SELECT 
+        id,
+        ST_Transform(ST_SetSRID(points, 4326), 3857) AS geom,
+        ST_StartPoint(ST_SetSRID(points, 4326)) AS start_geom,
+        ST_EndPoint(ST_SetSRID(points, 4326)) AS end_geom,
+        ST_Length(points::geography) AS length_m,
+        COALESCE(circular, false) AS is_circular,
+        COALESCE(bidirectional, false) AS is_bidirectional
+    FROM route_segments 
+    WHERE id = ?
+),
+-- 1. Index-powered Bounding Box (Discards irrelevant points)
+local_points AS (
+    SELECT 
+        w.workout_id, w.sort_order, w.time, w.point,
+        ST_Transform(ST_SetSRID(w.point, 4326), 3857) AS pt
+    FROM workout_records w
+    JOIN route_segments rs ON rs.id = ?
+    WHERE w.workout_id = ?
+      AND w.point IS NOT NULL 
+      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
+),
+-- 2. Tag zone entries
+tagged_zones AS (
+    SELECT 
+        p.workout_id, p.sort_order, p.time, p.pt, p.point,
+        ST_DWithin(p.point::geography, r.start_geom::geography, ?) AS in_start,
+        ST_DWithin(p.point::geography, r.end_geom::geography, ?) AS in_end,
+        r.is_circular,
+        r.is_bidirectional
+    FROM local_points p CROSS JOIN route r
+),
+-- 3. The Core Logic: Pairing valid entries and exits using a tripwire
+valid_segments AS (
+    SELECT 
+        s.workout_id,
+        s.sort_order AS start_sort,
+        (
+            SELECT MIN(e.sort_order) 
+            FROM tagged_zones e 
+            WHERE e.workout_id = s.workout_id 
+              AND e.sort_order > s.sort_order + ?
+              AND (
+                  -- Standard: Start -> End
+                  (NOT e.is_circular AND NOT e.is_bidirectional AND s.in_start AND e.in_end)
+                  OR
+                  -- Bidirectional: Start -> End OR End -> Start
+                  (NOT e.is_circular AND e.is_bidirectional AND ((s.in_start AND e.in_end) OR (s.in_end AND e.in_start)))
+                  OR 
+                  -- Circular: Start -> Start (Direction doesn't matter)
+                  (e.is_circular AND s.in_start AND e.in_start)
+              )
+              -- THE TRIPWIRE: They must have left both zones at least once during this interval
+              AND EXISTS (
+                  SELECT 1 FROM tagged_zones m 
+                  WHERE m.workout_id = s.workout_id 
+                    AND m.sort_order > s.sort_order 
+                    AND m.sort_order < e.sort_order
+                    AND NOT m.in_start AND NOT m.in_end
+              )
+              -- NO RE-ENTRY INTO START ZONE: Cannot re-enter departure zone after leaving it
+              AND NOT EXISTS (
+                  SELECT 1 FROM tagged_zones r_reentry
+                  WHERE r_reentry.workout_id = s.workout_id
+                    AND r_reentry.sort_order > s.sort_order
+                    AND r_reentry.sort_order < e.sort_order
+                    AND (
+                        (s.in_start AND r_reentry.in_start) OR
+                        (s.in_end AND r_reentry.in_end)
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM tagged_zones left_zone
+                        WHERE left_zone.workout_id = s.workout_id
+                          AND left_zone.sort_order > s.sort_order
+                          AND left_zone.sort_order < r_reentry.sort_order
+                          AND NOT left_zone.in_start AND NOT left_zone.in_end
+                    )
+              )
+        ) AS end_sort
+    FROM tagged_zones s
+    WHERE s.in_start OR (s.is_bidirectional AND s.in_end)
+),
+-- 4. Deduplicate multiple stationary points grouping to the same exit
+distinct_efforts AS (
+    SELECT 
+        workout_id,
+        MIN(start_sort) AS start_sort,
+        end_sort
+    FROM valid_segments
+    WHERE end_sort IS NOT NULL
+    GROUP BY workout_id, end_sort
+),
+-- 5. Reconstruct the geometry strictly for the isolated match
+effort_tracks AS (
+    SELECT 
+        de.workout_id,
+        de.start_sort,
+        de.end_sort,
+        MIN(lp.time) AS start_time,
+        MAX(lp.time) AS end_time,
+        ST_MakeLine(lp.pt ORDER BY lp.sort_order) AS track_geom,
+        ST_Length(ST_MakeLine(lp.point ORDER BY lp.sort_order)::geography) AS track_length
+    FROM distinct_efforts de
+    JOIN local_points lp 
+      ON lp.workout_id = de.workout_id 
+     AND lp.sort_order BETWEEN de.start_sort AND de.end_sort
+    GROUP BY de.workout_id, de.start_sort, de.end_sort
+)
+-- 6. Validate Distance and Shape
+SELECT 
+    e.workout_id,
+    e.start_sort,
+    e.end_sort,
+    e.start_time,
+    e.end_time,
+    e.track_length
+FROM effort_tracks e
+CROSS JOIN route r
+WHERE 
+    e.track_length >= (r.length_m * ?) 
+    -- Hausdorff ignores direction, making it universally valid for bidirectional and circular shape checks
+    AND ST_HausdorffDistance(e.track_geom, r.geom) < ? 
+ORDER BY e.workout_id, e.start_time;
+`
+
+// FindRouteSegmentMatches finds all matching workouts for a given route segment using PostGIS.
+func FindRouteSegmentMatches(db *gorm.DB, routeSegmentID uint64) ([]*RouteSegmentMatch, error) {
+	if db == nil {
+		return nil, errors.New("nil db")
+	}
+
+	var results []matchQueryResult
+	if err := db.Raw(
+		matchRouteSegmentQuery,
+		routeSegmentID,
+		routeSegmentID,
+		RouteSegmentBoundingBoxExpansionDegrees,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentMinPointInterval,
+		RouteSegmentMinLengthFraction,
+		RouteSegmentMaxHausdorffDistance,
+	).Scan(&results).Error; err != nil {
+		return nil, err
+	}
+
+	matches := make([]*RouteSegmentMatch, len(results))
+	for i, r := range results {
+		var dur time.Duration
+		if !r.EndTime.IsZero() && !r.StartTime.IsZero() && r.EndTime.After(r.StartTime) {
+			dur = r.EndTime.Sub(r.StartTime)
+		}
+		matches[i] = &RouteSegmentMatch{
+			RouteSegmentID: routeSegmentID,
+			WorkoutID:      r.WorkoutID,
+			FirstID:        r.StartSort,
+			LastID:         r.EndSort,
+			Distance:       r.TrackLength,
+			Duration:       dur,
+		}
+	}
+
+	return matches, nil
 }
 
-// MatchesDistance returns true if the distance of the route segment match is
-// within MaxTotalDistancePercentage of the distance of the current route
-// segment
-func (rsm *RouteSegmentMatch) MatchesDistance(distance float64) bool {
-	return math.Abs(rsm.Distance/distance) > MaxTotalDistanceFraction
+// FindRouteSegmentWorkoutMatches finds matches between a specific route segment and a specific workout.
+func FindRouteSegmentWorkoutMatches(db *gorm.DB, routeSegmentID uint64, workoutID uint64) ([]*RouteSegmentMatch, error) {
+	if db == nil {
+		return nil, errors.New("nil db")
+	}
+
+	var results []matchQueryResult
+	if err := db.Raw(
+		matchRouteSegmentWorkoutQuery,
+		routeSegmentID,
+		routeSegmentID,
+		workoutID,
+		RouteSegmentBoundingBoxExpansionDegrees,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentMinPointInterval,
+		RouteSegmentMinLengthFraction,
+		RouteSegmentMaxHausdorffDistance,
+	).Scan(&results).Error; err != nil {
+		return nil, err
+	}
+
+	matches := make([]*RouteSegmentMatch, len(results))
+	for i, r := range results {
+		var dur time.Duration
+		if !r.EndTime.IsZero() && !r.StartTime.IsZero() && r.EndTime.After(r.StartTime) {
+			dur = r.EndTime.Sub(r.StartTime)
+		}
+		matches[i] = &RouteSegmentMatch{
+			RouteSegmentID: routeSegmentID,
+			WorkoutID:      r.WorkoutID,
+			FirstID:        r.StartSort,
+			LastID:         r.EndSort,
+			Distance:       r.TrackLength,
+			Duration:       dur,
+		}
+	}
+
+	return matches, nil
 }
 
-// calculate will calculate the total distance and duration of the route
-// segment, and the total number of points of this workout along the route
-// segment
-func (rsm *RouteSegmentMatch) calculate() {
-	rsm.RouteSegmentID = rsm.RouteSegment.ID
-	rsm.WorkoutID = rsm.Workout.ID
-	rsm.first = rsm.Workout.Records[rsm.FirstID]
-	rsm.last = rsm.Workout.Records[rsm.LastID]
-	rsm.end = rsm.Workout.Records[len(rsm.Workout.Records)-1]
-
-	if rsm.FirstID <= rsm.LastID {
-		rsm.Distance = rsm.last.TotalDistance - rsm.first.TotalDistance
-		rsm.Duration = rsm.last.TotalDuration - rsm.first.TotalDuration
-	} else {
-		rsm.Distance = rsm.last.TotalDistance + rsm.end.TotalDistance - rsm.first.TotalDistance
-		rsm.Duration = rsm.last.TotalDuration + rsm.end.TotalDuration - rsm.first.TotalDuration
+// RematchRouteSegment executes the PostGIS matching query and updates the database records for this route segment.
+func RematchRouteSegment(db *gorm.DB, routeSegmentID uint64) error {
+	matches, err := FindRouteSegmentMatches(db, routeSegmentID)
+	if err != nil {
+		return err
 	}
+
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := replaceRouteSegmentMatches(tx, routeSegmentID, matches); err != nil {
+			return err
+		}
+		return tx.Model(&RouteSegment{}).Where("id = ?", routeSegmentID).Update("dirty", false).Error
+	})
 }
 
-// FindMatches will find all workouts that match the current route segment
-// The result will contain a list of RouteSegmentMatches, which will contain
-// the workout, the point of the workout along the segment, and the total
-// distance and duration of the segment for this workout.
-func (rs *RouteSegment) FindMatches(workouts []*Workout) []*RouteSegmentMatch {
-	if len(rs.Points.Points) == 0 {
-		return nil
+// FindWorkoutRouteSegmentMatches finds all matching route segments for a given workout.
+func FindWorkoutRouteSegmentMatches(db *gorm.DB, workoutID uint64) ([]*RouteSegmentMatch, error) {
+	if db == nil {
+		return nil, errors.New("nil db")
 	}
 
-	var result []*RouteSegmentMatch
+	var segmentIDs []uint64
+	err := db.Raw(`
+		SELECT rs.id 
+		FROM route_segments rs
+		WHERE rs.points IS NOT NULL
+		  AND EXISTS (
+		      SELECT 1 FROM workout_records w
+		      WHERE w.workout_id = ?
+		        AND w.point IS NOT NULL
+		        AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
+		  )
+		ORDER BY rs.id ASC
+	`, workoutID, RouteSegmentBoundingBoxExpansionDegrees).Scan(&segmentIDs).Error
+	if err != nil {
+		return nil, err
+	}
 
-	for _, w := range workouts {
-		if m := rs.Match(w); m != nil {
-			result = append(result, m)
+	var allMatches []*RouteSegmentMatch
+	for _, segID := range segmentIDs {
+		matches, err := FindRouteSegmentWorkoutMatches(db, segID, workoutID)
+		if err != nil {
+			return nil, err
 		}
+		allMatches = append(allMatches, matches...)
 	}
 
-	return result
+	return allMatches, nil
 }
 
-// Match will find the best match (if any) of the route segment in the workout
-// First calculate all possible starting points, then find the best one that
-// actually matches the segment.
-func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
-	if !workout.Type.IsLocation() {
-		return nil
+// RematchWorkout executes matching for a workout and replaces its matches in the database.
+func RematchWorkout(db *gorm.DB, workoutID uint64) error {
+	matches, err := FindWorkoutRouteSegmentMatches(db, workoutID)
+	if err != nil {
+		return err
 	}
 
-	if !workout.HasTracks() {
-		return nil
-	}
-
-	sp := rs.StartingPoints(workout.Records)
-	if len(sp) == 0 {
-		return nil
-	}
-
-	var bestMatch *RouteSegmentMatch
-
-	for _, p := range sp {
-		if last, ok := rs.MatchSegment(workout, p, true); ok {
-			rsm := rs.NewRouteSegmentMatch(workout, p, last)
-			if rsm.MatchesDistance(rs.TotalDistance) && rsm.IsBetterThan(bestMatch) {
-				bestMatch = rsm
-			}
-		}
-
-		if !rs.Bidirectional {
-			continue
-		}
-
-		if last, ok := rs.MatchSegment(workout, p, false); ok {
-			rsm := rs.NewRouteSegmentMatch(workout, p, last)
-			if rsm.MatchesDistance(rs.TotalDistance) && rsm.IsBetterThan(bestMatch) {
-				bestMatch = rsm
-			}
-		}
-	}
-
-	return bestMatch
-}
-
-// MatchSegment starts at a point and continues the workout track while it finds
-// each next point of the route segment, assuming there are many more points in
-// the workout track than the route segment.
-// If it can't find all points of the segment in the correct order, it returns false.
-// Otherwise it returns the last point index of the route that matches the final
-// point of the route segment.
-// If forward is true, we increment the index, otherwise we decrement it
-func (rs *RouteSegment) MatchSegment(workout *Workout, start int, forward bool) (int, bool) {
-	workoutLength := len(workout.Records)
-	segmentLength := len(rs.Points.Points)
-
-	cur := 0
-	if !forward {
-		cur = segmentLength - 1
-	}
-
-	for i := range workoutLength {
-		index := (start + i) % workoutLength
-
-		d := workout.Records[index].DistanceToPoint(rs.Points.Points[cur])
-		if d > MaxDeltaMeter {
-			continue
-		}
-
-		if forward {
-			cur++
-
-			if cur == segmentLength {
-				return index, true
-			}
-		} else {
-			cur--
-
-			if cur == 0 {
-				return index, true
-			}
-		}
-
-		if !rs.Circular && index < start {
-			break
-		}
-	}
-
-	return 0, false
-}
-
-// StartingPoints finds all points that are closer than MaxDeltaMeter to the
-// segment's starting point
-func (rs *RouteSegment) StartingPoints(points []WorkoutRecord) []int {
-	var r []int
-
-	if len(rs.Points.Points) == 0 {
-		return r
-	}
-
-	start := rs.Points.Points[0]
-
-	for i, p := range points {
-		d := p.DistanceToPoint(start)
-		if d < MaxDeltaMeter {
-			r = append(r, i)
-		}
-	}
-
-	return r
-}
-
-// FindMatches will find all workouts that match the current route segment
-// The result will contain a list of RouteSegmentMatches, which will contain
-// the workout, the point of the workout along the segment, and the total
-// distance and duration of the segment for this workout.
-func (w *Workout) FindMatches(routeSegments []*RouteSegment) []*RouteSegmentMatch {
-	if !w.HasTracks() {
-		return nil
-	}
-
-	var result []*RouteSegmentMatch
-
-	for _, rs := range routeSegments {
-		if m := rs.Match(w); m != nil {
-			result = append(result, m)
-		}
-	}
-
-	return result
+	return replaceWorkoutRouteSegmentMatches(db, workoutID, matches)
 }

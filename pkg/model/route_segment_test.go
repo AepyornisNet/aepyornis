@@ -30,127 +30,182 @@ func TestRouteSegment_Parse(t *testing.T) {
 	}
 }
 
-func TestRouteSegment_FindMatches(t *testing.T) {
+func TestRouteSegment_FindMatches_PostGIS(t *testing.T) {
+	db := model.TestDB(t)
+
 	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NoError(t, rs.Create(db))
 
-	w1, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
-	assert.NoError(t, err)
-	assert.Len(t, w1, 1)
-	rp, wp := rs.Points.Points[0], w1[0].Records[0]
-	minStart := wp.DistanceToPoint(rp)
-	for i := range w1[0].Records {
-		d := w1[0].Records[i].DistanceToPoint(rp)
-		if d < minStart {
-			minStart = d
-		}
-	}
-	t.Logf(
-		"route points=%d workout points=%d type=%s hasTracks=%v first_route=(%.5f,%.5f) first_workout=(%.5f,%.5f) min_start_distance=%.2fm",
-		len(rs.Points.Points),
-		len(w1[0].Records),
-		w1[0].Type,
-		w1[0].HasTracks(),
-		rp.Lat,
-		rp.Lng,
-		wp.Lat(),
-		wp.Lng(),
-		minStart,
-	)
+	// Create matching workout that traverses the complete route
+	matchGPX, err := model.RouteSegmentFromPoints(&model.Workout{
+		Records: func() []model.WorkoutRecord {
+			records := make([]model.WorkoutRecord, len(rs.Points.Points))
+			for i, pt := range rs.Points.Points {
+				p := pt
+				records[i] = model.WorkoutRecord{Point: &p}
+			}
+			return records
+		}(),
+	}, 1, len(rs.Points.Points))
+	require.NoError(t, err)
 
-	w1_1 := w1[0]
-	assert.True(t, w1_1.Type.IsLocation())
-	assert.True(t, w1_1.HasTracks())
+	w1, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", matchGPX)
+	require.NoError(t, err)
+	require.Len(t, w1, 1)
+	require.NoError(t, w1[0].Save(db))
 
 	w2, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "nomatch.gpx", []byte(model.GpxSample1))
-	assert.NoError(t, err)
-	assert.Len(t, w2, 1)
+	require.NoError(t, err)
+	require.Len(t, w2, 1)
+	require.NoError(t, w2[0].Save(db))
 
-	w2_1 := w2[0]
-	assert.True(t, w2_1.Type.IsLocation())
-	assert.True(t, w2_1.HasTracks())
+	matches, err := model.FindRouteSegmentMatches(db, rs.ID)
+	require.NoError(t, err)
+	require.Len(t, matches, 1)
 
-	workouts := []*model.Workout{w1_1, w2_1}
-	matches := rs.FindMatches(workouts)
-
-	if !assert.Len(t, matches, 1) {
-		return
-	}
-
-	assert.Len(t, matches[0].Workout.Records, 158)
+	assert.Equal(t, w1[0].ID, matches[0].WorkoutID)
+	assert.Equal(t, rs.ID, matches[0].RouteSegmentID)
+	assert.Greater(t, matches[0].Distance, 900.0)
+	assert.Equal(t, 0, matches[0].FirstID)
+	assert.Greater(t, matches[0].LastID, matches[0].FirstID)
 }
 
-func TestRouteSegment_StartingPoints_NoMatch(t *testing.T) {
-	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
-	assert.NoError(t, err)
+func TestRouteSegment_BidirectionalMatching(t *testing.T) {
+	db := model.TestDB(t)
 
-	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "nomatch.gpx", []byte(model.GpxSample1))
-	assert.NoError(t, err)
-	assert.Len(t, w, 1)
+	rsLinear, err := model.NewRouteSegment("", "linear.gpx", []byte(finsepiste))
+	require.NoError(t, err)
+	// Take a linear subsegment (first 10 points)
+	rsLinear.Points.Points = rsLinear.Points.Points[:10]
+	rsLinear.Circular = false
+	rsLinear.Bidirectional = false
+	require.NoError(t, rsLinear.Create(db))
 
-	w1 := w[0]
-	sp := rs.StartingPoints(w1.Records)
-	assert.Empty(t, sp)
+	forwardGPX, err := model.RouteSegmentFromPoints(&model.Workout{
+		Records: func() []model.WorkoutRecord {
+			records := make([]model.WorkoutRecord, len(rsLinear.Points.Points))
+			for i, pt := range rsLinear.Points.Points {
+				p := pt
+				records[i] = model.WorkoutRecord{Point: &p}
+			}
+			return records
+		}(),
+	}, 1, len(rsLinear.Points.Points))
+	require.NoError(t, err)
+
+	wFwd, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "fwd.gpx", forwardGPX)
+	require.NoError(t, err)
+	require.Len(t, wFwd, 1)
+	require.NoError(t, wFwd[0].Save(db))
+
+	reverseGPX, err := model.RouteSegmentFromPoints(&model.Workout{
+		Records: func() []model.WorkoutRecord {
+			n := len(rsLinear.Points.Points)
+			records := make([]model.WorkoutRecord, n)
+			for i := 0; i < n; i++ {
+				p := rsLinear.Points.Points[n-1-i]
+				records[i] = model.WorkoutRecord{Point: &p}
+			}
+			return records
+		}(),
+	}, 1, len(rsLinear.Points.Points))
+	require.NoError(t, err)
+
+	wRev, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "rev.gpx", reverseGPX)
+	require.NoError(t, err)
+	require.Len(t, wRev, 1)
+	require.NoError(t, wRev[0].Save(db))
+
+	// When Bidirectional is false: only forward matches
+	matches1, err := model.FindRouteSegmentMatches(db, rsLinear.ID)
+	require.NoError(t, err)
+	assert.Len(t, matches1, 1)
+	assert.Equal(t, wFwd[0].ID, matches1[0].WorkoutID)
+
+	// When Bidirectional is true: both forward and reverse match
+	rsLinear.Bidirectional = true
+	require.NoError(t, rsLinear.Save(db))
+
+	matches2, err := model.FindRouteSegmentMatches(db, rsLinear.ID)
+	require.NoError(t, err)
+	assert.Len(t, matches2, 2)
 }
 
-func TestRouteSegment_StartingPoints_Match(t *testing.T) {
+func TestRouteSegment_RematchRouteSegment(t *testing.T) {
+	db := model.TestDB(t)
+
 	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	rs.Dirty = true
+	require.NoError(t, rs.Create(db))
 
-	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
-	assert.NoError(t, err)
-	assert.Len(t, w, 1)
+	matchGPX, err := model.RouteSegmentFromPoints(&model.Workout{
+		Records: func() []model.WorkoutRecord {
+			records := make([]model.WorkoutRecord, len(rs.Points.Points))
+			for i, pt := range rs.Points.Points {
+				p := pt
+				records[i] = model.WorkoutRecord{Point: &p}
+			}
+			return records
+		}(),
+	}, 1, len(rs.Points.Points))
+	require.NoError(t, err)
 
-	w1 := w[0]
-	sp := rs.StartingPoints(w1.Records)
-	assert.NotEmpty(t, sp)
+	w1, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", matchGPX)
+	require.NoError(t, err)
+	require.Len(t, w1, 1)
+	require.NoError(t, w1[0].Save(db))
 
-	for _, p := range sp {
-		assert.Less(t, w1.Records[p].DistanceToPoint(rs.Points.Points[0]), model.MaxDeltaMeter)
-	}
+	require.NoError(t, model.RematchRouteSegment(db, rs.ID))
+
+	var matches []*model.RouteSegmentMatch
+	require.NoError(t, db.Where("route_segment_id = ?", rs.ID).Find(&matches).Error)
+	require.Len(t, matches, 1)
+	assert.Equal(t, w1[0].ID, matches[0].WorkoutID)
+
+	var reloaded model.RouteSegment
+	require.NoError(t, db.First(&reloaded, rs.ID).Error)
+	assert.False(t, reloaded.Dirty)
 }
 
-func TestRouteSegment_StartingPoints_MatchSegment(t *testing.T) {
+func TestRouteSegment_FindWorkoutRouteSegmentMatches(t *testing.T) {
+	db := model.TestDB(t)
+
 	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NoError(t, rs.Create(db))
 
-	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
-	assert.NoError(t, err)
-	assert.Len(t, w, 1)
+	matchGPX, err := model.RouteSegmentFromPoints(&model.Workout{
+		Records: func() []model.WorkoutRecord {
+			records := make([]model.WorkoutRecord, len(rs.Points.Points))
+			for i, pt := range rs.Points.Points {
+				p := pt
+				records[i] = model.WorkoutRecord{Point: &p}
+			}
+			return records
+		}(),
+	}, 1, len(rs.Points.Points))
+	require.NoError(t, err)
 
-	w1 := w[0]
-	sp := rs.StartingPoints(w1.Records)
-	assert.NotEmpty(t, sp)
+	w1, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", matchGPX)
+	require.NoError(t, err)
+	require.Len(t, w1, 1)
+	require.NoError(t, w1[0].Save(db))
 
-	{
-		last, ok := rs.MatchSegment(w1, 3, true)
-		assert.Zero(t, last)
-		assert.False(t, ok)
-	}
+	matches, err := model.FindWorkoutRouteSegmentMatches(db, w1[0].ID)
+	require.NoError(t, err)
+	require.Len(t, matches, 1)
+	assert.Equal(t, rs.ID, matches[0].RouteSegmentID)
 
-	{
-		last, ok := rs.MatchSegment(w1, 4, true)
-		assert.NotZero(t, last)
-		assert.True(t, ok)
-	}
-}
+	w2, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "nomatch.gpx", []byte(model.GpxSample1))
+	require.NoError(t, err)
+	require.Len(t, w2, 1)
+	require.NoError(t, w2[0].Save(db))
 
-func TestRouteSegment_Match(t *testing.T) {
-	rs, err := model.NewRouteSegment("", "finsepiste.gpx", []byte(finsepiste))
-	assert.NoError(t, err)
-
-	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "match.gpx", []byte(track))
-	assert.NoError(t, err)
-	assert.Len(t, w, 1)
-
-	w1 := w[0]
-	rsm := rs.Match(w1)
-	if !assert.NotNil(t, rsm) {
-		return
-	}
-
-	assert.Greater(t, rsm.Distance, 900.0)
-	assert.True(t, rsm.MatchesDistance(rs.TotalDistance))
+	matches2, err := model.FindWorkoutRouteSegmentMatches(db, w2[0].ID)
+	require.NoError(t, err)
+	assert.Empty(t, matches2)
 }
 
 func TestRouteSegment_DatabaseSaveAndGet(t *testing.T) {
@@ -194,4 +249,46 @@ func TestRouteSegment_RouteSegmentFromPoints_FiltersInvalidCoordinates(t *testin
 	assert.InDelta(t, 50.95786, rs.Points.Points[0].Lat, 0.0001)
 	assert.InDelta(t, 50.95816, rs.Points.Points[1].Lat, 0.0001)
 	assert.InDelta(t, 50.95900, rs.Points.Points[2].Lat, 0.0001)
+}
+
+func TestRouteSegment_MultiLapEfforts(t *testing.T) {
+	db := model.TestDB(t)
+
+	rs, err := model.NewRouteSegment("", "linear.gpx", []byte(finsepiste))
+	require.NoError(t, err)
+	rs.Points.Points = rs.Points.Points[:10]
+	rs.Circular = false
+	rs.Bidirectional = true
+	require.NoError(t, rs.Create(db))
+
+	n := len(rs.Points.Points)
+	// Build a single workout that does 3 laps: forward, reverse, forward
+	records := make([]model.WorkoutRecord, 0, n*3)
+	// Lap 1 (forward)
+	for i := 0; i < n; i++ {
+		p := rs.Points.Points[i]
+		records = append(records, model.WorkoutRecord{Point: &p})
+	}
+	// Lap 2 (reverse)
+	for i := 0; i < n; i++ {
+		p := rs.Points.Points[n-1-i]
+		records = append(records, model.WorkoutRecord{Point: &p})
+	}
+	// Lap 3 (forward)
+	for i := 0; i < n; i++ {
+		p := rs.Points.Points[i]
+		records = append(records, model.WorkoutRecord{Point: &p})
+	}
+
+	multiLapGPX, err := model.RouteSegmentFromPoints(&model.Workout{Records: records}, 1, len(records))
+	require.NoError(t, err)
+
+	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "multilap.gpx", multiLapGPX)
+	require.NoError(t, err)
+	require.Len(t, w, 1)
+	require.NoError(t, w[0].Save(db))
+
+	matches, err := model.FindRouteSegmentMatches(db, rs.ID)
+	require.NoError(t, err)
+	assert.Len(t, matches, 3)
 }
