@@ -253,13 +253,8 @@ func resolveRouteSegmentCategory(category string, workoutType string) string {
 	return ""
 }
 
-func applyRouteSegmentCreationParams(rs *model.RouteSegment, params *model.RoutSegmentCreationParams, workout *model.Workout, user *model.User) {
+func applyRouteSegmentCreationParams(rs *model.RouteSegment, params *dto.RouteSegmentFromWorkoutRequest, workout *model.Workout, user *model.User) {
 	rs.Category = resolveRouteSegmentCategory(params.Category, workout.Type.String())
-	if params.Visibility != "" {
-		rs.Visibility = params.Visibility
-	}
-	rs.Description = params.Description
-	rs.Difficulty = params.Difficulty
 	rs.Bidirectional = params.Bidirectional
 	rs.Circular = params.Circular
 	if user != nil {
@@ -391,12 +386,18 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c *echo.Context)
 		return renderApiError(c, http.StatusNotFound, gorm.ErrRecordNotFound)
 	}
 
-	var params model.RoutSegmentCreationParams
+	var params dto.RouteSegmentFromWorkoutRequest
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	if err := c.Validate(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if !isValidRouteSegmentCategory(params.Category) {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment category: %s", params.Category))
+	}
 
-	content, err := model.RouteSegmentFromPoints(workout, &params)
+	content, err := model.RouteSegmentFromPoints(workout, params.Start, params.End)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -519,30 +520,12 @@ func (rc *routeSegmentController) UpdateRouteSegment(c *echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, errors.New("forbidden"))
 	}
 
-	type updateParams struct {
-		Name          string                       `json:"name"`
-		Notes         string                       `json:"notes"`
-		Category      string                       `json:"category"`
-		Visibility    model.WorkoutVisibility      `json:"visibility"`
-		Description   string                       `json:"description"`
-		Difficulty    model.RouteSegmentDifficulty `json:"difficulty"`
-		Bidirectional bool                         `json:"bidirectional"`
-		Circular      bool                         `json:"circular"`
-	}
-
-	var params updateParams
+	var params dto.RouteSegmentUpdateRequest
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	if len(params.Name) == 0 {
-		return renderApiError(c, http.StatusBadRequest, errors.New("route segment name is required"))
-	}
-	if params.Visibility != "" && !params.Visibility.IsValid() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("invalid route segment visibility"))
-	}
-	if params.Difficulty != "" && !params.Difficulty.IsValid() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("invalid route segment difficulty"))
+	if err := c.Validate(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	if !isValidRouteSegmentCategory(params.Category) {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment category: %s", params.Category))
@@ -644,14 +627,13 @@ func (rc *routeSegmentController) GetRouteSegmentMatches(c *echo.Context) error 
 	}
 
 	user := currentUser(c)
-	var pagination dto.PaginationParams
-	if err := c.Bind(&pagination); err != nil {
+	var query dto.RouteSegmentMatchesQuery
+	if err := c.Bind(&query); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-	pagination.SetDefaults()
+	query.SetDefaults()
 
-	sort := c.QueryParam("sort")
-	matches, totalCount, err := rc.routeSegmentRepo.GetMatches(rs.ID, user, sort, pagination.PerPage, pagination.GetOffset())
+	matches, totalCount, err := rc.routeSegmentRepo.GetMatches(rs.ID, user, query.Sort, query.PerPage, query.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -663,9 +645,9 @@ func (rc *routeSegmentController) GetRouteSegmentMatches(c *echo.Context) error 
 
 	resp := dto.PaginatedResponse[dto.RouteSegmentMatch]{
 		Results:    results,
-		Page:       pagination.Page,
-		PerPage:    pagination.PerPage,
-		TotalPages: pagination.CalculateTotalPages(totalCount),
+		Page:       query.Page,
+		PerPage:    query.PerPage,
+		TotalPages: query.CalculateTotalPages(totalCount),
 		TotalCount: totalCount,
 	}
 

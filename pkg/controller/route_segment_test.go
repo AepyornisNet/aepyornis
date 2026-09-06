@@ -16,6 +16,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/service"
+	"github.com/AepyornisNet/aepyornis/pkg/validator"
 	"github.com/fsouza/slognil"
 	"github.com/labstack/echo/v5"
 	"github.com/restayway/gogis"
@@ -81,6 +82,7 @@ func TestRouteSegmentController_CreateWithCategory(t *testing.T) {
 	require.NoError(t, w.Close())
 
 	e := echo.New()
+	e.Validator = validator.New()
 	req := httptest.NewRequest(http.MethodPost, "/route-segments", &b)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	rec := httptest.NewRecorder()
@@ -116,6 +118,7 @@ func TestRouteSegmentController_CreateFromWorkout_PrefillCategory(t *testing.T) 
 	require.NoError(t, workout.Save(ctrl.db))
 
 	e := echo.New()
+	e.Validator = validator.New()
 	workoutIDStr := strconv.FormatUint(workout.ID, 10)
 
 	// 1. With explicitly specified category
@@ -217,6 +220,7 @@ func TestRouteSegmentController_Visibility_GetRouteSegment(t *testing.T) {
 	require.NoError(t, rsPublic.Save(ctrl.db))
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	testAccess := func(rsID uint64, viewer *model.User, expectedStatus int) {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/route-segments/%d", rsID), nil)
@@ -288,6 +292,7 @@ func TestRouteSegmentController_Visibility_ListRouteSegments(t *testing.T) {
 	require.NoError(t, rsPublic.Save(ctrl.db))
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	// Owner list includes both
 	{
@@ -387,6 +392,7 @@ func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkou
 	require.NoError(t, ctrl.db.Create(match).Error)
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	// userAthlete (owner of private workout) can see the match
 	{

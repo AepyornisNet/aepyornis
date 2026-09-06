@@ -13,6 +13,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/validator"
 	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
 	echojwt "github.com/labstack/echo-jwt/v5"
@@ -31,6 +32,7 @@ func (a *App) WebRoot() string {
 
 func newEcho(logger *slog.Logger) *echo.Echo {
 	e := echo.New()
+	e.Validator = validator.New()
 
 	webLogger := logger.With("module", "webserver")
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{

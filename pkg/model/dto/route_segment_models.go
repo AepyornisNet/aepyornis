@@ -23,6 +23,38 @@ type RouteSegmentStatsResponse struct {
 	CourseRecord   *CourseRecordInfo `json:"course_record,omitempty"`
 }
 
+// RouteSegmentUpdateRequest represents update payload for route segment
+type RouteSegmentUpdateRequest struct {
+	Name          string                       `json:"name" validate:"required"`
+	Notes         string                       `json:"notes"`
+	Category      string                       `json:"category"`
+	Visibility    model.WorkoutVisibility      `json:"visibility" validate:"omitempty,oneof=public followers private"`
+	Description   string                       `json:"description"`
+	Difficulty    model.RouteSegmentDifficulty `json:"difficulty" validate:"omitempty,oneof=easy moderate hard expert"`
+	Bidirectional bool                         `json:"bidirectional"`
+	Circular      bool                         `json:"circular"`
+}
+
+// RouteSegmentFromWorkoutRequest represents parameters to create a route segment from a workout
+type RouteSegmentFromWorkoutRequest struct {
+	Name          string `json:"name" validate:"required"`
+	Start         int    `json:"start" validate:"required,min=1"`
+	End           int    `json:"end" validate:"required,gtfield=Start"`
+	Category      string `json:"category"`
+	Bidirectional bool   `json:"bidirectional"`
+	Circular      bool   `json:"circular"`
+}
+
+func (r *RouteSegmentFromWorkoutRequest) Filename() string {
+	return r.Name + ".gpx"
+}
+
+// RouteSegmentMatchesQuery represents query parameters for route segment matches
+type RouteSegmentMatchesQuery struct {
+	PaginationParams
+	Sort string `query:"sort"`
+}
+
 // RouteSegmentResponse represents a route segment in API v2 responses
 type RouteSegmentResponse struct {
 	ID            uint64                       `json:"id"`

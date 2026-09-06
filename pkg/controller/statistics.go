@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 
-	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
@@ -35,20 +34,25 @@ func NewStatisticsController(_ do.Injector) StatisticsController {
 func (sc *statisticsController) GetStatistics(c *echo.Context) error {
 	user := currentUser(c)
 
-	var statConfig model.StatConfig
-	if err := c.Bind(&statConfig); err != nil {
+	var req dto.StatisticsRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if statConfig.Since == "" {
-		statConfig.Since = "1 year"
+	since := req.Since
+	if since == "" {
+		since = "1 year"
 	}
 
-	if statConfig.Per == "" {
-		statConfig.Per = "month"
+	per := req.Per
+	if per == "" {
+		per = "month"
 	}
 
-	statistics, err := user.GetStatisticsFor(statConfig.Since, statConfig.Per)
+	statistics, err := user.GetStatisticsFor(since, per)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

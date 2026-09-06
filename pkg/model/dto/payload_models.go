@@ -273,21 +273,21 @@ func setIfNotNil[T any](dst *T, src *T) {
 }
 
 type SigninRequest struct {
-	Email    string `json:"email" form:"email"`
-	Password string `json:"password" form:"password"`
+	Email    string `json:"email" form:"email" validate:"required,email"`
+	Password string `json:"password" form:"password" validate:"required"`
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email" form:"email"`
-	Username string `json:"username,omitempty" form:"username"`
-	Password string `json:"password" form:"password"`
+	Email    string `json:"email" form:"email" validate:"required,email"`
+	Username string `json:"username,omitempty" form:"username" validate:"required,min=1"`
+	Password string `json:"password" form:"password" validate:"required,min=1"`
 	Name     string `json:"name" form:"name"`
 	Language string `json:"language,omitempty" form:"language"`
 }
 
 type AdminUserUpdateData struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
+	Name     string `json:"name" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
 	Username string `json:"username,omitempty"`
 	Admin    bool   `json:"admin"`
 	Active   bool   `json:"active"`
@@ -295,7 +295,7 @@ type AdminUserUpdateData struct {
 }
 
 type ProfileUpdateData struct {
-	Name                     string                   `json:"name"`
+	Name                     string                   `json:"name" validate:"required"`
 	Birthdate                *string                  `json:"birthdate"`
 	PreferredUnits           model.UserPreferredUnits `json:"preferred_units"`
 	Language                 string                   `json:"language"`
@@ -304,14 +304,14 @@ type ProfileUpdateData struct {
 	TotalsShow               string                   `json:"totals_show"`
 	Timezone                 string                   `json:"timezone"`
 	AutoImportDirectory      string                   `json:"auto_import_directory"`
-	DefaultWorkoutVisibility model.WorkoutVisibility  `json:"default_workout_visibility"`
+	DefaultWorkoutVisibility model.WorkoutVisibility  `json:"default_workout_visibility" validate:"omitempty,oneof=public followers"`
 	APIActive                bool                     `json:"api_active"`
 	PreferFullDate           bool                     `json:"prefer_full_date"`
 }
 
 type ProfileChangePasswordData struct {
-	CurrentPassword string `json:"current_password"`
-	NewPassword     string `json:"new_password"`
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=1"`
 }
 
 type UserNotificationSettingsData struct {
@@ -327,3 +327,131 @@ type CalendarQueryParams struct {
 	End      *string `query:"end"`
 	TimeZone *string `query:"timeZone"`
 }
+
+type MarkNotificationsAsReadRequest struct {
+	IDs []uint64 `json:"ids"`
+}
+
+type WebpushSubscriptionRequest struct {
+	Endpoint string `json:"endpoint" validate:"required"`
+	Keys     struct {
+		Auth   string `json:"auth" validate:"required"`
+		P256dh string `json:"p256dh" validate:"required"`
+	} `json:"keys"`
+	UserAgent string `json:"user_agent"`
+}
+
+type WebpushUnsubscribeRequest struct {
+	Endpoint string `json:"endpoint" query:"endpoint"`
+}
+
+type LikeByObjectRequest struct {
+	ObjectID string `json:"object_id" form:"object_id" query:"object_id" validate:"required"`
+}
+
+type WorkoutReplyCreateRequest struct {
+	Content string `json:"content" validate:"required,min=1"`
+}
+
+type WorkoutBreakdownRequest struct {
+	Count float64 `query:"count" validate:"omitempty,gt=0"`
+	Mode  string  `query:"mode" validate:"omitempty,oneof=auto laps unit"`
+}
+
+type WorkoutRangeStatsRequest struct {
+	StartIndex *int `query:"start_index" validate:"omitempty,gte=0"`
+	EndIndex   *int `query:"end_index" validate:"omitempty,gte=0"`
+}
+
+type RecentWorkoutsRequest struct {
+	Limit  int    `query:"limit" validate:"omitempty,gte=1,lte=100"`
+	Offset int    `query:"offset" validate:"omitempty,gte=0"`
+	Handle string `query:"handle"`
+	Scope  string `query:"scope" validate:"omitempty,oneof=following global"`
+}
+
+type WorkoutsDownloadZipRequest struct {
+	IDs []uint64 `json:"ids" query:"ids" form:"ids" validate:"required,min=1"`
+}
+
+type BulkAddEquipmentRequest struct {
+	WorkoutIDs   []uint64 `json:"workout_ids" validate:"required,min=1"`
+	EquipmentIDs []uint64 `json:"equipment_ids" validate:"required,min=1"`
+}
+
+type ProfileSearchRequest struct {
+	Query string `query:"q"`
+	PaginationParams
+}
+
+type TotalsRequest struct {
+	Handle string `query:"handle"`
+	Start  string `query:"start"`
+	End    string `query:"end"`
+}
+
+type RecordsRequest struct {
+	Handle string `query:"handle"`
+	Start  string `query:"start"`
+	End    string `query:"end"`
+}
+
+type RecordsRankingRequest struct {
+	Handle      string `query:"handle"`
+	WorkoutType string `query:"workout_type" validate:"required"`
+	Label       string `query:"label" validate:"required"`
+	Start       string `query:"start"`
+	End         string `query:"end"`
+	PaginationParams
+}
+
+type ClimbRecordsRankingRequest struct {
+	Handle      string `query:"handle"`
+	WorkoutType string `query:"workout_type" validate:"required"`
+	Start       string `query:"start"`
+	End         string `query:"end"`
+	PaginationParams
+}
+
+type UserHandleRequest struct {
+	Handle string `query:"handle" form:"handle" json:"handle"`
+}
+
+type DateRangeRequest struct {
+	Start string `query:"start"`
+	End   string `query:"end"`
+}
+
+type HeatmapCoordinatesRequest struct {
+	CellSize *float64 `query:"cell_size" validate:"omitempty,gte=0.0001,lte=0.1"`
+	MinLat   *float64 `query:"min_lat" validate:"omitempty,gte=-90,lte=90"`
+	MinLng   *float64 `query:"min_lng" validate:"omitempty,gte=-180,lte=180"`
+	MaxLat   *float64 `query:"max_lat" validate:"omitempty,gte=-90,lte=90"`
+	MaxLng   *float64 `query:"max_lng" validate:"omitempty,gte=-180,lte=180"`
+}
+
+type StatisticsRequest struct {
+	Since string `query:"since"`
+	Per   string `query:"per" validate:"omitempty,oneof=day week month year"`
+}
+
+type HammerheadCallbackRequest struct {
+	Error string `query:"error"`
+	State string `query:"state"`
+	Code  string `query:"code"`
+}
+
+type HammerheadWebhookPayload struct {
+	ActivityID string `json:"activityId" validate:"required"`
+	UserID     string `json:"userId" validate:"required"`
+}
+
+type WebFingerRequest struct {
+	Resource string   `query:"resource" validate:"required"`
+	Rel      []string `query:"rel"`
+}
+
+type ActivityPubPageQuery struct {
+	Page int `query:"page" validate:"omitempty,min=1"`
+}
+

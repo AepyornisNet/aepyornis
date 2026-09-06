@@ -93,9 +93,17 @@ func (uc *userController) GetWhoami(c *echo.Context) error {
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /totals [get]
 func (uc *userController) GetTotals(c *echo.Context) error {
+	var req dto.TotalsRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
 	viewer := currentUser(c)
 	targetUser := viewer
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	if handle := strings.TrimSpace(req.Handle); handle != "" {
 		var err error
 		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
 		if err != nil {
@@ -105,7 +113,7 @@ func (uc *userController) GetTotals(c *echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
-	startDate, endDate, err := parseDateRange(c)
+	startDate, endDate, err := parseDateRange(req.Start, req.End)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -181,9 +189,17 @@ func (uc *userController) GetTotals(c *echo.Context) error {
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /records [get]
 func (uc *userController) GetRecords(c *echo.Context) error {
+	var req dto.RecordsRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
 	viewer := currentUser(c)
 	targetUser := viewer
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	if handle := strings.TrimSpace(req.Handle); handle != "" {
 		var err error
 		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
 		if err != nil {
@@ -193,7 +209,7 @@ func (uc *userController) GetRecords(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
-	startDate, endDate, err := parseDateRange(c)
+	startDate, endDate, err := parseDateRange(req.Start, req.End)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -228,9 +244,18 @@ func (uc *userController) GetRecords(c *echo.Context) error {
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /records/ranking [get]
 func (uc *userController) GetRecordsRanking(c *echo.Context) error {
+	var req dto.RecordsRankingRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	req.SetDefaults()
+
 	viewer := currentUser(c)
 	targetUser := viewer
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	if handle := strings.TrimSpace(req.Handle); handle != "" {
 		var err error
 		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
 		if err != nil {
@@ -240,36 +265,23 @@ func (uc *userController) GetRecordsRanking(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
-	workoutType := c.QueryParam("workout_type")
-	label := c.QueryParam("label")
+	wt := model.AsWorkoutType(req.WorkoutType)
 
-	if workoutType == "" || label == "" {
-		return renderApiError(c, http.StatusBadRequest, errors.New("workout_type and label are required"))
-	}
-
-	wt := model.AsWorkoutType(workoutType)
-
-	var pagination dto.PaginationParams
-	if err := c.Bind(&pagination); err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-	pagination.SetDefaults()
-
-	startDate, endDate, err := parseDateRange(c)
+	startDate, endDate, err := parseDateRange(req.Start, req.End)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, totalCount, err := uc.getVisibleDistanceRanking(targetUser, viewer.Profile.ID, wt, label, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	records, totalCount, err := uc.getVisibleDistanceRanking(targetUser, viewer.Profile.ID, wt, req.Label, startDate, endDate, req.PerPage, req.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := dto.PaginatedResponse[dto.DistanceRecordResponse]{
 		Results:    dto.NewDistanceRecordResponses(records),
-		Page:       pagination.Page,
-		PerPage:    pagination.PerPage,
-		TotalPages: pagination.CalculateTotalPages(totalCount),
+		Page:       req.Page,
+		PerPage:    req.PerPage,
+		TotalPages: req.CalculateTotalPages(totalCount),
 		TotalCount: totalCount,
 	}
 
@@ -293,9 +305,18 @@ func (uc *userController) GetRecordsRanking(c *echo.Context) error {
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /records/climbs/ranking [get]
 func (uc *userController) GetClimbRecordsRanking(c *echo.Context) error {
+	var req dto.ClimbRecordsRankingRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	req.SetDefaults()
+
 	viewer := currentUser(c)
 	targetUser := viewer
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	if handle := strings.TrimSpace(req.Handle); handle != "" {
 		var err error
 		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
 		if err != nil {
@@ -305,34 +326,23 @@ func (uc *userController) GetClimbRecordsRanking(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
-	workoutType := c.QueryParam("workout_type")
-	if workoutType == "" {
-		return renderApiError(c, http.StatusBadRequest, errors.New("workout_type is required"))
-	}
+	wt := model.AsWorkoutType(req.WorkoutType)
 
-	wt := model.AsWorkoutType(workoutType)
-
-	var pagination dto.PaginationParams
-	if err := c.Bind(&pagination); err != nil {
-		return renderApiError(c, http.StatusBadRequest, err)
-	}
-	pagination.SetDefaults()
-
-	startDate, endDate, err := parseDateRange(c)
+	startDate, endDate, err := parseDateRange(req.Start, req.End)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, totalCount, err := uc.getVisibleClimbRanking(targetUser, viewer.Profile.ID, wt, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	records, totalCount, err := uc.getVisibleClimbRanking(targetUser, viewer.Profile.ID, wt, startDate, endDate, req.PerPage, req.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	resp := dto.PaginatedResponse[dto.ClimbRecordResponse]{
 		Results:    dto.NewClimbRecordResponses(records),
-		Page:       pagination.Page,
-		PerPage:    pagination.PerPage,
-		TotalPages: pagination.CalculateTotalPages(totalCount),
+		Page:       req.Page,
+		PerPage:    req.PerPage,
+		TotalPages: req.CalculateTotalPages(totalCount),
 		TotalCount: totalCount,
 	}
 
@@ -360,6 +370,14 @@ func (uc *userController) GetUserByID(c *echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	var req dto.DateRangeRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
 	u, err := uc.userRepo.GetByID(id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -369,7 +387,7 @@ func (uc *userController) GetUserByID(c *echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
-	startDate, endDate, err := parseDateRange(c)
+	startDate, endDate, err := parseDateRange(req.Start, req.End)
 	if err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
@@ -404,7 +422,15 @@ func (uc *userController) SearchProfiles(c *echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
-	query := strings.TrimSpace(c.QueryParam("q"))
+	var req dto.ProfileSearchRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	query := strings.TrimSpace(req.Query)
 	resp := dto.Response[[]dto.ActivityPubProfileSummaryResponse]{
 		Results: []dto.ActivityPubProfileSummaryResponse{},
 	}
@@ -470,7 +496,15 @@ func (uc *userController) SearchProfiles(c *echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile [get]
 func (uc *userController) GetUserProfileByHandle(c *echo.Context) error {
-	handle := strings.TrimSpace(c.QueryParam("handle"))
+	var req dto.UserHandleRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	handle := strings.TrimSpace(req.Handle)
 	if handle != "" {
 		username, host, parsedAsRemote, err := uc.parseHandleWithHost(c, handle)
 		if err != nil {
@@ -523,7 +557,16 @@ func (uc *userController) GetUserProfileByHandle(c *echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile/follow [post]
 func (uc *userController) FollowUserByHandle(c *echo.Context) error {
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	var req dto.UserHandleRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	handle := strings.TrimSpace(req.Handle)
+	if handle != "" {
 		if _, _, parsedAsRemote, err := uc.parseHandleWithHost(c, handle); err == nil && parsedAsRemote {
 			return uc.followRemoteUserByHandle(c, handle)
 		}
@@ -531,7 +574,7 @@ func (uc *userController) FollowUserByHandle(c *echo.Context) error {
 
 	viewer := currentUser(c)
 	targetUser := viewer
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	if handle != "" {
 		var err error
 		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
 		if err != nil {
@@ -610,7 +653,16 @@ func (uc *userController) FollowUserByHandle(c *echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /user-profile/unfollow [post]
 func (uc *userController) UnfollowUserByHandle(c *echo.Context) error {
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	var req dto.UserHandleRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	handle := strings.TrimSpace(req.Handle)
+	if handle != "" {
 		if _, _, parsedAsRemote, err := uc.parseHandleWithHost(c, handle); err == nil && parsedAsRemote {
 			return uc.unfollowRemoteUserByHandle(c, handle)
 		}
@@ -618,7 +670,7 @@ func (uc *userController) UnfollowUserByHandle(c *echo.Context) error {
 
 	viewer := currentUser(c)
 	targetUser := viewer
-	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+	if handle != "" {
 		var err error
 		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
 		if err != nil {
@@ -1307,11 +1359,8 @@ func (uc *userController) getVisibleClimbRanking(targetUser *model.User, viewerP
 	return records[start:end], totalCount, nil
 }
 
-func parseDateRange(c *echo.Context) (*time.Time, *time.Time, error) {
+func parseDateRange(startStr, endStr string) (*time.Time, *time.Time, error) {
 	const layout = "2006-01-02"
-	startStr := c.QueryParam("start")
-	endStr := c.QueryParam("end")
-
 	var startDate *time.Time
 	var endDate *time.Time
 

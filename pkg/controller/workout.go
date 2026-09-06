@@ -388,16 +388,8 @@ func (wc *workoutController) GetWorkoutReplies(c *echo.Context) error { //nolint
 	}
 
 	var pagination dto.PaginationParams
-	pagination.SetDefaults()
-	if pageStr := c.QueryParam("page"); pageStr != "" {
-		if page, parseErr := strconv.Atoi(pageStr); parseErr == nil {
-			pagination.Page = page
-		}
-	}
-	if perPageStr := c.QueryParam("per_page"); perPageStr != "" {
-		if perPage, parseErr := strconv.Atoi(perPageStr); parseErr == nil {
-			pagination.PerPage = perPage
-		}
+	if err := c.Bind(&pagination); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 	pagination.SetDefaults()
 
@@ -517,17 +509,14 @@ func (wc *workoutController) LikeWorkoutByObject(c *echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
-	params := struct {
-		ObjectID string `json:"object_id" form:"object_id" query:"object_id"`
-	}{}
+	var params dto.LikeByObjectRequest
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	params.ObjectID = strings.TrimSpace(params.ObjectID)
-	if params.ObjectID == "" {
-		return renderApiError(c, http.StatusBadRequest, errors.New("object_id is required"))
+	if err := c.Validate(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	params.ObjectID = strings.TrimSpace(params.ObjectID)
 
 	localWorkoutID, localErr := wc.apOutboxRepo.ResolveWorkoutIDByObjectOrActivityID(0, params.ObjectID)
 	if localErr == nil {
@@ -639,19 +628,14 @@ func (wc *workoutController) CreateReply(c *echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	params := struct {
-		Content string `json:"content"`
-	}{}
-
+	var params dto.WorkoutReplyCreateRequest
 	if err := c.Bind(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	params.Content = strings.TrimSpace(params.Content)
-
-	if params.Content == "" {
-		return renderApiError(c, http.StatusBadRequest, errors.New("content is required"))
+	if err := c.Validate(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	params.Content = strings.TrimSpace(params.Content)
 
 	reply, err := wc.workoutReplyRepo.CreateLocalReply(workout.ID, viewer.Profile.ID, params.Content)
 	if err != nil {
@@ -700,15 +684,15 @@ func (wc *workoutController) CreateReply(c *echo.Context) error {
 func (wc *workoutController) GetWorkoutBreakdown(c *echo.Context) error {
 	requester := currentUser(c)
 
-	params := struct {
-		Count float64 `query:"count"`
-		Mode  string  `query:"mode"`
-	}{
+	params := dto.WorkoutBreakdownRequest{
 		Count: 1.0,
 		Mode:  "auto",
 	}
 
 	if err := c.Bind(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
@@ -766,12 +750,11 @@ func (wc *workoutController) GetWorkoutBreakdown(c *echo.Context) error {
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/stats-range [get]
 func (wc *workoutController) GetWorkoutRangeStats(c *echo.Context) error {
-	params := struct {
-		StartIndex *int `query:"start_index"`
-		EndIndex   *int `query:"end_index"`
-	}{}
-
+	var params dto.WorkoutRangeStatsRequest
 	if err := c.Bind(&params); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	if err := c.Validate(&params); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
@@ -1085,25 +1068,23 @@ func (wc *workoutController) createWorkoutManual(c *echo.Context, user *model.Us
 func (wc *workoutController) GetRecentWorkouts(c *echo.Context) error {
 	requester := currentUser(c)
 
-	limit := 20
-	if limitStr := c.QueryParam("limit"); limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil {
-			if parsedLimit > 0 && parsedLimit <= 100 {
-				limit = parsedLimit
-			}
-		}
+	var req dto.RecentWorkoutsRequest
+	req.Limit = 20
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	offset := 0
-	if offsetStr := c.QueryParam("offset"); offsetStr != "" {
-		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil {
-			if parsedOffset >= 0 {
-				offset = parsedOffset
-			}
-		}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	handle := strings.TrimSpace(c.QueryParam("handle"))
+	if req.Limit <= 0 || req.Limit > 100 {
+		req.Limit = 20
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+	limit := req.Limit
+	offset := req.Offset
+	handle := strings.TrimSpace(req.Handle)
 
 	var workouts []*model.Workout
 	query := wc.db.
@@ -1122,9 +1103,9 @@ func (wc *workoutController) GetRecentWorkouts(c *echo.Context) error {
 		}
 		query = model.ScopeVisibleWorkouts(query, targetUser.Profile.ID, requester.Profile.ID)
 	} else {
-		scope := "following"
-		if c.QueryParam("scope") == "global" {
-			scope = "global"
+		scope := req.Scope
+		if scope == "" {
+			scope = "following"
 		}
 
 		if scope == "global" {
@@ -1488,15 +1469,12 @@ func (wc *workoutController) GetWorkoutFilterOptions(c *echo.Context) error {
 func (wc *workoutController) DownloadWorkoutsZip(c *echo.Context) error {
 	user := currentUser(c)
 
-	var req struct {
-		IDs []uint64 `json:"ids" query:"ids" form:"ids"`
-	}
+	var req dto.WorkoutsDownloadZipRequest
 	if err := c.Bind(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	if len(req.IDs) == 0 {
-		return renderApiError(c, http.StatusBadRequest, errors.New("no workout IDs provided"))
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	var workouts []model.Workout
@@ -1555,19 +1533,12 @@ func (wc *workoutController) DownloadWorkoutsZip(c *echo.Context) error {
 func (wc *workoutController) AddEquipmentToWorkouts(c *echo.Context) error {
 	user := currentUser(c)
 
-	var req struct {
-		WorkoutIDs   []uint64 `json:"workout_ids"`
-		EquipmentIDs []uint64 `json:"equipment_ids"`
-	}
+	var req dto.BulkAddEquipmentRequest
 	if err := c.Bind(&req); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
-
-	if len(req.WorkoutIDs) == 0 {
-		return renderApiError(c, http.StatusBadRequest, errors.New("no workout IDs provided"))
-	}
-	if len(req.EquipmentIDs) == 0 {
-		return renderApiError(c, http.StatusBadRequest, errors.New("no equipment IDs provided"))
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
 	// Fetch equipment

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -43,10 +42,15 @@ func NewWellKnownController(injector do.Injector) WellKnownController {
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /.well-known/webfinger [get]
 func (wc *wellKnownController) WebFinger(c *echo.Context) error {
-	res := c.QueryParam("resource")
-	if res == "" {
-		return renderApiError(c, http.StatusBadRequest, errors.New("missing resource parameter"))
+	var req dto.WebFingerRequest
+	if err := c.Bind(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	if err := c.Validate(&req); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+
+	res := req.Resource
 
 	typ, handle := splitResourceString(res)
 	if typ == "" || handle == "" {
@@ -88,9 +92,9 @@ func (wc *wellKnownController) WebFinger(c *echo.Context) error {
 		},
 	}
 
-	if rels, hasRel := c.QueryParams()["rel"]; hasRel && len(rels) > 0 {
-		allowed := make(map[string]struct{}, len(rels))
-		for _, rel := range rels {
+	if len(req.Rel) > 0 {
+		allowed := make(map[string]struct{}, len(req.Rel))
+		for _, rel := range req.Rel {
 			allowed[rel] = struct{}{}
 		}
 

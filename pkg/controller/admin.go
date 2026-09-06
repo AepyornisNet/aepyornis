@@ -126,6 +126,9 @@ func (ac *adminController) UpdateUser(c *echo.Context) error {
 	if err := c.Bind(&updateData); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
+	if err := c.Validate(&updateData); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
 
 	user.Email = updateData.Email
 	user.Profile.DisplayName = updateData.Name

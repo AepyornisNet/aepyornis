@@ -11,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/validator"
 	"github.com/glebarez/sqlite"
 	"github.com/labstack/echo/v5"
 	"github.com/samber/do/v2"
@@ -57,6 +58,7 @@ func TestUpdateConfig_Validation(t *testing.T) {
 	require.NoError(t, db.Create(user).Error)
 
 	e := echo.New()
+	e.Validator = validator.New()
 
 	t.Run("Invalid Notification Type", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/notifications/invalid_provider", nil)
