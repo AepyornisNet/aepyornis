@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -19,7 +20,7 @@ import { getSportLabel } from '../../../../core/i18n/sport-labels';
 @Component({
   selector: 'app-records-ranking',
   standalone: true,
-  imports: [RouterLink, AppIcon, Pagination, TranslatePipe],
+  imports: [DecimalPipe, RouterLink, AppIcon, Pagination, TranslatePipe],
   templateUrl: './records-ranking.html',
   styleUrl: './records-ranking.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,6 +41,15 @@ export class RecordsRankingPage implements OnInit {
   public readonly totalCount = signal(0);
   public readonly perPage = 20;
   public readonly sportLabel = getSportLabel;
+
+  public readonly isPowerRanking = computed(() => {
+    const list = this.records();
+    if (list.length > 0) {
+      return typeof list[0].average_power === 'number' && list[0].average_power > 0;
+    }
+    const lbl = this.label.toLowerCase();
+    return lbl.endsWith(' s') || lbl.endsWith(' min') || lbl.endsWith(' hour');
+  });
 
   private readonly visiblePages = computed(() => {
     const current = this.page();

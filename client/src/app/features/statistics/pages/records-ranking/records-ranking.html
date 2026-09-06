@@ -6,7 +6,11 @@
       </a>
       <h1 class="display-5 mb-1">{{ label }} · {{ sportLabel(workoutType) | translate }}</h1>
       <p class="text-muted mb-0">
-        {{ 'Fastest workouts for {{label}}' | translate: { label: label } }}
+        @if (isPowerRanking()) {
+          {{ 'Best power efforts for {{label}}' | translate: { label: label } }}
+        } @else {
+          {{ 'Fastest workouts for {{label}}' | translate: { label: label } }}
+        }
       </p>
     </div>
     <app-icon name="trophy" size="48" />
@@ -26,7 +30,7 @@
 
   @if (!loading() && records().length === 0) {
     <div class="alert alert-secondary">
-      {{ 'No efforts recorded yet for this distance.' | translate }}
+      {{ 'No efforts recorded yet for this interval.' | translate }}
     </div>
   }
 
@@ -36,21 +40,35 @@
         <thead>
           <tr>
             <th style="width: 80px">{{ 'Rank' | translate }}</th>
-            <th>{{ 'Distance' | translate }}</th>
-            <th>{{ 'Duration' | translate }}</th>
-            <th>{{ 'Average speed' | translate }}</th>
+            @if (isPowerRanking()) {
+              <th>{{ 'Average power' | translate }}</th>
+              <th>{{ 'Duration' | translate }}</th>
+              <th>{{ 'Distance' | translate }}</th>
+              <th>{{ 'Average speed' | translate }}</th>
+            } @else {
+              <th>{{ 'Distance' | translate }}</th>
+              <th>{{ 'Duration' | translate }}</th>
+              <th>{{ 'Average speed' | translate }}</th>
+            }
             <th class="text-end">{{ 'Workout' | translate }}</th>
           </tr>
         </thead>
         <tbody>
-          @for (dr of records(); track dr.workout_id; let idx = $index) {
+          @for (rec of records(); track rec.workout_id; let idx = $index) {
             <tr>
               <td class="fw-semibold">#{{ rankNumber(idx) }}</td>
-              <td>{{ formatDistance(dr.distance) }}</td>
-              <td>{{ formatDuration(dr.duration_seconds) }}</td>
-              <td>{{ formatSpeed(dr.average_speed) }}</td>
+              @if (isPowerRanking()) {
+                <td class="fw-semibold">{{ rec.average_power | number: '1.0-0' }} W</td>
+                <td>{{ formatDuration(rec.duration_seconds) }}</td>
+                <td>{{ formatDistance(rec.distance) }}</td>
+                <td>{{ formatSpeed(rec.average_speed) }}</td>
+              } @else {
+                <td>{{ formatDistance(rec.distance) }}</td>
+                <td>{{ formatDuration(rec.duration_seconds) }}</td>
+                <td>{{ formatSpeed(rec.average_speed) }}</td>
+              }
               <td class="text-end">
-                <a [routerLink]="['/workouts', dr.workout_id]">{{ formatDate(dr.date) }}</a>
+                <a [routerLink]="['/workouts', rec.workout_id]">{{ formatDate(rec.date) }}</a>
               </td>
             </tr>
           }

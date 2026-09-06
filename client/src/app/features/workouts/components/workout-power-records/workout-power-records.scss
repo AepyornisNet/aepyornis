@@ -1,0 +1,11 @@
+.records-table .interval-row {
+  cursor: pointer;
+}
+
+.records-table .table-active {
+  transition: background-color 0.15s ease;
+}
+
+.records-table .fw-semibold {
+  letter-spacing: 0.01em;
+}

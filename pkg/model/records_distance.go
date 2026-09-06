@@ -1,7 +1,6 @@
 package model
 
 import (
-	"math"
 	"time"
 
 	"gorm.io/gorm"
@@ -65,21 +64,25 @@ func fastestDistancesForWorkout(w *Workout, targets []DistanceRecordTarget) []Di
 
 	points := w.Records
 	prefixDistance := make([]float64, len(points)+1)
-	prefixMoving := make([]time.Duration, len(points)+1)
+	prefixDuration := make([]time.Duration, len(points)+1)
 
 	for i, p := range points {
 		prefixDistance[i+1] = prefixDistance[i] + p.Distance
 
-		speed := p.AverageSpeed()
-		if metricSpeed, ok := p.ExtraMetrics["speed"]; ok && !math.IsNaN(metricSpeed) && metricSpeed > 0 {
-			speed = metricSpeed
+		dt := p.Duration
+		if dt <= 0 {
+			if !p.Time.IsZero() && i+1 < len(points) && !points[i+1].Time.IsZero() {
+				diff := points[i+1].Time.Sub(p.Time)
+				if diff > 0 {
+					dt = diff
+				}
+			}
+		}
+		if dt <= 0 {
+			dt = time.Second
 		}
 
-		if speed*3.6 >= 1.0 {
-			prefixMoving[i+1] = prefixMoving[i] + p.Duration
-		} else {
-			prefixMoving[i+1] = prefixMoving[i]
-		}
+		prefixDuration[i+1] = prefixDuration[i] + dt
 	}
 
 	results := []DistanceRecord{}
@@ -90,7 +93,7 @@ func fastestDistancesForWorkout(w *Workout, targets []DistanceRecordTarget) []Di
 		for end := 0; end < len(points); end++ {
 			for start <= end && prefixDistance[end+1]-prefixDistance[start] >= target.TargetDistance {
 				dist := prefixDistance[end+1] - prefixDistance[start]
-				dur := prefixMoving[end+1] - prefixMoving[start]
+				dur := prefixDuration[end+1] - prefixDuration[start]
 
 				if dur <= 0 {
 					start++

@@ -21,6 +21,7 @@ import { WorkoutDetailDataService } from '../../services/workout-detail-data.ser
 import { WorkoutDetailCoordinatorService } from '../../services/workout-detail-coordinator.service';
 import { Workout } from '../../../../core/types/workout';
 import { WorkoutRecordsComponent } from '../../components/workout-records/workout-records';
+import { WorkoutPowerRecordsComponent } from '../../components/workout-power-records/workout-power-records';
 import {
   NgbNav,
   NgbNavContent,
@@ -56,6 +57,7 @@ import { Like } from '../../../../core/types/like';
     WorkoutClimbsComponent,
     WorkoutZoneDistributionComponent,
     WorkoutRecordsComponent,
+    WorkoutPowerRecordsComponent,
     WorkoutStatisticsComponent,
     NgbNav,
     NgbNavOutlet,

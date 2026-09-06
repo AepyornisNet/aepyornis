@@ -180,6 +180,7 @@ type WorkoutDetailResponse struct {
 	Events              []WorkoutEventResponse          `json:"events,omitempty"`
 	RouteSegmentMatches []RouteSegmentMatchResponse     `json:"route_segment_matches,omitempty"`
 	IntervalBests       []WorkoutIntervalRecordResponse `json:"interval_bests,omitempty"`
+	IntervalPowerBests  []WorkoutIntervalRecordResponse `json:"interval_power_bests,omitempty"`
 	Laps                []WorkoutLapResponse            `json:"laps,omitempty"`
 }
 
@@ -260,14 +261,16 @@ type RouteSegmentMatchResponse struct {
 
 // WorkoutIntervalRecordResponse represents a stored interval with its rank.
 type WorkoutIntervalRecordResponse struct {
-	Label           string  `json:"label"`
-	TargetDistance  float64 `json:"target_distance"`
-	Distance        float64 `json:"distance"`
-	DurationSeconds float64 `json:"duration_seconds"`
-	AverageSpeed    float64 `json:"average_speed"`
-	StartIndex      int     `json:"start_index"`
-	EndIndex        int     `json:"end_index"`
-	Rank            int64   `json:"rank"`
+	Label           string   `json:"label"`
+	TargetDistance  *float64 `json:"target_distance,omitempty"`
+	TargetDuration  *float64 `json:"target_duration,omitempty"`
+	Distance        float64  `json:"distance"`
+	DurationSeconds float64  `json:"duration_seconds"`
+	AverageSpeed    *float64 `json:"average_speed,omitempty"`
+	AveragePower    *float64 `json:"average_power,omitempty"`
+	StartIndex      int      `json:"start_index"`
+	EndIndex        int      `json:"end_index"`
+	Rank            int64    `json:"rank"`
 }
 
 // WorkoutPopupData represents data for the heatmap popup
@@ -422,7 +425,11 @@ func NewWorkoutPopupData(w *model.Workout) WorkoutPopupData {
 // NewWorkoutDetailResponse converts a database workout to a detailed API response
 //
 //nolint:gocyclo // assembling full workout view touches many optional fields
-func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalRecordWithRank) WorkoutDetailResponse {
+func NewWorkoutDetailResponse(
+	w *model.Workout,
+	records []model.WorkoutIntervalRecordWithRank,
+	powerRecords []model.WorkoutIntervalRecordWithRank,
+) WorkoutDetailResponse {
 	wr := WorkoutDetailResponse{
 		WorkoutResponse: NewWorkoutResponse(w),
 	}
@@ -510,12 +517,38 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 	if len(records) > 0 {
 		wr.IntervalBests = make([]WorkoutIntervalRecordResponse, len(records))
 		for i, r := range records {
+			targetDist := r.TargetDistance
+			avgSpeed := r.Average
 			wr.IntervalBests[i] = WorkoutIntervalRecordResponse{
 				Label:           r.Label,
-				TargetDistance:  r.TargetDistance,
+				TargetDistance:  &targetDist,
 				Distance:        r.Distance,
 				DurationSeconds: r.DurationSeconds,
-				AverageSpeed:    r.Average,
+				AverageSpeed:    &avgSpeed,
+				StartIndex:      r.StartIndex,
+				EndIndex:        r.EndIndex,
+				Rank:            r.Rank,
+			}
+		}
+	}
+
+	if len(powerRecords) > 0 {
+		wr.IntervalPowerBests = make([]WorkoutIntervalRecordResponse, len(powerRecords))
+		for i, r := range powerRecords {
+			targetDur := r.TargetDistance
+			avgPower := r.Average
+			var avgSpeed *float64
+			if r.DurationSeconds > 0 {
+				speed := r.Distance / r.DurationSeconds
+				avgSpeed = &speed
+			}
+			wr.IntervalPowerBests[i] = WorkoutIntervalRecordResponse{
+				Label:           r.Label,
+				TargetDuration:  &targetDur,
+				Distance:        r.Distance,
+				DurationSeconds: r.DurationSeconds,
+				AveragePower:    &avgPower,
+				AverageSpeed:    avgSpeed,
 				StartIndex:      r.StartIndex,
 				EndIndex:        r.EndIndex,
 				Rank:            r.Rank,

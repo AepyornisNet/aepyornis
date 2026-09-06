@@ -1039,41 +1039,62 @@ func (w *Workout) UpdateExtraMetrics() {
 	w.ExtraMetrics = w.Data.UpdateExtraMetrics(w.Records)
 }
 
-// UpdateRecords recalculates and persists best distance intervals for this workout.
+// UpdateRecords recalculates and persists best distance and power intervals for this workout.
 func (w *Workout) UpdateRecords(db *gorm.DB) error {
 	if db == nil {
 		return errors.New("nil db")
 	}
 
-	targets := distanceRecordTargetsFor(w.Type)
+	distTargets := distanceRecordTargetsFor(w.Type)
+	powerTargets := powerRecordTargetsFor(w.Type)
 
 	return db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("workout_id = ?", w.ID).Delete(&WorkoutIntervalBest{}).Error; err != nil {
 			return err
 		}
 
-		if len(targets) == 0 || w.Data == nil || len(w.Records) < 2 {
+		if (len(distTargets) == 0 && len(powerTargets) == 0) || w.Data == nil || len(w.Records) < 2 {
 			return nil
 		}
 
-		records := fastestDistancesForWorkout(w, targets)
-		if len(records) == 0 {
-			return nil
+		rows := make([]*WorkoutIntervalBest, 0)
+
+		if len(distTargets) > 0 {
+			records := fastestDistancesForWorkout(w, distTargets)
+			for _, r := range records {
+				rows = append(rows, &WorkoutIntervalBest{
+					WorkoutID:       w.ID,
+					Label:           r.Label,
+					TargetDistance:  r.TargetDistance,
+					Distance:        r.Distance,
+					DurationSeconds: r.Duration.Seconds(),
+					Average:         r.AverageSpeed,
+					Type:            WorkoutIntervalBestTypeSpeed,
+					StartIndex:      r.StartIndex,
+					EndIndex:        r.EndIndex,
+				})
+			}
 		}
 
-		rows := make([]*WorkoutIntervalBest, 0, len(records))
-		for _, r := range records {
-			rows = append(rows, &WorkoutIntervalBest{
-				WorkoutID:       w.ID,
-				Label:           r.Label,
-				TargetDistance:  r.TargetDistance,
-				Distance:        r.Distance,
-				DurationSeconds: r.Duration.Seconds(),
-				Average:         r.AverageSpeed,
-				Type:            WorkoutIntervalBestTypeSpeed,
-				StartIndex:      r.StartIndex,
-				EndIndex:        r.EndIndex,
-			})
+		if len(powerTargets) > 0 {
+			powerRecords := bestPowerIntervalsForWorkout(w, powerTargets)
+			for _, r := range powerRecords {
+				rows = append(rows, &WorkoutIntervalBest{
+					WorkoutID:       w.ID,
+					Label:           r.Label,
+					TargetDistance:  r.TargetDuration,
+					Distance:        r.Distance,
+					DurationSeconds: r.Duration.Seconds(),
+					Average:         r.AveragePower,
+					Type:            WorkoutIntervalBestTypePower,
+					StartIndex:      r.StartIndex,
+					EndIndex:        r.EndIndex,
+				})
+			}
+		}
+
+		if len(rows) == 0 {
+			return nil
 		}
 
 		return tx.Create(&rows).Error

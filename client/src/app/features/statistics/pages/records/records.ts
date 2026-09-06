@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -17,6 +18,7 @@ import { FormatDatePipe } from '../../../../core/pipes/format-date.pipe';
   selector: 'app-statistics-records',
   standalone: true,
   imports: [
+    DecimalPipe,
     RouterLink,
     AppIcon,
     StatisticsNav,
@@ -63,5 +65,9 @@ export class StatisticsRecords implements OnInit {
 
   public hasDistanceRecords(record: WorkoutRecord): boolean {
     return Boolean(record.distance_records && record.distance_records.length > 0);
+  }
+
+  public hasPowerRecords(record: WorkoutRecord): boolean {
+    return Boolean(record.power_records && record.power_records.length > 0);
   }
 }

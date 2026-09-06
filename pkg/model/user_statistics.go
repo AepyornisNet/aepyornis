@@ -93,6 +93,7 @@ type (
 		TotalUp             Float64Record  `json:"totalUp"`             // The record with the maximum up elevation
 		Duration            DurationRecord `json:"duration"`            // The record with the maximum duration
 		DistanceRecords     []DistanceRecord
+		PowerRecords        []PowerRecord
 		BiggestClimb        *ClimbRecord `json:"biggestClimb"`
 		Active              bool         `json:"active"` // Whether there is any data in the record
 	}
