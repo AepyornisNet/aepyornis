@@ -168,13 +168,18 @@ func (hc *hammerheadController) Callback(c *echo.Context) error {
 		return hc.redirectToAppsPage(c, "invalid_token_response")
 	}
 
+	status := hc.saveHammerheadConnection(user, tokenResp)
+	return hc.redirectToAppsPage(c, status)
+}
+
+func (hc *hammerheadController) saveHammerheadConnection(user *model.User, tokenResp *hammerheadTokenResponse) string {
 	var existingByHammerhead model.HammerheadConnection
-	err = hc.db.Where("hammerhead_user_id = ? AND user_id <> ?", tokenResp.UserID, user.ID).First(&existingByHammerhead).Error
+	err := hc.db.Where("hammerhead_user_id = ? AND user_id <> ?", tokenResp.UserID, user.ID).First(&existingByHammerhead).Error
 	if err == nil {
-		return hc.redirectToAppsPage(c, "already_connected")
+		return "already_connected"
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return hc.redirectToAppsPage(c, "save_failed")
+		return "save_failed"
 	}
 
 	expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
@@ -185,7 +190,7 @@ func (hc *hammerheadController) Callback(c *echo.Context) error {
 	var conn model.HammerheadConnection
 	err = hc.db.Where("user_id = ?", user.ID).First(&conn).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return hc.redirectToAppsPage(c, "save_failed")
+		return "save_failed"
 	}
 
 	conn.UserID = user.ID
@@ -197,10 +202,10 @@ func (hc *hammerheadController) Callback(c *echo.Context) error {
 
 	if err := hc.db.Save(&conn).Error; err != nil {
 		hc.logger.Warn("Failed to save Hammerhead connection", "error", err)
-		return hc.redirectToAppsPage(c, "save_failed")
+		return "save_failed"
 	}
 
-	return hc.redirectToAppsPage(c, "connected")
+	return "connected"
 }
 
 func (hc *hammerheadController) Disconnect(c *echo.Context) error {

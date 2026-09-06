@@ -381,7 +381,7 @@ func (wc *workoutController) GetWorkoutLikes(c *echo.Context) error {
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Router       /workouts/{id}/replies [get]
-func (wc *workoutController) GetWorkoutReplies(c *echo.Context) error { //nolint:gocyclo
+func (wc *workoutController) GetWorkoutReplies(c *echo.Context) error {
 	workout, err := wc.getReadableWorkout(c, false)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
@@ -1101,7 +1101,7 @@ func (wc *workoutController) createWorkoutManual(c *echo.Context, user *model.Us
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /workouts/recent [get]
 //
-//nolint:gocyclo
+
 func (wc *workoutController) GetRecentWorkouts(c *echo.Context) error {
 	requester := currentUser(c)
 

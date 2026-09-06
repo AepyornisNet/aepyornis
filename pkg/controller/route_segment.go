@@ -291,6 +291,81 @@ func applyRouteSegmentCreationParams(rs *model.RouteSegment, params *dto.RouteSe
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments [post]
+type routeSegmentUploadParams struct {
+	profileID     uint64
+	notes         string
+	category      string
+	visibility    string
+	difficulty    string
+	description   string
+	bidirectional string
+	circular      string
+	names         []string
+}
+
+func (p *routeSegmentUploadParams) applyToSegment(w *model.RouteSegment, customName string) {
+	if p.profileID != 0 {
+		w.ProfileID = p.profileID
+	}
+	if customName != "" {
+		w.Name = customName
+	}
+	if p.category != "" && isValidRouteSegmentCategory(p.category) {
+		w.Category = p.category
+	}
+	if vis := model.WorkoutVisibility(p.visibility); vis.IsValid() && vis != "" {
+		w.Visibility = vis
+	}
+	if diff := model.RouteSegmentDifficulty(p.difficulty); diff.IsValid() {
+		w.Difficulty = diff
+	}
+	if p.description != "" {
+		w.Description = p.description
+	}
+	if p.bidirectional != "" {
+		w.Bidirectional = cast.ToBool(p.bidirectional)
+	}
+	if p.circular != "" {
+		w.Circular = cast.ToBool(p.circular)
+	}
+}
+
+func extractRouteSegmentUploadParams(form *multipart.Form, c *echo.Context) routeSegmentUploadParams {
+	var profileID uint64
+	if user := currentUser(c); user != nil {
+		profileID = user.Profile.ID
+	}
+
+	names := form.Value["name"]
+	if len(names) == 0 {
+		names = form.Value["names"]
+	}
+
+	return routeSegmentUploadParams{
+		profileID:     profileID,
+		notes:         multipartFormValue(form, c, "notes"),
+		category:      multipartFormValue(form, c, "category"),
+		visibility:    multipartFormValue(form, c, "visibility"),
+		difficulty:    multipartFormValue(form, c, "difficulty"),
+		description:   multipartFormValue(form, c, "description"),
+		bidirectional: multipartFormValue(form, c, "bidirectional"),
+		circular:      multipartFormValue(form, c, "circular"),
+		names:         names,
+	}
+}
+
+func resolveCustomName(names []string, fileIndex int, totalFiles int) string {
+	if fileIndex < len(names) {
+		if name := strings.TrimSpace(names[fileIndex]); name != "" {
+			return name
+		}
+	}
+	if len(names) == 1 && totalFiles == 1 {
+		return strings.TrimSpace(names[0])
+	}
+	return ""
+}
+
 func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -299,24 +374,7 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 
 	files := form.File["file"]
 	errMsg := []string{}
-
-	var profileID uint64
-	if user := currentUser(c); user != nil {
-		profileID = user.Profile.ID
-	}
-
-	notes := multipartFormValue(form, c, "notes")
-	category := multipartFormValue(form, c, "category")
-	visibility := multipartFormValue(form, c, "visibility")
-	difficulty := multipartFormValue(form, c, "difficulty")
-	description := multipartFormValue(form, c, "description")
-	bidirectional := multipartFormValue(form, c, "bidirectional")
-	circular := multipartFormValue(form, c, "circular")
-
-	names := form.Value["name"]
-	if len(names) == 0 {
-		names = form.Value["names"]
-	}
+	params := extractRouteSegmentUploadParams(form, c)
 
 	segments := []*dto.RouteSegmentResponse{}
 	for i, file := range files {
@@ -326,44 +384,15 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 			continue
 		}
 
-		var customName string
-		if i < len(names) {
-			customName = strings.TrimSpace(names[i])
-		}
-		if customName == "" && len(names) == 1 && len(files) == 1 {
-			customName = strings.TrimSpace(names[0])
-		}
+		customName := resolveCustomName(params.names, i, len(files))
 
-		w, addErr := rc.routeSegmentRepo.CreateFromContent(notes, file.Filename, content)
+		w, addErr := rc.routeSegmentRepo.CreateFromContent(params.notes, file.Filename, content)
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
 		}
 
-		if profileID != 0 {
-			w.ProfileID = profileID
-		}
-		if customName != "" {
-			w.Name = customName
-		}
-		if category != "" && isValidRouteSegmentCategory(category) {
-			w.Category = category
-		}
-		if vis := model.WorkoutVisibility(visibility); vis.IsValid() && vis != "" {
-			w.Visibility = vis
-		}
-		if diff := model.RouteSegmentDifficulty(difficulty); diff.IsValid() {
-			w.Difficulty = diff
-		}
-		if description != "" {
-			w.Description = description
-		}
-		if bidirectional != "" {
-			w.Bidirectional = cast.ToBool(bidirectional)
-		}
-		if circular != "" {
-			w.Circular = cast.ToBool(circular)
-		}
+		params.applyToSegment(w, customName)
 		_ = w.Save(rc.db)
 
 		resp := dto.NewRouteSegmentResponse(w)

@@ -52,7 +52,9 @@ func (r *Response[T]) AddContextError(ctx context.Context, err ...error) {
 		if e == nil {
 			continue
 		}
-		if le, ok := e.(interface{ Localize(context.Context) []string }); ok && ctx != nil {
+		if le, ok := e.(interface {
+			Localize(context.Context) []string
+		}); ok && ctx != nil {
 			r.Errors = append(r.Errors, le.Localize(ctx)...)
 		} else if le, ok := e.(interface{ Localize(context.Context) string }); ok && ctx != nil {
 			r.Errors = append(r.Errors, le.Localize(ctx))
@@ -84,7 +86,9 @@ func (pr *PaginatedResponse[T]) AddContextError(ctx context.Context, err ...erro
 		if e == nil {
 			continue
 		}
-		if le, ok := e.(interface{ Localize(context.Context) []string }); ok && ctx != nil {
+		if le, ok := e.(interface {
+			Localize(context.Context) []string
+		}); ok && ctx != nil {
 			pr.Errors = append(pr.Errors, le.Localize(ctx)...)
 		} else if le, ok := e.(interface{ Localize(context.Context) string }); ok && ctx != nil {
 			pr.Errors = append(pr.Errors, le.Localize(ctx))

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/AepyornisNet/aepyornis/pkg/converters"
 	"github.com/AepyornisNet/aepyornis/pkg/config"
+	_ "github.com/AepyornisNet/aepyornis/pkg/converters"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
@@ -24,17 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vgarvardt/gue/v6"
 )
-
-const sampleWorkoutGPX = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Test" xmlns="http://www.topografix.com/GPX/1/1">
-  <trk>
-    <name>Sample Workout Track</name>
-    <trkseg>
-      <trkpt lat="50.95786" lon="4.72410"><ele>25.0</ele><time>2026-01-01T10:00:00Z</time></trkpt>
-      <trkpt lat="50.95816" lon="4.72391"><ele>26.0</ele><time>2026-01-01T10:01:00Z</time></trkpt>
-    </trkseg>
-  </trk>
-</gpx>`
 
 func setupWorkoutTestController(t *testing.T) (*workoutController, *model.User) {
 	t.Helper()

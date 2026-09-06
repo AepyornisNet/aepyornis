@@ -552,6 +552,56 @@ func (uc *userController) GetUserProfileByHandle(c *echo.Context) error {
 // @Security     CookieAuth
 // @Param        handle  query     string  true  "ActivityPub handle"
 // @Produce      json
+func validateFollowEligibility(viewer, targetUser *model.User) error {
+	if viewer.ID == targetUser.ID {
+		return errors.New("cannot follow yourself")
+	}
+	if !viewer.ActivityPubEnabled() {
+		return errors.New("activitypub must be enabled to follow users")
+	}
+	if !targetUser.ActivityPubEnabled() {
+		return errors.New("target user does not have activitypub enabled")
+	}
+	return nil
+}
+
+func (uc *userController) resolveTargetUserForFollow(c *echo.Context, handle string, viewer *model.User) (*model.User, error) {
+	if handle != "" {
+		return uc.userRepo.GetByHandle(handle, uc.localHost(c))
+	}
+	if viewer.IsAnonymous() {
+		return nil, dto.ErrNotAuthorized
+	}
+	return viewer, nil
+}
+
+func (uc *userController) buildFollowSummaryResponse(c *echo.Context, targetUser *model.User, isFollowing bool) (dto.ActivityPubProfileSummaryResponse, error) {
+	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.Profile.ID)
+	if err != nil {
+		return dto.ActivityPubProfileSummaryResponse{}, err
+	}
+
+	followingCount, err := uc.followerRepo.CountApprovedFollowing(targetUser.Profile.ID)
+	if err != nil {
+		return dto.ActivityPubProfileSummaryResponse{}, err
+	}
+
+	return dto.ActivityPubProfileSummaryResponse{
+		ID:             targetUser.ID,
+		Username:       targetUser.Profile.Username,
+		Name:           targetUser.Profile.DisplayName,
+		Handle:         uc.renderHandle(c, targetUser.Profile.Username),
+		ActorURL:       uc.localActorIRI(c, targetUser),
+		IconURL:        "",
+		IsExternal:     false,
+		IsOwn:          false,
+		IsFollowing:    isFollowing,
+		FollowersCount: followersCount,
+		FollowingCount: followingCount,
+		MemberSince:    targetUser.CreatedAt,
+	}, nil
+}
+
 // @Success      200  {object}  dto.Response[dto.ActivityPubProfileSummaryResponse]
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
@@ -573,62 +623,23 @@ func (uc *userController) FollowUserByHandle(c *echo.Context) error {
 	}
 
 	viewer := currentUser(c)
-	targetUser := viewer
-	if handle != "" {
-		var err error
-		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
-		if err != nil {
-			return renderApiError(c, http.StatusNotFound, err)
-		}
-	} else if viewer.IsAnonymous() {
-		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
+	targetUser, err := uc.resolveTargetUserForFollow(c, handle, viewer)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if viewer.ID == targetUser.ID {
-		return renderApiError(c, http.StatusBadRequest, errors.New("cannot follow yourself"))
+	if err := validateFollowEligibility(viewer, targetUser); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if !viewer.ActivityPubEnabled() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("activitypub must be enabled to follow users"))
-	}
-
-	if !targetUser.ActivityPubEnabled() {
-		return renderApiError(c, http.StatusBadRequest, errors.New("target user does not have activitypub enabled"))
-	}
-
-	targetActorIRI := uc.localActorIRI(c, targetUser)
 	following, err := uc.followerRepo.UpsertFollowingRequest(viewer.Profile.ID, &targetUser.Profile)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	isFollowing := following.Approved
-
-	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.Profile.ID)
+	summary, err := uc.buildFollowSummaryResponse(c, targetUser, following.Approved)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	followingCount, err := uc.followerRepo.CountApprovedFollowing(targetUser.Profile.ID)
-	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
-		Results: dto.ActivityPubProfileSummaryResponse{
-			ID:             targetUser.ID,
-			Username:       targetUser.Profile.Username,
-			Name:           targetUser.Profile.DisplayName,
-			Handle:         uc.renderHandle(c, targetUser.Profile.Username),
-			ActorURL:       targetActorIRI,
-			IconURL:        "",
-			IsExternal:     false,
-			IsOwn:          false,
-			IsFollowing:    isFollowing,
-			FollowersCount: followersCount,
-			FollowingCount: followingCount,
-			MemberSince:    targetUser.CreatedAt,
-		},
 	}
 
 	if targetUser != nil {
@@ -637,7 +648,9 @@ func (uc *userController) FollowUserByHandle(c *echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, dto.Response[dto.ActivityPubProfileSummaryResponse]{
+		Results: summary,
+	})
 }
 
 // UnfollowUserByHandle unfollows an ActivityPub-enabled local user

@@ -482,4 +482,3 @@ func TestRouteSegmentController_CreateWithCustomName(t *testing.T) {
 	require.Len(t, resp.Results, 1)
 	assert.Equal(t, "My Custom Segment Name", resp.Results[0].Name)
 }
-

@@ -72,7 +72,7 @@ func (ac *apOutboxController) targetActivityPubUser(c *echo.Context) (*model.Use
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /ap/users/{username}/outbox [get]
-func (ac *apOutboxController) Outbox(c *echo.Context) error { //nolint:gocyclo
+func (ac *apOutboxController) Outbox(c *echo.Context) error {
 	targetUser, err := ac.targetActivityPubUser(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)

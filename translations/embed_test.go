@@ -80,4 +80,3 @@ func TestValidationTranslations(t *testing.T) {
 	assert.Equal(t, "website must be a valid URL", enLocale.T("validation.url", "website"))
 	assert.Equal(t, "password_confirmation must match password", enLocale.T("validation.eqfield", "password_confirmation", "password"))
 }
-
