@@ -28,3 +28,20 @@ func multipartFormValue(form *multipart.Form, c *echo.Context, key string) strin
 	}
 	return c.FormValue(key)
 }
+
+func hasMultipartFormValue(form *multipart.Form, c *echo.Context, key string) bool {
+	if form != nil && form.Value != nil {
+		if _, ok := form.Value[key]; ok {
+			return true
+		}
+	}
+	if req := c.Request(); req != nil {
+		if req.Form != nil && req.Form.Has(key) {
+			return true
+		}
+		if req.PostForm != nil && req.PostForm.Has(key) {
+			return true
+		}
+	}
+	return false
+}

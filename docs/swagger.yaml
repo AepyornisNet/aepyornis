@@ -3831,6 +3831,27 @@ paths:
       consumes:
       - multipart/form-data
       - application/json
+      parameters:
+      - description: Workout file(s)
+        in: formData
+        name: file
+        type: file
+      - description: Notes
+        in: formData
+        name: notes
+        type: string
+      - description: Workout type
+        in: formData
+        name: type
+        type: string
+      - description: Visibility (public, followers, private)
+        in: formData
+        name: visibility
+        type: string
+      - description: Workout name
+        in: formData
+        name: name
+        type: string
       produces:
       - application/json
       responses:

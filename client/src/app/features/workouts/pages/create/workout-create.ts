@@ -47,10 +47,13 @@ export class WorkoutCreate implements OnInit {
   // Equipment list
   public readonly equipment = signal<Equipment[]>([]);
 
+  public readonly defaultVisibility = signal<'' | 'followers' | 'public'>('');
+
   // File upload form
   public readonly uploadFiles = signal<UploadFileItem[]>([]);
   public readonly fileUploadModel = signal({
     type: 'auto',
+    visibility: '' as '' | 'followers' | 'public',
     notes: '',
   });
 
@@ -155,7 +158,9 @@ export class WorkoutCreate implements OnInit {
       const profileResponse = await firstValueFrom(this.api.getProfile());
       const defaultVisibility = (profileResponse?.results?.profile?.default_workout_visibility ??
         '') as '' | 'followers' | 'public';
+      this.defaultVisibility.set(defaultVisibility);
       this.manualWorkoutModel.update((m) => ({ ...m, visibility: defaultVisibility }));
+      this.fileUploadModel.update((m) => ({ ...m, visibility: defaultVisibility }));
     } catch (err) {
       console.error('Failed to load default workout visibility:', err);
     }
@@ -264,6 +269,7 @@ export class WorkoutCreate implements OnInit {
       // Send empty string for autodetect, otherwise send the selected type
       const uploadType = formValue.type === 'auto' ? '' : formValue.type;
       formData.append('type', uploadType);
+      formData.append('visibility', formValue.visibility);
       formData.append('notes', formValue.notes);
 
       const response = await firstValueFrom(this.api.createWorkoutFromFile(formData));
@@ -276,7 +282,11 @@ export class WorkoutCreate implements OnInit {
         );
         // Reset form
         this.uploadFiles.set([]);
-        this.fileUploadModel.set({ type: 'auto', notes: '' });
+        this.fileUploadModel.set({
+          type: 'auto',
+          visibility: this.defaultVisibility(),
+          notes: '',
+        });
         // Navigate to workouts page after a short delay
         setTimeout(() => {
           this.router.navigate(['/workouts']);

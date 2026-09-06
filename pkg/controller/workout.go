@@ -908,6 +908,11 @@ func (wc *workoutController) localActorIRI(c *echo.Context, user *model.User) st
 // @Accept       multipart/form-data
 // @Accept       json
 // @Produce      json
+// @Param        file        formData  file   false "Workout file(s)"
+// @Param        notes       formData  string false "Notes"
+// @Param        type        formData  string false "Workout type"
+// @Param        visibility  formData  string false "Visibility (public, followers, private)"
+// @Param        name        formData  string false "Workout name"
 // @Success      201  {object}  dto.Response[dto.WorkoutResponse]
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
@@ -939,6 +944,8 @@ func (wc *workoutController) createWorkoutFromFile(c *echo.Context, user *model.
 	if workoutType == "" {
 		workoutType = model.WorkoutTypeAutoDetect
 	}
+	visibilityRaw := multipartFormValue(form, c, "visibility")
+	hasVisibility := hasMultipartFormValue(form, c, "visibility")
 
 	names := form.Value["name"]
 	if len(names) == 0 {
@@ -973,8 +980,21 @@ func (wc *workoutController) createWorkoutFromFile(c *echo.Context, user *model.
 		}
 
 		for _, w := range ws {
+			needsSave := false
 			if customName != "" {
 				w.Name = customName
+				needsSave = true
+			}
+			if hasVisibility {
+				if visibilityRaw == "private" {
+					w.Visibility = model.WorkoutVisibilityPrivate
+					needsSave = true
+				} else if vis := model.WorkoutVisibility(visibilityRaw); vis.IsValid() {
+					w.Visibility = vis
+					needsSave = true
+				}
+			}
+			if needsSave {
 				_ = w.Save(wc.db)
 			}
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
