@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
@@ -300,12 +301,25 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 	bidirectional := multipartFormValue(form, c, "bidirectional")
 	circular := multipartFormValue(form, c, "circular")
 
+	names := form.Value["name"]
+	if len(names) == 0 {
+		names = form.Value["names"]
+	}
+
 	segments := []*dto.RouteSegmentResponse{}
-	for _, file := range files {
+	for i, file := range files {
 		content, parseErr := uploadedRouteSegmentFile(file)
 		if parseErr != nil {
 			errMsg = append(errMsg, parseErr.Error())
 			continue
+		}
+
+		var customName string
+		if i < len(names) {
+			customName = strings.TrimSpace(names[i])
+		}
+		if customName == "" && len(names) == 1 && len(files) == 1 {
+			customName = strings.TrimSpace(names[0])
 		}
 
 		w, addErr := rc.routeSegmentRepo.CreateFromContent(notes, file.Filename, content)
@@ -316,6 +330,9 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 
 		if profileID != 0 {
 			w.ProfileID = profileID
+		}
+		if customName != "" {
+			w.Name = customName
 		}
 		if category != "" && isValidRouteSegmentCategory(category) {
 			w.Category = category

@@ -11,7 +11,10 @@ import { form, FormField, FormRoot, max, min, required, validate } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
-import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import {
+  FileUploadList,
+  UploadFileItem,
+} from '../../../../core/components/file-upload-list/file-upload-list';
 import { Equipment } from '../../../../core/types/equipment';
 import {
   getWorkoutTypeConfig,
@@ -22,7 +25,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-create',
-  imports: [FormField, FormRoot, AppIcon, TranslatePipe],
+  imports: [FormField, FormRoot, FileUploadList, TranslatePipe],
   templateUrl: './workout-create.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -45,7 +48,7 @@ export class WorkoutCreate implements OnInit {
   public readonly equipment = signal<Equipment[]>([]);
 
   // File upload form
-  public readonly selectedFiles = signal<File[]>([]);
+  public readonly uploadFiles = signal<UploadFileItem[]>([]);
   public readonly fileUploadModel = signal({
     type: 'auto',
     notes: '',
@@ -236,22 +239,8 @@ export class WorkoutCreate implements OnInit {
     }
   }
 
-  // File upload handlers
-  public onFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files) {
-      this.selectedFiles.set(Array.from(input.files));
-    }
-  }
-
-  public removeFile(index: number): void {
-    const files = this.selectedFiles();
-    files.splice(index, 1);
-    this.selectedFiles.set([...files]);
-  }
-
   public async submitFileUpload(): Promise<void> {
-    const files = this.selectedFiles();
+    const files = this.uploadFiles();
     if (files.length === 0) {
       this.error.set(this.translate.instant('Please select at least one file'));
       return;
@@ -264,8 +253,13 @@ export class WorkoutCreate implements OnInit {
     try {
       const formValue = this.fileUploadModel();
       const formData = new FormData();
-      files.forEach((file) => {
-        formData.append('file', file);
+      files.forEach((item) => {
+        formData.append('file', item.file);
+        if (item.name.trim()) {
+          formData.append('name', item.name.trim());
+        } else {
+          formData.append('name', '');
+        }
       });
       // Send empty string for autodetect, otherwise send the selected type
       const uploadType = formValue.type === 'auto' ? '' : formValue.type;
@@ -281,7 +275,7 @@ export class WorkoutCreate implements OnInit {
           }),
         );
         // Reset form
-        this.selectedFiles.set([]);
+        this.uploadFiles.set([]);
         this.fileUploadModel.set({ type: 'auto', notes: '' });
         // Navigate to workouts page after a short delay
         setTimeout(() => {

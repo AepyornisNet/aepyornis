@@ -20,49 +20,16 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <form [formRoot]="routeSegmentForm" (ngSubmit)="createRouteSegment()">
-            <div class="mb-3">
-              <label class="form-label" for="route-segment-file">{{
-                'GPX file' | translate
-              }}</label>
-              <input
-                accept=".gpx"
-                aria-describedby="route-segment-file-help"
-                class="form-control"
-                id="route-segment-file"
-                multiple
-                type="file"
-                (change)="onFilesSelected($event)"
-              />
-              <div class="form-text" id="route-segment-file-help">
-                {{ 'Select one or more GPX files' | translate }}
-              </div>
-            </div>
-
-            @if (hasFiles()) {
-              <div class="mb-3">
-                <div class="list-group">
-                  @for (file of selectedFiles(); track file.name) {
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                      <div>
-                        <strong>{{ file.name }}</strong>
-                        <div class="text-muted small">{{ (file.size / 1024).toFixed(1) }} KB</div>
-                      </div>
-                      <button
-                        class="btn btn-outline-danger btn-sm"
-                        type="button"
-                        [disabled]="creating()"
-                        (click)="removeFile($index)"
-                      >
-                        {{ 'Remove' | translate }}
-                      </button>
-                    </div>
-                  }
-                </div>
-                <div class="form-text mt-2">
-                  {{ fileCount() }} {{ 'file(s) selected' | translate }}
-                </div>
-              </div>
-            }
+            <app-file-upload-list
+              accept=".gpx"
+              [disabled]="creating()"
+              [helpText]="'Select one or more GPX files' | translate"
+              [label]="'GPX file' | translate"
+              [nameLabel]="'Route segment name' | translate"
+              [namePlaceholder]="'Route segment name' | translate"
+              [optionalName]="false"
+              [(items)]="uploadFiles"
+            />
 
             <div class="mb-3">
               <label class="form-label" for="category">{{ 'Category' | translate }}</label>

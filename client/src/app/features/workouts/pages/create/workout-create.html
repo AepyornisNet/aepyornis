@@ -27,37 +27,15 @@
           </div>
           <div class="card-body">
             <form [formRoot]="fileUploadSignalForm" (ngSubmit)="submitFileUpload()">
-              <div class="mb-3">
-                <label class="form-label" for="file">{{ 'File' | translate }}</label>
-                <input
-                  accept=".fit,.ftb,.gpx,.tcx,.zip"
-                  class="form-control"
-                  id="file"
-                  multiple
-                  type="file"
-                  [disabled]="loading()"
-                  (change)="onFilesSelected($event)"
-                />
-                @if (selectedFiles().length > 0) {
-                  <div class="mt-2">
-                    @for (file of selectedFiles(); track file.name; let i = $index) {
-                      <div
-                        class="d-flex align-items-center justify-content-between p-2 bg-primary-subtle text-primary-emphasis rounded mb-2"
-                      >
-                        <span class="text-truncate">{{ file.name }}</span>
-                        <button
-                          class="btn btn-sm btn-link text-danger p-0"
-                          type="button"
-                          [disabled]="loading()"
-                          (click)="removeFile(i)"
-                        >
-                          <app-icon name="close" size="16" />
-                        </button>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
+              <app-file-upload-list
+                accept=".fit,.ftb,.gpx,.tcx,.zip"
+                [disabled]="loading()"
+                [label]="'File' | translate"
+                [nameLabel]="'Workout name' | translate"
+                [namePlaceholder]="'Auto-generated (leave blank)' | translate"
+                [optionalName]="true"
+                [(items)]="uploadFiles"
+              />
 
               <div class="mb-3">
                 <label class="form-label" for="type">{{ 'Type' | translate }}</label>
@@ -117,7 +95,7 @@
                 <button
                   class="btn btn-primary"
                   type="submit"
-                  [disabled]="loading() || selectedFiles().length === 0"
+                  [disabled]="loading() || uploadFiles().length === 0"
                 >
                   @if (loading()) {
                     <span

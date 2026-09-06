@@ -4,6 +4,10 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import {
+  FileUploadList,
+  UploadFileItem,
+} from '../../../../core/components/file-upload-list/file-upload-list';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { RouteSegment } from '../../../../core/types/route-segment';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
@@ -11,7 +15,7 @@ import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-create-route-segment',
-  imports: [FormField, FormRoot, AppIcon, TranslatePipe],
+  imports: [FormField, FormRoot, AppIcon, FileUploadList, TranslatePipe],
   templateUrl: './create-route-segment.html',
   styleUrl: './create-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,7 +26,7 @@ export class CreateRouteSegmentPage {
   private router = inject(Router);
   private translate = inject(TranslateService);
 
-  public readonly selectedFiles = signal<File[]>([]);
+  public readonly uploadFiles = signal<UploadFileItem[]>([]);
   public readonly creating = signal(false);
   public readonly error = signal<string | null>(null);
 
@@ -41,28 +45,15 @@ export class CreateRouteSegmentPage {
     },
   });
 
-  public readonly hasFiles = computed(() => this.selectedFiles().length > 0);
-  public readonly fileCount = computed(() => this.selectedFiles().length);
-
-  public onFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files) {
-      this.selectedFiles.set(Array.from(input.files));
-    }
-  }
-
-  public removeFile(index: number): void {
-    const files = this.selectedFiles();
-    files.splice(index, 1);
-    this.selectedFiles.set([...files]);
-  }
+  public readonly hasFiles = computed(() => this.uploadFiles().length > 0);
+  public readonly fileCount = computed(() => this.uploadFiles().length);
 
   public async createRouteSegment(): Promise<void> {
     if (this.creating()) {
       return;
     }
 
-    const files = this.selectedFiles();
+    const files = this.uploadFiles();
     if (files.length === 0) {
       this.error.set(this.translate.instant('Please select at least one file'));
       return;
@@ -73,7 +64,14 @@ export class CreateRouteSegmentPage {
 
     try {
       const formData = new FormData();
-      files.forEach((file) => formData.append('file', file));
+      files.forEach((item) => {
+        formData.append('file', item.file);
+        if (item.name.trim()) {
+          formData.append('name', item.name.trim());
+        } else {
+          formData.append('name', '');
+        }
+      });
 
       const formValue = this.routeSegmentModel();
       const categoryValue = String(formValue.category || '').trim();

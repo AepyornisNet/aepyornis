@@ -1,0 +1,80 @@
+<div class="mb-3">
+  @if (label()) {
+    <label class="form-label" [for]="inputId">{{ label() | translate }}</label>
+  }
+  <input
+    class="form-control"
+    type="file"
+    [accept]="accept()"
+    [attr.aria-describedby]="helpText() ? inputId + '-help' : null"
+    [disabled]="disabled()"
+    [id]="inputId"
+    [multiple]="multiple()"
+    (change)="onFilesSelected($event)"
+  />
+  @if (helpText()) {
+    <div class="form-text" [id]="inputId + '-help'">
+      {{ helpText()! | translate }}
+    </div>
+  }
+
+  @if (items().length > 0) {
+    <div class="mt-3">
+      <div class="list-group">
+        @for (item of items(); track item.file.name + '-' + $index; let i = $index) {
+          <div class="list-group-item p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                <app-icon class="text-primary flex-shrink-0" name="file" size="18" />
+                <span class="fw-medium text-truncate" [title]="item.file.name">{{
+                  item.file.name
+                }}</span>
+                <span class="text-muted small flex-shrink-0"
+                  >({{ formatFileSize(item.file.size) }})</span
+                >
+              </div>
+              <button
+                class="btn btn-sm btn-outline-danger p-1 lh-1"
+                type="button"
+                [disabled]="disabled()"
+                [title]="'Remove' | translate"
+                (click)="removeItem(i)"
+              >
+                <app-icon name="close" size="16" />
+              </button>
+            </div>
+
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">{{ nameLabel() | translate }}</span>
+              <input
+                class="form-control"
+                type="text"
+                [disabled]="disabled()"
+                [placeholder]="effectivePlaceholder() | translate"
+                [value]="item.name"
+                (input)="updateItemName(i, $any($event.target).value)"
+              />
+              @if (optionalName() && item.name) {
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  [disabled]="disabled()"
+                  [title]="'Reset to auto-generated' | translate"
+                  (click)="updateItemName(i, '')"
+                >
+                  <app-icon name="close" size="14" />
+                </button>
+              }
+            </div>
+            @if (optionalName() && !item.name) {
+              <div class="form-text small text-muted mt-1">
+                {{ 'Name will be automatically generated if left empty.' | translate }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <div class="form-text mt-2">{{ items().length }} {{ 'file(s) selected' | translate }}</div>
+    </div>
+  }
+</div>

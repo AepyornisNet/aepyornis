@@ -940,10 +940,15 @@ func (wc *workoutController) createWorkoutFromFile(c *echo.Context, user *model.
 		workoutType = model.WorkoutTypeAutoDetect
 	}
 
+	names := form.Value["name"]
+	if len(names) == 0 {
+		names = form.Value["names"]
+	}
+
 	createdWorkouts := []dto.WorkoutResponse{}
 	errList := []error{}
 
-	for _, file := range files {
+	for i, file := range files {
 		content, parseErr := uploadedFile(file)
 		if parseErr != nil {
 			errList = append(errList, parseErr)
@@ -959,7 +964,19 @@ func (wc *workoutController) createWorkoutFromFile(c *echo.Context, user *model.
 			continue
 		}
 
+		var customName string
+		if i < len(names) {
+			customName = strings.TrimSpace(names[i])
+		}
+		if customName == "" && len(names) == 1 && len(files) == 1 {
+			customName = strings.TrimSpace(names[0])
+		}
+
 		for _, w := range ws {
+			if customName != "" {
+				w.Name = customName
+				_ = w.Save(wc.db)
+			}
 			createdWorkouts = append(createdWorkouts, dto.NewWorkoutResponse(w))
 
 			if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), wc.client, w.ID); err != nil {

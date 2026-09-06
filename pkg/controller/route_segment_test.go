@@ -450,3 +450,36 @@ func TestRouteSegmentController_Visibility_MatchesAndStatsDoNotLeakPrivateWorkou
 		}
 	}
 }
+
+func TestRouteSegmentController_CreateWithCustomName(t *testing.T) {
+	ctrl, user := setupRouteSegmentTestController(t)
+
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	part, err := w.CreateFormFile("file", "test_track.gpx")
+	require.NoError(t, err)
+	_, err = part.Write([]byte(sampleRouteSegmentGPX))
+	require.NoError(t, err)
+
+	require.NoError(t, w.WriteField("name", "My Custom Segment Name"))
+	require.NoError(t, w.Close())
+
+	req := httptest.NewRequest(http.MethodPost, "/route-segments", &b)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	rec := httptest.NewRecorder()
+
+	e := echo.New()
+	e.Validator = validator.New()
+	c := e.NewContext(req, rec)
+	c.Set("user_info", user)
+
+	err = ctrl.CreateRouteSegment(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, rec.Code)
+
+	var resp dto.Response[dto.RouteSegmentsDetailResponse]
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, "My Custom Segment Name", resp.Results[0].Name)
+}
+
