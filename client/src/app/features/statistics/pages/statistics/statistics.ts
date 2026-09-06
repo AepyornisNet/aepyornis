@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { firstValueFrom, Observable } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { Statistics as StatisticsData } from '../../../../core/types/statistics';
@@ -20,7 +19,8 @@ type StatisticOption = {
 @Component({
   selector: 'app-statistics',
   imports: [
-    ReactiveFormsModule,
+    FormField,
+    FormRoot,
     AppIcon,
     StatisticChartComponent,
     StatisticsNav,
@@ -33,7 +33,6 @@ type StatisticOption = {
 })
 export class Statistics implements OnInit {
   private api = inject(Api);
-  private fb = inject(FormBuilder);
   private translate = inject(TranslateService);
 
   public readonly statistics = signal<StatisticsData | null>(null);
@@ -41,8 +40,16 @@ export class Statistics implements OnInit {
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
 
-  // Reactive form for filters
-  public filterForm!: FormGroup;
+  public readonly filterModel = signal({
+    since: '1 year',
+    per: 'month',
+  });
+
+  public readonly filterSignalForm = form(this.filterModel, {
+    submission: {
+      action: () => this.loadStatistics(),
+    },
+  });
 
   public sinceOptions: StatisticOption[] = [
     { key: '7 days', label: this.translate.stream('{{num}} days', { num: 7 }) },
@@ -64,12 +71,6 @@ export class Statistics implements OnInit {
   ];
 
   public ngOnInit(): void {
-    // Initialize filter form
-    this.filterForm = this.fb.group({
-      since: ['1 year'],
-      per: ['month'],
-    });
-
     this.loadPreferredUnits();
     this.loadStatistics();
   }
@@ -90,7 +91,7 @@ export class Statistics implements OnInit {
     this.error.set(null);
 
     try {
-      const formValue = this.filterForm.value;
+      const formValue = this.filterModel();
       const response = await firstValueFrom(
         this.api.getStatistics({
           since: formValue.since,

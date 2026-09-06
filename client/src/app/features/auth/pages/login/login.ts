@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, signal } from '@angular/core';
-
-import { _, TranslatePipe } from '@ngx-translate/core';
+import { _, TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators,
-} from '@angular/forms';
+  email,
+  form,
+  FormField,
+  FormRoot,
+  minLength,
+  required,
+  validate,
+} from '@angular/forms/signals';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { User } from '../../../../core/services/user';
@@ -17,7 +18,7 @@ import { PublicLayout } from '../../../../layouts/public-layout/public-layout';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, PublicLayout, TranslatePipe],
+  imports: [FormField, FormRoot, PublicLayout, TranslatePipe],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,16 +29,72 @@ export class Login implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private fb = inject(FormBuilder);
+  private translate = inject(TranslateService);
 
-  // Login form (reactive form)
-  public loginForm!: FormGroup;
+  // Login form
+  public readonly loginModel = signal({
+    email: '',
+    password: '',
+  });
+
+  public readonly loginSignalForm = form(
+    this.loginModel,
+    (s) => {
+      required(s.email);
+      email(s.email);
+      required(s.password);
+    },
+    {
+      submission: {
+        action: async () => {
+          this.onSubmit();
+        },
+      },
+    },
+  );
+
   public readonly errorMessage = signal<string | null>(null);
   public readonly loginSubmitting = signal(false);
   public readonly returnUrl = signal('/feed');
 
-  // Register form (reactive form with 3 fields)
-  public registerForm!: FormGroup;
+  // Register form
+  public readonly registerModel = signal({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  public readonly registerSignalForm = form(
+    this.registerModel,
+    (s) => {
+      required(s.username);
+      required(s.email);
+      email(s.email);
+      required(s.password);
+      minLength(s.password, 6);
+      required(s.confirmPassword);
+      validate(s.confirmPassword, ({ valueOf, value }) => {
+        if (!value() || !valueOf(s.password)) {
+          return undefined;
+        }
+        return value() === valueOf(s.password)
+          ? undefined
+          : {
+              kind: 'passwordMismatch',
+              message: this.translate.instant('Passwords do not match'),
+            };
+      });
+    },
+    {
+      submission: {
+        action: async () => {
+          this.onRegister();
+        },
+      },
+    },
+  );
+
   public readonly registerErrorMessage = signal<string | null>(null);
   public readonly registerSuccessMessage = signal<string | null>(null);
   public readonly registerSubmitting = signal(false);
@@ -56,25 +113,6 @@ export class Login implements OnInit {
   }
 
   public ngOnInit(): void {
-    // Initialize login form
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
-    });
-
-    // Initialize register form with custom validator for password matching
-    this.registerForm = this.fb.group(
-      {
-        username: ['', Validators.required],
-        email: ['', [Validators.required, Validators.email]],
-        password: ['', [Validators.required, Validators.minLength(6)]],
-        confirmPassword: ['', Validators.required],
-      },
-      {
-        validators: this.passwordMatchValidator,
-      },
-    );
-
     // Check if there's an error parameter in the URL
     this.route.queryParams.subscribe((params) => {
       if (params['error']) {
@@ -86,21 +124,8 @@ export class Login implements OnInit {
     });
   }
 
-  // Custom validator to ensure passwords match
-  private passwordMatchValidator(group: FormGroup): ValidationErrors | null {
-    const password = group.get('password')?.value;
-    const confirmPassword = group.get('confirmPassword')?.value;
-
-    // Only validate if both fields have values
-    if (!password || !confirmPassword) {
-      return null;
-    }
-
-    return password === confirmPassword ? null : { passwordMismatch: true };
-  }
-
   public onSubmit(): void {
-    if (this.loginForm.invalid || this.loginSubmitting()) {
+    if (this.loginSignalForm().invalid() || this.loginSubmitting()) {
       return;
     }
 
@@ -109,7 +134,7 @@ export class Login implements OnInit {
 
     this.loginSubmitting.set(true);
 
-    const formValue = this.loginForm.value;
+    const formValue = this.loginModel();
 
     this.api
       .signIn({
@@ -138,7 +163,7 @@ export class Login implements OnInit {
   }
 
   public onRegister(): void {
-    if (this.registerForm.invalid || this.registerSubmitting()) {
+    if (this.registerSignalForm().invalid() || this.registerSubmitting()) {
       return;
     }
 
@@ -148,7 +173,7 @@ export class Login implements OnInit {
 
     this.registerSubmitting.set(true);
 
-    const formValue = this.registerForm.value;
+    const formValue = this.registerModel();
     const currentLanguage = localStorage.getItem('locale') || 'browser';
 
     this.api
@@ -162,13 +187,18 @@ export class Login implements OnInit {
       .subscribe({
         next: (response) => {
           this.registerSuccessMessage.set(
-            response?.results?.message ?? 'Your account has been created',
+            response?.results?.message ?? _('Your account has been created'),
           );
-          this.registerForm.reset();
+          this.registerModel.set({
+            username: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+          });
         },
         error: (err: HttpErrorResponse) => {
           const apiMessage = err.error?.errors?.[0];
-          this.registerErrorMessage.set(apiMessage || 'Registration failed');
+          this.registerErrorMessage.set(apiMessage || _('Registration failed'));
           this.registerSubmitting.set(false);
         },
         complete: () => {

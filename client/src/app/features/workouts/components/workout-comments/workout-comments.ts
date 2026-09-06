@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { WorkoutReply } from '../../../../core/types/workout';
@@ -18,7 +18,7 @@ import { Avatar } from '../../../../core/components/avatar/avatar';
 @Component({
   selector: 'app-workout-comments',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, Avatar],
+  imports: [CommonModule, FormField, FormRoot, TranslatePipe, Avatar],
   templateUrl: './workout-comments.html',
   styleUrl: './workout-comments.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,15 +29,36 @@ export class WorkoutCommentsComponent {
   private api = inject(Api);
 
   public readonly replies = signal<WorkoutReply[]>([]);
-  public readonly newComment = signal('');
+  public readonly commentModel = signal({
+    content: '',
+  });
+
+  public readonly isSubmitting = signal(false);
+
+  public readonly commentSignalForm = form(
+    this.commentModel,
+    (s) => {
+      required(s.content);
+    },
+    {
+      submission: {
+        action: async () => {
+          this.submitComment();
+        },
+      },
+    },
+  );
+
   public readonly page = signal(1);
   public readonly totalCount = signal(0);
   public readonly hasMore = signal(false);
   public readonly loadingReplies = signal(false);
   public readonly loadingMore = signal(false);
-  public readonly isSubmitting = signal(false);
   public readonly canSubmit = computed(
-    () => this.newComment().trim().length > 0 && !this.isSubmitting(),
+    () =>
+      this.commentModel().content.trim().length > 0 &&
+      !this.isSubmitting() &&
+      this.commentSignalForm().valid(),
   );
   private readonly perPage = 20;
 
@@ -48,10 +69,6 @@ export class WorkoutCommentsComponent {
         void this.loadReplies(true);
       }
     });
-  }
-
-  public setNewComment(value: string): void {
-    this.newComment.set(value);
   }
 
   public getAuthorName(reply: WorkoutReply): string {
@@ -167,8 +184,8 @@ export class WorkoutCommentsComponent {
   }
 
   public async submitComment(): Promise<void> {
-    const comment = this.newComment().trim();
-    if (!comment || this.isSubmitting()) {
+    const comment = this.commentModel().content.trim();
+    if (!comment || this.isSubmitting() || this.commentSignalForm().invalid()) {
       return;
     }
 
@@ -178,7 +195,7 @@ export class WorkoutCommentsComponent {
       if (response?.results) {
         this.replies.update((currentReplies) => [response.results, ...currentReplies]);
         this.totalCount.update((count) => count + 1);
-        this.newComment.set('');
+        this.commentModel.set({ content: '' });
       }
     } catch (error) {
       console.error('Failed to create reply:', error);

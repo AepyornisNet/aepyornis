@@ -24,13 +24,13 @@
         </ul>
       </div>
 
-      <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
+      <form [formRoot]="configForm" (ngSubmit)="saveConfig()">
         <div class="mb-3 form-check">
           <input
             class="form-check-input"
-            formControlName="registration_disabled"
             id="registration_disabled"
             type="checkbox"
+            [formField]="configForm.registration_disabled"
           />
           <label class="form-check-label" for="registration_disabled">
             {{ 'Disable account registration' | translate }}
@@ -40,9 +40,9 @@
         <div class="mb-3 form-check">
           <input
             class="form-check-input"
-            formControlName="socials_disabled"
             id="socials_disabled"
             type="checkbox"
+            [formField]="configForm.socials_disabled"
           />
           <label class="form-check-label" for="socials_disabled">
             {{ 'Disable social sharing buttons' | translate }}
@@ -52,7 +52,7 @@
         <button
           class="btn btn-primary"
           type="submit"
-          [disabled]="savingConfig() || configForm.invalid"
+          [disabled]="savingConfig() || configForm().invalid()"
         >
           @if (savingConfig()) {
             <span

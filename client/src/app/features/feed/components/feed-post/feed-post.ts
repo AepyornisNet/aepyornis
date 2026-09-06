@@ -9,7 +9,7 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -27,7 +27,7 @@ import { Like } from '../../../../core/types/like';
 
 @Component({
   selector: 'app-feed-post',
-  imports: [FormsModule, RouterLink, AppIcon, Avatar, TranslatePipe, LikesList],
+  imports: [FormField, FormRoot, RouterLink, AppIcon, Avatar, TranslatePipe, LikesList],
   templateUrl: './feed-post.html',
   styleUrl: './feed-post.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,7 +47,22 @@ export class FeedPost {
 
   public readonly commentsExpanded = signal(false);
   public readonly loadingReplies = signal(false);
-  public readonly replyDraft = signal('');
+  public readonly replyModel = signal({
+    content: '',
+  });
+  public readonly replySignalForm = form(
+    this.replyModel,
+    (s) => {
+      required(s.content);
+    },
+    {
+      submission: {
+        action: async () => {
+          this.submitReply();
+        },
+      },
+    },
+  );
   public readonly isReplying = signal(false);
   public readonly isLiking = signal(false);
   public readonly replies = signal<WorkoutReply[]>([]);
@@ -152,7 +167,11 @@ export class FeedPost {
   }
 
   public canSubmitReply(): boolean {
-    return this.replyDraft().trim().length > 0 && !this.isReplying();
+    return (
+      this.replyModel().content.trim().length > 0 &&
+      !this.isReplying() &&
+      this.replySignalForm().valid()
+    );
   }
 
   public async toggleComments(): Promise<void> {
@@ -295,8 +314,8 @@ export class FeedPost {
 
   public async submitReply(): Promise<void> {
     const workout = this.workoutState();
-    const content = this.replyDraft().trim();
-    if (!workout || !content || this.isReplying()) {
+    const content = this.replyModel().content.trim();
+    if (!workout || !content || this.isReplying() || this.replySignalForm().invalid()) {
       return;
     }
 
@@ -308,7 +327,7 @@ export class FeedPost {
       }
 
       this.replies.update((current) => [response.results, ...current]);
-      this.replyDraft.set('');
+      this.replyModel.set({ content: '' });
       this.workoutState.update((current) =>
         current
           ? {

@@ -7,8 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { form, FormField, FormRoot, max, min, required, validate } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
@@ -23,7 +22,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-workout-create',
-  imports: [ReactiveFormsModule, AppIcon, TranslatePipe],
+  imports: [FormField, FormRoot, AppIcon, TranslatePipe],
   templateUrl: './workout-create.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -31,7 +30,6 @@ export class WorkoutCreate implements OnInit {
   private api = inject(Api);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private fb = inject(FormBuilder);
   private translate = inject(TranslateService);
 
   // Edit mode
@@ -48,10 +46,20 @@ export class WorkoutCreate implements OnInit {
 
   // File upload form
   public readonly selectedFiles = signal<File[]>([]);
-  public fileUploadForm!: FormGroup;
+  public readonly fileUploadModel = signal({
+    type: 'auto',
+    notes: '',
+  });
+
+  public readonly fileUploadSignalForm = form(this.fileUploadModel, {
+    submission: {
+      action: async () => {
+        this.submitFileUpload();
+      },
+    },
+  });
 
   // Manual form
-  public manualWorkoutForm!: FormGroup;
   private readonly _manualWorkoutType = signal<string>('');
   public readonly manualWorkoutType = computed(() => this._manualWorkoutType());
   public readonly manualFormVisible = computed(() => this._manualWorkoutType() !== '');
@@ -72,30 +80,61 @@ export class WorkoutCreate implements OnInit {
   // Available workout types
   public readonly workoutTypes = WORKOUT_TYPES;
 
+  public readonly manualWorkoutModel = signal({
+    name: '',
+    date: this.getDefaultDateTime(),
+    visibility: '' as '' | 'followers' | 'public',
+    location: '',
+    duration_hours: 0,
+    duration_minutes: 0,
+    duration_seconds: 0,
+    distance: 0,
+    repetitions: 0,
+    weight: 0,
+    notes: '',
+    custom_type: '',
+    equipment_ids: [] as number[],
+  });
+
+  public readonly manualSignalForm = form(
+    this.manualWorkoutModel,
+    (s) => {
+      required(s.name);
+      required(s.date);
+      required(s.duration_hours);
+      min(s.duration_hours, 0);
+      required(s.duration_minutes);
+      min(s.duration_minutes, 0);
+      max(s.duration_minutes, 59);
+      required(s.duration_seconds);
+      min(s.duration_seconds, 0);
+      max(s.duration_seconds, 59);
+      required(s.distance);
+      min(s.distance, 0);
+      required(s.repetitions);
+      min(s.repetitions, 0);
+      required(s.weight);
+      min(s.weight, 0);
+      validate(s.custom_type, ({ value }) => {
+        if (this.showCustomType() && !value().trim()) {
+          return {
+            kind: 'required',
+            message: this.translate.instant('Custom type is required'),
+          };
+        }
+        return null;
+      });
+    },
+    {
+      submission: {
+        action: async () => {
+          this.submitManualWorkout();
+        },
+      },
+    },
+  );
+
   public ngOnInit(): void {
-    // Initialize file upload form
-    this.fileUploadForm = this.fb.group({
-      type: ['auto'],
-      notes: [''],
-    });
-
-    // Initialize manual workout form
-    this.manualWorkoutForm = this.fb.group({
-      name: ['', Validators.required],
-      date: [this.getDefaultDateTime(), Validators.required],
-      visibility: [''],
-      location: [''],
-      duration_hours: [0, [Validators.required, Validators.min(0)]],
-      duration_minutes: [0, [Validators.required, Validators.min(0), Validators.max(59)]],
-      duration_seconds: [0, [Validators.required, Validators.min(0), Validators.max(59)]],
-      distance: [0, [Validators.required, Validators.min(0)]],
-      repetitions: [0, [Validators.required, Validators.min(0)]],
-      weight: [0, [Validators.required, Validators.min(0)]],
-      notes: [''],
-      custom_type: [''],
-      equipment_ids: [[]],
-    });
-
     // Check if we're in edit mode
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -111,8 +150,9 @@ export class WorkoutCreate implements OnInit {
   private async loadDefaultWorkoutVisibility(): Promise<void> {
     try {
       const profileResponse = await firstValueFrom(this.api.getProfile());
-      const defaultVisibility = profileResponse?.results?.profile?.default_workout_visibility ?? '';
-      this.manualWorkoutForm.patchValue({ visibility: defaultVisibility });
+      const defaultVisibility = (profileResponse?.results?.profile?.default_workout_visibility ??
+        '') as '' | 'followers' | 'public';
+      this.manualWorkoutModel.update((m) => ({ ...m, visibility: defaultVisibility }));
     } catch (err) {
       console.error('Failed to load default workout visibility:', err);
     }
@@ -147,10 +187,10 @@ export class WorkoutCreate implements OnInit {
         const durationSeconds = totalSeconds % 60;
 
         // Update form with workout data
-        this.manualWorkoutForm.patchValue({
-          name: workout.name,
+        this.manualWorkoutModel.set({
+          name: workout.name || '',
           date: formattedDate,
-          visibility: workout.visibility ?? '',
+          visibility: (workout.visibility ?? '') as '' | 'followers' | 'public',
           location: workout.address_string || '',
           duration_hours: durationHours,
           duration_minutes: durationMinutes,
@@ -213,7 +253,7 @@ export class WorkoutCreate implements OnInit {
   public async submitFileUpload(): Promise<void> {
     const files = this.selectedFiles();
     if (files.length === 0) {
-      this.error.set('Please select at least one file');
+      this.error.set(this.translate.instant('Please select at least one file'));
       return;
     }
 
@@ -222,7 +262,7 @@ export class WorkoutCreate implements OnInit {
     this.success.set(null);
 
     try {
-      const formValue = this.fileUploadForm.value;
+      const formValue = this.fileUploadModel();
       const formData = new FormData();
       files.forEach((file) => {
         formData.append('file', file);
@@ -235,10 +275,14 @@ export class WorkoutCreate implements OnInit {
       const response = await firstValueFrom(this.api.createWorkoutFromFile(formData));
 
       if (response) {
-        this.success.set(`Successfully created ${response.results.length} workout(s)`);
+        this.success.set(
+          this.translate.instant('Successfully created {{count}} workout(s)', {
+            count: response.results.length,
+          }),
+        );
         // Reset form
         this.selectedFiles.set([]);
-        this.fileUploadForm.reset({ type: 'auto', notes: '' });
+        this.fileUploadModel.set({ type: 'auto', notes: '' });
         // Navigate to workouts page after a short delay
         setTimeout(() => {
           this.router.navigate(['/workouts']);
@@ -290,6 +334,7 @@ export class WorkoutCreate implements OnInit {
         return null;
     }
   }
+
   // Manual form handlers
   public updateManualWorkoutType(value: string): void {
     this._manualWorkoutType.set(value);
@@ -298,36 +343,37 @@ export class WorkoutCreate implements OnInit {
       const now = new Date();
       const timestamp = now.toISOString();
       const displayName = value.replace(/-/g, ' ');
-      this.manualWorkoutForm.patchValue({ name: `${displayName} - ${timestamp}` });
+      this.manualWorkoutModel.update((m) => ({ ...m, name: `${displayName} - ${timestamp}` }));
     }
   }
 
   public toggleEquipment(equipmentId: number): void {
-    const currentIds = this.manualWorkoutForm.value.equipment_ids || [];
-    const index = currentIds.indexOf(equipmentId);
-    if (index > -1) {
-      currentIds.splice(index, 1);
-    } else {
-      currentIds.push(equipmentId);
-    }
-    this.manualWorkoutForm.patchValue({ equipment_ids: [...currentIds] });
+    this.manualWorkoutModel.update((m) => {
+      const currentIds = [...m.equipment_ids];
+      const index = currentIds.indexOf(equipmentId);
+      if (index > -1) {
+        currentIds.splice(index, 1);
+      } else {
+        currentIds.push(equipmentId);
+      }
+      return { ...m, equipment_ids: currentIds };
+    });
   }
 
   public isEquipmentSelected(equipmentId: number): boolean {
-    const ids = this.manualWorkoutForm.value.equipment_ids || [];
-    return ids.includes(equipmentId);
+    return this.manualWorkoutModel().equipment_ids.includes(equipmentId);
   }
 
   public async submitManualWorkout(): Promise<void> {
     const type = this._manualWorkoutType();
 
     if (!type) {
-      this.error.set('Please select a workout type');
+      this.error.set(this.translate.instant('Please select a workout type'));
       return;
     }
 
-    if (this.manualWorkoutForm.invalid) {
-      this.error.set('Please fill in all required fields');
+    if (this.manualSignalForm().invalid()) {
+      this.error.set(this.translate.instant('Please fill in all required fields'));
       return;
     }
 
@@ -336,7 +382,7 @@ export class WorkoutCreate implements OnInit {
     this.success.set(null);
 
     try {
-      const formValue = this.manualWorkoutForm.value;
+      const formValue = this.manualWorkoutModel();
       const workoutData: {
         name: string;
         date: string;
@@ -400,7 +446,9 @@ export class WorkoutCreate implements OnInit {
 
       if (response) {
         this.success.set(
-          this.editMode() ? 'Workout updated successfully' : 'Workout created successfully',
+          this.editMode()
+            ? this.translate.instant('Workout updated successfully')
+            : this.translate.instant('Workout created successfully'),
         );
         // Navigate to workout detail after a short delay
         setTimeout(() => {

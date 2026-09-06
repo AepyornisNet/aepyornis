@@ -38,16 +38,14 @@
           <div class="card-body">
             <h5 class="card-title mb-3">{{ 'Segment Details' | translate }}</h5>
 
-            <form (ngSubmit)="createRouteSegment()">
+            <form [formRoot]="routeSegmentForm" (ngSubmit)="createRouteSegment()">
               <div class="mb-3">
                 <label class="form-label" for="name">{{ 'Name' | translate }}</label>
                 <input
                   class="form-control"
                   id="name"
-                  required
                   type="text"
-                  [value]="name()"
-                  (input)="name.set($any($event.target).value)"
+                  [formField]="routeSegmentForm.name"
                 />
               </div>
 
@@ -57,13 +55,11 @@
                   <input
                     class="form-range flex-grow-1"
                     id="start"
-                    min="1"
                     type="range"
-                    [max]="totalPoints()"
-                    [value]="start()"
+                    [formField]="routeSegmentForm.start"
                     (input)="updateStart(+$any($event.target).value)"
                   />
-                  <span class="badge bg-primary">{{ start() }}</span>
+                  <span class="badge bg-primary">{{ routeSegmentModel().start }}</span>
                 </div>
                 <small class="text-muted">
                   {{ 'Select the starting point of your route segment' | translate }}
@@ -76,13 +72,11 @@
                   <input
                     class="form-range flex-grow-1"
                     id="end"
-                    min="1"
                     type="range"
-                    [max]="totalPoints()"
-                    [value]="end()"
+                    [formField]="routeSegmentForm.end"
                     (input)="updateEnd(+$any($event.target).value)"
                   />
-                  <span class="badge bg-primary">{{ end() }}</span>
+                  <span class="badge bg-primary">{{ routeSegmentModel().end }}</span>
                 </div>
                 <small class="text-muted">
                   {{ 'Select the ending point of your route segment' | translate }}
@@ -91,13 +85,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="category">{{ 'Category' | translate }}</label>
-                <select
-                  class="form-select"
-                  id="category"
-                  [disabled]="creating()"
-                  [value]="category()"
-                  (change)="category.set($any($event.target).value)"
-                >
+                <select class="form-select" id="category" [formField]="routeSegmentForm.category">
                   <option value="">{{ 'Not specified' | translate }}</option>
                   @for (t of availableTypes(); track t) {
                     <option [value]="t">{{ sportLabel(t) | translate }}</option>
@@ -111,8 +99,7 @@
                     class="form-check-input"
                     id="bidirectional"
                     type="checkbox"
-                    [checked]="bidirectional()"
-                    (change)="bidirectional.set($any($event.target).checked)"
+                    [formField]="routeSegmentForm.bidirectional"
                   />
                   <label class="form-check-label" for="bidirectional">
                     {{ 'Bidirectional' | translate }}
@@ -123,8 +110,7 @@
                     class="form-check-input"
                     id="circular"
                     type="checkbox"
-                    [checked]="circular()"
-                    (change)="circular.set($any($event.target).checked)"
+                    [formField]="routeSegmentForm.circular"
                   />
                   <label class="form-check-label" for="circular">
                     {{ 'Roundtour' | translate }}
@@ -147,7 +133,9 @@
                 <button
                   class="btn btn-primary btn-lg"
                   type="submit"
-                  [disabled]="creating() || !name() || selectedDistance() === 0"
+                  [disabled]="
+                    creating() || routeSegmentForm().invalid() || selectedDistance() === 0
+                  "
                 >
                   @if (creating()) {
                     <span

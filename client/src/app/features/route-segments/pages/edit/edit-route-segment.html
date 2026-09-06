@@ -26,28 +26,21 @@
       <div class="col-lg-8">
         <div class="card shadow-sm">
           <div class="card-body">
-            <form [formGroup]="routeSegmentForm" (ngSubmit)="save()">
+            <form [formRoot]="routeSegmentForm" (ngSubmit)="save()">
               <div class="mb-3">
                 <label class="form-label" for="name">{{ 'Name' | translate }}</label>
                 <input
                   class="form-control"
-                  formControlName="name"
                   id="name"
-                  required
                   type="text"
-                  [disabled]="saving()"
+                  [formField]="routeSegmentForm.name"
                 />
               </div>
 
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <label class="form-label" for="category">{{ 'Category' | translate }}</label>
-                  <select
-                    class="form-select"
-                    formControlName="category"
-                    id="category"
-                    [disabled]="saving()"
-                  >
+                  <select class="form-select" id="category" [formField]="routeSegmentForm.category">
                     <option value="">{{ 'Not specified' | translate }}</option>
                     @for (t of availableTypes(); track t) {
                       <option [value]="t">{{ sportLabel(t) | translate }}</option>
@@ -58,9 +51,8 @@
                   <label class="form-label" for="difficulty">{{ 'Difficulty' | translate }}</label>
                   <select
                     class="form-select"
-                    formControlName="difficulty"
                     id="difficulty"
-                    [disabled]="saving()"
+                    [formField]="routeSegmentForm.difficulty"
                   >
                     <option value="">{{ 'Not specified' | translate }}</option>
                     <option value="easy">{{ 'Easy' | translate }}</option>
@@ -74,9 +66,8 @@
                 <label class="form-label" for="visibility">{{ 'Visibility' | translate }}</label>
                 <select
                   class="form-select"
-                  formControlName="visibility"
                   id="visibility"
-                  [disabled]="saving()"
+                  [formField]="routeSegmentForm.visibility"
                 >
                   <option value="public">{{ 'Public' | translate }}</option>
                   <option value="followers">{{ 'Followers' | translate }}</option>
@@ -88,10 +79,9 @@
                 <label class="form-label" for="description">{{ 'Description' | translate }}</label>
                 <textarea
                   class="form-control"
-                  formControlName="description"
                   id="description"
                   rows="3"
-                  [disabled]="saving()"
+                  [formField]="routeSegmentForm.description"
                   [placeholder]="'Detailed description of the route segment' | translate"
                 ></textarea>
               </div>
@@ -100,10 +90,9 @@
                 <div class="form-check">
                   <input
                     class="form-check-input"
-                    formControlName="bidirectional"
                     id="bidirectional"
                     type="checkbox"
-                    [disabled]="saving()"
+                    [formField]="routeSegmentForm.bidirectional"
                   />
                   <label class="form-check-label" for="bidirectional">
                     <app-icon name="bidirectional" size="16" />
@@ -119,10 +108,9 @@
                 <div class="form-check">
                   <input
                     class="form-check-input"
-                    formControlName="circular"
                     id="circular"
                     type="checkbox"
-                    [disabled]="saving()"
+                    [formField]="routeSegmentForm.circular"
                   />
                   <label class="form-check-label" for="circular">
                     <app-icon name="circular" size="16" />
@@ -138,10 +126,9 @@
                 <label class="form-label" for="notes">{{ 'Notes' | translate }}</label>
                 <textarea
                   class="form-control"
-                  formControlName="notes"
                   id="notes"
                   rows="4"
-                  [disabled]="saving()"
+                  [formField]="routeSegmentForm.notes"
                 ></textarea>
               </div>
 
@@ -149,7 +136,7 @@
                 <button
                   class="btn btn-primary"
                   type="submit"
-                  [disabled]="saving() || routeSegmentForm.invalid"
+                  [disabled]="saving() || routeSegmentForm().invalid()"
                 >
                   @if (saving()) {
                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>

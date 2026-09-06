@@ -1,11 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
-import { RouteSegmentDetail } from '../../../../core/types/route-segment';
+import { RouteSegmentDetail, RouteSegmentDifficulty } from '../../../../core/types/route-segment';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
@@ -14,7 +20,7 @@ import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pip
 
 @Component({
   selector: 'app-edit-route-segment',
-  imports: [ReactiveFormsModule, AppIcon, TranslatePipe, FormatDistancePipe, FormatElevationPipe],
+  imports: [FormField, FormRoot, AppIcon, TranslatePipe, FormatDistancePipe, FormatElevationPipe],
   templateUrl: './edit-route-segment.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -23,7 +29,7 @@ export class EditRouteSegment implements OnInit {
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private fb = inject(FormBuilder);
+  private translate = inject(TranslateService);
 
   public readonly routeSegment = signal<RouteSegmentDetail | null>(null);
   public readonly loading = signal(true);
@@ -31,33 +37,39 @@ export class EditRouteSegment implements OnInit {
   public readonly error = signal<string | null>(null);
 
   public readonly availableTypes = signal<string[]>([]);
-  public readonly selectedCategory = signal<string>('');
 
-  // Reactive form
-  public routeSegmentForm!: FormGroup;
+  public readonly routeSegmentModel = signal({
+    name: '',
+    notes: '',
+    category: '',
+    visibility: 'public' as 'public' | 'followers' | '' | 'private',
+    difficulty: '' as RouteSegmentDifficulty,
+    description: '',
+    bidirectional: false,
+    circular: false,
+  });
+
+  public readonly selectedCategory = computed(() => this.routeSegmentModel().category);
+
+  public readonly routeSegmentForm = form(
+    this.routeSegmentModel,
+    (s) => {
+      required(s.name);
+      required(s.visibility);
+    },
+    {
+      submission: {
+        action: () => this.save(),
+      },
+    },
+  );
 
   public ngOnInit(): void {
-    // Initialize form
-    this.routeSegmentForm = this.fb.group({
-      name: ['', Validators.required],
-      notes: [''],
-      category: [''],
-      visibility: ['public', Validators.required],
-      difficulty: [''],
-      description: [''],
-      bidirectional: [false],
-      circular: [false],
-    });
-
     this.loadFilterOptions();
-
-    this.routeSegmentForm.get('category')?.valueChanges.subscribe((val) => {
-      this.selectedCategory.set(val || '');
-    });
 
     const id = this.route.snapshot.params['id'];
     if (id) {
-      this.loadRouteSegment(parseInt(id));
+      this.loadRouteSegment(parseInt(id, 10));
     }
   }
 
@@ -91,23 +103,22 @@ export class EditRouteSegment implements OnInit {
       if (response) {
         const segment = response.results;
         this.routeSegment.set(segment);
-        this.selectedCategory.set(segment.category || '');
 
         // Populate form with loaded data
-        this.routeSegmentForm.patchValue({
-          name: segment.name,
+        this.routeSegmentModel.set({
+          name: segment.name || '',
           notes: segment.notes || '',
           category: segment.category || '',
-          visibility: segment.visibility || 'public',
-          difficulty: segment.difficulty || '',
+          visibility: (segment.visibility || 'public') as 'public' | 'followers' | '' | 'private',
+          difficulty: (segment.difficulty || '') as RouteSegmentDifficulty,
           description: segment.description || '',
-          bidirectional: segment.bidirectional,
-          circular: segment.circular,
+          bidirectional: Boolean(segment.bidirectional),
+          circular: Boolean(segment.circular),
         });
       }
     } catch (err) {
       console.error('Failed to load route segment:', err);
-      this.error.set('Failed to load route segment. Please try again.');
+      this.error.set(this.translate.instant('Failed to load route segment. Please try again.'));
     } finally {
       this.loading.set(false);
     }
@@ -115,7 +126,7 @@ export class EditRouteSegment implements OnInit {
 
   public async save(): Promise<void> {
     const segment = this.routeSegment();
-    if (!segment || this.saving() || this.routeSegmentForm.invalid) {
+    if (!segment || this.saving() || this.routeSegmentForm().invalid()) {
       return;
     }
 
@@ -123,7 +134,7 @@ export class EditRouteSegment implements OnInit {
     this.error.set(null);
 
     try {
-      const formValue = this.routeSegmentForm.value;
+      const formValue = this.routeSegmentModel();
       await firstValueFrom(
         this.api.updateRouteSegment(segment.id, {
           name: formValue.name,
@@ -141,7 +152,7 @@ export class EditRouteSegment implements OnInit {
       this.router.navigate(['/route-segments', segment.id]);
     } catch (err) {
       console.error('Failed to update route segment:', err);
-      this.error.set('Failed to update route segment. Please try again.');
+      this.error.set(this.translate.instant('Failed to update route segment. Please try again.'));
       this.saving.set(false);
     }
   }
@@ -158,15 +169,15 @@ export class EditRouteSegment implements OnInit {
   public reset(): void {
     const segment = this.routeSegment();
     if (segment) {
-      this.routeSegmentForm.patchValue({
-        name: segment.name,
+      this.routeSegmentModel.set({
+        name: segment.name || '',
         notes: segment.notes || '',
         category: segment.category || '',
-        visibility: segment.visibility || 'public',
-        difficulty: segment.difficulty || '',
+        visibility: (segment.visibility || 'public') as 'public' | 'followers' | '' | 'private',
+        difficulty: (segment.difficulty || '') as RouteSegmentDifficulty,
         description: segment.description || '',
-        bidirectional: segment.bidirectional,
-        circular: segment.circular,
+        bidirectional: Boolean(segment.bidirectional),
+        circular: Boolean(segment.circular),
       });
     }
   }

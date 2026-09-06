@@ -1,6 +1,6 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { effect, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { form, maxLength, minLength, required, validate } from '@angular/forms/signals';
 import { Api } from '../../../core/services/api';
 import { AppConfig } from '../../../core/services/app-config';
 import {
@@ -15,7 +15,6 @@ import { ThemeService } from '../../../core/services/theme';
 export class ProfileStore {
   private api = inject(Api);
   public readonly appConfig = inject(AppConfig);
-  private fb = inject(FormBuilder);
   private translate = inject(TranslateService);
   private themeService = inject(ThemeService);
 
@@ -34,43 +33,84 @@ export class ProfileStore {
   public readonly connectingHammerhead = signal(false);
   public readonly disconnectingHammerhead = signal(false);
 
-  public readonly profileForm: FormGroup = this.fb.group({
-    name: ['', Validators.required],
-    birthdate: [''],
-    api_active: [false],
-    totals_show: ['all'],
-    timezone: ['UTC'],
-    language: ['browser'],
-    theme: ['browser'],
-    map_style: ['default'],
-    auto_import_directory: [''],
-    prefer_full_date: [false],
-    default_workout_visibility: [''],
-    preferred_units: this.fb.group({
-      speed: ['km/h'],
-      distance: ['km'],
-      elevation: ['m'],
-      weight: ['kg'],
-      height: ['cm'],
-    }),
+  public readonly profileModel = signal({
+    name: '',
+    birthdate: '',
+    api_active: false,
+    totals_show: 'all',
+    timezone: 'UTC',
+    language: 'browser',
+    theme: 'browser',
+    map_style: 'default',
+    auto_import_directory: '',
+    prefer_full_date: false,
+    default_workout_visibility: '' as '' | 'followers' | 'public',
+    preferred_units: {
+      speed: 'km/h',
+      distance: 'km',
+      elevation: 'm',
+      weight: 'kg',
+      height: 'cm',
+    },
   });
 
-  public readonly changePasswordForm: FormGroup = this.fb.group({
-    current_password: ['', Validators.required],
-    new_password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(128)]],
-    confirm_password: ['', Validators.required],
+  public readonly profileForm = form(
+    this.profileModel,
+    (s) => {
+      required(s.name);
+    },
+    {
+      submission: {
+        action: () => this.saveProfile(),
+      },
+    },
+  );
+
+  public readonly changePasswordModel = signal({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
   });
+
+  public readonly changePasswordForm = form(
+    this.changePasswordModel,
+    (s) => {
+      required(s.current_password);
+      required(s.new_password);
+      minLength(s.new_password, 4);
+      maxLength(s.new_password, 128);
+      required(s.confirm_password);
+      validate(s.confirm_password, ({ valueOf, value }) => {
+        if (!value() || !valueOf(s.new_password)) {
+          return undefined;
+        }
+        return value() === valueOf(s.new_password)
+          ? undefined
+          : {
+              kind: 'passwordMismatch',
+              message: this.translate.instant('Passwords do not match'),
+            };
+      });
+    },
+    {
+      submission: {
+        action: () => this.changePassword(),
+      },
+    },
+  );
 
   public constructor() {
-    this.profileForm.get('theme')?.valueChanges.subscribe((val) => {
-      if (val) {
-        this.themeService.setTheme(val);
+    effect(() => {
+      const theme = this.profileModel().theme;
+      if (theme) {
+        this.themeService.setTheme(theme);
       }
     });
 
-    this.profileForm.get('map_style')?.valueChanges.subscribe((val) => {
-      if (val) {
-        this.themeService.setMapStyle(val);
+    effect(() => {
+      const mapStyle = this.profileModel().map_style;
+      if (mapStyle) {
+        this.themeService.setMapStyle(mapStyle);
       }
     });
   }
@@ -90,19 +130,26 @@ export class ProfileStore {
           this.followRequests.set([]);
         }
 
-        this.profileForm.patchValue({
-          name: response.results.name,
+        this.profileModel.set({
+          name: response.results.name || '',
           birthdate: response.results.birthdate ? response.results.birthdate.split('T')[0] : '',
-          api_active: response.results.profile.api_active,
-          totals_show: response.results.profile.totals_show,
-          timezone: response.results.profile.timezone,
-          language: response.results.profile.language,
-          theme: response.results.profile.theme,
+          api_active: Boolean(response.results.profile.api_active),
+          totals_show: response.results.profile.totals_show || 'all',
+          timezone: response.results.profile.timezone || 'UTC',
+          language: response.results.profile.language || 'browser',
+          theme: response.results.profile.theme || 'browser',
           map_style: response.results.profile.map_style || 'default',
-          auto_import_directory: response.results.profile.auto_import_directory,
-          prefer_full_date: response.results.profile.prefer_full_date,
-          default_workout_visibility: response.results.profile.default_workout_visibility,
-          preferred_units: response.results.profile.preferred_units,
+          auto_import_directory: response.results.profile.auto_import_directory || '',
+          prefer_full_date: Boolean(response.results.profile.prefer_full_date),
+          default_workout_visibility: (response.results.profile.default_workout_visibility ||
+            '') as '' | 'followers' | 'public',
+          preferred_units: {
+            speed: response.results.profile.preferred_units?.speed || 'km/h',
+            distance: response.results.profile.preferred_units?.distance || 'km',
+            elevation: response.results.profile.preferred_units?.elevation || 'm',
+            weight: response.results.profile.preferred_units?.weight || 'kg',
+            height: response.results.profile.preferred_units?.height || 'cm',
+          },
         });
 
         this.themeService.setTheme(response.results.profile.theme);
@@ -120,7 +167,7 @@ export class ProfileStore {
   }
 
   public async saveProfile(): Promise<void> {
-    if (this.profileForm.invalid) {
+    if (this.profileForm().invalid()) {
       return;
     }
 
@@ -130,9 +177,9 @@ export class ProfileStore {
 
     try {
       const payload = {
-        ...this.profileForm.value,
+        ...this.profileModel(),
         auto_import_directory: this.appConfig.isAutoImportEnabled()
-          ? this.profileForm.value.auto_import_directory
+          ? this.profileModel().auto_import_directory
           : '',
       };
 
@@ -170,14 +217,13 @@ export class ProfileStore {
   }
 
   public async changePassword(): Promise<void> {
-    if (this.changePasswordForm.invalid) {
-      this.changePasswordForm.markAllAsTouched();
+    if (this.changePasswordForm().invalid()) {
       return;
     }
 
-    const currentPassword = this.changePasswordForm.value.current_password;
-    const newPassword = this.changePasswordForm.value.new_password;
-    const confirmPassword = this.changePasswordForm.value.confirm_password;
+    const currentPassword = this.changePasswordModel().current_password;
+    const newPassword = this.changePasswordModel().new_password;
+    const confirmPassword = this.changePasswordModel().confirm_password;
 
     if (newPassword !== confirmPassword) {
       this.error.set(this.translate.instant('Passwords do not match'));
@@ -199,7 +245,11 @@ export class ProfileStore {
       this.successMessage.set(
         response?.results?.message ?? this.translate.instant('Password changed successfully'),
       );
-      this.changePasswordForm.reset();
+      this.changePasswordModel.set({
+        current_password: '',
+        new_password: '',
+        confirm_password: '',
+      });
     } catch (err) {
       this.error.set(
         this.translate.instant('Failed to change password: {{message}}', {

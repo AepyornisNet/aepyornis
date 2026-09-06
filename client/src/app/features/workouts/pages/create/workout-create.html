@@ -26,7 +26,7 @@
             <h5 class="mb-0">{{ 'Use a file' | translate }}</h5>
           </div>
           <div class="card-body">
-            <form #fileForm="ngForm" [formGroup]="fileUploadForm" (ngSubmit)="submitFileUpload()">
+            <form [formRoot]="fileUploadSignalForm" (ngSubmit)="submitFileUpload()">
               <div class="mb-3">
                 <label class="form-label" for="file">{{ 'File' | translate }}</label>
                 <input
@@ -61,7 +61,7 @@
 
               <div class="mb-3">
                 <label class="form-label" for="type">{{ 'Type' | translate }}</label>
-                <select class="form-select" formControlName="type" id="type" [disabled]="loading()">
+                <select class="form-select" id="type" [formField]="fileUploadSignalForm.type">
                   <option value="auto">{{ 'Auto-detect' | translate }}</option>
                   @for (wt of workoutTypes; track wt.value) {
                     <option [value]="wt.value">{{ wt.name }}</option>
@@ -73,10 +73,9 @@
                 <label class="form-label" for="file-notes">{{ 'Notes' | translate }}</label>
                 <textarea
                   class="form-control"
-                  formControlName="notes"
                   id="file-notes"
                   rows="4"
-                  [disabled]="loading()"
+                  [formField]="fileUploadSignalForm.notes"
                 ></textarea>
               </div>
 
@@ -145,11 +144,7 @@
           </h5>
         </div>
         <div class="card-body">
-          <form
-            #manualFormRef="ngForm"
-            [formGroup]="manualWorkoutForm"
-            (ngSubmit)="submitManualWorkout()"
-          >
+          <form [formRoot]="manualSignalForm" (ngSubmit)="submitManualWorkout()">
             <div class="mb-3">
               <label class="form-label" for="workout-type">{{ 'Workout type' | translate }}</label>
               <select
@@ -174,11 +169,9 @@
                   <label class="form-label" for="custom-type">{{ 'Type' | translate }}</label>
                   <input
                     class="form-control"
-                    formControlName="custom_type"
                     id="custom-type"
-                    required
                     type="text"
-                    [disabled]="loading()"
+                    [formField]="manualSignalForm.custom_type"
                   />
                 </div>
               }
@@ -187,11 +180,9 @@
                 <label class="form-label" for="name">{{ 'Name' | translate }}</label>
                 <input
                   class="form-control"
-                  formControlName="name"
                   id="name"
-                  required
                   type="text"
-                  [disabled]="loading()"
+                  [formField]="manualSignalForm.name"
                 />
               </div>
 
@@ -199,11 +190,9 @@
                 <label class="form-label" for="date">{{ 'Date' | translate }}</label>
                 <input
                   class="form-control"
-                  formControlName="date"
                   id="date"
-                  required
                   type="datetime-local"
-                  [disabled]="loading()"
+                  [formField]="manualSignalForm.date"
                 />
               </div>
 
@@ -211,9 +200,8 @@
                 <label class="form-label" for="visibility">{{ 'Visibility' | translate }}</label>
                 <select
                   class="form-select"
-                  formControlName="visibility"
                   id="visibility"
-                  [disabled]="loading()"
+                  [formField]="manualSignalForm.visibility"
                 >
                   <option value="">{{ 'Private' | translate }}</option>
                   <option value="followers">{{ 'Followers' | translate }}</option>
@@ -226,10 +214,9 @@
                   <label class="form-label" for="location">{{ 'Location' | translate }}</label>
                   <input
                     class="form-control"
-                    formControlName="location"
                     id="location"
                     type="text"
-                    [disabled]="loading()"
+                    [formField]="manualSignalForm.location"
                   />
                 </div>
               }
@@ -242,39 +229,29 @@
                   <div class="d-flex align-items-center gap-2">
                     <input
                       class="form-control"
-                      formControlName="duration_hours"
                       id="duration-hours"
-                      max="999"
-                      min="0"
                       placeholder="HH"
-                      required
                       style="width: 5rem"
                       type="number"
-                      [disabled]="loading()"
+                      [formField]="manualSignalForm.duration_hours"
                     />
                     <span>:</span>
                     <input
                       class="form-control"
-                      formControlName="duration_minutes"
-                      max="59"
-                      min="0"
+                      id="duration-minutes"
                       placeholder="MM"
-                      required
                       style="width: 5rem"
                       type="number"
-                      [disabled]="loading()"
+                      [formField]="manualSignalForm.duration_minutes"
                     />
                     <span>:</span>
                     <input
                       class="form-control"
-                      formControlName="duration_seconds"
-                      max="59"
-                      min="0"
+                      id="duration-seconds"
                       placeholder="SS"
-                      required
                       style="width: 5rem"
                       type="number"
-                      [disabled]="loading()"
+                      [formField]="manualSignalForm.duration_seconds"
                     />
                     <span class="text-muted small">{{ '(hh:mm:ss)' | translate }}</span>
                   </div>
@@ -287,12 +264,10 @@
                   <div class="input-group">
                     <input
                       class="form-control"
-                      formControlName="distance"
                       id="distance"
-                      required
                       step="0.01"
                       type="number"
-                      [disabled]="loading()"
+                      [formField]="manualSignalForm.distance"
                     />
                     <span class="input-group-text">
                       {{ 'km' | translate }}
@@ -308,12 +283,9 @@
                   }}</label>
                   <input
                     class="form-control"
-                    formControlName="repetitions"
                     id="repetitions"
-                    min="0"
-                    required
                     type="number"
-                    [disabled]="loading()"
+                    [formField]="manualSignalForm.repetitions"
                   />
                 </div>
               }
@@ -324,12 +296,10 @@
                   <div class="input-group">
                     <input
                       class="form-control"
-                      formControlName="weight"
                       id="weight"
-                      required
                       step="0.1"
                       type="number"
-                      [disabled]="loading()"
+                      [formField]="manualSignalForm.weight"
                     />
                     <span class="input-group-text">
                       {{ 'kg' | translate }}
@@ -342,10 +312,9 @@
                 <label class="form-label" for="manual-notes">{{ 'Notes' | translate }}</label>
                 <textarea
                   class="form-control"
-                  formControlName="notes"
                   id="manual-notes"
                   rows="10"
-                  [disabled]="loading()"
+                  [formField]="manualSignalForm.notes"
                 ></textarea>
               </div>
 
@@ -376,7 +345,7 @@
                 <button
                   class="btn btn-primary"
                   type="submit"
-                  [disabled]="loading() || !manualWorkoutType() || manualWorkoutForm.invalid"
+                  [disabled]="loading() || !manualWorkoutType() || manualSignalForm().invalid()"
                 >
                   @if (loading()) {
                     <span

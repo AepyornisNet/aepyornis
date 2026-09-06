@@ -1,4 +1,4 @@
-<form [formGroup]="store.profileForm" (ngSubmit)="store.saveProfile()">
+<form [formRoot]="store.profileForm" (ngSubmit)="store.saveProfile()">
   <div class="card shadow-sm mb-4">
     <div class="card-header">
       <h3 class="h5 mb-0">{{ 'Privacy' | translate }}</h3>
@@ -8,9 +8,9 @@
         <div class="form-check">
           <input
             class="form-check-input"
-            formControlName="api_active"
             id="api_active"
             type="checkbox"
+            [formField]="store.profileForm.api_active"
           />
           <label class="form-check-label" for="api_active">
             {{ 'Enable API access' | translate }}
@@ -25,7 +25,7 @@
         </div>
 
         @if (
-          store.profileForm.value.api_active && store.profile() && store.profile()!.profile.api_key
+          store.profileModel().api_active && store.profile() && store.profile()!.profile.api_key
         ) {
           <div class="mt-2 d-flex align-items-center gap-2">
             <input
@@ -71,8 +71,8 @@
         </label>
         <select
           class="form-select"
-          formControlName="default_workout_visibility"
           id="default_workout_visibility"
+          [formField]="store.profileForm.default_workout_visibility"
         >
           <option value="">{{ 'Private' | translate }}</option>
           <option value="followers">{{ 'Followers' | translate }}</option>
@@ -83,7 +83,7 @@
       <button
         class="btn btn-primary"
         type="submit"
-        [disabled]="store.saving() || store.profileForm.invalid"
+        [disabled]="store.saving() || store.profileForm().invalid()"
       >
         @if (store.saving()) {
           <span
@@ -129,7 +129,7 @@
     <h3 class="h5 mb-0">{{ 'Change password' | translate }}</h3>
   </div>
   <div class="card-body">
-    <form [formGroup]="store.changePasswordForm" (ngSubmit)="store.changePassword()">
+    <form [formRoot]="store.changePasswordForm" (ngSubmit)="store.changePassword()">
       <div class="mb-3">
         <label class="form-label" for="current_password">{{
           'Current password' | translate
@@ -137,9 +137,9 @@
         <input
           autocomplete="current-password"
           class="form-control"
-          formControlName="current_password"
           id="current_password"
           type="password"
+          [formField]="store.changePasswordForm.current_password"
         />
       </div>
 
@@ -148,9 +148,9 @@
         <input
           autocomplete="new-password"
           class="form-control"
-          formControlName="new_password"
           id="new_password"
           type="password"
+          [formField]="store.changePasswordForm.new_password"
         />
       </div>
 
@@ -161,17 +161,15 @@
         <input
           autocomplete="new-password"
           class="form-control"
-          formControlName="confirm_password"
           id="confirm_password"
           type="password"
+          [formField]="store.changePasswordForm.confirm_password"
         />
       </div>
 
       @if (
-        store.changePasswordForm.value.new_password &&
-        store.changePasswordForm.value.confirm_password &&
-        store.changePasswordForm.value.new_password !==
-          store.changePasswordForm.value.confirm_password
+        store.changePasswordForm.confirm_password().touched() &&
+        store.changePasswordForm.confirm_password().errors().length > 0
       ) {
         <div class="alert alert-warning py-2" role="alert">
           {{ 'Passwords do not match' | translate }}
@@ -181,7 +179,7 @@
       <button
         class="btn btn-primary"
         type="submit"
-        [disabled]="store.changingPassword() || store.changePasswordForm.invalid"
+        [disabled]="store.changingPassword() || store.changePasswordForm().invalid()"
       >
         @if (store.changingPassword()) {
           <span

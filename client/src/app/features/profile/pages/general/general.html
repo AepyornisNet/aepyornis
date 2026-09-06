@@ -1,4 +1,4 @@
-<form [formGroup]="store.profileForm" (ngSubmit)="store.saveProfile()">
+<form [formRoot]="store.profileForm" (ngSubmit)="store.saveProfile()">
   <div class="card shadow-sm mb-4">
     <div class="card-header">
       <h3 class="h5 mb-0">{{ 'General settings' | translate }}</h3>
@@ -8,7 +8,7 @@
         <label class="form-label" for="totals_show">{{
           'Totals to show on dashboard' | translate
         }}</label>
-        <select class="form-select" formControlName="totals_show" id="totals_show">
+        <select class="form-select" id="totals_show" [formField]="store.profileForm.totals_show">
           <option value="all">{{ 'All' | translate }}</option>
           <option value="running">{{ 'running' | translate }}</option>
           <option value="cycling">{{ 'cycling' | translate }}</option>
@@ -20,10 +20,10 @@
         <label class="form-label" for="timezone">{{ 'Time zone' | translate }}</label>
         <input
           class="form-control"
-          formControlName="timezone"
           id="timezone"
           placeholder="UTC"
           type="text"
+          [formField]="store.profileForm.timezone"
         />
       </div>
 
@@ -39,7 +39,7 @@
             <app-icon name="translate" size="16" />
           </a>
         </label>
-        <select class="form-select" formControlName="language" id="language">
+        <select class="form-select" id="language" [formField]="store.profileForm.language">
           <option value="browser">{{ 'Browser / System' | translate }}</option>
           @for (lang of languages; track lang.code) {
             <option [value]="lang.code">{{ lang.flag }} {{ lang.nativeName }}</option>
@@ -49,7 +49,7 @@
 
       <div class="mb-3">
         <label class="form-label" for="theme">{{ 'Theme' | translate }}</label>
-        <select class="form-select" formControlName="theme" id="theme">
+        <select class="form-select" id="theme" [formField]="store.profileForm.theme">
           <option value="light">{{ 'Light' | translate }}</option>
           <option value="dark">{{ 'Dark' | translate }}</option>
           <option value="browser">{{ 'Browser / System' | translate }}</option>
@@ -58,7 +58,7 @@
 
       <div class="mb-3">
         <label class="form-label" for="map_style">{{ 'Default map style' | translate }}</label>
-        <select class="form-select" formControlName="map_style" id="map_style">
+        <select class="form-select" id="map_style" [formField]="store.profileForm.map_style">
           <option value="default">{{ 'Default' | translate }}</option>
           <option value="bright">OpenFreeMap Bright</option>
           <option value="fiord">OpenFreeMap Fiord</option>
@@ -74,9 +74,9 @@
           }}</label>
           <input
             class="form-control"
-            formControlName="auto_import_directory"
             id="auto_import_directory"
             type="text"
+            [formField]="store.profileForm.auto_import_directory"
             [placeholder]="'/imports/' + (store.profile()?.username ?? '') + '/'"
           />
         </div>
@@ -88,11 +88,15 @@
     <div class="card-header">
       <h3 class="h5 mb-0">{{ 'Preferred units' | translate }}</h3>
     </div>
-    <div class="card-body" [formGroup]="store.profileForm">
-      <div class="row g-3" formGroupName="preferred_units">
+    <div class="card-body">
+      <div class="row g-3">
         <div class="col-md-6">
           <label class="form-label" for="speed">{{ 'Speed' | translate }}</label>
-          <select class="form-select" formControlName="speed" id="speed">
+          <select
+            class="form-select"
+            id="speed"
+            [formField]="store.profileForm.preferred_units.speed"
+          >
             <option value="km/h">{{ 'km/h' | translate }}</option>
             <option value="mph">{{ 'mph' | translate }}</option>
           </select>
@@ -100,7 +104,11 @@
 
         <div class="col-md-6">
           <label class="form-label" for="distance">{{ 'Distance' | translate }}</label>
-          <select class="form-select" formControlName="distance" id="distance">
+          <select
+            class="form-select"
+            id="distance"
+            [formField]="store.profileForm.preferred_units.distance"
+          >
             <option value="km">{{ 'km' | translate }}</option>
             <option value="mi">{{ 'mi' | translate }}</option>
           </select>
@@ -108,7 +116,11 @@
 
         <div class="col-md-6">
           <label class="form-label" for="elevation">{{ 'Elevation' | translate }}</label>
-          <select class="form-select" formControlName="elevation" id="elevation">
+          <select
+            class="form-select"
+            id="elevation"
+            [formField]="store.profileForm.preferred_units.elevation"
+          >
             <option value="m">{{ 'm' | translate }}</option>
             <option value="ft">{{ 'ft' | translate }}</option>
           </select>
@@ -116,7 +128,11 @@
 
         <div class="col-md-6">
           <label class="form-label" for="weight">{{ 'Weight' | translate }}</label>
-          <select class="form-select" formControlName="weight" id="weight">
+          <select
+            class="form-select"
+            id="weight"
+            [formField]="store.profileForm.preferred_units.weight"
+          >
             <option value="kg">{{ 'kg' | translate }}</option>
             <option value="lbs">{{ 'lbs' | translate }}</option>
           </select>
@@ -124,7 +140,11 @@
 
         <div class="col-md-6">
           <label class="form-label" for="height">{{ 'Height' | translate }}</label>
-          <select class="form-select" formControlName="height" id="height">
+          <select
+            class="form-select"
+            id="height"
+            [formField]="store.profileForm.preferred_units.height"
+          >
             <option value="cm">{{ 'cm' | translate }}</option>
             <option value="in">{{ 'in' | translate }}</option>
           </select>
@@ -136,7 +156,7 @@
   <button
     class="btn btn-primary"
     type="submit"
-    [disabled]="store.saving() || store.profileForm.invalid"
+    [disabled]="store.saving() || store.profileForm().invalid()"
   >
     @if (store.saving()) {
       <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
