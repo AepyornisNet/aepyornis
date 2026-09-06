@@ -297,6 +297,14 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 		profileID = user.Profile.ID
 	}
 
+	notes := multipartFormValue(form, c, "notes")
+	category := multipartFormValue(form, c, "category")
+	visibility := multipartFormValue(form, c, "visibility")
+	difficulty := multipartFormValue(form, c, "difficulty")
+	description := multipartFormValue(form, c, "description")
+	bidirectional := multipartFormValue(form, c, "bidirectional")
+	circular := multipartFormValue(form, c, "circular")
+
 	segments := []*dto.RouteSegmentResponse{}
 	for _, file := range files {
 		content, parseErr := uploadedRouteSegmentFile(file)
@@ -304,8 +312,6 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 			errMsg = append(errMsg, parseErr.Error())
 			continue
 		}
-
-		notes := c.FormValue("notes")
 
 		w, addErr := rc.routeSegmentRepo.CreateFromContent(notes, file.Filename, content)
 		if addErr != nil {
@@ -316,23 +322,23 @@ func (rc *routeSegmentController) CreateRouteSegment(c *echo.Context) error {
 		if profileID != 0 {
 			w.ProfileID = profileID
 		}
-		if cat := c.FormValue("category"); cat != "" && isValidRouteSegmentCategory(cat) {
-			w.Category = cat
+		if category != "" && isValidRouteSegmentCategory(category) {
+			w.Category = category
 		}
-		if vis := model.WorkoutVisibility(c.FormValue("visibility")); vis.IsValid() && vis != "" {
+		if vis := model.WorkoutVisibility(visibility); vis.IsValid() && vis != "" {
 			w.Visibility = vis
 		}
-		if diff := model.RouteSegmentDifficulty(c.FormValue("difficulty")); diff.IsValid() {
+		if diff := model.RouteSegmentDifficulty(difficulty); diff.IsValid() {
 			w.Difficulty = diff
 		}
-		if desc := c.FormValue("description"); desc != "" {
-			w.Description = desc
+		if description != "" {
+			w.Description = description
 		}
-		if b := c.FormValue("bidirectional"); b != "" {
-			w.Bidirectional = cast.ToBool(b)
+		if bidirectional != "" {
+			w.Bidirectional = cast.ToBool(bidirectional)
 		}
-		if circ := c.FormValue("circular"); circ != "" {
-			w.Circular = cast.ToBool(circ)
+		if circular != "" {
+			w.Circular = cast.ToBool(circular)
 		}
 		_ = w.Save(rc.db)
 

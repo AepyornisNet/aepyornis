@@ -86,6 +86,13 @@ export class CreateRouteSegmentPage {
         formData.append('notes', notesValue);
       }
 
+      if (formValue.bidirectional) {
+        formData.append('bidirectional', 'true');
+      }
+      if (formValue.circular) {
+        formData.append('circular', 'true');
+      }
+
       const response = await firstValueFrom(this.api.createRouteSegment(formData));
       const results = Array.isArray(response?.results) ? (response?.results as RouteSegment[]) : [];
 

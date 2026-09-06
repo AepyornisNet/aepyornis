@@ -951,8 +951,8 @@ func (wc *workoutController) createWorkoutFromFile(c *echo.Context, user *model.
 		return renderApiError(c, http.StatusBadRequest, errors.New("no file uploaded"))
 	}
 
-	notes := c.FormValue("notes")
-	workoutType := model.WorkoutType(c.FormValue("type"))
+	notes := multipartFormValue(form, c, "notes")
+	workoutType := model.WorkoutType(multipartFormValue(form, c, "type"))
 	if workoutType == "" {
 		workoutType = model.WorkoutTypeAutoDetect
 	}
