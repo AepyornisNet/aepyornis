@@ -14,8 +14,6 @@ import (
 
 const JobUpdateRouteSegment = "update_route_segment"
 
-const workerWorkoutsBatchSize = 10
-
 // EnqueueRouteSegmentUpdate enqueues a job to re-match the given route segment.
 // Call this wherever a route segment is created or marked dirty.
 func EnqueueRouteSegmentUpdate(ctx context.Context, client *gue.Client, segmentID uint64) error {
@@ -47,39 +45,12 @@ func makeUpdateRouteSegmentHandler(db *gorm.DB, logger *slog.Logger, routeSegmen
 }
 
 func rematchRouteSegmentToWorkouts(db *gorm.DB, rs *model.RouteSegment, l *slog.Logger) error {
-	rs.RouteSegmentMatches = []*model.RouteSegmentMatch{}
+	l.Debug("rematchRouteSegmentToWorkouts start")
 
-	var workoutsBatch []*model.Workout
-	qw := model.PreloadWorkoutDetails(db).Model(&model.Workout{}).
-		FindInBatches(&workoutsBatch, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
-			l.With("batch_no", batchNo).
-				With("workouts_batch_size", len(workoutsBatch)).
-				Debug("rematchRouteSegmentsToWorkouts start")
-
-			newMatches := rs.FindMatches(workoutsBatch)
-			rs.RouteSegmentMatches = append(rs.RouteSegmentMatches, newMatches...)
-
-			l.With("route_segment_id", rs.ID).
-				With("new_matches", len(newMatches)).
-				With("total_matches", len(rs.RouteSegmentMatches)).
-				Debug("Updating route segments")
-
-			l.With("batch_no", batchNo).
-				With("workouts_batch_size", len(workoutsBatch)).
-				Debug("rematchRouteSegmentsToWorkouts done")
-
-			return nil
-		})
-
-	if qw.Error != nil {
-		return fmt.Errorf("error in batch processing of route segment matching: %w", qw.Error)
+	if err := model.RematchRouteSegment(db, rs.ID); err != nil {
+		return fmt.Errorf("error rematching route segment %d: %w", rs.ID, err)
 	}
 
-	rs.Dirty = false
-
-	if err := rs.Save(db); err != nil {
-		return fmt.Errorf("error saving route segment: %w", err)
-	}
-
+	l.Debug("rematchRouteSegmentToWorkouts done")
 	return nil
 }
