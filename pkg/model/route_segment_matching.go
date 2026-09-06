@@ -7,9 +7,32 @@ import (
 	"gorm.io/gorm"
 )
 
-// MaxDeltaMeter is the maximum distance in meters that a point can be away from
-// the route segment
-const MaxDeltaMeter = 20.0
+// Route segment matching thresholds and constants
+const (
+	// MaxDeltaMeter is the maximum distance in meters that a point can be away from
+	// the route segment for slope calculations and legacy fallbacks.
+	MaxDeltaMeter = 20.0
+
+	// RouteSegmentBoundingBoxExpansionDegrees is the bounding box buffer in degrees
+	// used for the spatial index pre-filter (~1.1 km at the equator).
+	RouteSegmentBoundingBoxExpansionDegrees = 0.01
+
+	// RouteSegmentZoneBufferMeters is the buffer radius in meters around the start
+	// and end points to detect entry and exit zones on the WGS84 ellipsoid.
+	RouteSegmentZoneBufferMeters = 25.0
+
+	// RouteSegmentMinPointInterval is the minimum number of points between start and
+	// exit points required for a valid segment effort.
+	RouteSegmentMinPointInterval = 5
+
+	// RouteSegmentMinLengthFraction is the minimum fraction of the route's total length
+	// an effort track must cover to be considered a match (0.85 = 85%).
+	RouteSegmentMinLengthFraction = 0.85
+
+	// RouteSegmentMaxHausdorffDistance is the maximum Hausdorff distance threshold in
+	// projected units (EPSG:3857) to ensure overall shape similarity.
+	RouteSegmentMaxHausdorffDistance = 50.0
+)
 
 // RouteSegmentMatch is a match between a route segment and a workout
 type RouteSegmentMatch struct {
@@ -62,14 +85,14 @@ local_points AS (
     FROM workout_records w
     JOIN route_segments rs ON rs.id = ?
     WHERE w.point IS NOT NULL 
-      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), 0.01)
+      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 ),
--- 2. Tag zone entries (25 true meters on WGS84 ellipsoid)
+-- 2. Tag zone entries
 tagged_zones AS (
     SELECT 
         p.workout_id, p.sort_order, p.time, p.pt, p.point,
-        ST_DWithin(p.point::geography, r.start_geom::geography, 25.0) AS in_start,
-        ST_DWithin(p.point::geography, r.end_geom::geography, 25.0) AS in_end,
+        ST_DWithin(p.point::geography, r.start_geom::geography, ?) AS in_start,
+        ST_DWithin(p.point::geography, r.end_geom::geography, ?) AS in_end,
         r.is_circular,
         r.is_bidirectional
     FROM local_points p CROSS JOIN route r
@@ -83,7 +106,7 @@ valid_segments AS (
             SELECT MIN(e.sort_order) 
             FROM tagged_zones e 
             WHERE e.workout_id = s.workout_id 
-              AND e.sort_order > s.sort_order + 5
+              AND e.sort_order > s.sort_order + ?
               AND (
                   -- Standard: Start -> End
                   (NOT e.is_circular AND NOT e.is_bidirectional AND s.in_start AND e.in_end)
@@ -143,9 +166,9 @@ SELECT
 FROM effort_tracks e
 CROSS JOIN route r
 WHERE 
-    e.track_length >= (r.length_m * 0.85) 
+    e.track_length >= (r.length_m * ?) 
     -- Hausdorff ignores direction, making it universally valid for bidirectional and circular shape checks
-    AND ST_HausdorffDistance(e.track_geom, r.geom) < 50.0 
+    AND ST_HausdorffDistance(e.track_geom, r.geom) < ? 
 ORDER BY e.workout_id, e.start_time;
 `
 
@@ -171,14 +194,14 @@ local_points AS (
     JOIN route_segments rs ON rs.id = ?
     WHERE w.workout_id = ?
       AND w.point IS NOT NULL 
-      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), 0.01)
+      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 ),
--- 2. Tag zone entries (25 true meters on WGS84 ellipsoid)
+-- 2. Tag zone entries
 tagged_zones AS (
     SELECT 
         p.workout_id, p.sort_order, p.time, p.pt, p.point,
-        ST_DWithin(p.point::geography, r.start_geom::geography, 25.0) AS in_start,
-        ST_DWithin(p.point::geography, r.end_geom::geography, 25.0) AS in_end,
+        ST_DWithin(p.point::geography, r.start_geom::geography, ?) AS in_start,
+        ST_DWithin(p.point::geography, r.end_geom::geography, ?) AS in_end,
         r.is_circular,
         r.is_bidirectional
     FROM local_points p CROSS JOIN route r
@@ -192,7 +215,7 @@ valid_segments AS (
             SELECT MIN(e.sort_order) 
             FROM tagged_zones e 
             WHERE e.workout_id = s.workout_id 
-              AND e.sort_order > s.sort_order + 5
+              AND e.sort_order > s.sort_order + ?
               AND (
                   -- Standard: Start -> End
                   (NOT e.is_circular AND NOT e.is_bidirectional AND s.in_start AND e.in_end)
@@ -252,9 +275,9 @@ SELECT
 FROM effort_tracks e
 CROSS JOIN route r
 WHERE 
-    e.track_length >= (r.length_m * 0.85) 
+    e.track_length >= (r.length_m * ?) 
     -- Hausdorff ignores direction, making it universally valid for bidirectional and circular shape checks
-    AND ST_HausdorffDistance(e.track_geom, r.geom) < 50.0 
+    AND ST_HausdorffDistance(e.track_geom, r.geom) < ? 
 ORDER BY e.workout_id, e.start_time;
 `
 
@@ -265,7 +288,17 @@ func FindRouteSegmentMatches(db *gorm.DB, routeSegmentID uint64) ([]*RouteSegmen
 	}
 
 	var results []matchQueryResult
-	if err := db.Raw(matchRouteSegmentQuery, routeSegmentID, routeSegmentID).Scan(&results).Error; err != nil {
+	if err := db.Raw(
+		matchRouteSegmentQuery,
+		routeSegmentID,
+		routeSegmentID,
+		RouteSegmentBoundingBoxExpansionDegrees,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentMinPointInterval,
+		RouteSegmentMinLengthFraction,
+		RouteSegmentMaxHausdorffDistance,
+	).Scan(&results).Error; err != nil {
 		return nil, err
 	}
 
@@ -295,7 +328,18 @@ func FindRouteSegmentWorkoutMatches(db *gorm.DB, routeSegmentID uint64, workoutI
 	}
 
 	var results []matchQueryResult
-	if err := db.Raw(matchRouteSegmentWorkoutQuery, routeSegmentID, routeSegmentID, workoutID).Scan(&results).Error; err != nil {
+	if err := db.Raw(
+		matchRouteSegmentWorkoutQuery,
+		routeSegmentID,
+		routeSegmentID,
+		workoutID,
+		RouteSegmentBoundingBoxExpansionDegrees,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentZoneBufferMeters,
+		RouteSegmentMinPointInterval,
+		RouteSegmentMinLengthFraction,
+		RouteSegmentMaxHausdorffDistance,
+	).Scan(&results).Error; err != nil {
 		return nil, err
 	}
 
@@ -348,10 +392,10 @@ func FindWorkoutRouteSegmentMatches(db *gorm.DB, workoutID uint64) ([]*RouteSegm
 		      SELECT 1 FROM workout_records w
 		      WHERE w.workout_id = ?
 		        AND w.point IS NOT NULL
-		        AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), 0.01)
+		        AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 		  )
 		ORDER BY rs.id ASC
-	`, workoutID).Scan(&segmentIDs).Error
+	`, workoutID, RouteSegmentBoundingBoxExpansionDegrees).Scan(&segmentIDs).Error
 	if err != nil {
 		return nil, err
 	}
