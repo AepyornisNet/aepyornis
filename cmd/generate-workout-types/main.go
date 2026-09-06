@@ -18,11 +18,17 @@ type WorkoutTypeConfig struct {
 	Repetition      bool                 `yaml:"repetition"`
 	Weight          bool                 `yaml:"weight"`
 	DistanceTargets []DistanceTargetYAML `yaml:"distance_targets"`
+	PowerTargets    []PowerTargetYAML    `yaml:"power_targets"`
 }
 
 type DistanceTargetYAML struct {
 	Label    string  `yaml:"label"`
 	Distance float64 `yaml:"distance"`
+}
+
+type PowerTargetYAML struct {
+	Label    string  `yaml:"label"`
+	Duration float64 `yaml:"duration"`
 }
 
 type Config struct {
@@ -68,6 +74,7 @@ func ParseWorkoutType(s string) (WorkoutType, bool) {
 type TemplateData struct {
 	WorkoutTypes    []TemplateWorkoutType
 	DistanceTargets []DistanceTargetSpec
+	PowerTargets    []PowerTargetSpec
 }
 
 type DistanceTargetSpec struct {
@@ -78,6 +85,16 @@ type DistanceTargetSpec struct {
 type DistanceTargetItem struct {
 	Label    string
 	Distance float64
+}
+
+type PowerTargetSpec struct {
+	ConstName string
+	Items     []PowerTargetItem
+}
+
+type PowerTargetItem struct {
+	Label    string
+	Duration float64
 }
 
 func toPascalCase(s string) string {
@@ -107,7 +124,7 @@ var defaultDistanceRecordTargets = map[WorkoutType][]DistanceRecordTarget{
 {{- end }}
 }
 
-func distanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
+func DistanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
 	targets, ok := defaultDistanceRecordTargets[wt]
 	if !ok {
 		return nil
@@ -115,6 +132,40 @@ func distanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
 
 	return targets
 }
+
+func distanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
+	return DistanceRecordTargetsFor(wt)
+}
+
+// PowerRecordTarget defines a target power duration label and its duration in seconds.
+type PowerRecordTarget struct {
+	Label          string
+	TargetDuration float64
+}
+
+var defaultPowerRecordTargets = map[WorkoutType][]PowerRecordTarget{
+{{- range .PowerTargets }}
+	WorkoutType{{ .ConstName }}: {
+{{- range .Items }}
+		{Label: "{{ .Label }}", TargetDuration: {{ printf "%.4f" .Duration }}},
+{{- end }}
+	},
+{{- end }}
+}
+
+func PowerRecordTargetsFor(wt WorkoutType) []PowerRecordTarget {
+	targets, ok := defaultPowerRecordTargets[wt]
+	if !ok {
+		return nil
+	}
+
+	return targets
+}
+
+func powerRecordTargetsFor(wt WorkoutType) []PowerRecordTarget {
+	return PowerRecordTargetsFor(wt)
+}
+
 `
 
 func main() {
@@ -154,6 +205,14 @@ func main() {
 			}
 			templateData.DistanceTargets = append(templateData.DistanceTargets, spec)
 		}
+
+		if len(wt.PowerTargets) > 0 {
+			spec := PowerTargetSpec{ConstName: pascal}
+			for _, it := range wt.PowerTargets {
+				spec.Items = append(spec.Items, PowerTargetItem{Label: it.Label, Duration: it.Duration})
+			}
+			templateData.PowerTargets = append(templateData.PowerTargets, spec)
+		}
 	}
 
 	slices.SortFunc(templateData.WorkoutTypes, func(a, b TemplateWorkoutType) int {
@@ -161,6 +220,10 @@ func main() {
 	})
 
 	slices.SortFunc(templateData.DistanceTargets, func(a, b DistanceTargetSpec) int {
+		return strings.Compare(a.ConstName, b.ConstName)
+	})
+
+	slices.SortFunc(templateData.PowerTargets, func(a, b PowerTargetSpec) int {
 		return strings.Compare(a.ConstName, b.ConstName)
 	})
 

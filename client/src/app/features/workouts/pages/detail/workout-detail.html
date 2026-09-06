@@ -214,8 +214,9 @@
 
         @if (
           dataService.hasChartData() &&
-          dataService.workout()!.total_distance &&
-          dataService.workout()!.total_distance! > 1000
+          ((dataService.workout()!.total_distance &&
+            dataService.workout()!.total_distance! > 1000) ||
+            dataService.hasPowerRecords())
         ) {
           <div class="card shadow-sm mb-4">
             <div class="card-header">
@@ -255,13 +256,26 @@
                   </li>
                 }
 
-                <!-- Interval Records -->
+                <!-- Distance Records -->
                 @if (dataService.hasRecords()) {
                   <li ngbNavItem>
-                    <button ngbNavLink>{{ 'Records' | translate }}</button>
+                    <button ngbNavLink>{{ 'Best distances' | translate }}</button>
                     <ng-template ngbNavContent>
                       <app-workout-records
                         [records]="dataService.workout()!.interval_bests!"
+                        [workoutType]="dataService.workout()!.type!"
+                      />
+                    </ng-template>
+                  </li>
+                }
+
+                <!-- Power Records -->
+                @if (dataService.hasPowerRecords()) {
+                  <li ngbNavItem>
+                    <button ngbNavLink>{{ 'Best power' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <app-workout-power-records
+                        [records]="dataService.workout()!.interval_power_bests!"
                         [workoutType]="dataService.workout()!.type!"
                       />
                     </ng-template>

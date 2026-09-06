@@ -1,0 +1,45 @@
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle records-table">
+    <thead>
+      <tr>
+        <th>{{ 'Duration' | translate }}</th>
+        <th class="text-end">{{ 'Power' | translate }}</th>
+        <th class="text-end">{{ 'Distance' | translate }}</th>
+        <th class="text-end">{{ 'Speed' | translate }}</th>
+        <th class="text-end">#</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (record of records(); track record.label) {
+        <tr
+          class="interval-row"
+          [class.table-active]="isSelected(record)"
+          (click)="selectRecord(record)"
+        >
+          <td>
+            <div class="fw-semibold">{{ record.label }}</div>
+            <div class="text-muted small">
+              {{ record.duration_seconds | formatDuration }}
+            </div>
+          </td>
+          <td class="text-end font-monospace fw-semibold">
+            @if (record.average_power) {
+              {{ record.average_power | number: '1.0-0' }} W
+            } @else {
+              -
+            }
+          </td>
+          <td class="text-end font-monospace">{{ record.distance | formatDistance }}</td>
+          <td class="text-end font-monospace">
+            @if (record.average_speed) {
+              {{ record.average_speed | formatSpeed: workoutType() }}
+            } @else {
+              -
+            }
+          </td>
+          <td class="text-end fw-semibold">#{{ record.rank }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

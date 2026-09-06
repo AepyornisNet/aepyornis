@@ -85,6 +85,11 @@ export class WorkoutDetailDataService {
     return w?.interval_bests && w.interval_bests.length > 0;
   });
 
+  public readonly hasPowerRecords = computed(() => {
+    const w = this.workout();
+    return w?.interval_power_bests && w.interval_power_bests.length > 0;
+  });
+
   public readonly extraMetrics = computed(() => {
     return this.recordsExtraMetrics();
   });

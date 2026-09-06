@@ -57,7 +57,7 @@ var defaultDistanceRecordTargets = map[WorkoutType][]DistanceRecordTarget{
 	},
 }
 
-func distanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
+func DistanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
 	targets, ok := defaultDistanceRecordTargets[wt]
 	if !ok {
 		return nil
@@ -65,3 +65,42 @@ func distanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
 
 	return targets
 }
+
+func distanceRecordTargetsFor(wt WorkoutType) []DistanceRecordTarget {
+	return DistanceRecordTargetsFor(wt)
+}
+
+// PowerRecordTarget defines a target power duration label and its duration in seconds.
+type PowerRecordTarget struct {
+	Label          string
+	TargetDuration float64
+}
+
+var defaultPowerRecordTargets = map[WorkoutType][]PowerRecordTarget{
+	WorkoutTypeCycling: {
+		{Label: "5 s", TargetDuration: 5.0000},
+		{Label: "15 s", TargetDuration: 15.0000},
+		{Label: "30 s", TargetDuration: 30.0000},
+		{Label: "1 min", TargetDuration: 60.0000},
+		{Label: "2 min", TargetDuration: 120.0000},
+		{Label: "5 min", TargetDuration: 300.0000},
+		{Label: "10 min", TargetDuration: 600.0000},
+		{Label: "20 min", TargetDuration: 1200.0000},
+		{Label: "30 min", TargetDuration: 1800.0000},
+		{Label: "1 hour", TargetDuration: 3600.0000},
+	},
+}
+
+func PowerRecordTargetsFor(wt WorkoutType) []PowerRecordTarget {
+	targets, ok := defaultPowerRecordTargets[wt]
+	if !ok {
+		return nil
+	}
+
+	return targets
+}
+
+func powerRecordTargetsFor(wt WorkoutType) []PowerRecordTarget {
+	return PowerRecordTargetsFor(wt)
+}
+

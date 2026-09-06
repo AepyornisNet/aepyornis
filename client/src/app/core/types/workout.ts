@@ -71,6 +71,7 @@ export type WorkoutDetail = {
   events?: WorkoutEvent[];
   route_segment_matches?: RouteSegmentMatch[];
   interval_bests?: WorkoutIntervalRecord[];
+  interval_power_bests?: WorkoutIntervalRecord[];
   laps?: WorkoutLap[];
 } & Workout;
 
@@ -251,10 +252,12 @@ export type RouteSegmentInfo = {
 
 export type WorkoutIntervalRecord = {
   label: string;
-  target_distance: number;
+  target_distance?: number;
+  target_duration?: number;
   distance: number;
   duration_seconds: number;
-  average_speed: number;
+  average_speed?: number;
+  average_power?: number;
   start_index?: number;
   end_index?: number;
   rank: number;
@@ -298,9 +301,24 @@ export type RecordEntry = {
 
 export type DistanceRecordEntry = {
   label: string;
-  target_distance: number;
+  target_distance?: number;
+  target_duration?: number;
   distance: number;
   duration_seconds: number;
+  average_speed: number;
+  average_power?: number;
+  workout_id: number;
+  date: string;
+  start_index?: number;
+  end_index?: number;
+};
+
+export type PowerRecordEntry = {
+  label: string;
+  target_duration: number;
+  distance: number;
+  duration_seconds: number;
+  average_power: number;
   average_speed: number;
   workout_id: number;
   date: string;
@@ -328,6 +346,7 @@ export type WorkoutRecord = {
   duration?: RecordEntry;
   total_up?: RecordEntry;
   distance_records?: DistanceRecordEntry[];
+  power_records?: PowerRecordEntry[];
   biggest_climb?: ClimbRecordEntry;
 };
 

@@ -124,6 +124,27 @@ workout_types:
         distance: 160934.4
       - label: "180 km"
         distance: 180000
+    power_targets:
+      - label: "5 s"
+        duration: 5
+      - label: "15 s"
+        duration: 15
+      - label: "30 s"
+        duration: 30
+      - label: "1 min"
+        duration: 60
+      - label: "2 min"
+        duration: 120
+      - label: "5 min"
+        duration: 300
+      - label: "10 min"
+        duration: 600
+      - label: "20 min"
+        duration: 1200
+      - label: "30 min"
+        duration: 1800
+      - label: "1 hour"
+        duration: 3600
 
   transition:
     name: "Multisport Transition"

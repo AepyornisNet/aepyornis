@@ -272,13 +272,35 @@ func (uc *userController) GetRecordsRanking(c *echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, totalCount, err := uc.getVisibleDistanceRanking(targetUser, viewer.Profile.ID, wt, req.Label, startDate, endDate, req.PerPage, req.GetOffset())
-	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
+	isPower := false
+	for _, target := range model.PowerRecordTargetsFor(wt) {
+		if target.Label == req.Label {
+			isPower = true
+			break
+		}
+	}
+
+	var totalCount int64
+	var recordResponses []dto.DistanceRecordResponse
+
+	if isPower {
+		powerRecords, count, err := uc.getVisiblePowerRanking(targetUser, viewer.Profile.ID, wt, req.Label, startDate, endDate, req.PerPage, req.GetOffset())
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+		totalCount = count
+		recordResponses = dto.NewPowerRecordRankingResponses(powerRecords)
+	} else {
+		records, count, err := uc.getVisibleDistanceRanking(targetUser, viewer.Profile.ID, wt, req.Label, startDate, endDate, req.PerPage, req.GetOffset())
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+		totalCount = count
+		recordResponses = dto.NewDistanceRecordResponses(records)
 	}
 
 	resp := dto.PaginatedResponse[dto.DistanceRecordResponse]{
-		Results:    dto.NewDistanceRecordResponses(records),
+		Results:    recordResponses,
 		Page:       req.Page,
 		PerPage:    req.PerPage,
 		TotalPages: req.CalculateTotalPages(totalCount),
@@ -1148,6 +1170,7 @@ func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, view
 	return rs, nil
 }
 
+//nolint:gocyclo // queries gather several aggregates in one pass
 func (uc *userController) getVisibleRecordForType(targetUser *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time) (*model.WorkoutPersonalRecord, error) {
 	if t == "" {
 		t = model.WorkoutTypeRunning
@@ -1213,12 +1236,188 @@ func (uc *userController) getVisibleRecordForType(targetUser *model.User, viewer
 		return nil, err
 	}
 
+	targets := model.DistanceRecordTargetsFor(t)
+	if len(targets) > 0 {
+		dr, derr := uc.getVisibleStoredDistanceRecords(targetUser, viewerProfileID, t, startDate, endDate)
+		if derr != nil {
+			return nil, derr
+		}
+		r.DistanceRecords = dr
+	}
+
+	powerTargets := model.PowerRecordTargetsFor(t)
+	if len(powerTargets) > 0 {
+		pr, perr := uc.getVisibleStoredPowerRecords(targetUser, viewerProfileID, t, startDate, endDate)
+		if perr != nil {
+			return nil, perr
+		}
+		r.PowerRecords = pr
+	}
+
 	r.Active = r.Distance.Value > 0 ||
 		r.MaxSpeed.Value > 0 ||
 		r.TotalUp.Value > 0 ||
-		r.Duration.Value > 0
+		r.Duration.Value > 0 ||
+		len(r.DistanceRecords) > 0 ||
+		len(r.PowerRecords) > 0
 
 	return r, nil
+}
+
+func (uc *userController) getVisibleStoredDistanceRecords(targetUser *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time) ([]model.DistanceRecord, error) {
+	targets := model.DistanceRecordTargetsFor(t)
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	validLabels := make(map[string]struct{}, len(targets))
+	for _, target := range targets {
+		validLabels[target.Label] = struct{}{}
+	}
+
+	rows := []struct {
+		model.WorkoutIntervalBest
+		Date time.Time
+	}{}
+
+	q := model.ScopeVisibleWorkouts(
+		uc.db.Table("workout_interval_records").
+			Select("workout_interval_records.*, workouts.date as date").
+			Joins("join workouts on workouts.id = workout_interval_records.workout_id"),
+		targetUser.Profile.ID,
+		viewerProfileID,
+	).Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", model.WorkoutIntervalBestTypeSpeed)
+
+	if startDate != nil {
+		q = q.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		q = q.Where("workouts.date <= ?", *endDate)
+	}
+
+	q = q.Order("workout_interval_records.label asc, workout_interval_records.target_distance asc, workout_interval_records.duration_seconds asc, workout_interval_records.distance desc")
+
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	best := map[string]model.DistanceRecord{}
+
+	for _, r := range rows {
+		if _, ok := validLabels[r.Label]; !ok {
+			continue
+		}
+
+		candidate := model.DistanceRecord{
+			Label:          r.Label,
+			TargetDistance: r.TargetDistance,
+			Distance:       r.Distance,
+			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
+			AverageSpeed:   r.Average,
+			WorkoutID:      r.WorkoutID,
+			Date:           r.Date,
+			StartIndex:     r.StartIndex,
+			EndIndex:       r.EndIndex,
+			Active:         true,
+		}
+
+		current, ok := best[candidate.Label]
+		if !ok || (candidate.Duration < current.Duration || (candidate.Duration == current.Duration && candidate.Distance > current.Distance)) {
+			best[candidate.Label] = candidate
+		}
+	}
+
+	result := make([]model.DistanceRecord, 0, len(targets))
+	for _, target := range targets {
+		if rec, ok := best[target.Label]; ok {
+			result = append(result, rec)
+		}
+	}
+
+	return result, nil
+}
+
+func (uc *userController) getVisibleStoredPowerRecords(targetUser *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time) ([]model.PowerRecord, error) {
+	targets := model.PowerRecordTargetsFor(t)
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	validLabels := make(map[string]struct{}, len(targets))
+	for _, target := range targets {
+		validLabels[target.Label] = struct{}{}
+	}
+
+	rows := []struct {
+		model.WorkoutIntervalBest
+		Date time.Time
+	}{}
+
+	q := model.ScopeVisibleWorkouts(
+		uc.db.Table("workout_interval_records").
+			Select("workout_interval_records.*, workouts.date as date").
+			Joins("join workouts on workouts.id = workout_interval_records.workout_id"),
+		targetUser.Profile.ID,
+		viewerProfileID,
+	).Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", model.WorkoutIntervalBestTypePower)
+
+	if startDate != nil {
+		q = q.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		q = q.Where("workouts.date <= ?", *endDate)
+	}
+
+	q = q.Order("workout_interval_records.label asc, workout_interval_records.target_distance asc, workout_interval_records.average desc, workout_interval_records.duration_seconds desc")
+
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	best := map[string]model.PowerRecord{}
+
+	for _, r := range rows {
+		if _, ok := validLabels[r.Label]; !ok {
+			continue
+		}
+
+		speed := 0.0
+		if r.DurationSeconds > 0 {
+			speed = r.Distance / r.DurationSeconds
+		}
+
+		candidate := model.PowerRecord{
+			Label:          r.Label,
+			TargetDuration: r.TargetDistance,
+			Distance:       r.Distance,
+			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
+			AveragePower:   r.Average,
+			AverageSpeed:   speed,
+			WorkoutID:      r.WorkoutID,
+			Date:           r.Date,
+			StartIndex:     r.StartIndex,
+			EndIndex:       r.EndIndex,
+			Active:         true,
+		}
+
+		current, ok := best[candidate.Label]
+		if !ok || (candidate.AveragePower > current.AveragePower || (candidate.AveragePower == current.AveragePower && candidate.Duration > current.Duration)) {
+			best[candidate.Label] = candidate
+		}
+	}
+
+	result := make([]model.PowerRecord, 0, len(targets))
+	for _, target := range targets {
+		if rec, ok := best[target.Label]; ok {
+			result = append(result, rec)
+		}
+	}
+
+	return result, nil
 }
 
 func (uc *userController) getVisibleDistanceRanking(
@@ -1279,6 +1478,81 @@ func (uc *userController) getVisibleDistanceRanking(
 			Distance:       row.Distance,
 			Duration:       time.Duration(row.DurationSeconds * float64(time.Second)),
 			AverageSpeed:   row.Average,
+			WorkoutID:      row.WorkoutID,
+			Date:           row.Date,
+			StartIndex:     row.StartIndex,
+			EndIndex:       row.EndIndex,
+			Active:         true,
+		})
+	}
+
+	return result, totalCount, nil
+}
+
+func (uc *userController) getVisiblePowerRanking(
+	targetUser *model.User,
+	viewerProfileID uint64,
+	t model.WorkoutType,
+	label string,
+	startDate, endDate *time.Time,
+	limit, offset int,
+) ([]model.PowerRecord, int64, error) {
+	rows := []struct {
+		model.WorkoutIntervalBest
+		Date time.Time
+	}{}
+
+	base := model.ScopeVisibleWorkouts(
+		uc.db.Table("workout_interval_records").
+			Select("workout_interval_records.*, workouts.date as date").
+			Joins("join workouts on workouts.id = workout_interval_records.workout_id"),
+		targetUser.Profile.ID,
+		viewerProfileID,
+	).Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", model.WorkoutIntervalBestTypePower).
+		Where("workout_interval_records.label = ?", label)
+
+	if startDate != nil {
+		base = base.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		base = base.Where("workouts.date <= ?", *endDate)
+	}
+
+	var totalCount int64
+	if err := base.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+
+	q := base
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	if offset > 0 {
+		q = q.Offset(offset)
+	}
+
+	q = q.Order("workout_interval_records.average desc, workout_interval_records.duration_seconds desc, workouts.date asc, workout_interval_records.workout_id asc")
+
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]model.PowerRecord, 0, len(rows))
+	for _, row := range rows {
+		speed := 0.0
+		if row.DurationSeconds > 0 {
+			speed = row.Distance / row.DurationSeconds
+		}
+
+		result = append(result, model.PowerRecord{
+			Label:          row.Label,
+			TargetDuration: row.TargetDistance,
+			Distance:       row.Distance,
+			Duration:       time.Duration(row.DurationSeconds * float64(time.Second)),
+			AveragePower:   row.Average,
+			AverageSpeed:   speed,
 			WorkoutID:      row.WorkoutID,
 			Date:           row.Date,
 			StartIndex:     row.StartIndex,

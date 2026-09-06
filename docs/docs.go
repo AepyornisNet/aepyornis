@@ -2275,64 +2275,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyQuery": []
-                    },
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "route-segments"
-                ],
-                "summary": "Create route segment",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "GPX file",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Notes",
-                        "name": "notes",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-dto_RouteSegmentsDetailResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-string"
-                        }
-                    }
-                }
             }
         },
         "/route-segments/{id}": {
@@ -2837,33 +2779,6 @@ const docTemplate = `{
         },
         "/user-profile/follow": {
             "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyQuery": []
-                    },
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Follow user by ActivityPub handle",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ActivityPub handle",
-                        "name": "handle",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3463,51 +3378,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-string"
-                        }
-                    }
-                }
-            }
-        },
-        "/workouts/recent": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workouts"
-                ],
-                "summary": "List recent workouts",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Feed scope (following|global)",
-                        "name": "scope",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.Response-array_dto_WorkoutResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/dto.Response-string"
                         }
@@ -4528,6 +4398,9 @@ const docTemplate = `{
         "dto.DistanceRecordResponse": {
             "type": "object",
             "properties": {
+                "average_power": {
+                    "type": "number"
+                },
                 "average_speed": {
                     "type": "number"
                 },
@@ -4550,6 +4423,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "target_distance": {
+                    "type": "number"
+                },
+                "target_duration": {
                     "type": "number"
                 },
                 "workout_id": {
@@ -5017,6 +4893,41 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PowerRecordResponse": {
+            "type": "object",
+            "properties": {
+                "average_power": {
+                    "type": "number"
+                },
+                "average_speed": {
+                    "type": "number"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration_seconds": {
+                    "type": "number"
+                },
+                "end_index": {
+                    "type": "integer"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "start_index": {
+                    "type": "integer"
+                },
+                "target_duration": {
+                    "type": "number"
+                },
+                "workout_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.ProfileSettings": {
             "type": "object",
             "properties": {
@@ -5253,29 +5164,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.Response-array_dto_WorkoutResponse": {
-            "type": "object",
-            "properties": {
-                "error_codes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.WorkoutResponse"
-                    }
-                }
-            }
-        },
         "dto.Response-array_model_Notification": {
             "type": "object",
             "properties": {
@@ -5485,29 +5373,6 @@ const docTemplate = `{
                 },
                 "results": {
                     "$ref": "#/definitions/dto.RouteSegmentDetailResponse"
-                }
-            }
-        },
-        "dto.Response-dto_RouteSegmentsDetailResponse": {
-            "type": "object",
-            "properties": {
-                "error_codes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.RouteSegmentResponse"
-                    }
                 }
             }
         },
@@ -6455,6 +6320,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.WorkoutIntervalRecordResponse"
                     }
                 },
+                "interval_power_bests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkoutIntervalRecordResponse"
+                    }
+                },
                 "laps": {
                     "type": "array",
                     "items": {
@@ -6587,6 +6458,9 @@ const docTemplate = `{
         "dto.WorkoutIntervalRecordResponse": {
             "type": "object",
             "properties": {
+                "average_power": {
+                    "type": "number"
+                },
                 "average_speed": {
                     "type": "number"
                 },
@@ -6609,6 +6483,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "target_distance": {
+                    "type": "number"
+                },
+                "target_duration": {
                     "type": "number"
                 }
             }
@@ -6828,6 +6705,12 @@ const docTemplate = `{
                 },
                 "max_speed": {
                     "$ref": "#/definitions/dto.RecordResponse"
+                },
+                "power_records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PowerRecordResponse"
+                    }
                 },
                 "total_up": {
                     "$ref": "#/definitions/dto.RecordResponse"

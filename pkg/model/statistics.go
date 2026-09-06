@@ -351,6 +351,85 @@ func (u *User) getStoredDistanceRecords(t WorkoutType, startDate, endDate *time.
 	return result, nil
 }
 
+func (u *User) getStoredPowerRecords(t WorkoutType, startDate, endDate *time.Time) ([]PowerRecord, error) {
+	targets := powerRecordTargetsFor(t)
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	validLabels := make(map[string]struct{}, len(targets))
+	for _, target := range targets {
+		validLabels[target.Label] = struct{}{}
+	}
+
+	rows := []struct {
+		WorkoutIntervalBest
+		Date time.Time
+	}{}
+
+	q := u.db.Table("workout_interval_records").
+		Select("workout_interval_records.*, workouts.date as date").
+		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
+		Where("workouts.profile_id = ?", u.Profile.ID).
+		Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypePower)
+
+	if startDate != nil {
+		q = q.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		q = q.Where("workouts.date <= ?", *endDate)
+	}
+
+	q = q.Order("workout_interval_records.label asc, workout_interval_records.target_distance asc, workout_interval_records.average desc, workout_interval_records.duration_seconds desc")
+
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	best := map[string]PowerRecord{}
+
+	for _, r := range rows {
+		if _, ok := validLabels[r.Label]; !ok {
+			continue
+		}
+
+		speed := 0.0
+		if r.DurationSeconds > 0 {
+			speed = r.Distance / r.DurationSeconds
+		}
+
+		candidate := PowerRecord{
+			Label:          r.Label,
+			TargetDuration: r.TargetDistance,
+			Distance:       r.Distance,
+			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
+			AveragePower:   r.Average,
+			AverageSpeed:   speed,
+			WorkoutID:      r.WorkoutID,
+			Date:           r.Date,
+			StartIndex:     r.StartIndex,
+			EndIndex:       r.EndIndex,
+			Active:         true,
+		}
+
+		current, ok := best[candidate.Label]
+		if !ok || betterPowerRecord(candidate, current) {
+			best[candidate.Label] = candidate
+		}
+	}
+
+	result := make([]PowerRecord, 0, len(targets))
+	for _, target := range targets {
+		if rec, ok := best[target.Label]; ok {
+			result = append(result, rec)
+		}
+	}
+
+	return result, nil
+}
+
 // GetDistanceRecordRanking returns stored interval efforts for a distance label ordered best-first with pagination.
 func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, endDate *time.Time, limit, offset int) ([]DistanceRecord, int64, error) {
 	targets := distanceRecordTargetsFor(t)
@@ -420,6 +499,92 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 			Distance:       r.Distance,
 			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
 			AverageSpeed:   r.Average,
+			WorkoutID:      r.WorkoutID,
+			Date:           r.Date,
+			StartIndex:     r.StartIndex,
+			EndIndex:       r.EndIndex,
+			Active:         true,
+		})
+	}
+
+	return result, totalCount, nil
+}
+
+// GetPowerRecordRanking returns stored interval efforts for a power duration label ordered best-first with pagination.
+func (u *User) GetPowerRecordRanking(t WorkoutType, label string, startDate, endDate *time.Time, limit, offset int) ([]PowerRecord, int64, error) {
+	targets := powerRecordTargetsFor(t)
+	if len(targets) == 0 {
+		return nil, 0, nil
+	}
+
+	valid := false
+	for _, target := range targets {
+		if target.Label == label {
+			valid = true
+			break
+		}
+	}
+
+	if !valid {
+		return nil, 0, fmt.Errorf("unknown power label %q for workout type %s", label, t)
+	}
+
+	rows := []struct {
+		WorkoutIntervalBest
+		Date time.Time
+	}{}
+
+	base := u.db.Table("workout_interval_records").
+		Select("workout_interval_records.*, workouts.date as date").
+		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
+		Where("workouts.profile_id = ?", u.Profile.ID).
+		Where("workouts.type = ?", t).
+		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypePower).
+		Where("workout_interval_records.label = ?", label)
+
+	if startDate != nil {
+		base = base.Where("workouts.date >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		base = base.Where("workouts.date <= ?", *endDate)
+	}
+
+	var totalCount int64
+	if err := base.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+
+	q := base
+
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+
+	if offset > 0 {
+		q = q.Offset(offset)
+	}
+
+	q = q.Order("workout_interval_records.average desc, workout_interval_records.duration_seconds desc, workouts.date asc, workout_interval_records.workout_id asc")
+
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]PowerRecord, 0, len(rows))
+	for _, r := range rows {
+		speed := 0.0
+		if r.DurationSeconds > 0 {
+			speed = r.Distance / r.DurationSeconds
+		}
+
+		result = append(result, PowerRecord{
+			Label:          r.Label,
+			TargetDuration: r.TargetDistance,
+			Distance:       r.Distance,
+			Duration:       time.Duration(r.DurationSeconds * float64(time.Second)),
+			AveragePower:   r.Average,
+			AverageSpeed:   speed,
 			WorkoutID:      r.WorkoutID,
 			Date:           r.Date,
 			StartIndex:     r.StartIndex,
@@ -578,6 +743,16 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 		r.DistanceRecords = dr
 	}
 
+	powerTargets := powerRecordTargetsFor(t)
+
+	if len(powerTargets) > 0 {
+		pr, perr := u.getStoredPowerRecords(t, startDate, endDate)
+		if perr != nil {
+			return nil, perr
+		}
+		r.PowerRecords = pr
+	}
+
 	if t.IsDistance() {
 		workouts, werr := loadWorkoutsForRecords(u.db, u.Profile.ID, t, startDate, endDate)
 		if werr != nil {
@@ -594,6 +769,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 		r.TotalUp.Value > 0 ||
 		r.Duration.Value > 0 ||
 		len(r.DistanceRecords) > 0 ||
+		len(r.PowerRecords) > 0 ||
 		(r.BiggestClimb != nil && r.BiggestClimb.Active)
 
 	return r, nil

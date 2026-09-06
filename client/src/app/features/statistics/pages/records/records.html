@@ -99,8 +99,9 @@
             </div>
           </div>
 
-          <div class="table-responsive">
-            @if (hasDistanceRecords(record)) {
+          @if (hasDistanceRecords(record)) {
+            <h5 class="mt-3 mb-2">{{ 'Best distances' | translate }}</h5>
+            <div class="table-responsive">
               <table class="table table-sm align-middle mb-0">
                 <thead>
                   <tr>
@@ -133,10 +134,52 @@
                   }
                 </tbody>
               </table>
-            } @else {
-              <div class="text-muted small">{{ 'No distance-based records yet.' | translate }}</div>
-            }
-          </div>
+            </div>
+          }
+
+          @if (hasPowerRecords(record)) {
+            <h5 class="mt-4 mb-2">{{ 'Best power' | translate }}</h5>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>{{ 'Interval' | translate }}</th>
+                    <th>{{ 'Average power' | translate }}</th>
+                    <th class="text-end">{{ 'Workout' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (pr of record.power_records || []; track pr.label) {
+                    <tr>
+                      <td class="fw-semibold">
+                        <a
+                          class="text-decoration-none"
+                          [routerLink]="['/statistics/records', record.workout_type, pr.label]"
+                          >{{ pr.label }}</a
+                        >
+                      </td>
+                      <td class="fw-semibold">
+                        @if (pr.average_power) {
+                          {{ pr.average_power | number: '1.0-0' }} W
+                        } @else {
+                          —
+                        }
+                      </td>
+                      <td class="text-end">
+                        <a [routerLink]="['/workouts', pr.workout_id]">{{
+                          pr.date | formatDate
+                        }}</a>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          @if (!hasDistanceRecords(record) && !hasPowerRecords(record)) {
+            <div class="text-muted small">{{ 'No records yet.' | translate }}</div>
+          }
         </div>
       </div>
     }

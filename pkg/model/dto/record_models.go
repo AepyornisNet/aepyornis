@@ -36,15 +36,32 @@ type WorkoutRecordResponse struct {
 	Duration            *RecordResponse          `json:"duration,omitempty"`
 	TotalUp             *RecordResponse          `json:"total_up,omitempty"`
 	DistanceRecords     []DistanceRecordResponse `json:"distance_records,omitempty"`
+	PowerRecords        []PowerRecordResponse    `json:"power_records,omitempty"`
 	BiggestClimb        *ClimbRecordResponse     `json:"biggest_climb,omitempty"`
 }
 
-// DistanceRecordResponse represents a distance effort record
+// DistanceRecordResponse represents a distance effort record or ranking record
 type DistanceRecordResponse struct {
 	Label           string    `json:"label"`
-	TargetDistance  float64   `json:"target_distance"`
+	TargetDistance  float64   `json:"target_distance,omitempty"`
+	TargetDuration  float64   `json:"target_duration,omitempty"`
 	Distance        float64   `json:"distance"`
 	DurationSeconds float64   `json:"duration_seconds"`
+	AverageSpeed    float64   `json:"average_speed"`
+	AveragePower    float64   `json:"average_power,omitempty"`
+	WorkoutID       uint64    `json:"workout_id"`
+	Date            time.Time `json:"date"`
+	StartIndex      int       `json:"start_index,omitempty"`
+	EndIndex        int       `json:"end_index,omitempty"`
+}
+
+// PowerRecordResponse represents a power effort record
+type PowerRecordResponse struct {
+	Label           string    `json:"label"`
+	TargetDuration  float64   `json:"target_duration"`
+	Distance        float64   `json:"distance"`
+	DurationSeconds float64   `json:"duration_seconds"`
+	AveragePower    float64   `json:"average_power"`
 	AverageSpeed    float64   `json:"average_speed"`
 	WorkoutID       uint64    `json:"workout_id"`
 	Date            time.Time `json:"date"`
@@ -150,6 +167,28 @@ func NewWorkoutRecordResponse(wr *model.WorkoutPersonalRecord) WorkoutRecordResp
 		}
 	}
 
+	if len(wr.PowerRecords) > 0 {
+		response.PowerRecords = make([]PowerRecordResponse, 0, len(wr.PowerRecords))
+		for _, pr := range wr.PowerRecords {
+			if !pr.Active {
+				continue
+			}
+
+			response.PowerRecords = append(response.PowerRecords, PowerRecordResponse{
+				Label:           pr.Label,
+				TargetDuration:  pr.TargetDuration,
+				Distance:        pr.Distance,
+				DurationSeconds: pr.Duration.Seconds(),
+				AveragePower:    pr.AveragePower,
+				AverageSpeed:    pr.AverageSpeed,
+				WorkoutID:       pr.WorkoutID,
+				Date:            pr.Date,
+				StartIndex:      pr.StartIndex,
+				EndIndex:        pr.EndIndex,
+			})
+		}
+	}
+
 	if wr.BiggestClimb != nil && wr.BiggestClimb.Active {
 		response.BiggestClimb = &ClimbRecordResponse{
 			ElevationGain: wr.BiggestClimb.ElevationGain,
@@ -196,6 +235,64 @@ func NewDistanceRecordResponses(records []model.DistanceRecord) []DistanceRecord
 			Date:            dr.Date,
 			StartIndex:      dr.StartIndex,
 			EndIndex:        dr.EndIndex,
+		})
+	}
+
+	return results
+}
+
+// NewPowerRecordResponses converts power records to API responses.
+func NewPowerRecordResponses(records []model.PowerRecord) []PowerRecordResponse {
+	if len(records) == 0 {
+		return []PowerRecordResponse{}
+	}
+
+	results := make([]PowerRecordResponse, 0, len(records))
+	for _, pr := range records {
+		if !pr.Active {
+			continue
+		}
+
+		results = append(results, PowerRecordResponse{
+			Label:           pr.Label,
+			TargetDuration:  pr.TargetDuration,
+			Distance:        pr.Distance,
+			DurationSeconds: pr.Duration.Seconds(),
+			AveragePower:    pr.AveragePower,
+			AverageSpeed:    pr.AverageSpeed,
+			WorkoutID:       pr.WorkoutID,
+			Date:            pr.Date,
+			StartIndex:      pr.StartIndex,
+			EndIndex:        pr.EndIndex,
+		})
+	}
+
+	return results
+}
+
+// NewPowerRecordRankingResponses converts power records to interval ranking API responses.
+func NewPowerRecordRankingResponses(records []model.PowerRecord) []DistanceRecordResponse {
+	if len(records) == 0 {
+		return []DistanceRecordResponse{}
+	}
+
+	results := make([]DistanceRecordResponse, 0, len(records))
+	for _, pr := range records {
+		if !pr.Active {
+			continue
+		}
+
+		results = append(results, DistanceRecordResponse{
+			Label:           pr.Label,
+			TargetDuration:  pr.TargetDuration,
+			Distance:        pr.Distance,
+			DurationSeconds: pr.Duration.Seconds(),
+			AveragePower:    pr.AveragePower,
+			AverageSpeed:    pr.AverageSpeed,
+			WorkoutID:       pr.WorkoutID,
+			Date:            pr.Date,
+			StartIndex:      pr.StartIndex,
+			EndIndex:        pr.EndIndex,
 		})
 	}
 

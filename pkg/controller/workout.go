@@ -273,6 +273,11 @@ func (wc *workoutController) GetWorkout(c *echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	powerRecords, err := model.GetWorkoutPowerIntervalRecordsWithRank(wc.db, workout.ProfileID, workout.Type, workout.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
 	user := currentUser(c)
 	if len(workout.RouteSegmentMatches) > 0 {
 		visibleMatches := make([]*model.RouteSegmentMatch, 0, len(workout.RouteSegmentMatches))
@@ -287,7 +292,7 @@ func (wc *workoutController) GetWorkout(c *echo.Context) error {
 		workout.RouteSegmentMatches = visibleMatches
 	}
 
-	result := dto.NewWorkoutDetailResponse(workout, records)
+	result := dto.NewWorkoutDetailResponse(workout, records, powerRecords)
 	ownerUserID := workoutOwnerUserID(workout)
 	published, err := wc.apOutboxRepo.PublishedMap(ownerUserID, []uint64{workout.ID})
 	if err == nil {
