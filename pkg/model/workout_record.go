@@ -49,6 +49,16 @@ func (m *WorkoutRecord) Lng() float64 {
 	return m.Point.Lng
 }
 
+func (m *WorkoutRecord) HasValidCoordinates() bool {
+	if m == nil || m.Point == nil {
+		return false
+	}
+	if math.IsNaN(m.Point.Lat) || math.IsNaN(m.Point.Lng) {
+		return false
+	}
+	return m.Point.Lat != 0 || m.Point.Lng != 0
+}
+
 func (m *WorkoutRecord) ToOrbPoint() *orb.Point {
 	if m == nil || m.Point == nil {
 		return nil
