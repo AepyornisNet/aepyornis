@@ -367,7 +367,6 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
       return [];
     }
 
-    const workout = this.workout();
     const metrics = this.extraMetricsValue;
     const metricSettings = this.getMetricSettings();
     const datasets: ChartDataset[] = [];
@@ -376,15 +375,12 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     const hasDefaultSpeed = this.hasMeaningfulSeries(mapData.speed, false);
     const hasDefaultElevation = this.hasMeaningfulSeries(mapData.elevation, false);
 
-    // Add speed dataset (convert to preferred unit)
+    // Add speed dataset
     if (hasDefaultSpeed) {
-      const speedData = mapData.speed.map((val) =>
-        this.formatSpeedPipe.convert(val, workout?.type),
-      );
       datasets.push({
         type: 'line',
         label: 'Speed',
-        data: speedData,
+        data: mapData.speed,
         yAxisID: 'speed',
         spanGaps: true,
         hidden: false,
@@ -465,11 +461,10 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     // Add elevation dataset with area fill
     if (this.hasMeaningfulSeries(mapData.elevation, false)) {
-      const elevationData = mapData.elevation.map((val) => this.formatElevationPipe.convert(val));
       datasets.push({
         type: 'line',
         label: 'Elevation',
-        data: elevationData,
+        data: mapData.elevation,
         yAxisID: 'elevation',
         fill: 'start',
         spanGaps: true,
