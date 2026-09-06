@@ -973,7 +973,7 @@ func (wc *workoutController) createWorkoutFromFile(c *echo.Context, user *model.
 	}
 
 	if len(errList) > 0 {
-		resp.AddError(errList...)
+		resp.AddContextError(c.Request().Context(), errList...)
 
 		for _, err := range errList {
 			if code := apiErrorCode(err); code != "" {

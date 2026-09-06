@@ -184,8 +184,8 @@ func (a *App) apiV2Routes(e *echo.Group) {
 			log.Warn(err.Error())
 
 			r := dto.Response[any]{}
-			r.AddError(err)
-			r.AddError(dto.ErrNotAuthorized)
+			r.AddContextError(c.Request().Context(), err)
+			r.AddContextError(c.Request().Context(), dto.ErrNotAuthorized)
 
 			return c.JSON(http.StatusUnauthorized, r)
 		},
@@ -294,7 +294,7 @@ func (a *App) apiV2AppInfoHandler(c *echo.Context) error {
 // renderAPIV2Error renders an API v2 error response
 func (a *App) renderAPIV2Error(c *echo.Context, status int, err error) error {
 	resp := dto.Response[any]{}
-	resp.AddError(err)
+	resp.AddContextError(c.Request().Context(), err)
 	return c.JSON(status, resp)
 }
 

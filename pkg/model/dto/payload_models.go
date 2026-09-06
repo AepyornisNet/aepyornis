@@ -273,7 +273,7 @@ func setIfNotNil[T any](dst *T, src *T) {
 }
 
 type SigninRequest struct {
-	Email    string `json:"email" form:"email" validate:"required,email"`
+	Email    string `json:"email" form:"email" validate:"required"`
 	Password string `json:"password" form:"password" validate:"required"`
 }
 
@@ -454,4 +454,3 @@ type WebFingerRequest struct {
 type ActivityPubPageQuery struct {
 	Page int `query:"page" validate:"omitempty,min=1"`
 }
-
