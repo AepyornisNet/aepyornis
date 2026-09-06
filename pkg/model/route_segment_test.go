@@ -250,3 +250,45 @@ func TestRouteSegment_RouteSegmentFromPoints_FiltersInvalidCoordinates(t *testin
 	assert.InDelta(t, 50.95816, rs.Points.Points[1].Lat, 0.0001)
 	assert.InDelta(t, 50.95900, rs.Points.Points[2].Lat, 0.0001)
 }
+
+func TestRouteSegment_MultiLapEfforts(t *testing.T) {
+	db := model.TestDB(t)
+
+	rs, err := model.NewRouteSegment("", "linear.gpx", []byte(finsepiste))
+	require.NoError(t, err)
+	rs.Points.Points = rs.Points.Points[:10]
+	rs.Circular = false
+	rs.Bidirectional = true
+	require.NoError(t, rs.Create(db))
+
+	n := len(rs.Points.Points)
+	// Build a single workout that does 3 laps: forward, reverse, forward
+	records := make([]model.WorkoutRecord, 0, n*3)
+	// Lap 1 (forward)
+	for i := 0; i < n; i++ {
+		p := rs.Points.Points[i]
+		records = append(records, model.WorkoutRecord{Point: &p})
+	}
+	// Lap 2 (reverse)
+	for i := 0; i < n; i++ {
+		p := rs.Points.Points[n-1-i]
+		records = append(records, model.WorkoutRecord{Point: &p})
+	}
+	// Lap 3 (forward)
+	for i := 0; i < n; i++ {
+		p := rs.Points.Points[i]
+		records = append(records, model.WorkoutRecord{Point: &p})
+	}
+
+	multiLapGPX, err := model.RouteSegmentFromPoints(&model.Workout{Records: records}, 1, len(records))
+	require.NoError(t, err)
+
+	w, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "multilap.gpx", multiLapGPX)
+	require.NoError(t, err)
+	require.Len(t, w, 1)
+	require.NoError(t, w[0].Save(db))
+
+	matches, err := model.FindRouteSegmentMatches(db, rs.ID)
+	require.NoError(t, err)
+	assert.Len(t, matches, 3)
+}

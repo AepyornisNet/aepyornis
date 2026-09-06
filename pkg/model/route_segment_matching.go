@@ -125,6 +125,24 @@ valid_segments AS (
                     AND m.sort_order < e.sort_order
                     AND NOT m.in_start AND NOT m.in_end
               )
+              -- NO RE-ENTRY INTO START ZONE: Cannot re-enter departure zone after leaving it
+              AND NOT EXISTS (
+                  SELECT 1 FROM tagged_zones r_reentry
+                  WHERE r_reentry.workout_id = s.workout_id
+                    AND r_reentry.sort_order > s.sort_order
+                    AND r_reentry.sort_order < e.sort_order
+                    AND (
+                        (s.in_start AND r_reentry.in_start) OR
+                        (s.in_end AND r_reentry.in_end)
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM tagged_zones left_zone
+                        WHERE left_zone.workout_id = s.workout_id
+                          AND left_zone.sort_order > s.sort_order
+                          AND left_zone.sort_order < r_reentry.sort_order
+                          AND NOT left_zone.in_start AND NOT left_zone.in_end
+                    )
+              )
         ) AS end_sort
     FROM tagged_zones s
     WHERE s.in_start OR (s.is_bidirectional AND s.in_end)
@@ -233,6 +251,24 @@ valid_segments AS (
                     AND m.sort_order > s.sort_order 
                     AND m.sort_order < e.sort_order
                     AND NOT m.in_start AND NOT m.in_end
+              )
+              -- NO RE-ENTRY INTO START ZONE: Cannot re-enter departure zone after leaving it
+              AND NOT EXISTS (
+                  SELECT 1 FROM tagged_zones r_reentry
+                  WHERE r_reentry.workout_id = s.workout_id
+                    AND r_reentry.sort_order > s.sort_order
+                    AND r_reentry.sort_order < e.sort_order
+                    AND (
+                        (s.in_start AND r_reentry.in_start) OR
+                        (s.in_end AND r_reentry.in_end)
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM tagged_zones left_zone
+                        WHERE left_zone.workout_id = s.workout_id
+                          AND left_zone.sort_order > s.sort_order
+                          AND left_zone.sort_order < r_reentry.sort_order
+                          AND NOT left_zone.in_start AND NOT left_zone.in_end
+                    )
               )
         ) AS end_sort
     FROM tagged_zones s
