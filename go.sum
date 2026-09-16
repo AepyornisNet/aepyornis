@@ -364,8 +364,8 @@ github.com/microcosm-cc/bluemonday v1.0.27 h1:MpEUotklkwCSLeH+Qdx1VJgNqLlpY2KXwX
 github.com/microcosm-cc/bluemonday v1.0.27/go.mod h1:jFi9vgW+H7c3V0lb6nR74Ib/DIB5OBs92Dimizgw2cA=
 github.com/microsoft/go-mssqldb v1.7.2 h1:CHkFJiObW7ItKTJfHo1QX7QBBD1iV+mn1eOyRP3b/PA=
 github.com/microsoft/go-mssqldb v1.7.2/go.mod h1:kOvZKUdrhhFQmxLZqbwUV0rHkNkZpthMITIb2Ko1IoA=
-github.com/muktihari/fit v0.28.3 h1:lTGbRDXk6T2TodtK9YiCJYbNHxVRu+r48Bfdn2pW/8I=
-github.com/muktihari/fit v0.28.3/go.mod h1:Nlz7BvsAbVK4TKXdO5zAxiKS7m1tnG/s7EYD4lJ8iLI=
+github.com/muktihari/fit v0.28.4 h1:r1WH+vO8n0i/7hYtrEDC7f4HxdjhvTt8ZmMriJmy+G0=
+github.com/muktihari/fit v0.28.4/go.mod h1:Nlz7BvsAbVK4TKXdO5zAxiKS7m1tnG/s7EYD4lJ8iLI=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=
 github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
 github.com/nikoksr/notify v1.5.0 h1:mzkCw8eb0P+qHwgmGQyPPGqz4GH+07FJDr44Bs16T9k=
