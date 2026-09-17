@@ -1,5 +1,5 @@
-# filippo.io/edwards25519 v1.1.0
-## explicit; go 1.20
+# filippo.io/edwards25519 v1.2.0
+## explicit; go 1.24.0
 filippo.io/edwards25519
 filippo.io/edwards25519/field
 # git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078
@@ -297,8 +297,8 @@ github.com/muktihari/fit/proto
 # github.com/ncruces/go-strftime v1.0.0
 ## explicit; go 1.17
 github.com/ncruces/go-strftime
-# github.com/nikoksr/notify v1.5.0
-## explicit; go 1.24.0
+# github.com/nikoksr/notify v1.6.0
+## explicit; go 1.25.10
 github.com/nikoksr/notify
 github.com/nikoksr/notify/service/mail
 github.com/nikoksr/notify/service/webpush
@@ -479,8 +479,8 @@ golang.org/x/crypto/ripemd160
 golang.org/x/crypto/sha3
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
-# golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93
-## explicit; go 1.24.0
+# golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297
+## explicit; go 1.25.0
 golang.org/x/exp/constraints
 # golang.org/x/image v0.36.0
 ## explicit; go 1.24.0
@@ -501,8 +501,8 @@ golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
 golang.org/x/net/publicsuffix
-# golang.org/x/oauth2 v0.34.0
-## explicit; go 1.24.0
+# golang.org/x/oauth2 v0.36.0
+## explicit; go 1.25.0
 golang.org/x/oauth2
 golang.org/x/oauth2/endpoints
 golang.org/x/oauth2/internal
@@ -564,7 +564,7 @@ golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
 golang.org/x/tools/internal/modindex
 golang.org/x/tools/internal/stdlib
-# google.golang.org/protobuf v1.36.11
+# google.golang.org/protobuf v1.36.12
 ## explicit; go 1.23
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
