@@ -302,7 +302,7 @@ func generateTrackPoints(laps int, pointsPerLap int) []model.WorkoutRecord {
 	mPerDegLat := 111320.0
 	mPerDegLng := 111320.0 * math.Cos(centerLat*math.Pi/180.0)
 
-	radius := 31.83     // meters
+	radius := 31.83      // meters
 	straightLen := 100.0 // meters
 
 	totalPerLap := 2.0*straightLen + 2.0*math.Pi*radius // ~400m
@@ -313,21 +313,22 @@ func generateTrackPoints(laps int, pointsPerLap int) []model.WorkoutRecord {
 			s := float64(i) / float64(pointsPerLap) * totalPerLap
 			var x, y float64
 
-			if s < straightLen {
+			switch {
+			case s < straightLen:
 				x = -straightLen/2.0 + s
 				y = -radius
-			} else if s < straightLen+math.Pi*radius {
+			case s < straightLen+math.Pi*radius:
 				theta := -math.Pi/2.0 + (s-straightLen)/radius
 				x = straightLen/2.0 + radius*math.Cos(theta)
-				y = radius*math.Sin(theta)
-			} else if s < 2.0*straightLen+math.Pi*radius {
+				y = radius * math.Sin(theta)
+			case s < 2.0*straightLen+math.Pi*radius:
 				sTop := s - (straightLen + math.Pi*radius)
 				x = straightLen/2.0 - sTop
 				y = radius
-			} else {
+			default:
 				theta := math.Pi/2.0 + (s-(2.0*straightLen+math.Pi*radius))/radius
 				x = -straightLen/2.0 + radius*math.Cos(theta)
-				y = radius*math.Sin(theta)
+				y = radius * math.Sin(theta)
 			}
 
 			lat := centerLat + y/mPerDegLat
@@ -400,4 +401,3 @@ func TestRouteSegment_TrackMatchingMultiLapBenchmark(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, batchedMatches, 35)
 }
-
