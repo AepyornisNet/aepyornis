@@ -390,5 +390,14 @@ func TestRouteSegment_TrackMatchingMultiLapBenchmark(t *testing.T) {
 	w2Matches, err := model.FindRouteSegmentWorkoutMatches(db, rs.ID, w2[0].ID)
 	require.NoError(t, err)
 	assert.Len(t, w2Matches, 10)
+
+	// Test candidate discovery and explicit batching with batchSize = 1
+	candidates, err := model.FindCandidateWorkoutsForRouteSegment(db, rs.ID)
+	require.NoError(t, err)
+	assert.Len(t, candidates, 2)
+
+	batchedMatches, err := model.FindRouteSegmentMatchesInBatches(db, rs.ID, 1)
+	require.NoError(t, err)
+	assert.Len(t, batchedMatches, 35)
 }
 
