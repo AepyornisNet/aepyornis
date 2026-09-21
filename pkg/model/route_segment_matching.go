@@ -32,6 +32,10 @@ const (
 	// RouteSegmentMaxHausdorffDistance is the maximum Hausdorff distance threshold in
 	// projected units (EPSG:3857) to ensure overall shape similarity.
 	RouteSegmentMaxHausdorffDistance = 50.0
+
+	// RouteSegmentWorkoutBatchSize is the default number of workouts processed in a single
+	// matching query batch to prevent high database memory consumption.
+	RouteSegmentWorkoutBatchSize = 50
 )
 
 // RouteSegmentMatch is a match between a route segment and a workout
@@ -64,132 +68,6 @@ type matchQueryResult struct {
 	TrackLength float64   `gorm:"column:track_length"`
 }
 
-const matchRouteSegmentQuery = `
-WITH route AS (
-    SELECT 
-        id,
-        ST_Transform(ST_SetSRID(points, 4326), 3857) AS geom,
-        ST_StartPoint(ST_SetSRID(points, 4326)) AS start_geom,
-        ST_EndPoint(ST_SetSRID(points, 4326)) AS end_geom,
-        ST_Length(points::geography) AS length_m,
-        COALESCE(circular, false) AS is_circular,
-        COALESCE(bidirectional, false) AS is_bidirectional
-    FROM route_segments 
-    WHERE id = ?
-),
--- 1. Index-powered Bounding Box (Discards irrelevant points)
-local_points AS (
-    SELECT 
-        w.workout_id, w.sort_order, w.time, w.point,
-        ST_Transform(ST_SetSRID(w.point, 4326), 3857) AS pt
-    FROM workout_records w
-    JOIN route_segments rs ON rs.id = ?
-    WHERE w.point IS NOT NULL 
-      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
-),
--- 2. Tag zone entries
-tagged_zones AS (
-    SELECT 
-        p.workout_id, p.sort_order, p.time, p.pt, p.point,
-        ST_DWithin(p.point::geography, r.start_geom::geography, ?) AS in_start,
-        ST_DWithin(p.point::geography, r.end_geom::geography, ?) AS in_end,
-        r.is_circular,
-        r.is_bidirectional
-    FROM local_points p CROSS JOIN route r
-),
--- 3. The Core Logic: Pairing valid entries and exits using a tripwire
-valid_segments AS (
-    SELECT 
-        s.workout_id,
-        s.sort_order AS start_sort,
-        (
-            SELECT MIN(e.sort_order) 
-            FROM tagged_zones e 
-            WHERE e.workout_id = s.workout_id 
-              AND e.sort_order > s.sort_order + ?
-              AND (
-                  -- Standard: Start -> End
-                  (NOT e.is_circular AND NOT e.is_bidirectional AND s.in_start AND e.in_end)
-                  OR
-                  -- Bidirectional: Start -> End OR End -> Start
-                  (NOT e.is_circular AND e.is_bidirectional AND ((s.in_start AND e.in_end) OR (s.in_end AND e.in_start)))
-                  OR 
-                  -- Circular: Start -> Start (Direction doesn't matter)
-                  (e.is_circular AND s.in_start AND e.in_start)
-              )
-              -- THE TRIPWIRE: They must have left both zones at least once during this interval
-              AND EXISTS (
-                  SELECT 1 FROM tagged_zones m 
-                  WHERE m.workout_id = s.workout_id 
-                    AND m.sort_order > s.sort_order 
-                    AND m.sort_order < e.sort_order
-                    AND NOT m.in_start AND NOT m.in_end
-              )
-              -- NO RE-ENTRY INTO START ZONE: Cannot re-enter departure zone after leaving it
-              AND NOT EXISTS (
-                  SELECT 1 FROM tagged_zones r_reentry
-                  WHERE r_reentry.workout_id = s.workout_id
-                    AND r_reentry.sort_order > s.sort_order
-                    AND r_reentry.sort_order < e.sort_order
-                    AND (
-                        (s.in_start AND r_reentry.in_start) OR
-                        (s.in_end AND r_reentry.in_end)
-                    )
-                    AND EXISTS (
-                        SELECT 1 FROM tagged_zones left_zone
-                        WHERE left_zone.workout_id = s.workout_id
-                          AND left_zone.sort_order > s.sort_order
-                          AND left_zone.sort_order < r_reentry.sort_order
-                          AND NOT left_zone.in_start AND NOT left_zone.in_end
-                    )
-              )
-        ) AS end_sort
-    FROM tagged_zones s
-    WHERE s.in_start OR (s.is_bidirectional AND s.in_end)
-),
--- 4. Deduplicate multiple stationary points grouping to the same exit
-distinct_efforts AS (
-    SELECT 
-        workout_id,
-        MIN(start_sort) AS start_sort,
-        end_sort
-    FROM valid_segments
-    WHERE end_sort IS NOT NULL
-    GROUP BY workout_id, end_sort
-),
--- 5. Reconstruct the geometry strictly for the isolated match
-effort_tracks AS (
-    SELECT 
-        de.workout_id,
-        de.start_sort,
-        de.end_sort,
-        MIN(lp.time) AS start_time,
-        MAX(lp.time) AS end_time,
-        ST_MakeLine(lp.pt ORDER BY lp.sort_order) AS track_geom,
-        ST_Length(ST_MakeLine(lp.point ORDER BY lp.sort_order)::geography) AS track_length
-    FROM distinct_efforts de
-    JOIN local_points lp 
-      ON lp.workout_id = de.workout_id 
-     AND lp.sort_order BETWEEN de.start_sort AND de.end_sort
-    GROUP BY de.workout_id, de.start_sort, de.end_sort
-)
--- 6. Validate Distance and Shape
-SELECT 
-    e.workout_id,
-    e.start_sort,
-    e.end_sort,
-    e.start_time,
-    e.end_time,
-    e.track_length
-FROM effort_tracks e
-CROSS JOIN route r
-WHERE 
-    e.track_length >= (r.length_m * ?) 
-    -- Hausdorff ignores direction, making it universally valid for bidirectional and circular shape checks
-    AND ST_HausdorffDistance(e.track_geom, r.geom) < ? 
-ORDER BY e.workout_id, e.start_time;
-`
-
 const matchRouteSegmentWorkoutQuery = `
 WITH route AS (
     SELECT 
@@ -206,101 +84,105 @@ WITH route AS (
 -- 1. Index-powered Bounding Box (Discards irrelevant points)
 local_points AS (
     SELECT 
-        w.workout_id, w.sort_order, w.time, w.point,
-        ST_Transform(ST_SetSRID(w.point, 4326), 3857) AS pt
+        w.workout_id, w.sort_order, w.time, w.point
     FROM workout_records w
     JOIN route_segments rs ON rs.id = ?
     WHERE w.workout_id = ?
       AND w.point IS NOT NULL 
       AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 ),
--- 2. Tag zone entries
+-- 2. Tag zone entries (1 = Start, 2 = End, 0 = Outside)
 tagged_zones AS (
     SELECT 
-        p.workout_id, p.sort_order, p.time, p.pt, p.point,
-        ST_DWithin(p.point::geography, r.start_geom::geography, ?) AS in_start,
-        ST_DWithin(p.point::geography, r.end_geom::geography, ?) AS in_end,
+        p.workout_id, p.sort_order, p.time, p.point,
+        CASE 
+            WHEN ST_DWithin(p.point::geography, r.start_geom::geography, ?) THEN 1
+            WHEN NOT r.is_circular AND ST_DWithin(p.point::geography, r.end_geom::geography, ?) THEN 2
+            ELSE 0
+        END AS zone_id,
         r.is_circular,
         r.is_bidirectional
     FROM local_points p CROSS JOIN route r
 ),
--- 3. The Core Logic: Pairing valid entries and exits using a tripwire
-valid_segments AS (
+-- 3. Detect zone transitions (Gaps and Islands)
+zone_steps AS (
     SELECT 
-        s.workout_id,
-        s.sort_order AS start_sort,
-        (
-            SELECT MIN(e.sort_order) 
-            FROM tagged_zones e 
-            WHERE e.workout_id = s.workout_id 
-              AND e.sort_order > s.sort_order + ?
-              AND (
-                  -- Standard: Start -> End
-                  (NOT e.is_circular AND NOT e.is_bidirectional AND s.in_start AND e.in_end)
-                  OR
-                  -- Bidirectional: Start -> End OR End -> Start
-                  (NOT e.is_circular AND e.is_bidirectional AND ((s.in_start AND e.in_end) OR (s.in_end AND e.in_start)))
-                  OR 
-                  -- Circular: Start -> Start (Direction doesn't matter)
-                  (e.is_circular AND s.in_start AND e.in_start)
-              )
-              -- THE TRIPWIRE: They must have left both zones at least once during this interval
-              AND EXISTS (
-                  SELECT 1 FROM tagged_zones m 
-                  WHERE m.workout_id = s.workout_id 
-                    AND m.sort_order > s.sort_order 
-                    AND m.sort_order < e.sort_order
-                    AND NOT m.in_start AND NOT m.in_end
-              )
-              -- NO RE-ENTRY INTO START ZONE: Cannot re-enter departure zone after leaving it
-              AND NOT EXISTS (
-                  SELECT 1 FROM tagged_zones r_reentry
-                  WHERE r_reentry.workout_id = s.workout_id
-                    AND r_reentry.sort_order > s.sort_order
-                    AND r_reentry.sort_order < e.sort_order
-                    AND (
-                        (s.in_start AND r_reentry.in_start) OR
-                        (s.in_end AND r_reentry.in_end)
-                    )
-                    AND EXISTS (
-                        SELECT 1 FROM tagged_zones left_zone
-                        WHERE left_zone.workout_id = s.workout_id
-                          AND left_zone.sort_order > s.sort_order
-                          AND left_zone.sort_order < r_reentry.sort_order
-                          AND NOT left_zone.in_start AND NOT left_zone.in_end
-                    )
-              )
-        ) AS end_sort
-    FROM tagged_zones s
-    WHERE s.in_start OR (s.is_bidirectional AND s.in_end)
+        *,
+        CASE WHEN LAG(zone_id) OVER (PARTITION BY workout_id ORDER BY sort_order) = zone_id THEN 0 ELSE 1 END AS is_step
+    FROM tagged_zones
 ),
--- 4. Deduplicate multiple stationary points grouping to the same exit
-distinct_efforts AS (
+zone_clusters AS (
+    SELECT 
+        *,
+        SUM(is_step) OVER (PARTITION BY workout_id ORDER BY sort_order) AS cluster_id
+    FROM zone_steps
+),
+-- 4. Summarize contiguous visits to zones
+cluster_summary AS (
     SELECT 
         workout_id,
-        MIN(start_sort) AS start_sort,
-        end_sort
-    FROM valid_segments
-    WHERE end_sort IS NOT NULL
-    GROUP BY workout_id, end_sort
+        cluster_id,
+        zone_id,
+        MIN(sort_order) AS first_sort,
+        MAX(sort_order) AS last_sort,
+        is_circular,
+        is_bidirectional
+    FROM zone_clusters
+    GROUP BY workout_id, cluster_id, zone_id, is_circular, is_bidirectional
 ),
--- 5. Reconstruct the geometry strictly for the isolated match
+-- 5. Pair valid departure -> outside -> arrival transitions
+cluster_pairs AS (
+    SELECT 
+        c.workout_id,
+        c.first_sort AS start_sort,
+        LEAD(c.first_sort, 2) OVER (PARTITION BY c.workout_id ORDER BY c.cluster_id) AS end_sort,
+        c.zone_id AS start_zone,
+        LEAD(c.zone_id, 1) OVER (PARTITION BY c.workout_id ORDER BY c.cluster_id) AS mid_zone,
+        LEAD(c.zone_id, 2) OVER (PARTITION BY c.workout_id ORDER BY c.cluster_id) AS end_zone,
+        c.is_circular,
+        c.is_bidirectional
+    FROM cluster_summary c
+),
+candidate_efforts AS (
+    SELECT 
+        workout_id,
+        start_sort,
+        end_sort
+    FROM cluster_pairs
+    WHERE mid_zone = 0 -- THE TRIPWIRE: Must leave both zones
+      AND end_sort IS NOT NULL
+      AND end_sort > start_sort + ? -- RouteSegmentMinPointInterval
+      AND (
+          -- Circular: Start -> Start
+          (is_circular AND start_zone = 1 AND end_zone = 1)
+          OR
+          -- Standard: Start -> End
+          (NOT is_circular AND NOT is_bidirectional AND start_zone = 1 AND end_zone = 2)
+          OR
+          -- Bidirectional: Start -> End OR End -> Start
+          (NOT is_circular AND is_bidirectional AND (
+              (start_zone = 1 AND end_zone = 2) OR 
+              (start_zone = 2 AND end_zone = 1)
+          ))
+      )
+),
+-- 6. Reconstruct the geometry strictly for the isolated match
 effort_tracks AS (
     SELECT 
-        de.workout_id,
-        de.start_sort,
-        de.end_sort,
+        ce.workout_id,
+        ce.start_sort,
+        ce.end_sort,
         MIN(lp.time) AS start_time,
         MAX(lp.time) AS end_time,
-        ST_MakeLine(lp.pt ORDER BY lp.sort_order) AS track_geom,
+        ST_MakeLine(ST_Transform(ST_SetSRID(lp.point, 4326), 3857) ORDER BY lp.sort_order) AS track_geom,
         ST_Length(ST_MakeLine(lp.point ORDER BY lp.sort_order)::geography) AS track_length
-    FROM distinct_efforts de
+    FROM candidate_efforts ce
     JOIN local_points lp 
-      ON lp.workout_id = de.workout_id 
-     AND lp.sort_order BETWEEN de.start_sort AND de.end_sort
-    GROUP BY de.workout_id, de.start_sort, de.end_sort
+      ON lp.workout_id = ce.workout_id 
+     AND lp.sort_order BETWEEN ce.start_sort AND ce.end_sort
+    GROUP BY ce.workout_id, ce.start_sort, ce.end_sort
 )
--- 6. Validate Distance and Shape
+-- 7. Validate Distance and Shape
 SELECT 
     e.workout_id,
     e.start_sort,
@@ -312,49 +194,231 @@ FROM effort_tracks e
 CROSS JOIN route r
 WHERE 
     e.track_length >= (r.length_m * ?) 
-    -- Hausdorff ignores direction, making it universally valid for bidirectional and circular shape checks
     AND ST_HausdorffDistance(e.track_geom, r.geom) < ? 
 ORDER BY e.workout_id, e.start_time;
 `
 
-// FindRouteSegmentMatches finds all matching workouts for a given route segment using PostGIS.
-func FindRouteSegmentMatches(db *gorm.DB, routeSegmentID uint64) ([]*RouteSegmentMatch, error) {
+const candidateWorkoutsForRouteSegmentQuery = `
+SELECT DISTINCT w.workout_id 
+FROM workout_records w
+JOIN route_segments rs ON rs.id = ?
+WHERE w.point IS NOT NULL 
+  	AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
+ORDER BY w.workout_id ASC;
+`
+
+const matchRouteSegmentBatchedQuery = `
+WITH route AS (
+    SELECT 
+        id,
+        ST_Transform(ST_SetSRID(points, 4326), 3857) AS geom,
+        ST_StartPoint(ST_SetSRID(points, 4326)) AS start_geom,
+        ST_EndPoint(ST_SetSRID(points, 4326)) AS end_geom,
+        ST_Length(points::geography) AS length_m,
+        COALESCE(circular, false) AS is_circular,
+        COALESCE(bidirectional, false) AS is_bidirectional
+    FROM route_segments 
+    WHERE id = ?
+),
+-- 1. Index-powered Bounding Box filtered by the workout batch
+local_points AS (
+    SELECT 
+        w.workout_id, w.sort_order, w.time, w.point
+    FROM workout_records w
+    JOIN route_segments rs ON rs.id = ?
+    WHERE w.workout_id IN (?)
+      AND w.point IS NOT NULL 
+      AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
+),
+-- 2. Tag zone entries (1 = Start, 2 = End, 0 = Outside)
+tagged_zones AS (
+    SELECT 
+        p.workout_id, p.sort_order, p.time, p.point,
+        CASE 
+            WHEN ST_DWithin(p.point::geography, r.start_geom::geography, ?) THEN 1
+            WHEN NOT r.is_circular AND ST_DWithin(p.point::geography, r.end_geom::geography, ?) THEN 2
+            ELSE 0
+        END AS zone_id,
+        r.is_circular,
+        r.is_bidirectional
+    FROM local_points p CROSS JOIN route r
+),
+-- 3. Detect zone transitions (Gaps and Islands)
+zone_steps AS (
+    SELECT 
+        *,
+        CASE WHEN LAG(zone_id) OVER (PARTITION BY workout_id ORDER BY sort_order) = zone_id THEN 0 ELSE 1 END AS is_step
+    FROM tagged_zones
+),
+zone_clusters AS (
+    SELECT 
+        *,
+        SUM(is_step) OVER (PARTITION BY workout_id ORDER BY sort_order) AS cluster_id
+    FROM zone_steps
+),
+-- 4. Summarize contiguous visits to zones
+cluster_summary AS (
+    SELECT 
+        workout_id,
+        cluster_id,
+        zone_id,
+        MIN(sort_order) AS first_sort,
+        MAX(sort_order) AS last_sort,
+        is_circular,
+        is_bidirectional
+    FROM zone_clusters
+    GROUP BY workout_id, cluster_id, zone_id, is_circular, is_bidirectional
+),
+-- 5. Pair valid departure -> outside -> arrival transitions
+cluster_pairs AS (
+    SELECT 
+        c.workout_id,
+        c.first_sort AS start_sort,
+        LEAD(c.first_sort, 2) OVER (PARTITION BY c.workout_id ORDER BY c.cluster_id) AS end_sort,
+        c.zone_id AS start_zone,
+        LEAD(c.zone_id, 1) OVER (PARTITION BY c.workout_id ORDER BY c.cluster_id) AS mid_zone,
+        LEAD(c.zone_id, 2) OVER (PARTITION BY c.workout_id ORDER BY c.cluster_id) AS end_zone,
+        c.is_circular,
+        c.is_bidirectional
+    FROM cluster_summary c
+),
+candidate_efforts AS (
+    SELECT 
+        workout_id,
+        start_sort,
+        end_sort
+    FROM cluster_pairs
+    WHERE mid_zone = 0 -- THE TRIPWIRE: Must leave both zones
+      AND end_sort IS NOT NULL
+      AND end_sort > start_sort + ? -- RouteSegmentMinPointInterval
+      AND (
+          -- Circular: Start -> Start
+          (is_circular AND start_zone = 1 AND end_zone = 1)
+          OR
+          -- Standard: Start -> End
+          (NOT is_circular AND NOT is_bidirectional AND start_zone = 1 AND end_zone = 2)
+          OR
+          -- Bidirectional: Start -> End OR End -> Start
+          (NOT is_circular AND is_bidirectional AND (
+              (start_zone = 1 AND end_zone = 2) OR 
+              (start_zone = 2 AND end_zone = 1)
+          ))
+      )
+),
+-- 6. Reconstruct the geometry strictly for the isolated match
+effort_tracks AS (
+    SELECT 
+        ce.workout_id,
+        ce.start_sort,
+        ce.end_sort,
+        MIN(lp.time) AS start_time,
+        MAX(lp.time) AS end_time,
+        ST_MakeLine(ST_Transform(ST_SetSRID(lp.point, 4326), 3857) ORDER BY lp.sort_order) AS track_geom,
+        ST_Length(ST_MakeLine(lp.point ORDER BY lp.sort_order)::geography) AS track_length
+    FROM candidate_efforts ce
+    JOIN local_points lp 
+      ON lp.workout_id = ce.workout_id 
+     AND lp.sort_order BETWEEN ce.start_sort AND ce.end_sort
+    GROUP BY ce.workout_id, ce.start_sort, ce.end_sort
+)
+-- 7. Validate Distance and Shape
+SELECT 
+    e.workout_id,
+    e.start_sort,
+    e.end_sort,
+    e.start_time,
+    e.end_time,
+    e.track_length
+FROM effort_tracks e
+CROSS JOIN route r
+WHERE 
+    e.track_length >= (r.length_m * ?) 
+    AND ST_HausdorffDistance(e.track_geom, r.geom) < ? 
+ORDER BY e.workout_id, e.start_time;
+`
+
+// FindCandidateWorkoutsForRouteSegment finds all workout IDs that intersect the bounding box of the route segment.
+func FindCandidateWorkoutsForRouteSegment(db *gorm.DB, routeSegmentID uint64) ([]uint64, error) {
 	if db == nil {
 		return nil, errors.New("nil db")
 	}
 
-	var results []matchQueryResult
-	if err := db.Raw(
-		matchRouteSegmentQuery,
-		routeSegmentID,
+	var workoutIDs []uint64
+	err := db.Raw(
+		candidateWorkoutsForRouteSegmentQuery,
 		routeSegmentID,
 		RouteSegmentBoundingBoxExpansionDegrees,
-		RouteSegmentZoneBufferMeters,
-		RouteSegmentZoneBufferMeters,
-		RouteSegmentMinPointInterval,
-		RouteSegmentMinLengthFraction,
-		RouteSegmentMaxHausdorffDistance,
-	).Scan(&results).Error; err != nil {
+	).Scan(&workoutIDs).Error
+	if err != nil {
 		return nil, err
 	}
+	return workoutIDs, nil
+}
 
-	matches := make([]*RouteSegmentMatch, len(results))
-	for i, r := range results {
-		var dur time.Duration
-		if !r.EndTime.IsZero() && !r.StartTime.IsZero() && r.EndTime.After(r.StartTime) {
-			dur = r.EndTime.Sub(r.StartTime)
+// FindRouteSegmentMatchesInBatches finds all matching workouts for a given route segment in batches of workouts
+// to prevent excessive database memory consumption.
+func FindRouteSegmentMatchesInBatches(db *gorm.DB, routeSegmentID uint64, batchSize int) ([]*RouteSegmentMatch, error) {
+	if db == nil {
+		return nil, errors.New("nil db")
+	}
+	if batchSize <= 0 {
+		batchSize = RouteSegmentWorkoutBatchSize
+	}
+
+	workoutIDs, err := FindCandidateWorkoutsForRouteSegment(db, routeSegmentID)
+	if err != nil {
+		return nil, err
+	}
+	if len(workoutIDs) == 0 {
+		return nil, nil
+	}
+
+	var allMatches []*RouteSegmentMatch
+	for i := 0; i < len(workoutIDs); i += batchSize {
+		end := i + batchSize
+		if end > len(workoutIDs) {
+			end = len(workoutIDs)
 		}
-		matches[i] = &RouteSegmentMatch{
-			RouteSegmentID: routeSegmentID,
-			WorkoutID:      r.WorkoutID,
-			FirstID:        r.StartSort,
-			LastID:         r.EndSort,
-			Distance:       r.TrackLength,
-			Duration:       dur,
+		batch := workoutIDs[i:end]
+
+		var results []matchQueryResult
+		if err := db.Raw(
+			matchRouteSegmentBatchedQuery,
+			routeSegmentID,
+			routeSegmentID,
+			batch,
+			RouteSegmentBoundingBoxExpansionDegrees,
+			RouteSegmentZoneBufferMeters,
+			RouteSegmentZoneBufferMeters,
+			RouteSegmentMinPointInterval,
+			RouteSegmentMinLengthFraction,
+			RouteSegmentMaxHausdorffDistance,
+		).Scan(&results).Error; err != nil {
+			return nil, err
+		}
+
+		for _, r := range results {
+			var dur time.Duration
+			if !r.EndTime.IsZero() && !r.StartTime.IsZero() && r.EndTime.After(r.StartTime) {
+				dur = r.EndTime.Sub(r.StartTime)
+			}
+			allMatches = append(allMatches, &RouteSegmentMatch{
+				RouteSegmentID: routeSegmentID,
+				WorkoutID:      r.WorkoutID,
+				FirstID:        r.StartSort,
+				LastID:         r.EndSort,
+				Distance:       r.TrackLength,
+				Duration:       dur,
+			})
 		}
 	}
 
-	return matches, nil
+	return allMatches, nil
+}
+
+// FindRouteSegmentMatches finds all matching workouts for a given route segment using PostGIS in batches.
+func FindRouteSegmentMatches(db *gorm.DB, routeSegmentID uint64) ([]*RouteSegmentMatch, error) {
+	return FindRouteSegmentMatchesInBatches(db, routeSegmentID, RouteSegmentWorkoutBatchSize)
 }
 
 // FindRouteSegmentWorkoutMatches finds matches between a specific route segment and a specific workout.

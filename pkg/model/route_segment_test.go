@@ -1,7 +1,9 @@
 package model_test
 
 import (
+	"math"
 	"testing"
+	"time"
 
 	_ "github.com/AepyornisNet/aepyornis/pkg/converters"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
@@ -291,4 +293,111 @@ func TestRouteSegment_MultiLapEfforts(t *testing.T) {
 	matches, err := model.FindRouteSegmentMatches(db, rs.ID)
 	require.NoError(t, err)
 	assert.Len(t, matches, 3)
+}
+
+func generateTrackPoints(laps int, pointsPerLap int) []model.WorkoutRecord {
+	records := make([]model.WorkoutRecord, 0, laps*pointsPerLap)
+	centerLat := 50.0
+	centerLng := 4.0
+	mPerDegLat := 111320.0
+	mPerDegLng := 111320.0 * math.Cos(centerLat*math.Pi/180.0)
+
+	radius := 31.83      // meters
+	straightLen := 100.0 // meters
+
+	totalPerLap := 2.0*straightLen + 2.0*math.Pi*radius // ~400m
+	t0 := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
+
+	for lap := 0; lap < laps; lap++ {
+		for i := 0; i < pointsPerLap; i++ {
+			s := float64(i) / float64(pointsPerLap) * totalPerLap
+			var x, y float64
+
+			switch {
+			case s < straightLen:
+				x = -straightLen/2.0 + s
+				y = -radius
+			case s < straightLen+math.Pi*radius:
+				theta := -math.Pi/2.0 + (s-straightLen)/radius
+				x = straightLen/2.0 + radius*math.Cos(theta)
+				y = radius * math.Sin(theta)
+			case s < 2.0*straightLen+math.Pi*radius:
+				sTop := s - (straightLen + math.Pi*radius)
+				x = straightLen/2.0 - sTop
+				y = radius
+			default:
+				theta := math.Pi/2.0 + (s-(2.0*straightLen+math.Pi*radius))/radius
+				x = -straightLen/2.0 + radius*math.Cos(theta)
+				y = radius * math.Sin(theta)
+			}
+
+			lat := centerLat + y/mPerDegLat
+			lng := centerLng + x/mPerDegLng
+			p := gogis.Point{Lat: lat, Lng: lng}
+			records = append(records, model.WorkoutRecord{
+				Point:     &p,
+				Time:      t0.Add(time.Duration(len(records)) * time.Second),
+				SortOrder: len(records),
+			})
+		}
+	}
+	return records
+}
+
+func TestRouteSegment_TrackMatchingMultiLapBenchmark(t *testing.T) {
+	db := model.TestDB(t)
+
+	// 1 lap template for route segment (80 points ~ 400m)
+	lapRecords := generateTrackPoints(1, 80)
+	gpxContent, err := model.RouteSegmentFromPoints(&model.Workout{Records: lapRecords}, 1, len(lapRecords))
+	require.NoError(t, err)
+
+	rs, err := model.NewRouteSegment("400m Track", "track.gpx", gpxContent)
+	require.NoError(t, err)
+	rs.Circular = true
+	rs.Bidirectional = false
+	require.NoError(t, rs.Create(db))
+
+	// Create 2 workouts:
+	// Workout 1: 25 laps (10,000m) = 2,000 points
+	// Workout 2: 10 laps (4,000m) = 800 points
+	w1Records := generateTrackPoints(25, 80)
+	w1GPX, err := model.RouteSegmentFromPoints(&model.Workout{Records: w1Records}, 1, len(w1Records))
+	require.NoError(t, err)
+	w1, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "w1.gpx", w1GPX)
+	require.NoError(t, err)
+	require.NoError(t, w1[0].Save(db))
+
+	w2Records := generateTrackPoints(10, 80)
+	w2GPX, err := model.RouteSegmentFromPoints(&model.Workout{Records: w2Records}, 1, len(w2Records))
+	require.NoError(t, err)
+	w2, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeAutoDetect, "", "w2.gpx", w2GPX)
+	require.NoError(t, err)
+	require.NoError(t, w2[0].Save(db))
+
+	// FindRouteSegmentMatches should find all 35 laps across both workouts in < 500ms
+	start := time.Now()
+	matches, err := model.FindRouteSegmentMatches(db, rs.ID)
+	duration := time.Since(start)
+	require.NoError(t, err)
+	assert.Len(t, matches, 35)
+	assert.Less(t, duration, 500*time.Millisecond)
+
+	// Also test single workout matcher FindRouteSegmentWorkoutMatches
+	w1Matches, err := model.FindRouteSegmentWorkoutMatches(db, rs.ID, w1[0].ID)
+	require.NoError(t, err)
+	assert.Len(t, w1Matches, 25)
+
+	w2Matches, err := model.FindRouteSegmentWorkoutMatches(db, rs.ID, w2[0].ID)
+	require.NoError(t, err)
+	assert.Len(t, w2Matches, 10)
+
+	// Test candidate discovery and explicit batching with batchSize = 1
+	candidates, err := model.FindCandidateWorkoutsForRouteSegment(db, rs.ID)
+	require.NoError(t, err)
+	assert.Len(t, candidates, 2)
+
+	batchedMatches, err := model.FindRouteSegmentMatchesInBatches(db, rs.ID, 1)
+	require.NoError(t, err)
+	assert.Len(t, batchedMatches, 35)
 }
