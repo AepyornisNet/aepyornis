@@ -1,4 +1,4 @@
-<div class="container my-5">
+<div class="container my-4">
   @if (loading()) {
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
@@ -14,82 +14,374 @@
   }
 
   @if (!loading() && workout()) {
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
       <div>
-        <h1 class="display-4 mb-0">
-          <app-icon name="route-segment" size="48" />
+        <h1 class="display-5 mb-1 d-flex align-items-center">
+          <app-icon class="me-2 text-primary" name="route-segment" size="40" />
           {{ 'Create route segment' | translate }}
         </h1>
-        <p class="text-muted">
+        <p class="text-muted mb-0">
           {{ 'Create a route segment from {{name}}' | translate: { name: workout()!.name } }}
         </p>
       </div>
     </div>
 
     <div class="row">
-      <!-- Map Section -->
-      <div class="col-lg-6 mb-4">
-        @if (totalPoints() >= 2) {
-          <app-route-segment-map [points]="workoutPoints()" [selection]="selection()" />
-        } @else {
-          <div class="alert alert-warning" role="alert">
-            {{
-              'This workout does not have sufficient GPS track points to create a route segment.'
-                | translate
-            }}
+      <!-- Left Column: Map, Elevation Profile & Metrics (Sticky) -->
+      <div class="col-lg-7 mb-4">
+        <div class="sticky-map-container">
+          <div class="card shadow-sm mb-3">
+            <div
+              class="card-header bg-body-tertiary d-flex flex-wrap justify-content-between align-items-center py-2 gap-2"
+            >
+              <span class="fw-bold d-flex align-items-center">
+                <app-icon class="me-1 text-primary" name="route-segment" size="18" />
+                {{ 'Route Map' | translate }}
+              </span>
+              <div class="btn-group btn-group-sm" role="group">
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  [title]="'Fit Selection' | translate"
+                  (click)="fitSelection()"
+                >
+                  <app-icon name="expand" size="14" />
+                  <span class="ms-1 d-none d-md-inline">{{ 'Fit Selection' | translate }}</span>
+                </button>
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  [title]="'Fit Full Route' | translate"
+                  (click)="fitRoute()"
+                >
+                  <app-icon name="route-segment" size="14" />
+                  <span class="ms-1 d-none d-md-inline">{{ 'Fit Full Route' | translate }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body p-0">
+              @if (totalPoints() >= 2) {
+                <app-route-segment-map
+                  [points]="workoutPoints()"
+                  [selection]="selection()"
+                  [showControls]="false"
+                />
+              } @else {
+                <div class="p-3">
+                  <div class="alert alert-warning mb-0" role="alert">
+                    {{
+                      'This workout does not have sufficient GPS track points to create a route segment.'
+                        | translate
+                    }}
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (hasElevationData() && totalPoints() >= 2) {
+              <div class="card-body border-top p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-semibold small text-muted d-flex align-items-center">
+                    <app-icon class="me-1" name="elevation" size="14" />
+                    {{ 'Elevation Profile' | translate }}
+                  </span>
+                </div>
+                <app-route-segment-elevation-chart
+                  [points]="elevationChartPoints()"
+                  [selection]="selection()"
+                />
+              </div>
+            }
+
+            <div class="card-footer bg-body-secondary py-2">
+              <div class="row g-2 text-center">
+                <div class="col-4">
+                  <div class="small text-muted">{{ 'Distance' | translate }}</div>
+                  <div class="fw-bold fs-6 text-primary">
+                    {{ selectedDistance() | formatDistance }}
+                  </div>
+                </div>
+                <div class="col-4 border-start">
+                  <div class="small text-muted">{{ 'Elevation Gain' | translate }}</div>
+                  <div class="fw-bold fs-6">
+                    @if (hasElevationData()) {
+                      {{ selectedElevationGain() | formatElevation }}
+                    } @else {
+                      —
+                    }
+                  </div>
+                </div>
+                <div class="col-4 border-start">
+                  <div class="small text-muted">{{ 'Average Slope' | translate }}</div>
+                  <div class="fw-bold fs-6">
+                    @if (hasElevationData()) {
+                      {{ selectedAverageSlope().toFixed(1) }}%
+                    } @else {
+                      —
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        }
+        </div>
       </div>
 
-      <!-- Form Section -->
-      <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
+      <!-- Right Column: Range Selectors, Climbs & Segment Details Form -->
+      <div class="col-lg-5 mb-4">
+        <!-- Range & Fine-Tuning Controls -->
+        <div class="card shadow-sm mb-4">
+          <div
+            class="card-header bg-body-tertiary d-flex justify-content-between align-items-center py-2"
+          >
+            <h6 class="mb-0 fw-bold d-flex align-items-center">
+              <app-icon class="me-1 text-primary" name="expand" size="16" />
+              {{ 'Segment Range' | translate }}
+            </h6>
+          </div>
           <div class="card-body">
-            <h5 class="card-title mb-3">{{ 'Segment Details' | translate }}</h5>
+            <!-- Start Point -->
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label mb-0 fw-semibold" for="start">
+                  <span class="badge bg-success me-1">A</span>
+                  {{ 'Start Point' | translate }}
+                </label>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="badge bg-light text-dark border">
+                    #{{ routeSegmentModel().start }}
+                  </span>
+                  @if (startPointInfo(); as sp) {
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                      {{ sp.distance | formatDistance }}
+                    </span>
+                    @if (hasElevationData()) {
+                      <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                        {{ sp.elevation | formatElevation }}
+                      </span>
+                    }
+                  }
+                  <button
+                    class="btn btn-outline-success btn-sm py-0 px-1 ms-1"
+                    type="button"
+                    [title]="'Focus Start on Map' | translate"
+                    (click)="focusStart()"
+                  >
+                    <app-icon name="location" size="12" />
+                  </button>
+                </div>
+              </div>
+              <input
+                class="form-range"
+                id="start"
+                min="1"
+                type="range"
+                [max]="totalPoints() || 1"
+                [value]="routeSegmentModel().start"
+                (input)="updateStart(+$any($event.target).value)"
+              />
+              <div class="d-flex justify-content-between align-items-center mt-1">
+                <small class="text-muted">{{ 'Fine-tune' | translate }}:</small>
+                <div class="btn-group btn-group-sm" role="group">
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().start <= 1"
+                    (click)="adjustStart(-10)"
+                  >
+                    -10
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().start <= 1"
+                    (click)="adjustStart(-1)"
+                  >
+                    -1
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().start >= totalPoints()"
+                    (click)="adjustStart(1)"
+                  >
+                    +1
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().start >= totalPoints()"
+                    (click)="adjustStart(10)"
+                  >
+                    +10
+                  </button>
+                </div>
+              </div>
+            </div>
 
+            <!-- End Point -->
+            <div class="mb-2">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label mb-0 fw-semibold" for="end">
+                  <span class="badge bg-danger me-1">B</span>
+                  {{ 'End Point' | translate }}
+                </label>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="badge bg-light text-dark border">
+                    #{{ routeSegmentModel().end }}
+                  </span>
+                  @if (endPointInfo(); as ep) {
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                      {{ ep.distance | formatDistance }}
+                    </span>
+                    @if (hasElevationData()) {
+                      <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                        {{ ep.elevation | formatElevation }}
+                      </span>
+                    }
+                  }
+                  <button
+                    class="btn btn-outline-danger btn-sm py-0 px-1 ms-1"
+                    type="button"
+                    [title]="'Focus End on Map' | translate"
+                    (click)="focusEnd()"
+                  >
+                    <app-icon name="location" size="12" />
+                  </button>
+                </div>
+              </div>
+              <input
+                class="form-range"
+                id="end"
+                min="1"
+                type="range"
+                [max]="totalPoints() || 1"
+                [value]="routeSegmentModel().end"
+                (input)="updateEnd(+$any($event.target).value)"
+              />
+              <div class="d-flex justify-content-between align-items-center mt-1">
+                <small class="text-muted">{{ 'Fine-tune' | translate }}:</small>
+                <div class="btn-group btn-group-sm" role="group">
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().end <= 1"
+                    (click)="adjustEnd(-10)"
+                  >
+                    -10
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().end <= 1"
+                    (click)="adjustEnd(-1)"
+                  >
+                    -1
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().end >= totalPoints()"
+                    (click)="adjustEnd(1)"
+                  >
+                    +1
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    type="button"
+                    [disabled]="routeSegmentModel().end >= totalPoints()"
+                    (click)="adjustEnd(10)"
+                  >
+                    +10
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detected Climbs & Descents (if any) -->
+        @if (climbs().length > 0) {
+          <div class="card shadow-sm mb-4">
+            <div
+              class="card-header bg-body-tertiary d-flex justify-content-between align-items-center py-2"
+            >
+              <h6 class="mb-0 fw-bold d-flex align-items-center">
+                <app-icon class="me-1 text-primary" name="elevation" size="16" />
+                {{ 'Detected Climbs' | translate }}
+              </h6>
+              <span class="badge bg-secondary-subtle text-secondary-emphasis">{{
+                climbs().length
+              }}</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive" style="max-height: 240px; overflow-y: auto">
+                <table class="table table-sm table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>{{ 'Type' | translate }}</th>
+                      <th>{{ 'Distance' | translate }}</th>
+                      <th>{{ 'Elevation' | translate }}</th>
+                      <th>{{ 'Avg Slope' | translate }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (climb of climbs(); track climb.index) {
+                      <tr
+                        class="climb-row cursor-pointer"
+                        [class.table-primary]="isClimbSelected(climb)"
+                        (click)="selectClimb(climb)"
+                      >
+                        <td>
+                          @if (climb.type === 'climb') {
+                            <span class="text-success fw-semibold"
+                              >↑ {{ 'Climb' | translate }} {{ climb.index + 1 }}</span
+                            >
+                          } @else {
+                            <span class="text-warning fw-semibold"
+                              >↓ {{ 'Descent' | translate }} {{ climb.index + 1 }}</span
+                            >
+                          }
+                          @if (climb.category) {
+                            <span class="badge bg-light text-dark border ms-1">{{
+                              climb.category
+                            }}</span>
+                          }
+                        </td>
+                        <td>{{ climb.length | formatDistance }}</td>
+                        <td>{{ climb.elevation | formatElevation }}</td>
+                        <td>{{ (climb.avg_slope * 100).toFixed(1) }}%</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Segment Details & Form -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-body-tertiary py-2">
+            <h6 class="mb-0 fw-bold d-flex align-items-center">
+              <app-icon class="me-1 text-primary" name="edit" size="16" />
+              {{ 'Segment Details' | translate }}
+            </h6>
+          </div>
+          <div class="card-body">
             <form [formRoot]="routeSegmentForm" (ngSubmit)="createRouteSegment()">
               <div class="mb-3">
-                <label class="form-label" for="name">{{ 'Name' | translate }}</label>
+                <label class="form-label" for="name"
+                  >{{ 'Name' | translate }} <span class="text-danger">*</span></label
+                >
                 <input
                   class="form-control"
                   id="name"
                   type="text"
                   [formField]="routeSegmentForm.name"
+                  [placeholder]="'Segment name' | translate"
                 />
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label" for="start">{{ 'Start Point' | translate }}</label>
-                <div class="d-flex align-items-center gap-2">
-                  <input
-                    class="form-range flex-grow-1"
-                    id="start"
-                    type="range"
-                    [formField]="routeSegmentForm.start"
-                    (input)="updateStart(+$any($event.target).value)"
-                  />
-                  <span class="badge bg-primary">{{ routeSegmentModel().start }}</span>
-                </div>
-                <small class="text-muted">
-                  {{ 'Select the starting point of your route segment' | translate }}
-                </small>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label" for="end">{{ 'End Point' | translate }}</label>
-                <div class="d-flex align-items-center gap-2">
-                  <input
-                    class="form-range flex-grow-1"
-                    id="end"
-                    type="range"
-                    [formField]="routeSegmentForm.end"
-                    (input)="updateEnd(+$any($event.target).value)"
-                  />
-                  <span class="badge bg-primary">{{ routeSegmentModel().end }}</span>
-                </div>
-                <small class="text-muted">
-                  {{ 'Select the ending point of your route segment' | translate }}
-                </small>
               </div>
 
               <div class="row">
@@ -150,7 +442,7 @@
                     [formField]="routeSegmentForm.bidirectional"
                   />
                   <label class="form-check-label" for="bidirectional">
-                    <app-icon name="bidirectional" size="16" />
+                    <app-icon class="me-1" name="bidirectional" size="16" />
                     {{ 'Bidirectional' | translate }}
                   </label>
                   <div class="form-text">
@@ -168,7 +460,7 @@
                     [formField]="routeSegmentForm.circular"
                   />
                   <label class="form-check-label" for="circular">
-                    <app-icon name="circular" size="16" />
+                    <app-icon class="me-1" name="circular" size="16" />
                     {{ 'Circular' | translate }}
                   </label>
                   <div class="form-text">
@@ -182,24 +474,13 @@
                 <textarea
                   class="form-control"
                   id="notes"
-                  rows="4"
+                  rows="3"
                   [formField]="routeSegmentForm.notes"
                   [placeholder]="'Optional notes about this route segment' | translate"
                 ></textarea>
               </div>
 
-              <div class="mb-4">
-                <div class="card bg-primary-subtle text-primary-emphasis">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <span class="text-muted">{{ 'Selected Distance' | translate }}</span>
-                      <span class="h5 mb-0">{{ selectedDistance() | formatDistance }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="d-grid gap-2">
+              <div class="d-grid gap-2 pt-2">
                 <button
                   class="btn btn-primary btn-lg"
                   type="submit"

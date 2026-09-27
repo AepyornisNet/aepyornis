@@ -5,17 +5,23 @@ import {
   inject,
   OnInit,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { form, FormField, FormRoot, max, min, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
 import { RouteSegmentDifficulty } from '../../../../core/types/route-segment';
-import { WorkoutDetail } from '../../../../core/types/workout';
+import { ClimbSegment, WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
 import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe';
+import { FormatElevationPipe } from '../../../../core/pipes/format-elevation.pipe';
+import {
+  ElevationPoint,
+  RouteSegmentElevationChartComponent,
+} from '../../components/route-segment-elevation-chart/route-segment-elevation-chart';
 import { getSportLabel } from '../../../../core/i18n/sport-labels';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
 
@@ -27,13 +33,16 @@ import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
     AppIcon,
     TranslatePipe,
     RouteSegmentMapComponent,
+    RouteSegmentElevationChartComponent,
     FormatDistancePipe,
+    FormatElevationPipe,
   ],
   templateUrl: './create-workout-route-segment.html',
   styleUrl: './create-workout-route-segment.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateWorkoutRouteSegmentPage implements OnInit {
+  public readonly mapComponent = viewChild(RouteSegmentMapComponent);
   public readonly sportLabel = getSportLabel;
   private api = inject(Api);
   private route = inject(ActivatedRoute);
@@ -84,11 +93,18 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
     const w = this.workout();
     const positions = w?.records?.details?.position;
     const distances = w?.records?.details?.distance;
+    const elevations = w?.records?.details?.elevation;
     if (!positions || positions.length === 0) {
       return [];
     }
 
-    const valid: { lat: number; lng: number; distance: number; originalIndex: number }[] = [];
+    const valid: {
+      lat: number;
+      lng: number;
+      distance: number;
+      elevation: number;
+      originalIndex: number;
+    }[] = [];
     for (let i = 0; i < positions.length; i++) {
       const pos = positions[i];
       if (
@@ -101,6 +117,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
           lat: pos[0],
           lng: pos[1],
           distance: distances?.[i] ?? 0,
+          elevation: elevations?.[i] ?? 0,
           originalIndex: i,
         });
       }
@@ -110,6 +127,21 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
 
   public readonly totalPoints = computed(() => {
     return this.validPoints().length;
+  });
+
+  public readonly hasElevationData = computed(() => {
+    return this.validPoints().some((p) => p.elevation !== 0);
+  });
+
+  public readonly elevationChartPoints = computed<ElevationPoint[]>(() => {
+    return this.validPoints().map((p) => ({
+      distance: p.distance,
+      elevation: p.elevation,
+    }));
+  });
+
+  public readonly climbs = computed(() => {
+    return this.workout()?.climbs ?? [];
   });
 
   public readonly selectedDistance = computed(() => {
@@ -126,6 +158,64 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
     }
 
     return Math.abs(pts[endIdx].distance - pts[startIdx].distance) * 1000;
+  });
+
+  public readonly selectedElevationGain = computed(() => {
+    const pts = this.validPoints();
+    const sel = this.selection();
+    if (!sel || pts.length < 2) {
+      return 0;
+    }
+    let gain = 0;
+    for (let i = sel.startIndex; i < sel.endIndex; i++) {
+      const diff = pts[i + 1].elevation - pts[i].elevation;
+      if (diff > 0) {
+        gain += diff;
+      }
+    }
+    return gain;
+  });
+
+  public readonly selectedAverageSlope = computed(() => {
+    const dist = this.selectedDistance(); // in meters
+    if (dist <= 0) {
+      return 0;
+    }
+    const pts = this.validPoints();
+    const sel = this.selection();
+    if (!sel || pts.length < 2) {
+      return 0;
+    }
+    const elevDiff = pts[sel.endIndex].elevation - pts[sel.startIndex].elevation;
+    return (elevDiff / dist) * 100;
+  });
+
+  public readonly startPointInfo = computed(() => {
+    const pts = this.validPoints();
+    const sel = this.selection();
+    if (!sel || pts.length === 0) {
+      return null;
+    }
+    const pt = pts[sel.startIndex];
+    return {
+      distance: pt.distance * 1000,
+      elevation: pt.elevation,
+      index: sel.startIndex + 1,
+    };
+  });
+
+  public readonly endPointInfo = computed(() => {
+    const pts = this.validPoints();
+    const sel = this.selection();
+    if (!sel || pts.length === 0) {
+      return null;
+    }
+    const pt = pts[sel.endIndex];
+    return {
+      distance: pt.distance * 1000,
+      elevation: pt.elevation,
+      index: sel.endIndex + 1,
+    };
   });
 
   public readonly workoutPoints = computed(() => {
@@ -229,6 +319,87 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
       end: clamped,
       start: clamped < m.start ? clamped : m.start,
     }));
+  }
+
+  public adjustStart(delta: number): void {
+    this.updateStart(this.routeSegmentModel().start + delta);
+  }
+
+  public adjustEnd(delta: number): void {
+    this.updateEnd(this.routeSegmentModel().end + delta);
+  }
+
+  public fitSelection(): void {
+    this.mapComponent()?.fitToSelection(true);
+  }
+
+  public fitRoute(): void {
+    this.mapComponent()?.fitToRoute(true);
+  }
+
+  public focusStart(): void {
+    this.mapComponent()?.focusStart();
+  }
+
+  public focusEnd(): void {
+    this.mapComponent()?.focusEnd();
+  }
+
+  public selectClimb(climb: ClimbSegment): void {
+    const pts = this.validPoints();
+    if (pts.length === 0) {
+      return;
+    }
+
+    let startValidIdx = pts.findIndex((p) => p.originalIndex >= climb.start_index);
+    if (startValidIdx === -1) {
+      startValidIdx = 0;
+    }
+
+    let endValidIdx = pts.findIndex((p) => p.originalIndex >= climb.end_index);
+    if (endValidIdx === -1) {
+      endValidIdx = pts.length - 1;
+    }
+
+    if (endValidIdx <= startValidIdx) {
+      endValidIdx = Math.min(pts.length - 1, startValidIdx + 1);
+    }
+
+    this.updateStart(startValidIdx + 1);
+    this.updateEnd(endValidIdx + 1);
+
+    const currentName = this.routeSegmentModel().name;
+    const workoutName = this.workout()?.name || '';
+    if (!currentName || currentName === workoutName) {
+      const typeLabel = climb.type === 'climb' ? 'Climb' : 'Descent';
+      this.routeSegmentModel.update((m) => ({
+        ...m,
+        name: `${workoutName} - ${typeLabel} ${climb.index + 1}`,
+      }));
+    }
+
+    setTimeout(() => {
+      this.fitSelection();
+    }, 50);
+  }
+
+  public isClimbSelected(climb: ClimbSegment): boolean {
+    const pts = this.validPoints();
+    if (pts.length === 0) {
+      return false;
+    }
+    const sel = this.selection();
+    if (!sel) {
+      return false;
+    }
+
+    const currentStartOrig = pts[sel.startIndex]?.originalIndex;
+    const currentEndOrig = pts[sel.endIndex]?.originalIndex;
+
+    return (
+      Math.abs(currentStartOrig - climb.start_index) <= 2 &&
+      Math.abs(currentEndOrig - climb.end_index) <= 2
+    );
   }
 
   public async createRouteSegment(): Promise<void> {

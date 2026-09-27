@@ -4,10 +4,12 @@ import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
 import { LngLatBounds, Map, Marker } from 'maplibre-gl';
 import { MapPoint } from '../../../../core/types/route-segment';
 import { BaseMapComponent } from '../../../../core/components/base-map/base-map';
+import { AppIcon } from '../../../../core/components/app-icon/app-icon';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-route-segment-map',
-  imports: [NgxMapLibreGLModule],
+  imports: [NgxMapLibreGLModule, AppIcon, TranslatePipe],
   templateUrl: './route-segment-map.html',
   styleUrls: ['./route-segment-map.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,9 +18,11 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
   public readonly points = input<MapPoint[] | null>(null);
   public readonly selection = input<{ startIndex: number; endIndex: number } | null>(null);
   public readonly center = input<{ lat: number; lng: number } | null>(null);
+  public readonly showControls = input<boolean>(false);
 
   private startMarker?: Marker;
   private endMarker?: Marker;
+  private hasInitialFit = false;
 
   public constructor() {
     super();
@@ -74,15 +78,23 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
       },
     });
 
-    this.startMarker = new Marker({ color: 'green', scale: 0.8 })
-      .setLngLat([pts[0].lng, pts[0].lat])
+    const sel = this.selection();
+    const startIdx = sel ? Math.max(0, Math.min(sel.startIndex, pts.length - 1)) : 0;
+    const endIdx = sel ? Math.max(0, Math.min(sel.endIndex, pts.length - 1)) : pts.length - 1;
+
+    this.startMarker = new Marker({ color: '#198754', scale: 0.85 })
+      .setLngLat([pts[startIdx].lng, pts[startIdx].lat])
       .addTo(this.map);
 
-    this.endMarker = new Marker({ color: 'red', scale: 0.8 })
-      .setLngLat([pts[pts.length - 1].lng, pts[pts.length - 1].lat])
+    this.endMarker = new Marker({ color: '#dc3545', scale: 0.85 })
+      .setLngLat([pts[endIdx].lng, pts[endIdx].lat])
       .addTo(this.map);
 
-    this.fitToCoordinates(coordinates);
+    if (!this.hasInitialFit) {
+      this.fitToCoordinates(coordinates, false);
+      this.hasInitialFit = true;
+    }
+
     this.highlightSelection(this.selection());
   }
 
@@ -98,13 +110,21 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
       this.map.removeSource('route-highlight-source');
     }
 
-    if (!sel) {
-      const coords = this.points()!.map((p) => [p.lng, p.lat] as [number, number]);
-      this.fitToCoordinates(coords);
+    const pts = this.points()!;
+    if (pts.length < 2) {
       return;
     }
 
-    const pts = this.points()!;
+    if (!sel) {
+      if (this.startMarker) {
+        this.startMarker.setLngLat([pts[0].lng, pts[0].lat]);
+      }
+      if (this.endMarker) {
+        this.endMarker.setLngLat([pts[pts.length - 1].lng, pts[pts.length - 1].lat]);
+      }
+      return;
+    }
+
     const start = Math.max(0, Math.min(sel.startIndex, pts.length - 2));
     const end = Math.max(start + 1, Math.min(sel.endIndex, pts.length - 1));
     const coords = pts.slice(start, end + 1).map((p) => [p.lng, p.lat] as [number, number]);
@@ -128,13 +148,76 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
       type: 'line',
       source: 'route-highlight-source',
       paint: {
-        'line-color': 'red',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 0, 3, 10, 4, 15, 5],
-        'line-opacity': 0.8,
+        'line-color': '#0d6efd',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 0, 3, 10, 5, 15, 6],
+        'line-opacity': 0.85,
       },
     });
 
-    this.fitToCoordinates(coords);
+    // Update marker positions smoothly without moving the camera
+    if (this.startMarker && pts[start]) {
+      this.startMarker.setLngLat([pts[start].lng, pts[start].lat]);
+    }
+    if (this.endMarker && pts[end]) {
+      this.endMarker.setLngLat([pts[end].lng, pts[end].lat]);
+    }
+  }
+
+  public fitToSelection(animate = true): void {
+    const pts = this.points();
+    const sel = this.selection();
+    if (!this.map || !pts || pts.length === 0) {
+      return;
+    }
+
+    if (!sel) {
+      this.fitToRoute(animate);
+      return;
+    }
+
+    const start = Math.max(0, Math.min(sel.startIndex, pts.length - 2));
+    const end = Math.max(start + 1, Math.min(sel.endIndex, pts.length - 1));
+    const coords = pts.slice(start, end + 1).map((p) => [p.lng, p.lat] as [number, number]);
+    this.fitToCoordinates(coords, animate);
+  }
+
+  public fitToRoute(animate = true): void {
+    const pts = this.points();
+    if (!this.map || !pts || pts.length === 0) {
+      return;
+    }
+    const coords = pts.map((p) => [p.lng, p.lat] as [number, number]);
+    this.fitToCoordinates(coords, animate);
+  }
+
+  public focusStart(): void {
+    const pts = this.points();
+    const sel = this.selection();
+    if (!this.map || !pts || pts.length === 0) {
+      return;
+    }
+    const idx = sel ? Math.max(0, Math.min(sel.startIndex, pts.length - 1)) : 0;
+    const pt = pts[idx];
+    this.map.flyTo({
+      center: [pt.lng, pt.lat],
+      zoom: Math.max(this.map.getZoom(), 16),
+      essential: true,
+    });
+  }
+
+  public focusEnd(): void {
+    const pts = this.points();
+    const sel = this.selection();
+    if (!this.map || !pts || pts.length === 0) {
+      return;
+    }
+    const idx = sel ? Math.max(0, Math.min(sel.endIndex, pts.length - 1)) : pts.length - 1;
+    const pt = pts[idx];
+    this.map.flyTo({
+      center: [pt.lng, pt.lat],
+      zoom: Math.max(this.map.getZoom(), 16),
+      essential: true,
+    });
   }
 
   protected refreshAfterStyleChange(): void {
@@ -162,7 +245,7 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
     window.setTimeout(tryRender, 0);
   }
 
-  private fitToCoordinates(coords: [number, number][]): void {
+  private fitToCoordinates(coords: [number, number][], animate = false): void {
     if (!this.map || coords.length === 0) {
       return;
     }
@@ -172,7 +255,11 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
       bounds.extend(coord);
     }
 
-    this.map.fitBounds(bounds, { padding: 60, animate: false });
+    this.map.fitBounds(bounds, {
+      padding: 60,
+      animate,
+      duration: animate ? 700 : 0,
+    });
   }
 
   private clearTrack(): void {

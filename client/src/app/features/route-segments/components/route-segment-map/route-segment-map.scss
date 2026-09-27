@@ -10,6 +10,26 @@
   display: block;
 }
 
+.map-floating-actions {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  background-color: var(--bs-body-bg, #ffffff);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+
+  .btn {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.3rem 0.55rem;
+    display: inline-flex;
+    align-items: center;
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+}
+
 :host ::ng-deep .wt-map-control {
   margin-top: 8px;
 }

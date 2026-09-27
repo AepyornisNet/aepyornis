@@ -6,4 +6,26 @@
     [zoom]="15"
     (mapLoad)="onMapLoad($event)"
   />
+  @if (showControls()) {
+    <div class="map-floating-actions btn-group btn-group-sm shadow-sm" role="group">
+      <button
+        class="btn btn-light btn-sm"
+        type="button"
+        [title]="'Fit Selection' | translate"
+        (click)="fitToSelection(true)"
+      >
+        <app-icon name="expand" size="14" />
+        <span class="ms-1 d-none d-md-inline">{{ 'Fit Selection' | translate }}</span>
+      </button>
+      <button
+        class="btn btn-light btn-sm"
+        type="button"
+        [title]="'Fit Full Route' | translate"
+        (click)="fitToRoute(true)"
+      >
+        <app-icon name="route-segment" size="14" />
+        <span class="ms-1 d-none d-md-inline">{{ 'Fit Full Route' | translate }}</span>
+      </button>
+    </div>
+  }
 </div>
