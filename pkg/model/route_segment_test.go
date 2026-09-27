@@ -2,6 +2,7 @@ package model_test
 
 import (
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -400,4 +401,71 @@ func TestRouteSegment_TrackMatchingMultiLapBenchmark(t *testing.T) {
 	batchedMatches, err := model.FindRouteSegmentMatchesInBatches(db, rs.ID, 1)
 	require.NoError(t, err)
 	assert.Len(t, batchedMatches, 35)
+}
+
+func TestRouteSegment_CategoryMatching(t *testing.T) {
+	db := model.TestDB(t)
+
+	// Create a cycling route segment
+	rsCycling, err := model.NewRouteSegment("", "cycling.gpx", []byte(finsepiste))
+	require.NoError(t, err)
+	rsCycling.Category = "cycling"
+	require.NoError(t, rsCycling.Create(db))
+
+	// Create an untyped route segment
+	rsAny, err := model.NewRouteSegment("", "any.gpx", []byte(strings.Replace(finsepiste, "<name>", "<name>any_", 1)))
+	require.NoError(t, err)
+	rsAny.Category = ""
+	require.NoError(t, rsAny.Create(db))
+
+	// Build matching GPX points
+	matchGPX, err := model.RouteSegmentFromPoints(&model.Workout{
+		Records: func() []model.WorkoutRecord {
+			records := make([]model.WorkoutRecord, len(rsCycling.Points.Points))
+			for i, pt := range rsCycling.Points.Points {
+				p := pt
+				records[i] = model.WorkoutRecord{Point: &p}
+			}
+			return records
+		}(),
+	}, 1, len(rsCycling.Points.Points))
+	require.NoError(t, err)
+
+	// Create a cycling workout on this route
+	wCycling, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeCycling, "", "cycling_workout.gpx", matchGPX)
+	require.NoError(t, err)
+	require.Len(t, wCycling, 1)
+	wCycling[0].Type = model.WorkoutTypeCycling
+	require.NoError(t, wCycling[0].Save(db))
+
+	// Create a running workout on the same route at a different time and with unique content checksum
+	matchGPXRunning := []byte(strings.Replace(string(matchGPX), "<trk>", "<trk><!-- running -->", 1))
+	wRunning, err := model.NewWorkout(testAnonymousProfile(), model.WorkoutTypeRunning, "", "running_workout.gpx", matchGPXRunning)
+	require.NoError(t, err)
+	require.Len(t, wRunning, 1)
+	wRunning[0].Type = model.WorkoutTypeRunning
+	wRunning[0].Date = wRunning[0].Date.Add(2 * time.Hour)
+	require.NoError(t, wRunning[0].Save(db))
+
+	// 1. Cycling segment: should only match cycling workout, NOT running workout
+	cyclingMatches, err := model.FindRouteSegmentMatches(db, rsCycling.ID)
+	require.NoError(t, err)
+	require.Len(t, cyclingMatches, 1)
+	assert.Equal(t, wCycling[0].ID, cyclingMatches[0].WorkoutID)
+
+	// 2. Untyped segment (empty category): should match both cycling and running
+	anyMatches, err := model.FindRouteSegmentMatches(db, rsAny.ID)
+	require.NoError(t, err)
+	require.Len(t, anyMatches, 2)
+
+	// 3. FindWorkoutRouteSegmentMatches for running workout: should match rsAny, but NOT rsCycling
+	runningSegMatches, err := model.FindWorkoutRouteSegmentMatches(db, wRunning[0].ID)
+	require.NoError(t, err)
+	require.Len(t, runningSegMatches, 1)
+	assert.Equal(t, rsAny.ID, runningSegMatches[0].RouteSegmentID)
+
+	// 4. FindWorkoutRouteSegmentMatches for cycling workout: should match both rsCycling and rsAny
+	cyclingSegMatches, err := model.FindWorkoutRouteSegmentMatches(db, wCycling[0].ID)
+	require.NoError(t, err)
+	require.Len(t, cyclingSegMatches, 2)
 }

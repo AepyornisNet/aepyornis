@@ -86,8 +86,10 @@ local_points AS (
     SELECT 
         w.workout_id, w.sort_order, w.time, w.point
     FROM workout_records w
+    JOIN workouts wo ON wo.id = w.workout_id
     JOIN route_segments rs ON rs.id = ?
     WHERE w.workout_id = ?
+      AND (COALESCE(rs.category, '') = '' OR wo.type = rs.category)
       AND w.point IS NOT NULL 
       AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 ),
@@ -201,8 +203,10 @@ ORDER BY e.workout_id, e.start_time;
 const candidateWorkoutsForRouteSegmentQuery = `
 SELECT DISTINCT w.workout_id 
 FROM workout_records w
+JOIN workouts wo ON wo.id = w.workout_id
 JOIN route_segments rs ON rs.id = ?
 WHERE w.point IS NOT NULL 
+  	AND (COALESCE(rs.category, '') = '' OR wo.type = rs.category)
   	AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 ORDER BY w.workout_id ASC;
 `
@@ -225,8 +229,10 @@ local_points AS (
     SELECT 
         w.workout_id, w.sort_order, w.time, w.point
     FROM workout_records w
+    JOIN workouts wo ON wo.id = w.workout_id
     JOIN route_segments rs ON rs.id = ?
     WHERE w.workout_id IN (?)
+      AND (COALESCE(rs.category, '') = '' OR wo.type = rs.category)
       AND w.point IS NOT NULL 
       AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 ),
@@ -487,10 +493,12 @@ func FindWorkoutRouteSegmentMatches(db *gorm.DB, workoutID uint64) ([]*RouteSegm
 	err := db.Raw(`
 		SELECT rs.id 
 		FROM route_segments rs
+		JOIN workouts wo ON wo.id = ?
 		WHERE rs.points IS NOT NULL
+		  AND (COALESCE(rs.category, '') = '' OR wo.type = rs.category)
 		  AND EXISTS (
 		      SELECT 1 FROM workout_records w
-		      WHERE w.workout_id = ?
+		      WHERE w.workout_id = wo.id
 		        AND w.point IS NOT NULL
 		        AND w.point && ST_Expand(ST_SetSRID(rs.points, 4326), ?)
 		  )
