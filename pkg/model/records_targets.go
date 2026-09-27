@@ -103,4 +103,3 @@ func PowerRecordTargetsFor(wt WorkoutType) []PowerRecordTarget {
 func powerRecordTargetsFor(wt WorkoutType) []PowerRecordTarget {
 	return PowerRecordTargetsFor(wt)
 }
-
