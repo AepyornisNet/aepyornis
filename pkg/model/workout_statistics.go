@@ -129,8 +129,7 @@ func calculateBestAndWorst(items []BreakdownItem) {
 }
 
 func (w *Workout) statisticsWithUnit(count float64, unit string) []BreakdownItem {
-	if w.Data == nil ||
-		len(w.Records) == 0 {
+	if len(w.Records) == 0 {
 		return nil
 	}
 

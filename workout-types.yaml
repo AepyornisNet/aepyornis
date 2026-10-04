@@ -20,6 +20,7 @@ workout_types:
     sub_types:
       treadmill:
         name: "Treadmill"
+        exclude_from_records: true
       street:
         name: "Street"
       trail:
@@ -28,6 +29,7 @@ workout_types:
         name: "Track"
       indoor_running:
         name: "Indoor Running"
+        exclude_from_records: true
     distance_targets:
       - label: "400 m"
         distance: 400
@@ -63,10 +65,15 @@ workout_types:
     repetition: false
     weight: false
     sub_types:
+      virtual_activity:
+        name: "Virtual activity"
+        exclude_from_records: true
       spin:
         name: "Spin"
+        exclude_from_records: true
       indoor_cycling:
         name: "Indoor Cycling"
+        exclude_from_records: true
       road:
         name: "Road"
       mountain:
@@ -961,6 +968,7 @@ workout_types:
     distance: false
     repetition: false
     weight: false
+    exclude_from_records: true
     sub_types: {}
 
   overland:
@@ -993,6 +1001,7 @@ workout_types:
     distance: false
     repetition: false
     weight: false
+    exclude_from_records: true
     sub_types: {}
 
   expedition:

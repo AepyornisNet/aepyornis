@@ -18,10 +18,24 @@ type StatConfig struct {
 	Per   string `query:"per"`
 }
 
+// ScopeExcludeRecordWorkouts filters out workouts that should not be included in records (e.g. virtual or indoor activities with non-comparable speeds).
+func ScopeExcludeRecordWorkouts(q *gorm.DB) *gorm.DB {
+	excludedTypes := ExcludedRecordWorkoutTypes()
+	excludedSubTypes := ExcludedRecordSubTypes()
+
+	if len(excludedTypes) > 0 {
+		q = q.Where("workouts.type NOT IN (?)", excludedTypes)
+	}
+	if len(excludedSubTypes) > 0 {
+		q = q.Where("workouts.sub_type IS NULL OR workouts.sub_type NOT IN (?)", excludedSubTypes)
+	}
+	return q.Where("workouts.sub_type IS NULL OR LOWER(workouts.sub_type) NOT LIKE '%virtual%'")
+}
+
 func loadWorkoutsForRecords(db *gorm.DB, profileID uint64, t WorkoutType, startDate, endDate *time.Time) ([]*Workout, error) {
 	var workouts []*Workout
 
-	query := PreloadWorkoutData(db).Where("profile_id = ?", profileID).Where("workouts.type = ?", t)
+	query := ScopeExcludeRecordWorkouts(PreloadWorkoutData(db).Where("profile_id = ?", profileID).Where("workouts.type = ?", t))
 
 	if startDate != nil {
 		query = query.Where("workouts.date >= ?", *startDate)
@@ -294,12 +308,12 @@ func (u *User) getStoredDistanceRecords(t WorkoutType, startDate, endDate *time.
 		Date time.Time
 	}{}
 
-	q := u.db.Table("workout_interval_records").
+	q := ScopeExcludeRecordWorkouts(u.db.Table("workout_interval_records").
 		Select("workout_interval_records.*, workouts.date as date").
 		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
 		Where("workouts.profile_id = ?", u.Profile.ID).
 		Where("workouts.type = ?", t).
-		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypeSpeed)
+		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypeSpeed))
 
 	if startDate != nil {
 		q = q.Where("workouts.date >= ?", *startDate)
@@ -454,13 +468,13 @@ func (u *User) GetDistanceRecordRanking(t WorkoutType, label string, startDate, 
 		Date time.Time
 	}{}
 
-	base := u.db.Table("workout_interval_records").
+	base := ScopeExcludeRecordWorkouts(u.db.Table("workout_interval_records").
 		Select("workout_interval_records.*, workouts.date as date").
 		Joins("join workouts on workouts.id = workout_interval_records.workout_id").
 		Where("workouts.profile_id = ?", u.Profile.ID).
 		Where("workouts.type = ?", t).
 		Where("workout_interval_records.type = ?", WorkoutIntervalBestTypeSpeed).
-		Where("workout_interval_records.label = ?", label)
+		Where("workout_interval_records.label = ?", label))
 
 	if startDate != nil {
 		base = base.Where("workouts.date >= ?", *startDate)
@@ -685,12 +699,12 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 	}
 
 	for k, v := range mapping {
-		query := u.db.
+		query := ScopeExcludeRecordWorkouts(u.db.
 			Table("workouts").
 			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 			Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 			Where("profile_id = ?", u.Profile.ID).
-			Where("workouts.type = ?", t).
+			Where("workouts.type = ?", t)).
 			Select("workouts.id as id", v+" as value", "workouts.date as date").
 			Order(v + " DESC").
 			Group("workouts.id").
@@ -712,7 +726,7 @@ func (u *User) GetRecords(t WorkoutType, startDate, endDate *time.Time) (*Workou
 
 	query := u.db.
 		Table("workouts").
-		Joins("join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
+		Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id").
 		Where("profile_id = ?", u.Profile.ID).
 		Where("workouts.type = ?", t).
 		Select("workouts.id as id", "max(total_duration) as value", "workouts.date as date").

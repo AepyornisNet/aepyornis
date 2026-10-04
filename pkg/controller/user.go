@@ -1190,11 +1190,11 @@ func (uc *userController) getVisibleRecordForType(targetUser *model.User, viewer
 	}
 
 	for k, v := range mapping {
-		query := model.ScopeVisibleWorkouts(
+		query := model.ScopeExcludeRecordWorkouts(model.ScopeVisibleWorkouts(
 			uc.db.Table("workouts").Joins("left join workout_stats on workouts.stats_id = workout_stats.id").Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
 			targetUser.Profile.ID,
 			viewerProfileID,
-		).
+		)).
 			Where("workouts.type = ?", t).
 			Select("workouts.id as id", v+" as value", "workouts.date as date").
 			Order(v + " DESC").
@@ -1280,13 +1280,13 @@ func (uc *userController) getVisibleStoredDistanceRecords(targetUser *model.User
 		Date time.Time
 	}{}
 
-	q := model.ScopeVisibleWorkouts(
+	q := model.ScopeExcludeRecordWorkouts(model.ScopeVisibleWorkouts(
 		uc.db.Table("workout_interval_records").
 			Select("workout_interval_records.*, workouts.date as date").
 			Joins("join workouts on workouts.id = workout_interval_records.workout_id"),
 		targetUser.Profile.ID,
 		viewerProfileID,
-	).Where("workouts.type = ?", t).
+	)).Where("workouts.type = ?", t).
 		Where("workout_interval_records.type = ?", model.WorkoutIntervalBestTypeSpeed)
 
 	if startDate != nil {
@@ -1433,13 +1433,13 @@ func (uc *userController) getVisibleDistanceRanking(
 		Date time.Time
 	}{}
 
-	base := model.ScopeVisibleWorkouts(
+	base := model.ScopeExcludeRecordWorkouts(model.ScopeVisibleWorkouts(
 		uc.db.Table("workout_interval_records").
 			Select("workout_interval_records.*, workouts.date as date").
 			Joins("join workouts on workouts.id = workout_interval_records.workout_id"),
 		targetUser.Profile.ID,
 		viewerProfileID,
-	).Where("workouts.type = ?", t).
+	)).Where("workouts.type = ?", t).
 		Where("workout_interval_records.type = ?", model.WorkoutIntervalBestTypeSpeed).
 		Where("workout_interval_records.label = ?", label)
 
@@ -1570,11 +1570,11 @@ func (uc *userController) getVisibleClimbRanking(targetUser *model.User, viewerP
 	}
 
 	var workouts []*model.Workout
-	q := model.ScopeVisibleWorkouts(
+	q := model.ScopeExcludeRecordWorkouts(model.ScopeVisibleWorkouts(
 		model.PreloadWorkoutData(uc.db),
 		targetUser.Profile.ID,
 		viewerProfileID,
-	).Where("workouts.type = ?", t)
+	)).Where("workouts.type = ?", t)
 
 	if startDate != nil {
 		q = q.Where("workouts.date >= ?", *startDate)
@@ -1590,7 +1590,7 @@ func (uc *userController) getVisibleClimbRanking(targetUser *model.User, viewerP
 
 	records := make([]model.ClimbRecord, 0)
 	for _, workout := range workouts {
-		if workout == nil || workout.Data == nil {
+		if workout == nil || workout.Data == nil || workout.ExcludeFromRecords() {
 			continue
 		}
 

@@ -22,7 +22,7 @@ type WorkoutIntervalRecordWithRank struct {
 // GetWorkoutIntervalRecordsWithRank returns all stored interval records for the given workout with
 // their rank computed on the fly for the owning user and workout type.
 func GetWorkoutIntervalRecordsWithRank(db *gorm.DB, profileID uint64, workoutType WorkoutType, workoutID uint64) ([]WorkoutIntervalRecordWithRank, error) {
-	base := db.
+	base := ScopeExcludeRecordWorkouts(db.
 		Table("workout_interval_records as wir").
 		Select(`wir.*, RANK() OVER (
 			PARTITION BY wir.type, wir.label
@@ -31,7 +31,7 @@ func GetWorkoutIntervalRecordsWithRank(db *gorm.DB, profileID uint64, workoutTyp
 		Joins("join workouts on workouts.id = wir.workout_id").
 		Where("workouts.profile_id = ?", profileID).
 		Where("workouts.type = ?", workoutType).
-		Where("wir.type = ?", WorkoutIntervalBestTypeSpeed)
+		Where("wir.type = ?", WorkoutIntervalBestTypeSpeed))
 
 	rows := []WorkoutIntervalRecordWithRank{}
 	if err := db.Table("(?) as ranked", base).

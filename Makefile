@@ -141,6 +141,7 @@ swagger:
 
 generate-workout-types:
 	go generate ./...
+	gofmt -w pkg/
 	cd client && npm run generate-workout-types
 
 test-packages:
