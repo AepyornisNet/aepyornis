@@ -20,22 +20,46 @@
     <div class="row">
       <div class="col-12 col-lg-8">
         <div class="workout-header">
-          <div class="d-flex align-items-center gap-3">
-            <h1 class="display-4 mb-0">
-              <app-icon size="32" [name]="dataService.workout()!.type" />
-              {{ dataService.workout()!.name }}
-            </h1>
-            @if (dataService.workout()!.locked) {
-              <span class="badge bg-warning">
-                <app-icon name="locked" size="16" />
-                {{ 'Locked' | translate }}
-              </span>
-            }
-            @if (dataService.workout()!.dirty) {
-              <span class="badge bg-info">
-                <app-icon name="refresh" size="16" />
-                {{ 'Updating' | translate }}
-              </span>
+          <div>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <h1 class="display-4 mb-0">
+                <app-icon size="32" [name]="dataService.workout()!.type" />
+                {{ dataService.workout()!.name }}
+              </h1>
+              @if (dataService.workout()!.locked) {
+                <span class="badge bg-warning">
+                  <app-icon name="locked" size="16" />
+                  {{ 'Locked' | translate }}
+                </span>
+              }
+              @if (dataService.workout()!.dirty) {
+                <span class="badge bg-info">
+                  <app-icon name="refresh" size="16" />
+                  {{ 'Updating' | translate }}
+                </span>
+              }
+            </div>
+
+            @if (dataService.workout()!.user; as workoutUser) {
+              <div class="d-flex align-items-center gap-2 mt-2">
+                <app-avatar [size]="28" [user]="workoutUser" />
+                @if (workoutUser.username) {
+                  <a
+                    class="text-decoration-none link-body-emphasis fw-semibold"
+                    [routerLink]="['/profile', workoutUser.username]"
+                  >
+                    {{ workoutUser.name || workoutUser.username }}
+                  </a>
+                } @else {
+                  <span class="fw-semibold">{{ workoutUser.name || workoutUser.username }}</span>
+                }
+                @if (
+                  workoutUser.handle &&
+                  workoutUser.handle !== (workoutUser.name || workoutUser.username)
+                ) {
+                  <span class="text-body-secondary small">{{ workoutUser.handle }}</span>
+                }
+              </div>
             }
           </div>
         </div>
@@ -295,6 +319,25 @@
           </div>
           <div class="card-body">
             <dl class="row mb-0">
+              @if (dataService.workout()!.user; as workoutUser) {
+                <dt class="col-sm-3">{{ 'User' | translate }}</dt>
+                <dd class="col-sm-9">
+                  <div class="d-flex align-items-center gap-2">
+                    <app-avatar [size]="24" [user]="workoutUser" />
+                    @if (workoutUser.username) {
+                      <a
+                        class="text-decoration-none link-body-emphasis fw-medium"
+                        [routerLink]="['/profile', workoutUser.username]"
+                      >
+                        {{ workoutUser.name || workoutUser.username }}
+                      </a>
+                    } @else {
+                      <span>{{ workoutUser.name || workoutUser.username }}</span>
+                    }
+                  </div>
+                </dd>
+              }
+
               <dt class="col-sm-3">{{ 'Type' | translate }}</dt>
               <dd class="col-sm-9">
                 <app-icon size="20" [name]="dataService.workout()!.type" />

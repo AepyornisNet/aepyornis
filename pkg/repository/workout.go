@@ -80,6 +80,8 @@ func (r *workoutRepository) ListByProfileAndFilters(profileID uint64, filters *m
 
 	q = model.PreloadWorkoutData(q).
 		Preload("File").
+		Preload("Profile").
+		Preload("Profile.User").
 		Where("profile_id = ?", profileID).
 		Order("date DESC")
 

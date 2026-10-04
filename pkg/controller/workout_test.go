@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -151,4 +152,53 @@ func TestWorkoutController_CreateFromFile_Visibility(t *testing.T) {
 			assert.Equal(t, tc.expectedVisibility, loaded.Visibility)
 		})
 	}
+}
+
+func TestWorkoutController_GetWorkout_PopulatesUser(t *testing.T) {
+	ctrl, user := setupWorkoutTestController(t)
+
+	workout := &model.Workout{
+		ProfileID:  user.Profile.ID,
+		Name:       "Athlete Workout",
+		Type:       model.WorkoutTypeRunning,
+		Date:       time.Now(),
+		Visibility: model.WorkoutVisibilityPublic,
+	}
+	require.NoError(t, workout.Create(ctrl.db))
+
+	e := echo.New()
+	e.Validator = validator.New()
+
+	// Test GetWorkout (/workouts/:id)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/workouts/%d", workout.ID), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/workouts/:id")
+	c.SetPathValues(echo.PathValues{{Name: "id", Value: strconv.FormatUint(workout.ID, 10)}})
+	c.Set("user_info", user)
+
+	require.NoError(t, ctrl.GetWorkout(c))
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var detailResp dto.Response[dto.WorkoutDetailResponse]
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &detailResp))
+	require.NotNil(t, detailResp.Results.User, "WorkoutDetailResponse.User must not be nil")
+	assert.Equal(t, user.Profile.Username, detailResp.Results.User.Username)
+	assert.Equal(t, user.Profile.DisplayName, detailResp.Results.User.Name)
+
+	// Test GetWorkouts (/workouts)
+	listReq := httptest.NewRequest(http.MethodGet, "/workouts", nil)
+	listRec := httptest.NewRecorder()
+	listCtx := e.NewContext(listReq, listRec)
+	listCtx.Set("user_info", user)
+
+	require.NoError(t, ctrl.GetWorkouts(listCtx))
+	assert.Equal(t, http.StatusOK, listRec.Code)
+
+	var listResp dto.PaginatedResponse[dto.WorkoutResponse]
+	require.NoError(t, json.Unmarshal(listRec.Body.Bytes(), &listResp))
+	require.NotEmpty(t, listResp.Results)
+	require.NotNil(t, listResp.Results[0].User, "WorkoutResponse.User in ListByProfileAndFilters must not be nil")
+	assert.Equal(t, user.Profile.Username, listResp.Results[0].User.Username)
+	assert.Equal(t, user.Profile.DisplayName, listResp.Results[0].User.Name)
 }

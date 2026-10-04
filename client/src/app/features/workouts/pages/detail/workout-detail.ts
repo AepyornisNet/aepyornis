@@ -43,10 +43,12 @@ import { FormatDistancePipe } from '../../../../core/pipes/format-distance.pipe'
 
 import { getMetricDef } from '../../../../core/config/metrics';
 import { Like } from '../../../../core/types/like';
+import { Avatar } from '../../../../core/components/avatar/avatar';
 
 @Component({
   selector: 'app-workout-detail',
   imports: [
+    Avatar,
     AppIcon,
     WorkoutMapComponent,
     WorkoutChartComponent,
