@@ -909,6 +909,7 @@ export const WORKOUT_SUB_TYPES: Record<string, string> = {
   trail: _('Trail'),
   track: _('Track'),
   indoor_running: _('Indoor Running'),
+  virtual_activity: _('Virtual activity'),
   spin: _('Spin'),
   indoor_cycling: _('Indoor Cycling'),
   road: _('Road'),

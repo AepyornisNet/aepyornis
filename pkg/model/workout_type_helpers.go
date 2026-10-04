@@ -21,10 +21,11 @@ const (
 )
 
 type WorkoutTypeConfiguration struct {
-	Location   bool
-	Distance   bool
-	Repetition bool
-	Weight     bool
+	Location           bool
+	Distance           bool
+	Repetition         bool
+	Weight             bool
+	ExcludeFromRecords bool
 }
 
 var (

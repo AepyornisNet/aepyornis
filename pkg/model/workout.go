@@ -174,6 +174,17 @@ func (w *Workout) HasCustomType() bool {
 	return w.Type == WorkoutTypeGeneric
 }
 
+func (w *Workout) ExcludeFromRecords() bool {
+	if w == nil {
+		return false
+	}
+	if w.Type.ExcludeFromRecords() {
+		return true
+	}
+	sub := strings.ToLower(strings.TrimSpace(w.SubType))
+	return IsSubTypeExcludedFromRecords(sub) || strings.Contains(sub, "virtual")
+}
+
 func (w *Workout) AfterFind(tx *gorm.DB) error {
 	if w.Profile != nil && w.Profile.User != nil {
 		w.Profile.User.db = tx
@@ -843,10 +854,6 @@ func (w *Workout) setData(updated *Workout) {
 }
 
 func (w *Workout) UpdateAverages() {
-	if w.Data == nil {
-		return
-	}
-
 	if w.Stats == nil {
 		w.Stats = &WorkoutStats{}
 	}
@@ -860,10 +867,6 @@ func (w *Workout) UpdateAverages() {
 }
 
 func (w *Workout) aggregateDetailsStats() (MapDataRangeStats, bool) {
-	if w.Data == nil {
-		return MapDataRangeStats{}, false
-	}
-
 	if len(w.Records) < 2 {
 		return MapDataRangeStats{}, false
 	}
@@ -1032,11 +1035,23 @@ func (w *Workout) HasAccuracy() bool {
 }
 
 func (w *Workout) UpdateExtraMetrics() {
-	if w.Data == nil {
+	if len(w.Records) == 0 {
 		return
 	}
 
-	w.ExtraMetrics = w.Data.UpdateExtraMetrics(w.Records)
+	found := map[string]bool{}
+	metrics := make([]string, 0)
+	for _, d := range w.Records {
+		for k := range d.ExtraMetrics {
+			if found[k] {
+				continue
+			}
+			metrics = append(metrics, k)
+			found[k] = true
+		}
+	}
+	slices.Sort(metrics)
+	w.ExtraMetrics = metrics
 }
 
 // UpdateRecords recalculates and persists best distance and power intervals for this workout.
@@ -1053,13 +1068,13 @@ func (w *Workout) UpdateRecords(db *gorm.DB) error {
 			return err
 		}
 
-		if (len(distTargets) == 0 && len(powerTargets) == 0) || w.Data == nil || len(w.Records) < 2 {
+		if (len(distTargets) == 0 && len(powerTargets) == 0) || len(w.Records) < 2 {
 			return nil
 		}
 
 		rows := make([]*WorkoutIntervalBest, 0)
 
-		if len(distTargets) > 0 {
+		if len(distTargets) > 0 && !w.ExcludeFromRecords() {
 			records := fastestDistancesForWorkout(w, distTargets)
 			for _, r := range records {
 				rows = append(rows, &WorkoutIntervalBest{
