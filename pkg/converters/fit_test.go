@@ -253,7 +253,7 @@ func TestParseFit_Swimming_SelfContained(t *testing.T) {
 		SetNumActiveLengths(4).
 		SetTotalCycles(79).
 		SetAvgCadence(28).
-		SetAvgHeartRate(142).
+		SetAvgHeartRate(144).
 		SetMaxHeartRate(165)
 
 	act.Sessions = append(act.Sessions, session)
@@ -304,7 +304,7 @@ func TestParseFit_Swimming_SelfContained(t *testing.T) {
 
 	// Verify stats
 	assert.InDelta(t, 28.0, w.Stats.AverageCadence, 1.0)
-	assert.InDelta(t, 142.0, w.Stats.AverageHeartRate, 1.0)
+	assert.InDelta(t, 144.0, w.Stats.AverageHeartRate, 1.0)
 	assert.InDelta(t, 0.50, w.Stats.AverageSpeed, 0.05)
 }
 
