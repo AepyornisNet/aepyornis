@@ -251,7 +251,7 @@ github.com/labstack/gommon/log
 ## explicit; go 1.24.0
 github.com/leodido/go-urn
 github.com/leodido/go-urn/scim/schema
-# github.com/lmittmann/tint v1.2.0
+# github.com/lmittmann/tint v1.2.1
 ## explicit; go 1.21
 github.com/lmittmann/tint
 # github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
