@@ -38,7 +38,7 @@
     "@angular/platform-browser": "^22.2.2",
     "@angular/router": "^22.2.2",
     "@angular/service-worker": "^22.2.2",
-    "@maplibre/ngx-maplibre-gl": "^22.2.0",
+    "@maplibre/ngx-maplibre-gl": "^22.3.0",
     "@ng-bootstrap/ng-bootstrap": "^21.0.0",
     "@ng-icons/core": "^36.1.0",
     "@ng-icons/font-awesome": "^36.1.0",
