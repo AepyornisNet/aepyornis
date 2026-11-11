@@ -6,26 +6,28 @@ run:
 linters:
   default: all
   disable:
-    - depguard
     - dupl
+    - gomodguard_v2
     - exhaustruct
+    - exhaustruct_v5
     - ireturn
     - nolintlint
     - paralleltest
     - testpackage
     - tparallel
     - wrapcheck
-    - zerologlint
     - goconst
     - noinlineerr
     # deprecated
     - wsl
+    - depguard
+    - gomodguard
   settings:
     cyclop:
       max-complexity: 11
     exhaustive:
       default-signifies-exhaustive: true
-      ignore-enum-members: POT.+
+      ignore-constants: POT.+
     funlen:
       lines: 80
     mnd:
@@ -52,6 +54,8 @@ linters:
         - m map[string]int
         - w http.ResponseWriter
         - r *http.Request
+        - c char
+        - b byte
   exclusions:
     generated: lax
     presets:
@@ -74,6 +78,7 @@ linters:
           - mnd
           - goconst
           - varnamelen
+          - gocyclo
         path: (.+)_test\.go
 
 formatters:

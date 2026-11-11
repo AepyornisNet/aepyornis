@@ -48,13 +48,13 @@ github.com/clipperhouse/uax29/v2/internal/iterators
 # github.com/codingsince1985/geo-golang v1.9.0
 ## explicit; go 1.26.2
 github.com/codingsince1985/geo-golang
-# github.com/dadrus/httpsig v0.9.0
-## explicit; go 1.24.13
+# github.com/dadrus/httpsig v0.12.0
+## explicit; go 1.26.9
 github.com/dadrus/httpsig
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/dunglas/httpsfv v1.1.0
+# github.com/dunglas/httpsfv v1.1.2
 ## explicit; go 1.14
 github.com/dunglas/httpsfv
 # github.com/dustin/go-humanize v1.0.1

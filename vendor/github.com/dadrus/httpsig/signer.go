@@ -8,115 +8,80 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/dunglas/httpsfv"
 )
 
-type Signer interface {
-	Sign(msg *Message) (http.Header, error)
-}
-
 type payloadSigner interface {
-	signPayload(data []byte) ([]byte, error)
-	algorithm() SignatureAlgorithm
-	keyID() string
+	sign(ctx context.Context, data []byte) ([]byte, error)
 }
 
-func newPayloadSigner(signingKey any, keyID string, alg SignatureAlgorithm) (payloadSigner, error) {
+func newPayloadSigner(signingKey any, alg SignatureAlgorithm) (payloadSigner, error) {
 	switch key := signingKey.(type) {
 	case ed25519.PrivateKey:
-		return newEd25519Signer(key, keyID, alg)
+		return newEd25519Signer(key, alg)
 	case *rsa.PrivateKey:
-		return newRSASigner(key, keyID, alg)
+		return newRSASigner(key, alg)
 	case *ecdsa.PrivateKey:
-		return newECDSASigner(key, keyID, alg)
+		return newECDSASigner(key, alg)
 	case []byte:
-		return newSymmetricSigner(key, keyID, alg)
+		return newSymmetricSigner(key, alg)
+	case MessageSigner:
+		return &messageSignerAdaptor{signer: key}, nil
 	default:
 		return nil, ErrUnsupportedKeyType
 	}
 }
 
-type SignerOption func(s *signer) error
-
-// WithLabel sets the label of the signature in the Signature-Input and Signature headers.
-func WithLabel(label string) SignerOption {
-	return func(s *signer) error {
-		if len(label) != 0 {
-			s.label = label
-		}
-
-		return nil
-	}
+// Signer creates HTTP message signatures using a configured key, set of
+// covered components, and signature parameters.
+type Signer interface {
+	// Sign signs msg and returns its updated HTTP headers, including the
+	// Signature and Signature-Input fields. It also updates msg.Header and
+	// may update Content-Digest when that component is covered.
+	// Options apply only to this invocation and do not modify the Signer.
+	Sign(msg *Message, opts ...SignOption) (http.Header, error)
 }
 
-func WithTTL(ttl time.Duration) SignerOption {
-	return func(s *signer) error {
-		s.ttl = ttl
-
-		return nil
-	}
-}
-
-// WithComponents sets the HTTP fields / derived component names to be included in signing.
-func WithComponents(identifiers ...string) SignerOption {
-	return func(s *signer) error {
-		var err error
-
-		s.ids, err = toComponentIdentifiers(identifiers)
-
-		return err
-	}
-}
-
-func WithTag(tag string) SignerOption {
-	return func(s *signer) error {
-		if len(tag) != 0 {
-			s.tag = tag
-		}
-
-		return nil
-	}
-}
-
-func WithNonce(ng NonceGetter) SignerOption {
-	return func(s *signer) error {
-		if ng != nil {
-			s.ng = ng
-		}
-
-		return nil
-	}
-}
-
-func WithContentDigestAlgorithm(alg DigestAlgorithm) SignerOption {
-	return func(s *signer) error {
-		if _, known := supportedAlgs[alg]; !known {
-			return fmt.Errorf("%w: %s", ErrUnsupportedAlgorithm, alg)
-		}
-
-		s.cdAlg = alg
-
-		return nil
-	}
-}
-
-// NewSigner creates a new signer with the given options.
+// NewSigner creates a Signer using key for cryptographic signing. The key
+// must contain compatible private, symmetric, or application-provided signing material.
+// By default, signatures use label "sig", include created, and expire
+// after 30 seconds. The alg, keyid, tag, and nonce parameters are omitted.
+// When generating Content-Digest, the signer uses both SHA-256 and SHA-512
+// unless WithContentDigestAlgorithm selects one.
+//
+//nolint:cyclop
 func NewSigner(key Key, opts ...SignerOption) (Signer, error) {
-	ps, err := newPayloadSigner(key.Key, key.KeyID, key.Algorithm)
+	ps, err := newPayloadSigner(key.Material, key.Algorithm)
 	if err != nil {
 		return nil, err
 	}
 
 	sig := &signer{
-		label: "sig",
-		ttl:   30 * time.Second, //nolint:mnd
-		ng:    nonceGetter{},
-		ps:    ps,
-		mu:    noopMessageUpdater{},
+		label:  "sig",
+		ttl:    30 * time.Second, //nolint:mnd
+		ps:     ps,
+		mu:     noopMessageUpdater{},
+		sigAlg: key.Algorithm,
 	}
 
 	for _, opt := range opts {
-		if err = opt(sig); err != nil {
+		if err = opt.applySignerOption(sig); err != nil {
 			return nil, err
+		}
+	}
+
+	if sig.includeAlg {
+		switch key.Algorithm {
+		case RsaPssSha512, RsaPkcs1v15Sha256, HmacSha256, EcdsaP256Sha256, EcdsaP384Sha384, Ed25519:
+		default:
+			// Message signers may use algorithms unknown to httpsig.
+			switch key.Material.(type) {
+			case MessageSigner:
+			default:
+				return nil, fmt.Errorf("%w: %s is not registered for HTTP Message Signatures",
+					ErrUnsupportedAlgorithm, key.Algorithm)
+			}
 		}
 	}
 
@@ -134,68 +99,99 @@ func NewSigner(key Key, opts ...SignerOption) (Signer, error) {
 		sig.mu = cmv
 	}
 
+	// Covered components are fixed for the lifetime of this Signer.
+	// Prepare their Structured-Fields identifiers once for the signature base.
+	sig.serializedIdentifiers = make([]string, len(sig.ids))
+	for i, id := range sig.ids {
+		sig.serializedIdentifiers[i], err = httpsfv.Marshal(id.Item)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return sig, nil
 }
 
 type signer struct {
-	label string
-	ids   []*componentIdentifier
-	ttl   time.Duration
-	tag   string
-	ng    NonceGetter
-	ps    payloadSigner
-	cdAlg DigestAlgorithm
-	mu    messageUpdater
+	label                 string
+	ids                   []*componentIdentifier
+	serializedIdentifiers []string
+	ttl                   time.Duration
+	tag                   string
+	keyID                 string
+	includeAlg            bool
+	ps                    payloadSigner
+	sigAlg                SignatureAlgorithm
+	cdAlg                 DigestAlgorithm
+	parameters            []parameterOption
+	mu                    messageUpdater
 }
 
-func (s *signer) Sign(msg *Message) (http.Header, error) {
-	sp, err := s.signatureParameters(msg.Context)
+func (s *signer) Sign(msg *Message, opts ...SignOption) (http.Header, error) {
+	callOptions := signOptions{staticParameters: s.parameters}
+	for _, opt := range opts {
+		if err := opt.applySignOption(&callOptions); err != nil {
+			return nil, err
+		}
+	}
+
+	params := s.signatureInput(callOptions)
+
+	if err := s.mu.update(msg); err != nil {
+		return nil, err
+	}
+
+	base, err := newSignatureBase(msg, params, s.serializedIdentifiers)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = s.mu.update(msg); err != nil {
-		return nil, err
-	}
-
-	base, err := sp.toSignatureBase(msg)
+	signature, err := s.ps.sign(msg.Context, base.marshal())
 	if err != nil {
 		return nil, err
 	}
 
-	signature, err := s.ps.signPayload(base)
-	if err != nil {
-		return nil, err
+	label := s.label
+	if callOptions.label != "" {
+		label = callOptions.label
 	}
 
-	return msg.addSignature(s.label, signature, sp.InnerList)
+	return msg.addSignature(label, signature, params.value)
 }
 
-func (s *signer) signatureParameters(ctx context.Context) (*signatureParameters, error) {
-	var (
-		created time.Time
-		expires time.Time
-		nonce   string
-		err     error
-	)
+func (s *signer) signatureInput(opts signOptions) *signatureInput {
+	created := time.Now().UTC()
 
-	created = currentTime().UTC()
+	params := httpsfv.NewParams()
+	params.Add(string(Created), created.Unix())
+
 	if s.ttl > 0 {
-		expires = created.Add(s.ttl)
+		params.Add(string(Expires), created.Add(s.ttl).Unix())
 	}
 
-	nonce, err = s.ng.GetNonce(ctx)
-	if err != nil {
-		return nil, err
+	if keyID := s.keyID; keyID != "" {
+		params.Add(string(KeyID), keyID)
 	}
 
-	return newSignatureParameters(
-		created,
-		expires,
-		nonce,
-		s.ps.keyID(),
-		s.tag,
-		filterAlgorithm(s.ps.algorithm()),
-		s.ids,
-	), nil
+	if s.includeAlg {
+		params.Add(string(Alg), string(s.sigAlg))
+	}
+
+	if opts.nonceSet {
+		params.Add(string(Nonce), opts.nonce)
+	}
+
+	if len(s.tag) != 0 {
+		params.Add(string(Tag), s.tag)
+	}
+
+	for _, param := range s.parameters {
+		params.Add(string(param.name), param.value)
+	}
+
+	for _, param := range opts.parameters {
+		params.Add(string(param.name), param.value)
+	}
+
+	return newSignatureInput(s.ids, params)
 }
