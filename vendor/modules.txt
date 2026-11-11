@@ -254,8 +254,8 @@ github.com/leodido/go-urn/scim/schema
 # github.com/lmittmann/tint v1.2.1
 ## explicit; go 1.21
 github.com/lmittmann/tint
-# github.com/mailjet/mailjet-apiv3-go/v4 v4.0.9
-## explicit; go 1.13
+# github.com/mailjet/mailjet-apiv3-go/v4 v4.1.0
+## explicit; go 1.18
 github.com/mailjet/mailjet-apiv3-go/v4
 github.com/mailjet/mailjet-apiv3-go/v4/fixtures
 github.com/mailjet/mailjet-apiv3-go/v4/resources
