@@ -40,7 +40,7 @@ require (
 	github.com/muktihari/fit v0.28.5
 	github.com/nikoksr/notify v1.6.0
 	github.com/orandin/slog-gorm v1.4.0
-	github.com/paulmach/orb v0.13.0
+	github.com/paulmach/orb v0.14.0
 	github.com/peterldowns/pgtestdb v0.1.1
 	github.com/ringsaturn/tzf v1.2.1
 	github.com/samber/do/v2 v2.1.0
