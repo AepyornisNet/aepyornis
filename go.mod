@@ -1,6 +1,6 @@
 module github.com/AepyornisNet/aepyornis
 
-go 1.26.2
+go 1.26.9
 
 replace github.com/anyappinc/fitbit v0.0.3 => github.com/jovandeginste/fitbit v0.0.4-0.20250213164811-b0b3b27c3a84
 
@@ -14,7 +14,7 @@ require (
 	github.com/biter777/countries v1.7.5
 	github.com/cat-dealer/go-rand/v2 v2.0.0
 	github.com/codingsince1985/geo-golang v1.9.0
-	github.com/dadrus/httpsig v0.9.0
+	github.com/dadrus/httpsig v0.12.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/flopp/go-staticmaps v0.0.0-20250629121348-973b17999e19
 	github.com/fsouza/slognil v0.4.3
@@ -79,7 +79,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
-	github.com/dunglas/httpsfv v1.1.0 // indirect
+	github.com/dunglas/httpsfv v1.1.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/flopp/go-coordsparser v0.0.0-20250311184423-61a7ff62d17c // indirect
 	github.com/fogleman/gg v1.3.0 // indirect

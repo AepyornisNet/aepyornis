@@ -1,56 +1,12 @@
 package httpsig
 
 import (
-	"encoding/base64"
+	"bytes"
 	"fmt"
 	"strings"
 
 	"github.com/dunglas/httpsfv"
 )
-
-func quoteIdentifierName(input string) string {
-	// nothing to do if already quoted
-	if strings.HasPrefix(input, `"`) {
-		return input
-	}
-
-	// try to split the structured field
-	parts := strings.Split(input, ";")
-	name, rest := parts[0], parts[1:]
-
-	// always quote the name
-	identifier := "\"" + name + "\""
-
-	if len(rest) == 0 {
-		return identifier
-	}
-
-	// just add the rest
-	return identifier + ";" + strings.Join(rest, ";")
-}
-
-func normaliseParams(params *httpsfv.Params) *httpsfv.Params {
-	if len(params.Names()) == 0 {
-		return params
-	}
-
-	ps := httpsfv.NewParams()
-
-	for _, name := range params.Names() {
-		value, _ := params.Get(name)
-
-		if v, ok := value.([]byte); ok {
-			encoded := base64.StdEncoding.EncodeToString(v)
-			ps.Add(name, encoded)
-		} else if v, ok := value.(httpsfv.Token); ok {
-			ps.Add(name, string(v))
-		} else {
-			ps.Add(name, value)
-		}
-	}
-
-	return ps
-}
 
 type componentIdentifier struct {
 	httpsfv.Item
@@ -62,7 +18,7 @@ func toComponentIdentifiers(identifiers []string) ([]*componentIdentifier, error
 	cis := make([]*componentIdentifier, 0, len(identifiers))
 
 	for _, identifier := range identifiers {
-		item, err := httpsfv.UnmarshalItem([]string{quoteIdentifierName(identifier)})
+		item, err := httpsfv.UnmarshalItem([]string{identifier})
 		if err != nil {
 			return nil, fmt.Errorf("%w: %s: %w", ErrInvalidComponentIdentifier, identifiers, err)
 		}
@@ -79,17 +35,44 @@ func toComponentIdentifiers(identifiers []string) ([]*componentIdentifier, error
 }
 
 func newComponentIdentifier(item httpsfv.Item) (*componentIdentifier, error) {
-	// ok if panics
-	name := strings.ToLower(item.Value.(string)) //nolint: forcetypeassert
+	name, ok := item.Value.(string)
+	if !ok {
+		return nil, fmt.Errorf("%w: component name must be a string", ErrInvalidComponentIdentifier)
+	}
 
-	canonicalizer, err := canonicalizerFor(name)
+	if name != strings.ToLower(name) {
+		return nil, fmt.Errorf("%w: component name %q must be lowercase", ErrInvalidComponentIdentifier, name)
+	}
+
+	if !strings.HasPrefix(name, "@") && !isValidHTTPFieldName(name) {
+		return nil, fmt.Errorf("%w: invalid HTTP field name %q", ErrInvalidComponentIdentifier, name)
+	}
+
+	canonicalizer, err := canonicalizerFor(name, item.Params)
 	if err != nil {
 		return nil, err
 	}
 
-	item.Params = normaliseParams(item.Params)
-
 	return &componentIdentifier{Item: item, c: canonicalizer}, nil
+}
+
+// equal reports whether two component identifiers have the same name and
+// parameters, regardless of parameter order.
+func (c *componentIdentifier) equal(other *componentIdentifier) bool {
+	if c.Value != other.Value || len(c.Params.Names()) != len(other.Params.Names()) {
+		return false
+	}
+
+	for _, name := range c.Params.Names() {
+		actual, present := other.Params.Get(name)
+		expected, _ := c.Params.Get(name)
+
+		if !present || !equalComponentParameterValues(actual, expected) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (c *componentIdentifier) createComponent(msg *Message) (component, error) {
@@ -99,4 +82,33 @@ func (c *componentIdentifier) createComponent(msg *Message) (component, error) {
 	}
 
 	return component{key: c, value: values}, nil
+}
+
+func equalComponentParameterValues(actual, expected any) bool {
+	if expectedBytes, ok := expected.([]byte); ok {
+		actualBytes, ok := actual.([]byte)
+
+		return ok && bytes.Equal(actualBytes, expectedBytes)
+	}
+
+	return actual == expected
+}
+
+// HTTP field names follow the token syntax of RFC 9110, Section 5.1.
+func isValidHTTPFieldName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	for i := range len(name) {
+		ch := name[i]
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+			(ch >= '0' && ch <= '9') || strings.IndexByte("!#$%&'*+-.^_`|~", ch) >= 0 {
+			continue
+		}
+
+		return false
+	}
+
+	return true
 }

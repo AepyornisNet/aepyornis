@@ -8,184 +8,57 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/dunglas/httpsfv"
 )
 
+// VerifiedSignature contains the attributes of a successfully verified HTTP
+// message signature and the metadata returned by the KeyResolver.
+type VerifiedSignature struct {
+	// Label is the received signature label. It is not cryptographically
+	// protected and must not be used as an identity or authorization claim.
+	Label string
+
+	// Components contains the canonicalized values of the covered HTTP
+	// message components, without the synthetic @signature-params component.
+	// Map keys are serialized Structured Fields String Items (e.g. `"@method"`
+	// or `"content-digest";req`).
+	Components map[string]string
+
+	// Parameters contains the actual transmitted signature parameters,
+	// including extensions, without synthetic defaults.
+	Parameters SignatureParameters
+
+	// Metadata is the application-defined metadata provided by the KeyResolver
+	// for this signature.
+	Metadata any
+}
+
+// VerificationResult contains the signatures selected and successfully
+// verified during one call to Verifier.Verify.
+// The order of the signatures is not guaranteed.
+type VerificationResult []VerifiedSignature
+
+// Verifier verifies HTTP message signatures according to its configured
+// requirements. A call succeeds only if all selected signatures pass.
 type Verifier interface {
-	Verify(msg *Message) error
+	// Verify returns information about the successfully verified signatures
+	// or an error. Per-call requirements do not change the Verifier.
+	Verify(msg *Message, opts ...VerifyOption) (VerificationResult, error)
 }
 
-//go:generate mockery --name KeyResolver --structname KeyResolverMock --inpackage --testonly
-
-// KeyResolver is used to resolve a key id to a verifying key.
-type KeyResolver interface {
-	ResolveKey(ctx context.Context, keyID string) (Key, error)
+type applicableSignature struct {
+	label string
+	input *signatureInput
 }
 
-type payloadVerifier interface {
-	verifyPayload(data []byte, signature []byte) error
-	algorithm() SignatureAlgorithm
-	keyID() string
-}
-
-func newPayloadVerifier(verificationKey any, keyID string, alg SignatureAlgorithm) (payloadVerifier, error) {
-	switch publicKey := verificationKey.(type) {
-	case ed25519.PublicKey:
-		return newEd25519Verifier(publicKey, keyID, alg)
-	case *rsa.PublicKey:
-		return newRSAVerifier(publicKey, keyID, alg)
-	case *ecdsa.PublicKey:
-		return newECDSAVerifier(publicKey, keyID, alg)
-	case []byte:
-		return newSymmetricSigner(publicKey, keyID, alg)
-	default:
-		return nil, ErrUnsupportedKeyType
-	}
-}
-
-type VerifierOption func(v *verifier, e *expectations, f bool) error
-
-// WithRequiredComponents sets the HTTP fields / derived component names to be included in signing.
-func WithRequiredComponents(identifiers ...string) VerifierOption {
-	return func(_ *verifier, exp *expectations, _ bool) error {
-		var err error
-
-		exp.identifiers, err = toComponentIdentifiers(identifiers)
-
-		return err
-	}
-}
-
-// WithValidityTolerance sets the clock tolerance for verifying created and expires times.
-func WithValidityTolerance(d time.Duration) VerifierOption {
-	return func(_ *verifier, e *expectations, _ bool) error {
-		e.tolerance = d
-
-		return nil
-	}
-}
-
-func WithMaxAge(d time.Duration) VerifierOption {
-	return func(_ *verifier, e *expectations, _ bool) error {
-		e.maxAge = d
-
-		return nil
-	}
-}
-
-func WithNonceChecker(checker NonceChecker) VerifierOption {
-	return func(v *verifier, _ *expectations, _ bool) error {
-		if checker != nil {
-			v.nonceChecker = checker
-		}
-
-		return nil
-	}
-}
-
-func WithRequiredTag(tag string, opts ...VerifierOption) VerifierOption {
-	return func(ver *verifier, _ *expectations, f bool) error {
-		if f {
-			panic("WithRequiredTag cannot be used as option for itself")
-		}
-
-		if _, configured := ver.tagExpectations[tag]; configured {
-			return fmt.Errorf("%w: requirements for tag %s are already configured", ErrParameter, tag)
-		}
-
-		exp := &expectations{
-			tolerance: -1,
-			maxAge:    -1,
-		}
-
-		for _, opt := range opts {
-			if err := opt(ver, exp, true); err != nil {
-				return err
-			}
-		}
-
-		ver.tagExpectations[tag] = exp
-
-		return nil
-	}
-}
-
-func WithValidateAllSignatures() VerifierOption {
-	return func(v *verifier, _ *expectations, _ bool) error {
-		v.validateAllSigs = true
-
-		return nil
-	}
-}
-
-func WithCreatedTimestampRequired(flag bool) VerifierOption {
-	return func(_ *verifier, exp *expectations, _ bool) error {
-		exp.reqCreatedTS = &flag
-
-		return nil
-	}
-}
-
-func WithExpiredTimestampRequired(flag bool) VerifierOption {
-	return func(_ *verifier, exp *expectations, _ bool) error {
-		exp.reqExpiresTS = &flag
-
-		return nil
-	}
-}
-
-func WithSignatureNegotiation(opts ...SignatureNegotiationOption) VerifierOption {
-	no := &sigNegotiationOpts{opts: make([]AcceptSignatureOption, 0, len(opts))}
-	for _, opt := range opts {
-		opt(no)
-	}
-
-	return func(_ *verifier, exp *expectations, _ bool) error {
-		builder, err := NewAcceptSignature(no.opts...)
-		if err != nil {
-			return err
-		}
-
-		exp.asb = builder
-
-		return nil
-	}
-}
-
-type sigNegotiationOpts struct {
-	opts []AcceptSignatureOption
-}
-
-type SignatureNegotiationOption func(sno *sigNegotiationOpts)
-
-func WithRequestedKey(key Key) SignatureNegotiationOption {
-	return func(sno *sigNegotiationOpts) {
-		sno.opts = append(sno.opts, WithExpectedKey(key))
-	}
-}
-
-func WithRequestedNonce(ng NonceGetter) SignatureNegotiationOption {
-	return func(sno *sigNegotiationOpts) {
-		sno.opts = append(sno.opts, WithExpectedNonce(ng))
-	}
-}
-
-func WithRequestedContentDigestAlgorithmPreferences(prefs ...AlgorithmPreference) SignatureNegotiationOption {
-	return func(sno *sigNegotiationOpts) {
-		sno.opts = append(sno.opts, WithContentDigestAlgorithmPreferences(prefs...))
-	}
-}
-
-func WithRequestedLabel(label string) SignatureNegotiationOption {
-	return func(sno *sigNegotiationOpts) {
-		sno.opts = append(sno.opts, WithExpectedLabel(label))
-	}
-}
-
-// NewVerifier creates a new verifier with the given options.
+// NewVerifier creates a Verifier instance.
+// Without WithValidateAllSignatures, at least one WithRequiredTag is necessary.
+// By default, created and expires are required and signatures may be at most
+// 30 seconds old. Optional created or expires parameters are still checked
+// when present. Global WithSignatureNegotiation cannot be combined with
+// WithValidateAllSignatures. More specific requirements can be set through opts.
 //
 //nolint:cyclop
 func NewVerifier(resolver KeyResolver, opts ...VerifierOption) (Verifier, error) {
@@ -193,251 +66,200 @@ func NewVerifier(resolver KeyResolver, opts ...VerifierOption) (Verifier, error)
 		return nil, fmt.Errorf("%w: no key resolver provided", ErrVerifierCreation)
 	}
 
-	trueValue := true
-
 	ver := &verifier{
-		keyResolver:     resolver,
-		tagExpectations: make(map[string]*expectations),
-		nonceChecker:    noopNonceChecker{},
+		keyResolver: resolver,
+		tagPolicies: make(map[string]*verificationPolicy),
 	}
 
-	global := &expectations{
-		maxAge:       30 * time.Second, //nolint:mnd
-		reqExpiresTS: &trueValue,
-		reqCreatedTS: &trueValue,
+	globalPolicy := &verificationPolicy{
+		maxAge:       new(30 * time.Second), //nolint:mnd
+		reqExpiresTS: new(true),
+		reqCreatedTS: new(true),
 	}
 
 	for _, opt := range opts {
-		if err := opt(ver, global, false); err != nil {
+		if err := opt.applyVerifierOption(ver, globalPolicy, false); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrVerifierCreation, err)
 		}
 	}
 
-	if !ver.validateAllSigs && len(ver.tagExpectations) == 0 {
+	if !ver.validateAllSigs && len(ver.tagPolicies) == 0 {
 		return nil, fmt.Errorf("%w: validation of all signatures disabled, but no signature tags specified",
 			ErrVerifierCreation)
 	}
 
-	if global.asb != nil && ver.validateAllSigs {
+	if globalPolicy.asb != nil && ver.validateAllSigs {
 		return nil, fmt.Errorf("%w: verification and negotiation of all posible signature is not possible",
 			ErrVerifierCreation)
 	}
 
-	if global.asb != nil {
-		global.asb.setIdentifiers(global.identifiers)
-	}
-
-	for tag, exp := range ver.tagExpectations {
-		if exp.tolerance == -1 {
-			exp.tolerance = global.tolerance
-		}
-
-		if exp.maxAge == -1 {
-			exp.maxAge = global.maxAge
-		}
-
-		if len(global.identifiers) != 0 && len(exp.identifiers) == 0 {
-			exp.identifiers = global.identifiers
-		}
-
-		if exp.reqExpiresTS == nil {
-			exp.reqExpiresTS = global.reqExpiresTS
-		}
-
-		if exp.reqCreatedTS == nil {
-			exp.reqCreatedTS = global.reqCreatedTS
-		}
-
-		if global.asb != nil && exp.asb == nil {
-			// create a copy
-			tmp := *global.asb
-			exp.asb = &tmp
-		}
-
-		if exp.asb != nil {
-			exp.asb.setIdentifiers(exp.identifiers)
-			exp.asb.tag = tag
-			exp.asb.addCreatedTS = *exp.reqCreatedTS
-			exp.asb.addExpiresTS = *exp.reqExpiresTS
+	for tag, policy := range ver.tagPolicies {
+		if err := policy.inherit(globalPolicy, tag); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrVerifierCreation, err)
 		}
 	}
 
 	if ver.validateAllSigs {
-		ver.tagExpectations[""] = global
+		if err := globalPolicy.prepare(""); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrVerifierCreation, err)
+		}
+
+		ver.tagPolicies[""] = globalPolicy
 	}
 
 	return ver, nil
 }
 
-type expectations struct {
-	tolerance    time.Duration
-	maxAge       time.Duration
-	identifiers  []*componentIdentifier
-	asb          *AcceptSignatureBuilder
-	reqCreatedTS *bool
-	reqExpiresTS *bool
+type payloadVerifier interface {
+	verify(ctx context.Context, data []byte, signature []byte) error
 }
 
-//nolint:cyclop
-func (e *expectations) assert(
-	params *signatureParameters,
-	msg *Message,
-	keyAlg SignatureAlgorithm,
-	nc NonceChecker,
-) error {
-	var (
-		missingComponents []string
-		cmv               compositeMessageVerifier
-		mv                messageVerifier
-	)
-
-	nonce := NonceValue{}
-
-	nonceValue, noncePresent := params.Params.Get(string(Nonce))
-	if noncePresent {
-		nonce.Value = nonceValue.(string) //nolint: forcetypeassert
-		nonce.Present = true
+func newPayloadVerifier(verificationKey any, alg SignatureAlgorithm) (payloadVerifier, error) {
+	switch publicKey := verificationKey.(type) {
+	case ed25519.PublicKey:
+		return newEd25519Verifier(publicKey, alg)
+	case *rsa.PublicKey:
+		return newRSAVerifier(publicKey, alg)
+	case *ecdsa.PublicKey:
+		return newECDSAVerifier(publicKey, alg)
+	case []byte:
+		return newSymmetricSigner(publicKey, alg)
+	case MessageVerifier:
+		return &messageVerifierAdaptor{verifier: publicKey}, nil
+	default:
+		return nil, ErrUnsupportedKeyType
 	}
-
-	if err := nc.CheckNonce(msg.Context, nonce); err != nil {
-		return fmt.Errorf("%w: nonce validation failed: %w", ErrParameter, err)
-	}
-
-	if len(params.alg) != 0 && params.alg != keyAlg {
-		return fmt.Errorf("%w: key algorithm %s does not match signature algorithm %s",
-			ErrParameter, params.alg, keyAlg)
-	}
-
-	now := currentTime().UTC()
-
-	if params.expires.Equal(time.Time{}) {
-		if *e.reqExpiresTS {
-			return fmt.Errorf("%w: expected expires parameter not present", ErrMissingParameter)
-		}
-	} else if now.After(params.expires.Add(e.tolerance)) {
-		return fmt.Errorf("%w: signature expired", ErrValidity)
-	}
-
-	if params.created.Equal(time.Time{}) {
-		if *e.reqCreatedTS {
-			return fmt.Errorf("%w: expected created parameter not present", ErrMissingParameter)
-		}
-	} else {
-		if now.Before(params.created.Add(-1 * e.tolerance)) {
-			return fmt.Errorf("%w: signature not yet valid", ErrValidity)
-		}
-
-		if params.created.Add(e.maxAge).Before(now) {
-			return fmt.Errorf("%w: signature too old", ErrValidity)
-		}
-	}
-
-	for _, expIdentifier := range e.identifiers {
-		if !params.hasIdentifier(expIdentifier) {
-			res, _ := httpsfv.Marshal(expIdentifier)
-			missingComponents = append(missingComponents, res)
-		}
-	}
-
-	if len(missingComponents) > 0 {
-		return fmt.Errorf("%w: missing component identifiers: %s",
-			ErrMissingParameter, strings.Join(missingComponents, ", "))
-	}
-
-	for _, id := range params.identifiers {
-		if id.Value == "content-digest" {
-			_, fromReq := id.Params.Get("req")
-
-			cmv = append(cmv, contentDigester{fromRequest: fromReq})
-		}
-	}
-
-	if len(cmv) == 0 {
-		mv = noopMessageVerifier{}
-	} else {
-		mv = cmv
-	}
-
-	return mv.verify(msg)
 }
 
 type verifier struct {
 	keyResolver     KeyResolver
-	tagExpectations map[string]*expectations
+	tagPolicies     map[string]*verificationPolicy
 	validateAllSigs bool
-	nonceChecker    NonceChecker
 }
 
-func (v *verifier) Verify(msg *Message) error {
+func (v *verifier) Verify(msg *Message, opts ...VerifyOption) (VerificationResult, error) {
+	policiesByTag, err := v.policiesForCall(opts)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, err)
+	}
+
 	sigRefs, err := getSignatureReferences(msg.Header.Values(headerSignatureInput))
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrVerificationFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, err)
 	}
 
 	signatureDict, err := httpsfv.UnmarshalDictionary(msg.Header.Values(headerSignature))
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrVerificationFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, err)
 	}
 
 	// look if we miss any signatures for configured tags
 	if v.hasMissingSignatures(sigRefs) {
-		return fmt.Errorf("%w: %w", ErrVerificationFailed, v.negotiateSignatureParameters(msg))
+		return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, v.negotiateSignatureParameters(msg, policiesByTag))
 	}
 
 	// collect those signatures, which we can verify
 	applicableSignatures, err := v.applicableSignatures(sigRefs)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrVerificationFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, err)
 	}
 
 	// do the actual verification
-	for name, params := range applicableSignatures {
-		exp, exists := v.tagExpectations[params.tag]
+	results := make([]VerifiedSignature, 0, len(applicableSignatures))
+	for _, ref := range applicableSignatures {
+		name, params := ref.label, ref.input
+		tag, _ := params.tag()
+
+		policy, exists := policiesByTag[tag]
 		if !exists {
-			exp = v.tagExpectations[""]
+			policy = policiesByTag[""]
 		}
 
 		signature, err := v.extractSignature(signatureDict, name)
 		if err != nil {
-			return fmt.Errorf("%w: %w", ErrVerificationFailed, err)
+			return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, err)
 		}
 
-		err = v.verifySignature(msg, signature, params, exp)
+		result, err := v.verifySignature(msg, name, signature, params, policy)
 		if err != nil {
 			if errors.Is(err, ErrMissingParameter) {
-				return fmt.Errorf("%w: %w", ErrVerificationFailed, v.negotiateSignatureParameters(msg))
+				return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, v.negotiateSignatureParameters(msg, policiesByTag))
 			}
 
-			return fmt.Errorf("%w: %w", ErrVerificationFailed, err)
+			return nil, fmt.Errorf("%w: %w", ErrVerificationFailed, err)
 		}
+
+		results = append(results, result)
 	}
 
-	return nil
+	return results, nil
 }
 
-func (v *verifier) applicableSignatures(refs map[string]*signatureParameters) (map[string]*signatureParameters, error) {
-	for name, params := range refs {
-		if !v.isApplicable(params.tag) {
-			delete(refs, name)
-		}
+func (v *verifier) policiesForCall(opts []VerifyOption) (map[string]*verificationPolicy, error) {
+	if len(opts) == 0 {
+		return v.tagPolicies, nil
 	}
 
-	if len(refs) == 0 {
+	result := make(map[string]*verificationPolicy, len(v.tagPolicies))
+	for tag, original := range v.tagPolicies {
+		effective, err := original.withOptions(tag, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		result[tag] = effective
+	}
+
+	return result, nil
+}
+
+func (v *verifier) applicableSignatures(refs *httpsfv.Dictionary) ([]applicableSignature, error) {
+	result := make([]applicableSignature, 0, len(refs.Names()))
+
+	for _, label := range refs.Names() {
+		member, _ := refs.Get(label)
+
+		list := member.(httpsfv.InnerList) //nolint:forcetypeassert
+		if !v.validateAllSigs {
+			tag, present := signatureTag(list)
+			if !present {
+				continue
+			}
+
+			if _, required := v.tagPolicies[tag]; !required {
+				continue
+			}
+		}
+
+		si, err := parseSignatureInput(list)
+		if err != nil {
+			return nil, fmt.Errorf("%w: label %q: %w", ErrMalformedData, label, err)
+		}
+
+		result = append(result, applicableSignature{label, si})
+	}
+
+	if len(result) == 0 {
 		return nil, &NoApplicableSignatureError{}
 	}
 
-	return refs, nil
+	return result, nil
 }
 
-func (v *verifier) negotiateSignatureParameters(msg *Message) error {
+func (v *verifier) negotiateSignatureParameters(msg *Message, policiesByTag map[string]*verificationPolicy) error {
 	hdr := http.Header{}
 
-	for sigTag, exp := range v.tagExpectations {
-		if exp.asb == nil || len(sigTag) == 0 {
+	for sigTag, policy := range policiesByTag {
+		if policy.asb == nil || len(sigTag) == 0 {
 			continue
 		}
 
-		err := exp.asb.Build(msg.Context, hdr)
+		buildOpts := make([]AcceptSignatureBuildOption, len(policy.expectedParameters))
+		for i, param := range policy.expectedParameters {
+			buildOpts[i] = param
+		}
+
+		err := policy.asb.Build(msg.Context, hdr, buildOpts...)
 		if err != nil {
 			return fmt.Errorf("%w: failed to negotiate signature for tag %s: %w", ErrSignatureNegotiationError, sigTag, err)
 		}
@@ -446,18 +268,21 @@ func (v *verifier) negotiateSignatureParameters(msg *Message) error {
 	return &NoApplicableSignatureError{headerToAdd: hdr}
 }
 
-func (v *verifier) hasMissingSignatures(sigRefs map[string]*signatureParameters) bool {
-	for sigTag := range v.tagExpectations {
+func (v *verifier) hasMissingSignatures(sigRefs *httpsfv.Dictionary) bool {
+	for sigTag := range v.tagPolicies {
 		if len(sigTag) == 0 {
-			// empty tag is used for expectations for all signatures
+			// empty tag is used for a policy applying to all signatures
 			// ignoring it
 			continue
 		}
 
 		var present bool
 
-		for _, sigRef := range sigRefs {
-			if sigRef.tag == sigTag {
+		for _, label := range sigRefs.Names() {
+			member, _ := sigRefs.Get(label)
+
+			tag, tagPresent := signatureTag(member.(httpsfv.InnerList)) //nolint:forcetypeassert
+			if tagPresent && tag == sigTag {
 				present = true
 
 				break
@@ -474,58 +299,53 @@ func (v *verifier) hasMissingSignatures(sigRefs map[string]*signatureParameters)
 
 func (v *verifier) verifySignature(
 	msg *Message,
+	label string,
 	signature []byte,
-	params *signatureParameters,
-	exp *expectations,
-) error {
-	base, err := params.toSignatureBase(msg)
+	si *signatureInput,
+	policy *verificationPolicy,
+) (VerifiedSignature, error) {
+	if err := policy.assertMetadata(si, msg); err != nil {
+		return VerifiedSignature{}, err
+	}
+
+	base, err := newSignatureBase(msg, si, nil)
 	if err != nil {
-		return err
+		return VerifiedSignature{}, err
 	}
 
-	key, err := v.keyResolver.ResolveKey(msg.Context, params.keyID)
+	components := base.components()
+	params := si.parameters()
+
+	keyInfo, err := v.keyResolver.ResolveKey(msg.Context, SignatureInfo{
+		Label:      label,
+		Message:    msg,
+		Components: components,
+		Parameters: params,
+	})
 	if err != nil {
-		return err
+		return VerifiedSignature{}, err
 	}
 
-	if err = exp.assert(params, msg, key.Algorithm, v.nonceChecker); err != nil {
-		return err
+	if err = policy.assertKeyAlgorithm(si, keyInfo.Key.Algorithm); err != nil {
+		return VerifiedSignature{}, err
 	}
 
-	verifier, err := newPayloadVerifier(key.Key, key.KeyID, key.Algorithm)
+	verifier, err := newPayloadVerifier(keyInfo.Key.Material, keyInfo.Key.Algorithm)
 	if err != nil {
-		return err
+		return VerifiedSignature{}, err
 	}
 
-	return verifier.verifyPayload(base, signature)
-}
-
-func getSignatureReferences(values []string) (map[string]*signatureParameters, error) {
-	inputDict, err := httpsfv.UnmarshalDictionary(values)
+	err = verifier.verify(msg.Context, base.marshal(), signature)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrMalformedData, err)
+		return VerifiedSignature{}, err
 	}
 
-	sigRefs := make(map[string]*signatureParameters, len(inputDict.Names()))
-
-	for _, label := range inputDict.Names() {
-		var sp signatureParameters
-
-		m, _ := inputDict.Get(label)
-
-		sigParams, ok := m.(httpsfv.InnerList)
-		if !ok {
-			return nil, fmt.Errorf("%w: unexpected signature parameters format", ErrMalformedData)
-		}
-
-		if err := sp.fromInnerList(sigParams); err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrMalformedData, err)
-		}
-
-		sigRefs[label] = &sp
-	}
-
-	return sigRefs, nil
+	return VerifiedSignature{
+		Label:      label,
+		Components: components,
+		Parameters: params,
+		Metadata:   keyInfo.Metadata,
+	}, nil
 }
 
 func (v *verifier) extractSignature(dict *httpsfv.Dictionary, name string) ([]byte, error) {
@@ -547,8 +367,35 @@ func (v *verifier) extractSignature(dict *httpsfv.Dictionary, name string) ([]by
 	return signatureBytes, nil
 }
 
-func (v *verifier) isApplicable(tag string) bool {
-	_, hasKey := v.tagExpectations[tag]
+func signatureTag(list httpsfv.InnerList) (string, bool) {
+	if list.Params == nil {
+		return "", false
+	}
 
-	return v.validateAllSigs || hasKey
+	value, present := list.Params.Get(string(Tag))
+	if !present {
+		return "", false
+	}
+
+	tag, ok := value.(string)
+
+	return tag, ok
+}
+
+func getSignatureReferences(values []string) (*httpsfv.Dictionary, error) {
+	inputDict, err := httpsfv.UnmarshalDictionary(values)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrMalformedData, err)
+	}
+
+	// Check member types without converting values that require semantic validation.
+	for _, label := range inputDict.Names() {
+		m, _ := inputDict.Get(label)
+
+		if _, ok := m.(httpsfv.InnerList); !ok {
+			return nil, fmt.Errorf("%w: unexpected signature parameters format", ErrMalformedData)
+		}
+	}
+
+	return inputDict, nil
 }
