@@ -308,7 +308,7 @@ github.com/oklog/ulid/v2
 # github.com/orandin/slog-gorm v1.4.0
 ## explicit; go 1.21
 github.com/orandin/slog-gorm
-# github.com/paulmach/orb v0.13.0
+# github.com/paulmach/orb v0.14.0
 ## explicit; go 1.18
 github.com/paulmach/orb
 github.com/paulmach/orb/geo
