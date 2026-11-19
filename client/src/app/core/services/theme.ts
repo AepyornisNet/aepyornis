@@ -68,17 +68,25 @@ export class ThemeService {
       effectiveTheme = 'dark';
     } else {
       // 'browser' or system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const prefersDark =
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          : false;
       effectiveTheme = prefersDark ? 'dark' : 'light';
     }
 
     this.activeTheme.set(effectiveTheme);
-    document.documentElement.setAttribute('data-bs-theme', effectiveTheme);
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.setAttribute('data-bs-theme', effectiveTheme);
+    }
   }
 
   private initSystemListener(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', () => {
+    mediaQuery?.addEventListener?.('change', () => {
       if (this.currentThemeSetting() === 'browser') {
         this.applyTheme();
       }

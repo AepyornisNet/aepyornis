@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { APIResponse, PaginatedAPIResponse, PaginationParams } from '../../core/types/api-response';
 import {
@@ -51,69 +51,67 @@ import {
 } from '../types/notification';
 import { Like } from '../types/like';
 
+import { AuthApiService } from '../../features/auth/services/auth-api.service';
+import { NotificationApiService } from './notification-api.service';
+import { WorkoutApiService } from '../../features/workouts/services/workout-api.service';
+import { MeasurementApiService } from '../../features/measurements/services/measurement-api.service';
+import { EquipmentApiService } from '../../features/equipment/services/equipment-api.service';
+import { RouteSegmentApiService } from '../../features/route-segments/services/route-segment-api.service';
+import { ProfileApiService } from '../../features/profile/services/profile-api.service';
+
+/**
+ * Api serves as the primary gateway and backward-compatible facade
+ * delegating to feature-scoped API services.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class Api {
-  private http = inject(HttpClient);
-
-  private baseUrl = '/api/v2';
+  public authApi = inject(AuthApiService);
+  public notificationApi = inject(NotificationApiService);
+  public workoutApi = inject(WorkoutApiService);
+  public measurementApi = inject(MeasurementApiService);
+  public equipmentApi = inject(EquipmentApiService);
+  public routeSegmentApi = inject(RouteSegmentApiService);
+  public profileApi = inject(ProfileApiService);
 
   // Auth endpoints
   public signIn(payload: SignInRequest): Observable<APIResponse<UserProfile>> {
-    return this.http.post<APIResponse<UserProfile>>(`${this.baseUrl}/auth/signin`, payload);
+    return this.authApi.signIn(payload);
   }
 
   public register(payload: RegisterRequest): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/auth/register`,
-      payload,
-    );
+    return this.authApi.register(payload);
   }
 
   public signOut(): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(`${this.baseUrl}/auth/signout`, {});
+    return this.authApi.signOut();
   }
 
   public whoami(): Observable<APIResponse<UserProfile>> {
-    return this.http.get<APIResponse<UserProfile>>(`${this.baseUrl}/whoami`);
+    return this.authApi.whoami();
   }
 
+  // Notification endpoints
   public getNotifications(
     params?: PaginationParams,
   ): Observable<PaginatedAPIResponse<Notification>> {
-    let httpParams = new HttpParams();
-    if (params?.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-    return this.http.get<PaginatedAPIResponse<Notification>>(`${this.baseUrl}/notifications`, {
-      params: httpParams,
-    });
+    return this.notificationApi.getNotifications(params);
   }
 
   public getNotificationSettings(): Observable<APIResponse<UserNotificationSettings[]>> {
-    return this.http.get<APIResponse<UserNotificationSettings[]>>(
-      `${this.baseUrl}/notifications/settings`,
-    );
+    return this.notificationApi.getNotificationSettings();
   }
 
   public updateNotificationSettings(
     method: string,
     payload: UserNotificationSettingsUpdate,
   ): Observable<APIResponse<UserNotificationSettings>> {
-    return this.http.post<APIResponse<UserNotificationSettings>>(
-      `${this.baseUrl}/notifications/${method}`,
-      payload,
-    );
+    return this.notificationApi.updateNotificationSettings(method, payload);
   }
 
   public getWebpushSubscriptions(): Observable<APIResponse<UserWebpushSubscription[]>> {
-    return this.http.get<APIResponse<UserWebpushSubscription[]>>(
-      `${this.baseUrl}/notifications/webpush/subscriptions`,
-    );
+    return this.notificationApi.getWebpushSubscriptions();
   }
 
   public subscribeWebpush(payload: {
@@ -121,103 +119,42 @@ export class Api {
     keys: { auth: string; p256dh: string };
     user_agent?: string;
   }): Observable<APIResponse<UserWebpushSubscription>> {
-    return this.http.post<APIResponse<UserWebpushSubscription>>(
-      `${this.baseUrl}/notifications/webpush/subscribe`,
-      payload,
-    );
+    return this.notificationApi.subscribeWebpush(payload);
   }
 
   public unsubscribeWebpush(endpoint?: string): Observable<APIResponse<{ success: boolean }>> {
-    return this.http.post<APIResponse<{ success: boolean }>>(
-      `${this.baseUrl}/notifications/webpush/unsubscribe`,
-      { endpoint: endpoint ?? '' },
-    );
+    return this.notificationApi.unsubscribeWebpush(endpoint);
   }
 
   public markNotificationsAsRead(ids?: number[]): Observable<APIResponse<{ success: boolean }>> {
-    return this.http.post<APIResponse<{ success: boolean }>>(`${this.baseUrl}/notifications/read`, {
-      ids: ids ?? [],
-    });
+    return this.notificationApi.markNotificationsAsRead(ids);
   }
 
   public getAppInfo(): Observable<APIResponse<AppInfo>> {
-    return this.http.get<APIResponse<AppInfo>>(`${this.baseUrl}/app-info`);
+    return this.profileApi.getAppInfo();
   }
 
   // Workouts endpoints
   public getWorkouts(params?: WorkoutListParams): Observable<PaginatedAPIResponse<Workout>> {
-    let httpParams = new HttpParams();
-    if (params?.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-    if (params?.type) {
-      httpParams = httpParams.set('type', params.type);
-    }
-    if (params?.sub_type) {
-      httpParams = httpParams.set('sub_type', params.sub_type);
-    }
-    if (params?.active !== undefined) {
-      httpParams = httpParams.set('active', params.active ? 'true' : 'false');
-    }
-    if (params?.since) {
-      httpParams = httpParams.set('since', params.since);
-    }
-    if (params?.order_by) {
-      httpParams = httpParams.set('order_by', params.order_by);
-    }
-    if (params?.order_dir) {
-      httpParams = httpParams.set('order_dir', params.order_dir);
-    }
-    return this.http.get<PaginatedAPIResponse<Workout>>(`${this.baseUrl}/workouts`, {
-      params: httpParams,
-    });
+    return this.workoutApi.getWorkouts(params);
   }
 
   public getWorkout(id: number): Observable<APIResponse<WorkoutDetail>> {
-    return this.http.get<APIResponse<WorkoutDetail>>(`${this.baseUrl}/workouts/${id}`);
+    return this.workoutApi.getWorkout(id);
   }
 
   public getWorkoutBreakdown(
     id: number,
     params?: { count?: number; mode?: 'auto' | 'laps' | 'unit' | string },
   ): Observable<APIResponse<WorkoutBreakdown>> {
-    let httpParams = new HttpParams();
-
-    if (params?.count) {
-      httpParams = httpParams.set('count', params.count.toString());
-    }
-
-    if (params?.mode) {
-      httpParams = httpParams.set('mode', params.mode);
-    }
-
-    return this.http.get<APIResponse<WorkoutBreakdown>>(
-      `${this.baseUrl}/workouts/${id}/breakdown`,
-      { params: httpParams },
-    );
+    return this.workoutApi.getWorkoutBreakdown(id, params);
   }
 
   public getWorkoutRangeStats(
     id: number,
     params?: { start_index?: number; end_index?: number },
   ): Observable<APIResponse<WorkoutRangeStats>> {
-    let httpParams = new HttpParams();
-
-    if (params?.start_index !== undefined) {
-      httpParams = httpParams.set('start_index', params.start_index.toString());
-    }
-
-    if (params?.end_index !== undefined) {
-      httpParams = httpParams.set('end_index', params.end_index.toString());
-    }
-
-    return this.http.get<APIResponse<WorkoutRangeStats>>(
-      `${this.baseUrl}/workouts/${id}/stats-range`,
-      { params: httpParams },
-    );
+    return this.workoutApi.getWorkoutRangeStats(id, params);
   }
 
   public getRecentWorkouts(
@@ -226,34 +163,17 @@ export class Api {
     scope?: 'following' | 'global',
     handle?: string,
   ): Observable<APIResponse<Workout[]>> {
-    let httpParams = new HttpParams();
-    if (limit) {
-      httpParams = httpParams.set('limit', limit.toString());
-    }
-    if (offset !== undefined) {
-      httpParams = httpParams.set('offset', offset.toString());
-    }
-    if (scope) {
-      httpParams = httpParams.set('scope', scope);
-    }
-    if (handle) {
-      httpParams = httpParams.set('handle', handle);
-    }
-    return this.http.get<APIResponse<Workout[]>>(`${this.baseUrl}/workouts/recent`, {
-      params: httpParams,
-    });
+    return this.workoutApi.getRecentWorkouts(limit, offset, scope, handle);
   }
 
   public getWorkoutFilterOptions(): Observable<
     APIResponse<{ types: string[]; sub_types_by_type: Record<string, string[]> }>
   > {
-    return this.http.get<
-      APIResponse<{ types: string[]; sub_types_by_type: Record<string, string[]> }>
-    >(`${this.baseUrl}/workouts/filter-options`);
+    return this.workoutApi.getWorkoutFilterOptions();
   }
 
   public createWorkoutFromFile(formData: FormData): Observable<APIResponse<Workout[]>> {
-    return this.http.post<APIResponse<Workout[]>>(`${this.baseUrl}/workouts`, formData);
+    return this.workoutApi.createWorkoutFromFile(formData);
   }
 
   public createWorkoutManual(workout: {
@@ -273,7 +193,7 @@ export class Api {
     custom_type?: string;
     equipment_ids?: number[];
   }): Observable<APIResponse<Workout>> {
-    return this.http.post<APIResponse<Workout>>(`${this.baseUrl}/workouts`, workout);
+    return this.workoutApi.createWorkoutManual(workout);
   }
 
   public updateWorkout(
@@ -296,101 +216,60 @@ export class Api {
       equipment_ids?: number[];
     },
   ): Observable<APIResponse<Workout>> {
-    return this.http.put<APIResponse<Workout>>(`${this.baseUrl}/workouts/${id}`, workout);
+    return this.workoutApi.updateWorkout(id, workout);
   }
 
   public deleteWorkout(id: number): Observable<APIResponse<{ message: string }>> {
-    return this.http.delete<APIResponse<{ message: string }>>(`${this.baseUrl}/workouts/${id}`);
+    return this.workoutApi.deleteWorkout(id);
   }
 
   public downloadWorkoutsZip(ids: number[]): Observable<Blob> {
-    const params = ids.map((id) => `ids=${id}`).join('&');
-    return this.http.get(`${this.baseUrl}/workouts/download-zip?${params}`, {
-      responseType: 'blob',
-    });
+    return this.workoutApi.downloadWorkoutsZip(ids);
   }
 
   public addEquipmentToWorkouts(
     workoutIds: number[],
     equipmentIds: number[],
   ): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/workouts/add-equipment`,
-      {
-        workout_ids: workoutIds,
-        equipment_ids: equipmentIds,
-      },
-    );
+    return this.workoutApi.addEquipmentToWorkouts(workoutIds, equipmentIds);
   }
 
   public toggleWorkoutLock(id: number): Observable<APIResponse<Workout>> {
-    return this.http.post<APIResponse<Workout>>(`${this.baseUrl}/workouts/${id}/toggle-lock`, {});
+    return this.workoutApi.toggleWorkoutLock(id);
   }
 
   public refreshWorkout(id: number): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/workouts/${id}/refresh`,
-      {},
-    );
+    return this.workoutApi.refreshWorkout(id);
   }
 
   public likeWorkout(
     id: number,
   ): Observable<APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>> {
-    return this.http.post<APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>>(
-      `${this.baseUrl}/workouts/${id}/like`,
-      {},
-    );
+    return this.workoutApi.likeWorkout(id);
   }
 
   public getWorkoutLikes(workoutId: number): Observable<APIResponse<Like[]>> {
-    return this.http.get<APIResponse<Like[]>>(`${this.baseUrl}/workouts/${workoutId}/likes`);
+    return this.workoutApi.getWorkoutLikes(workoutId);
   }
 
   public createReply(workoutId: number, content: string): Observable<APIResponse<WorkoutReply>> {
-    return this.http.post<APIResponse<WorkoutReply>>(
-      `${this.baseUrl}/workouts/${workoutId}/replies`,
-      { content },
-    );
+    return this.workoutApi.createReply(workoutId, content);
   }
 
   public getWorkoutReplies(
     workoutId: number,
     params?: PaginationParams,
   ): Observable<PaginatedAPIResponse<WorkoutReply>> {
-    let httpParams = new HttpParams();
-    if (params?.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-
-    return this.http.get<PaginatedAPIResponse<WorkoutReply>>(
-      `${this.baseUrl}/workouts/${workoutId}/replies`,
-      { params: httpParams },
-    );
+    return this.workoutApi.getWorkoutReplies(workoutId, params);
   }
 
   public downloadWorkout(id: number): Observable<HttpResponse<Blob>> {
-    return this.http.get(`${this.baseUrl}/workouts/${id}/download`, {
-      observe: 'response',
-      responseType: 'blob',
-    });
+    return this.workoutApi.downloadWorkout(id);
   }
 
   // Measurements endpoints
   public getMeasurements(params?: PaginationParams): Observable<PaginatedAPIResponse<Measurement>> {
-    let httpParams = new HttpParams();
-    if (params?.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-    return this.http.get<PaginatedAPIResponse<Measurement>>(`${this.baseUrl}/measurements`, {
-      params: httpParams,
-    });
+    return this.measurementApi.getMeasurements(params);
   }
 
   public createOrUpdateMeasurement(measurement: {
@@ -402,68 +281,50 @@ export class Api {
     resting_heart_rate?: number;
     max_heart_rate?: number;
   }): Observable<APIResponse<Measurement>> {
-    return this.http.post<APIResponse<Measurement>>(`${this.baseUrl}/measurements`, measurement);
+    return this.measurementApi.createOrUpdateMeasurement(measurement);
   }
 
   public deleteMeasurement(date: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/measurements/${date}`);
+    return this.measurementApi.deleteMeasurement(date);
   }
 
   // Equipment endpoints
   public getEquipment(params?: PaginationParams): Observable<PaginatedAPIResponse<Equipment>> {
-    let httpParams = new HttpParams();
-    if (params?.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-    return this.http.get<PaginatedAPIResponse<Equipment>>(`${this.baseUrl}/equipment`, {
-      params: httpParams,
-    });
+    return this.equipmentApi.getEquipment(params);
   }
 
   public getEquipmentById(id: number): Observable<APIResponse<Equipment>> {
-    return this.http.get<APIResponse<Equipment>>(`${this.baseUrl}/equipment/${id}`);
+    return this.equipmentApi.getEquipmentById(id);
   }
 
   public createEquipment(equipment: Partial<Equipment>): Observable<APIResponse<Equipment>> {
-    return this.http.post<APIResponse<Equipment>>(`${this.baseUrl}/equipment`, equipment);
+    return this.equipmentApi.createEquipment(equipment);
   }
 
   public updateEquipment(
     id: number,
     equipment: Partial<Equipment>,
   ): Observable<APIResponse<Equipment>> {
-    return this.http.put<APIResponse<Equipment>>(`${this.baseUrl}/equipment/${id}`, equipment);
+    return this.equipmentApi.updateEquipment(id, equipment);
   }
 
   public deleteEquipment(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/equipment/${id}`);
+    return this.equipmentApi.deleteEquipment(id);
   }
 
   // Route segments endpoints
   public getRouteSegments(
     params?: PaginationParams,
   ): Observable<PaginatedAPIResponse<RouteSegment>> {
-    let httpParams = new HttpParams();
-    if (params?.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-    return this.http.get<PaginatedAPIResponse<RouteSegment>>(`${this.baseUrl}/route-segments`, {
-      params: httpParams,
-    });
+    return this.routeSegmentApi.getRouteSegments(params);
   }
 
   public getRouteSegment(id: number): Observable<APIResponse<RouteSegmentDetail>> {
-    return this.http.get<APIResponse<RouteSegmentDetail>>(`${this.baseUrl}/route-segments/${id}`);
+    return this.routeSegmentApi.getRouteSegment(id);
   }
 
   public createRouteSegment(formData: FormData): Observable<APIResponse<RouteSegment[]>> {
-    return this.http.post<APIResponse<RouteSegment[]>>(`${this.baseUrl}/route-segments`, formData);
+    return this.routeSegmentApi.createRouteSegment(formData);
   }
 
   public createRouteSegmentFromWorkout(
@@ -481,10 +342,7 @@ export class Api {
       circular?: boolean;
     },
   ): Observable<APIResponse<RouteSegmentDetail>> {
-    return this.http.post<APIResponse<RouteSegmentDetail>>(
-      `${this.baseUrl}/workouts/${workoutId}/route-segment`,
-      params,
-    );
+    return this.routeSegmentApi.createRouteSegmentFromWorkout(workoutId, params);
   }
 
   public updateRouteSegment(
@@ -500,100 +358,55 @@ export class Api {
       circular?: boolean;
     },
   ): Observable<APIResponse<RouteSegmentDetail>> {
-    return this.http.put<APIResponse<RouteSegmentDetail>>(
-      `${this.baseUrl}/route-segments/${id}`,
-      params,
-    );
+    return this.routeSegmentApi.updateRouteSegment(id, params);
   }
 
   public deleteRouteSegment(id: number): Observable<APIResponse<{ message: string }>> {
-    return this.http.delete<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/route-segments/${id}`,
-    );
+    return this.routeSegmentApi.deleteRouteSegment(id);
   }
 
   public refreshRouteSegment(id: number): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/route-segments/${id}/refresh`,
-      {},
-    );
+    return this.routeSegmentApi.refreshRouteSegment(id);
   }
 
   public findRouteSegmentMatches(id: number): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/route-segments/${id}/matches`,
-      {},
-    );
+    return this.routeSegmentApi.findRouteSegmentMatches(id);
   }
 
   public downloadRouteSegment(id: number): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/route-segments/${id}/download`, {
-      responseType: 'blob',
-    });
+    return this.routeSegmentApi.downloadRouteSegment(id);
   }
 
   public getRouteSegmentMatches(
     id: number,
     params?: { page?: number; per_page?: number; sort?: string },
   ): Observable<PaginatedAPIResponse<RouteSegmentMatch>> {
-    let httpParams = new HttpParams();
-    if (params?.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-    if (params?.sort) {
-      httpParams = httpParams.set('sort', params.sort);
-    }
-    return this.http.get<PaginatedAPIResponse<RouteSegmentMatch>>(
-      `${this.baseUrl}/route-segments/${id}/matches`,
-      { params: httpParams },
-    );
+    return this.routeSegmentApi.getRouteSegmentMatches(id, params);
   }
 
   public likeRouteSegment(
     id: number,
   ): Observable<APIResponse<{ liked: boolean; like_count: number }>> {
-    return this.http.post<APIResponse<{ liked: boolean; like_count: number }>>(
-      `${this.baseUrl}/route-segments/${id}/like`,
-      {},
-    );
+    return this.routeSegmentApi.likeRouteSegment(id);
   }
 
   public unlikeRouteSegment(
     id: number,
   ): Observable<APIResponse<{ liked: boolean; like_count: number }>> {
-    return this.http.delete<APIResponse<{ liked: boolean; like_count: number }>>(
-      `${this.baseUrl}/route-segments/${id}/like`,
-    );
+    return this.routeSegmentApi.unlikeRouteSegment(id);
   }
 
   public getRouteSegmentLikes(id: number): Observable<APIResponse<Like[]>> {
-    return this.http.get<APIResponse<Like[]>>(`${this.baseUrl}/route-segments/${id}/likes`);
+    return this.routeSegmentApi.getRouteSegmentLikes(id);
   }
 
   // Dashboard endpoints
   public getTotals(handle?: string): Observable<APIResponse<Totals[]>> {
-    let httpParams = new HttpParams();
-    if (handle) {
-      httpParams = httpParams.set('handle', handle);
-    }
-
-    return this.http.get<APIResponse<Totals[]>>(`${this.baseUrl}/totals`, {
-      params: httpParams,
-    });
+    return this.profileApi.getTotals(handle);
   }
 
   public getRecords(handle?: string): Observable<APIResponse<WorkoutRecord[]>> {
-    let httpParams = new HttpParams();
-    if (handle) {
-      httpParams = httpParams.set('handle', handle);
-    }
-
-    return this.http.get<APIResponse<WorkoutRecord[]>>(`${this.baseUrl}/records`, {
-      params: httpParams,
-    });
+    return this.profileApi.getRecords(handle);
   }
 
   public getDistanceRecordRanking(params: {
@@ -605,34 +418,7 @@ export class Api {
     page?: number;
     per_page?: number;
   }): Observable<PaginatedAPIResponse<DistanceRecordEntry>> {
-    let httpParams = new HttpParams()
-      .set('workout_type', params.workout_type)
-      .set('label', params.label);
-
-    if (params.start) {
-      httpParams = httpParams.set('start', params.start);
-    }
-
-    if (params.end) {
-      httpParams = httpParams.set('end', params.end);
-    }
-
-    if (params.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-
-    if (params.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-
-    if (params.handle) {
-      httpParams = httpParams.set('handle', params.handle);
-    }
-
-    return this.http.get<PaginatedAPIResponse<DistanceRecordEntry>>(
-      `${this.baseUrl}/records/ranking`,
-      { params: httpParams },
-    );
+    return this.profileApi.getDistanceRecordRanking(params);
   }
 
   public getClimbRanking(params: {
@@ -643,179 +429,102 @@ export class Api {
     page?: number;
     per_page?: number;
   }): Observable<PaginatedAPIResponse<ClimbRecordEntry>> {
-    let httpParams = new HttpParams().set('workout_type', params.workout_type);
-
-    if (params.start) {
-      httpParams = httpParams.set('start', params.start);
-    }
-
-    if (params.end) {
-      httpParams = httpParams.set('end', params.end);
-    }
-
-    if (params.page) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-
-    if (params.per_page) {
-      httpParams = httpParams.set('per_page', params.per_page.toString());
-    }
-
-    if (params.handle) {
-      httpParams = httpParams.set('handle', params.handle);
-    }
-
-    return this.http.get<PaginatedAPIResponse<ClimbRecordEntry>>(
-      `${this.baseUrl}/records/climbs/ranking`,
-      { params: httpParams },
-    );
+    return this.profileApi.getClimbRanking(params);
   }
 
   // Profile endpoints
   public getProfile(): Observable<APIResponse<FullUserProfile>> {
-    return this.http.get<APIResponse<FullUserProfile>>(`${this.baseUrl}/profile`);
+    return this.profileApi.getProfile();
   }
 
   public updateProfile(profile: ProfileUpdateRequest): Observable<APIResponse<FullUserProfile>> {
-    return this.http.put<APIResponse<FullUserProfile>>(`${this.baseUrl}/profile`, profile);
+    return this.profileApi.updateProfile(profile);
   }
 
   public changePassword(
     payload: ProfileChangePasswordRequest,
   ): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/profile/change-password`,
-      payload,
-    );
+    return this.profileApi.changePassword(payload);
   }
 
   public resetAPIKey(): Observable<APIResponse<{ api_key: string; message: string }>> {
-    return this.http.post<APIResponse<{ api_key: string; message: string }>>(
-      `${this.baseUrl}/profile/reset-api-key`,
-      {},
-    );
+    return this.profileApi.resetAPIKey();
   }
 
   public enableActivityPub(): Observable<APIResponse<{ activity_pub: boolean; message: string }>> {
-    return this.http.post<APIResponse<{ activity_pub: boolean; message: string }>>(
-      `${this.baseUrl}/profile/enable-activity-pub`,
-      {},
-    );
+    return this.profileApi.enableActivityPub();
   }
 
   public getFollowRequests(): Observable<APIResponse<FollowRequest[]>> {
-    return this.http.get<APIResponse<FollowRequest[]>>(`${this.baseUrl}/profile/follow-requests`);
+    return this.profileApi.getFollowRequests();
   }
 
   public getUserProfileSummary(
     handle?: string,
   ): Observable<APIResponse<ActivityPubProfileSummary>> {
-    let httpParams = new HttpParams();
-    if (handle) {
-      httpParams = httpParams.set('handle', handle);
-    }
-
-    return this.http.get<APIResponse<ActivityPubProfileSummary>>(`${this.baseUrl}/user-profile`, {
-      params: httpParams,
-    });
+    return this.profileApi.getUserProfileSummary(handle);
   }
 
   public searchProfiles(query: string): Observable<APIResponse<ActivityPubProfileSummary[]>> {
-    const params = new HttpParams().set('q', query);
-    return this.http.get<APIResponse<ActivityPubProfileSummary[]>>(
-      `${this.baseUrl}/user-profile/search`,
-      { params },
-    );
+    return this.profileApi.searchProfiles(query);
   }
 
   public getLocalActivityPubActor(username: string): Observable<ActivityPubActor> {
-    return this.http.get<ActivityPubActor>(`/ap/users/${encodeURIComponent(username)}`);
+    return this.profileApi.getLocalActivityPubActor(username);
   }
 
   public followUserByHandle(handle: string): Observable<APIResponse<ActivityPubProfileSummary>> {
-    const params = new HttpParams().set('handle', handle);
-    return this.http.post<APIResponse<ActivityPubProfileSummary>>(
-      `${this.baseUrl}/user-profile/follow`,
-      {},
-      { params },
-    );
+    return this.profileApi.followUserByHandle(handle);
   }
 
   public unfollowUserByHandle(handle: string): Observable<APIResponse<ActivityPubProfileSummary>> {
-    const params = new HttpParams().set('handle', handle);
-    return this.http.post<APIResponse<ActivityPubProfileSummary>>(
-      `${this.baseUrl}/user-profile/unfollow`,
-      {},
-      { params },
-    );
+    return this.profileApi.unfollowUserByHandle(handle);
   }
 
   public acceptFollowRequest(id: number): Observable<APIResponse<FollowRequest>> {
-    return this.http.post<APIResponse<FollowRequest>>(
-      `${this.baseUrl}/profile/follow-requests/${id}/accept`,
-      {},
-    );
+    return this.profileApi.acceptFollowRequest(id);
   }
 
   public refreshWorkouts(): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/profile/refresh-workouts`,
-      {},
-    );
+    return this.profileApi.refreshWorkouts();
   }
 
   public getHammerheadConnection(): Observable<APIResponse<HammerheadConnectionStatus>> {
-    return this.http.get<APIResponse<HammerheadConnectionStatus>>(
-      `${this.baseUrl}/profile/apps/hammerhead`,
-    );
+    return this.profileApi.getHammerheadConnection();
   }
 
   public connectHammerhead(): Observable<APIResponse<{ authorize_url: string }>> {
-    return this.http.post<APIResponse<{ authorize_url: string }>>(
-      `${this.baseUrl}/profile/apps/hammerhead/connect`,
-      {},
-    );
+    return this.profileApi.connectHammerhead();
   }
 
   public disconnectHammerhead(): Observable<APIResponse<{ message: string }>> {
-    return this.http.delete<APIResponse<{ message: string }>>(
-      `${this.baseUrl}/profile/apps/hammerhead`,
-    );
+    return this.profileApi.disconnectHammerhead();
   }
 
   // Admin endpoints
   public getUsers(): Observable<APIResponse<UserProfile[]>> {
-    return this.http.get<APIResponse<UserProfile[]>>(`${this.baseUrl}/admin/users`);
+    return this.profileApi.getUsers();
   }
 
   public getUser(id: number): Observable<APIResponse<UserProfile>> {
-    return this.http.get<APIResponse<UserProfile>>(`${this.baseUrl}/admin/users/${id}`);
+    return this.profileApi.getUser(id);
   }
 
   public updateUser(id: number, user: UserUpdateRequest): Observable<APIResponse<UserProfile>> {
-    return this.http.put<APIResponse<UserProfile>>(`${this.baseUrl}/admin/users/${id}`, user);
+    return this.profileApi.updateUser(id, user);
   }
 
   public deleteUser(id: number): Observable<APIResponse<{ message: string }>> {
-    return this.http.delete<APIResponse<{ message: string }>>(`${this.baseUrl}/admin/users/${id}`);
+    return this.profileApi.deleteUser(id);
   }
 
   public updateAppConfig(config: AppConfig): Observable<APIResponse<AppInfo>> {
-    return this.http.put<APIResponse<AppInfo>>(`${this.baseUrl}/admin/config`, config);
+    return this.profileApi.updateAppConfig(config);
   }
 
   // Statistics endpoints
   public getStatistics(params?: StatisticsParams): Observable<APIResponse<Statistics>> {
-    let httpParams = new HttpParams();
-    if (params?.since) {
-      httpParams = httpParams.set('since', params.since);
-    }
-    if (params?.per) {
-      httpParams = httpParams.set('per', params.per);
-    }
-    return this.http.get<APIResponse<Statistics>>(`${this.baseUrl}/statistics`, {
-      params: httpParams,
-    });
+    return this.profileApi.getStatistics(params);
   }
 
   public getWorkoutsCoordinates(params?: {
@@ -828,37 +537,7 @@ export class Api {
     sub_type?: string;
     since?: string;
   }): Observable<APIResponse<HeatmapCoordinateList>> {
-    let httpParams = new HttpParams();
-    if (params?.cellSize !== undefined) {
-      httpParams = httpParams.set('cell_size', params.cellSize.toString());
-    }
-    if (params?.minLat !== undefined) {
-      httpParams = httpParams.set('min_lat', params.minLat.toString());
-    }
-    if (params?.minLng !== undefined) {
-      httpParams = httpParams.set('min_lng', params.minLng.toString());
-    }
-    if (params?.maxLat !== undefined) {
-      httpParams = httpParams.set('max_lat', params.maxLat.toString());
-    }
-    if (params?.maxLng !== undefined) {
-      httpParams = httpParams.set('max_lng', params.maxLng.toString());
-    }
-    if (params?.type) {
-      httpParams = httpParams.set('type', params.type);
-    }
-    if (params?.sub_type) {
-      httpParams = httpParams.set('sub_type', params.sub_type);
-    }
-    if (params?.since) {
-      httpParams = httpParams.set('since', params.since);
-    }
-    return this.http.get<APIResponse<HeatmapCoordinateList>>(
-      `${this.baseUrl}/workouts/coordinates`,
-      {
-        params: httpParams,
-      },
-    );
+    return this.profileApi.getWorkoutsCoordinates(params);
   }
 
   public getWorkoutsCenters(params?: {
@@ -866,22 +545,7 @@ export class Api {
     sub_type?: string;
     since?: string;
   }): Observable<APIResponse<GeoJsonFeatureCollection>> {
-    let httpParams = new HttpParams();
-    if (params?.type) {
-      httpParams = httpParams.set('type', params.type);
-    }
-    if (params?.sub_type) {
-      httpParams = httpParams.set('sub_type', params.sub_type);
-    }
-    if (params?.since) {
-      httpParams = httpParams.set('since', params.since);
-    }
-    return this.http.get<APIResponse<GeoJsonFeatureCollection>>(
-      `${this.baseUrl}/workouts/centers`,
-      {
-        params: httpParams,
-      },
-    );
+    return this.profileApi.getWorkoutsCenters(params);
   }
 
   // Calendar endpoints
@@ -891,30 +555,15 @@ export class Api {
     end?: string;
     timeZone?: string;
   }): Observable<APIResponse<CalendarEvent[]>> {
-    let httpParams = new HttpParams();
-    if (params?.start) {
-      httpParams = httpParams.set('start', params.start);
-    }
-    if (params?.end) {
-      httpParams = httpParams.set('end', params.end);
-    }
-    if (params?.timeZone) {
-      httpParams = httpParams.set('timeZone', params.timeZone);
-    }
-    if (params?.handle) {
-      httpParams = httpParams.set('handle', params.handle);
-    }
-    return this.http.get<APIResponse<CalendarEvent[]>>(`${this.baseUrl}/workouts/calendar`, {
-      params: httpParams,
-    });
+    return this.profileApi.getCalendarEvents(params);
   }
 
   // Legal endpoints
   public getLegalNotice(lang: string): Observable<string> {
-    return this.http.get(`${this.baseUrl}/legal/notice/${lang}`, { responseType: 'text' });
+    return this.profileApi.getLegalNotice(lang);
   }
 
   public getPrivacyPolicy(lang: string): Observable<string> {
-    return this.http.get(`${this.baseUrl}/legal/privacy/${lang}`, { responseType: 'text' });
+    return this.profileApi.getPrivacyPolicy(lang);
   }
 }

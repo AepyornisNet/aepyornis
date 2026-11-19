@@ -1,4 +1,5 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { getFilenameFromContentDisposition, saveBlob, saveHttpResponse } from './file-saver';
 
 describe('file-saver', () => {
@@ -28,20 +29,20 @@ describe('file-saver', () => {
   describe('saveBlob and saveHttpResponse', () => {
     let originalCreateObjectURL: typeof window.URL.createObjectURL;
     let originalRevokeObjectURL: typeof window.URL.revokeObjectURL;
-    let createObjectURLSpy: jasmine.Spy;
-    let revokeObjectURLSpy: jasmine.Spy;
+    let createObjectURLSpy: MockInstance;
+    let revokeObjectURLSpy: MockInstance;
 
     beforeEach(() => {
       originalCreateObjectURL = window.URL.createObjectURL;
       originalRevokeObjectURL = window.URL.revokeObjectURL;
 
-      createObjectURLSpy = jasmine
-        .createSpy('createObjectURL')
-        .and.returnValue('blob:http://localhost/test-uuid');
-      revokeObjectURLSpy = jasmine.createSpy('revokeObjectURL');
+      createObjectURLSpy = vi.fn().mockReturnValue('blob:http://localhost/test-uuid');
+      revokeObjectURLSpy = vi.fn();
 
-      window.URL.createObjectURL = createObjectURLSpy;
-      window.URL.revokeObjectURL = revokeObjectURLSpy;
+      window.URL.createObjectURL =
+        createObjectURLSpy as unknown as typeof window.URL.createObjectURL;
+      window.URL.revokeObjectURL =
+        revokeObjectURLSpy as unknown as typeof window.URL.revokeObjectURL;
     });
 
     afterEach(() => {
@@ -50,8 +51,8 @@ describe('file-saver', () => {
     });
 
     it('should trigger download link creation and cleanup for saveBlob', () => {
-      const appendChildSpy = spyOn(document.body, 'appendChild').and.callThrough();
-      const removeChildSpy = spyOn(document.body, 'removeChild').and.callThrough();
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild');
 
       const blob = new Blob(['test content'], { type: 'text/plain' });
       saveBlob(blob, 'test.gpx');
@@ -63,8 +64,8 @@ describe('file-saver', () => {
     });
 
     it('should save HttpResponse with Blob and correct filename', () => {
-      const appendChildSpy = spyOn(document.body, 'appendChild').and.callThrough();
-      const removeChildSpy = spyOn(document.body, 'removeChild').and.callThrough();
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild');
 
       const blob = new Blob(['workout data'], { type: 'application/gpx+xml' });
       const response = new HttpResponse<Blob>({

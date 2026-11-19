@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
+import { provideTranslateService } from '@ngx-translate/core';
 
 import { Login } from './login';
 
@@ -16,6 +17,7 @@ describe('Login', () => {
         provideZonelessChangeDetection(),
         provideRouter([]),
         provideHttpClient(withXhr()),
+        provideTranslateService(),
       ],
     }).compileComponents();
 

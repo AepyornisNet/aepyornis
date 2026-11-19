@@ -17,6 +17,9 @@ type User interface {
 	GetByHandle(handle, localHost string) (*model.User, error)
 	SearchProfiles(query string) ([]*model.User, error)
 	GetByAPIKey(key string) (*model.User, error)
+	Create(user *model.User) error
+	Save(user *model.User) error
+	Delete(user *model.User) error
 }
 
 type userRepository struct {
@@ -130,6 +133,18 @@ func (r *userRepository) SearchProfiles(query string) ([]*model.User, error) {
 
 func (r *userRepository) currentUserQuery() *gorm.DB {
 	return r.db.Preload("Profile")
+}
+
+func (r *userRepository) Create(user *model.User) error {
+	return user.Create(r.db)
+}
+
+func (r *userRepository) Save(user *model.User) error {
+	return user.Save(r.db)
+}
+
+func (r *userRepository) Delete(user *model.User) error {
+	return user.Delete(r.db)
 }
 
 func normalizeLocalHandle(handle, localHost string) (string, error) {

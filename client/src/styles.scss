@@ -1,6 +1,7 @@
 /* Global SCSS Styles & Bootstrap Theme Customizations */
-@import 'common.scss';
-@import 'bootstrap/scss/bootstrap';
+@use 'common';
+@use 'bootstrap/scss/bootstrap';
+@use 'assets/styles/metrics';
 
 /* Premium Theme & Glassmorphism Utilities */
 :root {
@@ -53,10 +54,6 @@
     background: var(--app-bg-gradient-light) fixed !important;
   }
 }
-
-@import 'maplibre-theme/icons.default.css';
-@import 'maplibre-theme/modern.css';
-@import 'assets/styles/metrics.scss';
 
 .maplibregl-map {
   --ml-ctrl-border-radius: 1rem;

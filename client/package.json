@@ -6,7 +6,8 @@
     "start": "ng serve --host=0.0.0.0",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "test": "ng test --watch=false",
+    "test:watch": "ng test",
     "lint": "ng lint",
     "cleanup": "npm run lint -- --fix && npm run format",
     "format": "prettier --write .",
@@ -80,6 +81,7 @@
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.71.2",
+    "vitest": "^5.1.1",
     "yaml": "^2.9.1"
   },
   "browser": {
