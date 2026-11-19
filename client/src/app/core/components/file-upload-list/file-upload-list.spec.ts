@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideIcons } from '@ng-icons/core';
 import { faSolidFile, faSolidXmark } from '@ng-icons/font-awesome/solid';
-import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import { FileUploadList } from './file-upload-list';
 
 describe('FileUploadList', () => {
@@ -11,8 +11,12 @@ describe('FileUploadList', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FileUploadList, TranslateModule.forRoot()],
-      providers: [provideZonelessChangeDetection(), provideIcons({ faSolidFile, faSolidXmark })],
+      imports: [FileUploadList],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideTranslateService(),
+        provideIcons({ faSolidFile, faSolidXmark }),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(FileUploadList);

@@ -1,11 +1,17 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
+	"github.com/fsouza/slognil"
+	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +19,11 @@ import (
 func TestUserController_VisibleRecordsExclusion(t *testing.T) {
 	db := createTestDB(t)
 
-	uc := &userController{db: db}
+	injector := do.New(repository.Package, service.Package)
+	do.ProvideValue(injector, db)
+	do.ProvideValue(injector, slognil.NewLogger())
+	do.ProvideValue(injector, &config.Config{})
+	userSvc := do.MustInvoke[service.UserService](injector)
 
 	user := &model.User{
 		UserData: model.UserData{
@@ -94,7 +104,7 @@ func TestUserController_VisibleRecordsExclusion(t *testing.T) {
 	viewerProfileID := uint64(0) // anonymous viewer
 
 	t.Run("getVisibleRecordForType excludes virtual workout from speed and distance but includes duration", func(t *testing.T) {
-		record, err := uc.getVisibleRecordForType(user, viewerProfileID, model.WorkoutTypeCycling, nil, nil)
+		record, err := userSvc.GetVisibleRecordForType(user, viewerProfileID, model.WorkoutTypeCycling, nil, nil)
 		require.NoError(t, err)
 		require.NotNil(t, record)
 
@@ -112,7 +122,7 @@ func TestUserController_VisibleRecordsExclusion(t *testing.T) {
 	})
 
 	t.Run("getVisibleStoredDistanceRecords excludes virtual workouts", func(t *testing.T) {
-		distRecs, err := uc.getVisibleStoredDistanceRecords(user, viewerProfileID, model.WorkoutTypeCycling, nil, nil)
+		distRecs, err := userSvc.GetVisibleStoredDistanceRecords(user, viewerProfileID, model.WorkoutTypeCycling, nil, nil)
 		require.NoError(t, err)
 		require.NotEmpty(t, distRecs)
 
@@ -122,7 +132,7 @@ func TestUserController_VisibleRecordsExclusion(t *testing.T) {
 	})
 
 	t.Run("getVisibleStoredPowerRecords includes virtual workouts", func(t *testing.T) {
-		powerRecs, err := uc.getVisibleStoredPowerRecords(user, viewerProfileID, model.WorkoutTypeCycling, nil, nil)
+		powerRecs, err := userSvc.GetVisibleStoredPowerRecords(user, viewerProfileID, model.WorkoutTypeCycling, nil, nil)
 		require.NoError(t, err)
 		require.NotEmpty(t, powerRecs)
 
@@ -137,7 +147,9 @@ func TestUserController_VisibleRecordsExclusion(t *testing.T) {
 	})
 
 	t.Run("getVisibleDistanceRanking excludes virtual workouts", func(t *testing.T) {
-		rankings, count, err := uc.getVisibleDistanceRanking(user, viewerProfileID, model.WorkoutTypeCycling, "10 km", nil, nil, 10, 0)
+		viewer := &model.User{}
+		viewer.Profile.ID = viewerProfileID
+		rankings, count, err := userSvc.GetDistanceRanking(context.Background(), user, viewer, model.WorkoutTypeCycling, "10 km", nil, nil, 10, 0)
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), count)
 		require.Len(t, rankings, 1)

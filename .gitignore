@@ -15,3 +15,5 @@ coverage.out
 *_templ.txt
 /frontend/src/generated
 docker/mastodon.activitypub.env.local
+.agents
+skills-lock.json

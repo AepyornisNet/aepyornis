@@ -14,6 +14,13 @@ type Workout interface {
 	ListByProfileAndFilters(userID uint64, filters *model.WorkoutFilters, limit int, offset int) ([]*model.Workout, error)
 	GetByIDForRead(id uint64, withRouteSegmentMatches bool) (*model.Workout, error)
 	GetDetailsByID(id uint64) (*model.Workout, error)
+	GetByID(id uint64) (*model.Workout, error)
+	List() ([]*model.Workout, error)
+	GetRecentWithOffset(count int, offset int) ([]*model.Workout, error)
+	GetMapData(id uint64) (*model.WorkoutGeoMeta, error)
+	Save(workout *model.Workout) error
+	Create(workout *model.Workout) error
+	Delete(workout *model.Workout) error
 }
 
 type workoutRepository struct {
@@ -126,4 +133,32 @@ func (r *workoutRepository) GetDetailsByID(id uint64) (*model.Workout, error) {
 	}
 
 	return &workout, nil
+}
+
+func (r *workoutRepository) GetByID(id uint64) (*model.Workout, error) {
+	return model.GetWorkout(r.db, id)
+}
+
+func (r *workoutRepository) List() ([]*model.Workout, error) {
+	return model.GetWorkouts(r.db)
+}
+
+func (r *workoutRepository) GetRecentWithOffset(count int, offset int) ([]*model.Workout, error) {
+	return model.GetRecentWorkoutsWithOffset(r.db, count, offset)
+}
+
+func (r *workoutRepository) GetMapData(id uint64) (*model.WorkoutGeoMeta, error) {
+	return model.GetMapData(r.db, id)
+}
+
+func (r *workoutRepository) Save(workout *model.Workout) error {
+	return workout.Save(r.db)
+}
+
+func (r *workoutRepository) Create(workout *model.Workout) error {
+	return workout.Create(r.db)
+}
+
+func (r *workoutRepository) Delete(workout *model.Workout) error {
+	return workout.Delete(r.db)
 }
